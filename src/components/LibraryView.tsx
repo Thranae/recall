@@ -35,9 +35,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onOpenUpload,
 }) => {
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-28">
-      {/* iOS Liquid Glass Category Pills Carousel */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-1">
+    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32">
+      {/* iOS 27 Unclipped Plumpy Liquid Filter Chips Carousel */}
+      <div className="-mx-4 px-4 py-2 mb-2 overflow-x-auto no-scrollbar scroll-pl-4 flex items-center gap-2.5">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -46,52 +46,54 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform duration-100 ease-out active:scale-95 ${
+              className={`h-9 shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-full px-4 text-xs font-semibold transition-transform duration-100 ease-out active:scale-95 ${
                 isSelected
-                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white font-semibold border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45),0_3px_12px_rgba(0,122,255,0.4)]'
-                  : 'bg-white/[0.08] backdrop-blur-2xl border border-white/12 text-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] active:bg-white/15'
+                  ? 'ios-plump-primary text-white'
+                  : 'ios-plump-pill text-white/80 active:text-white'
               }`}
             >
-              <Icon className="h-3 w-3" />
-              <span>{cat.label}</span>
+              <Icon className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
+              <span className="leading-none pt-0.5">{cat.label}</span>
             </button>
           );
         })}
+        {/* Trailing space so last chip never hugs screen border */}
+        <div className="w-1 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Grid Subheader */}
-      <div className="flex items-center justify-between py-1 text-xs text-white/50 mb-2.5 px-0.5">
-        <span className="font-semibold text-white/80">
+      <div className="flex items-center justify-between py-1 text-xs text-white/50 mb-3 px-1">
+        <span className="font-semibold text-white/85">
           {selectedCategory === 'all'
             ? 'All Screenshots'
             : `${selectedCategory.toUpperCase()} Gallery`}
         </span>
-        <span className="font-mono text-[11px] text-white/40">
+        <span className="font-mono text-[11px] text-white/45">
           {screenshots.length} item{screenshots.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Screenshots Grid or iOS Glass Empty State */}
       {screenshots.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[24px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-10 text-center my-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-white/[0.08] backdrop-blur-xl text-white/60 mb-3 border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
-            <ImageIcon className="h-6 w-6 text-blue-400" />
+        <div className="flex flex-col items-center justify-center rounded-[28px] ios-plump-card p-10 text-center my-6">
+          <div className="flex h-15 w-15 items-center justify-center rounded-[20px] ios-plump-icon-pod text-blue-400 mb-3.5">
+            <ImageIcon className="h-7 w-7 shrink-0 drop-shadow-sm" />
           </div>
-          <h3 className="text-sm font-bold text-white">Your library is empty</h3>
-          <p className="mt-1 text-xs text-white/50 max-w-xs leading-relaxed">
+          <h3 className="text-base font-bold text-white tracking-tight">Your library is empty</h3>
+          <p className="mt-1.5 text-xs text-white/55 max-w-xs leading-relaxed">
             Capture or import screenshots to begin indexing chat threads, gaming stats, and visual objects.
           </p>
           <button
             type="button"
             onClick={onOpenUpload}
-            className="mt-5 flex items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-5 py-2.5 text-xs font-semibold text-white border border-white/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_16px_rgba(0,122,255,0.4)] active:scale-95 transition-transform"
+            className="mt-6 flex h-11 items-center justify-center gap-2 rounded-full px-5 text-xs font-semibold text-white ios-plump-primary active:scale-95 transition-transform"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0 stroke-[2.5]" />
             <span>Import Screenshots</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {screenshots.map((s) => (
             <ScreenshotCard
               key={s.id}

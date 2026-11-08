@@ -65,17 +65,17 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   return (
     <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-black px-6 pt-12 pb-8 text-white sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
       {/* Background ambient lighting for liquid glass refraction */}
-      <div className="pointer-events-none fixed top-[-10%] left-[-15%] w-[380px] h-[380px] rounded-full bg-blue-600/15 blur-[100px]" />
-      <div className="pointer-events-none fixed bottom-[5%] right-[-15%] w-[380px] h-[380px] rounded-full bg-purple-600/15 blur-[100px]" />
+      <div className="pointer-events-none fixed top-[-10%] left-[-15%] w-[400px] h-[400px] rounded-full bg-blue-600/15 blur-[120px]" />
+      <div className="pointer-events-none fixed bottom-[5%] right-[-15%] w-[400px] h-[400px] rounded-full bg-indigo-600/15 blur-[120px]" />
 
       {/* Brand & Hero */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.55),0_8px_24px_rgba(0,122,255,0.45)] border border-white/30">
-          <Camera className="h-8 w-8 text-white drop-shadow-md" />
+        <div className="mb-4 flex h-17 w-17 items-center justify-center rounded-[22px] ios-plump-primary">
+          <Camera className="h-8 w-8 text-white drop-shadow-md shrink-0" />
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">RECALL</h1>
-        <p className="mt-1.5 text-xs font-semibold tracking-wider text-blue-300 uppercase">
+        <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">RECALL</h1>
+        <p className="mt-1.5 text-xs font-bold tracking-wider text-blue-300 uppercase">
           Save Once • Find Later
         </p>
         <p className="mt-2 text-xs text-white/60 max-w-xs leading-relaxed">
@@ -85,18 +85,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
       {/* Main Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
-        <div className="rounded-[28px] border border-white/12 bg-white/[0.06] backdrop-blur-3xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_32px_rgba(0,0,0,0.5)]">
-          {/* iOS Liquid Segmented Switcher */}
-          <div className="mb-5 grid grid-cols-2 rounded-full bg-white/[0.08] backdrop-blur-2xl p-1 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+        <div className="rounded-[32px] ios-plump-card p-6">
+          {/* iOS 27 Plumpy Segmented Switcher */}
+          <div className="mb-6 grid grid-cols-2 rounded-full ios-plump-pill p-1">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setError(null);
               }}
-              className={`rounded-full py-2 text-xs font-semibold transition-all active:scale-95 ${
+              className={`h-10 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
                 !isSignUp
-                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,122,255,0.3)]'
+                  ? 'ios-plump-primary text-white'
                   : 'text-white/60 active:text-white'
               }`}
             >
@@ -108,9 +108,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 setIsSignUp(true);
                 setError(null);
               }}
-              className={`rounded-full py-2 text-xs font-semibold transition-all active:scale-95 ${
+              className={`h-10 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
                 isSignUp
-                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,122,255,0.3)]'
+                  ? 'ios-plump-primary text-white'
                   : 'text-white/60 active:text-white'
               }`}
             >
@@ -119,62 +119,62 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-[16px] border border-red-400/30 bg-red-500/15 backdrop-blur-xl p-3 text-xs text-red-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+            <div className="mb-4 rounded-[18px] border border-red-400/40 bg-gradient-to-b from-red-500/25 to-red-700/20 p-3.5 text-xs text-red-200 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)]">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div>
-                <label className="block text-[11px] font-medium text-white/70 mb-1 px-1">Full Name</label>
+                <label className="block text-[11px] font-semibold text-white/70 mb-1.5 px-1">Full Name</label>
                 <div className="relative flex items-center">
-                  <UserIcon className="absolute left-3.5 h-4 w-4 text-white/40" />
+                  <UserIcon className="absolute left-3.5 h-4 w-4 text-white/45 shrink-0" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Mercer"
                     required
-                    className="w-full rounded-[16px] border border-white/12 bg-white/[0.06] backdrop-blur-xl py-3 pl-10 pr-4 text-xs text-white placeholder-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] focus:border-blue-400/50 focus:outline-none"
+                    className="h-12 w-full rounded-[18px] ios-plump-pill pl-10 pr-4 text-xs text-white placeholder-white/35 focus:outline-none font-medium"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-[11px] font-medium text-white/70 mb-1 px-1">Email Address</label>
+              <label className="block text-[11px] font-semibold text-white/70 mb-1.5 px-1">Email Address</label>
               <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 h-4 w-4 text-white/40" />
+                <Mail className="absolute left-3.5 h-4 w-4 text-white/45 shrink-0" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  className="w-full rounded-[16px] border border-white/12 bg-white/[0.06] backdrop-blur-xl py-3 pl-10 pr-4 text-xs text-white placeholder-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] focus:border-blue-400/50 focus:outline-none"
+                  className="h-12 w-full rounded-[18px] ios-plump-pill pl-10 pr-4 text-xs text-white placeholder-white/35 focus:outline-none font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-white/70 mb-1 px-1">Password</label>
+              <label className="block text-[11px] font-semibold text-white/70 mb-1.5 px-1">Password</label>
               <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 h-4 w-4 text-white/40" />
+                <Lock className="absolute left-3.5 h-4 w-4 text-white/45 shrink-0" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full rounded-[16px] border border-white/12 bg-white/[0.06] backdrop-blur-xl py-3 pl-10 pr-10 text-xs text-white placeholder-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] focus:border-blue-400/50 focus:outline-none"
+                  className="h-12 w-full rounded-[18px] ios-plump-pill pl-10 pr-10 text-xs text-white placeholder-white/35 focus:outline-none font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-white/40 active:text-white"
+                  className="absolute right-3.5 text-white/40 active:text-white p-1"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
                 </button>
               </div>
             </div>
@@ -182,26 +182,26 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 font-semibold text-white border border-white/25 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.45),0_6px_20px_rgba(0,122,255,0.4)] active:scale-[0.98] transition-transform disabled:opacity-60 text-xs"
+              className="mt-4 flex h-13 w-full items-center justify-center gap-2 rounded-full ios-plump-primary font-bold text-white active:scale-[0.98] transition-transform disabled:opacity-60 text-xs"
             >
               {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin shrink-0" />
               ) : (
                 <>
                   <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 shrink-0" />
                 </>
               )}
             </button>
           </form>
 
           {/* Quick Sign-In Option */}
-          <div className="mt-4 pt-3.5 border-t border-white/10 text-center">
+          <div className="mt-4 pt-4 border-t border-white/[0.12] text-center">
             <button
               type="button"
               onClick={handleQuickSignIn}
               disabled={loading}
-              className="w-full py-2.5 rounded-full border border-white/12 bg-white/[0.06] backdrop-blur-xl text-xs font-medium text-white/80 active:scale-[0.98] active:bg-white/15 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+              className="h-11 w-full rounded-full ios-plump-pill text-xs font-semibold text-white/85 active:scale-[0.98] transition-transform flex items-center justify-center"
             >
               Quick Sign In with Default Account
             </button>
@@ -210,7 +210,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       </div>
 
       {/* Security Statement */}
-      <div className="relative z-10 flex items-center justify-center gap-1.5 text-center text-[11px] text-white/50">
+      <div className="relative z-10 flex items-center justify-center gap-2 text-center text-[11px] text-white/50">
         <Shield className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
         <span>End-to-end user isolation • 100% private library</span>
       </div>
