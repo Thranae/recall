@@ -58,41 +58,74 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F2F2F7] px-6 pt-12 pb-8 text-slate-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
-      {/* Background ambient lighting for liquid glass refraction */}
-      <div className="pointer-events-none fixed top-[-10%] left-[-15%] w-[400px] h-[400px] rounded-full bg-blue-300/25 blur-[120px]" />
-      <div className="pointer-events-none fixed bottom-[5%] right-[-15%] w-[400px] h-[400px] rounded-full bg-indigo-300/25 blur-[120px]" />
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F0F4FA] px-6 pt-12 pb-8 text-slate-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden font-sans">
+      {/* Packwise Expo VisionOS Style Aurora Mesh */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(90, 169, 255, 0.45) 0%, transparent 70%)',
+            width: '65vw',
+            height: '65vw',
+            top: '-10%',
+            left: '-10%',
+            animation: 'floatWide1 24s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.38) 0%, transparent 70%)',
+            width: '60vw',
+            height: '60vw',
+            bottom: '15%',
+            right: '-10%',
+            animation: 'floatWide3 28s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, transparent 70%)',
+            width: '70vw',
+            height: '70vw',
+            top: '30%',
+            left: '15%',
+            animation: 'floatWide2 26s ease-in-out infinite',
+          }}
+        />
+      </div>
 
       {/* Brand & Hero */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-17 w-17 items-center justify-center rounded-[22px] ios-plump-primary shadow-[inset_0_2px_1.5px_rgba(255,255,255,0.85),0_8px_24px_rgba(37,99,235,0.35)]">
-          <Camera className="h-8 w-8 text-white drop-shadow-sm shrink-0 stroke-[2.2]" />
+        <div className="mb-4 flex h-17 w-17 items-center justify-center rounded-[24px] ios-liquid-primary shadow-[0_8px_24px_rgba(47,107,255,0.4)]">
+          <Camera className="h-8 w-8 text-white drop-shadow-sm shrink-0 stroke-[2.4]" />
         </div>
 
         <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">RECALL</h1>
-        <p className="mt-1.5 text-xs font-bold tracking-wider text-blue-600 uppercase">
+        <p className="mt-1.5 text-xs font-black tracking-wider text-[#2F6BFF] uppercase">
           Save Once • Find Later
         </p>
-        <p className="mt-2 text-xs text-slate-600 max-w-xs leading-relaxed font-medium">
+        <p className="mt-2 text-xs text-slate-600 max-w-xs leading-relaxed font-semibold">
           A private search engine for your screenshot history. Find chat conversations, game stats, and visual objects instantly.
         </p>
       </div>
 
       {/* Main Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
-        <div className="rounded-[32px] ios-plump-card p-6 border border-black/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
-          {/* iOS 27 Plumpy Segmented Switcher */}
-          <div className="mb-6 grid grid-cols-2 rounded-full bg-slate-100 p-1 border border-black/[0.06]">
+        <div className="rounded-[32px] ios-glass-card p-6 shadow-[0_16px_40px_-4px_rgba(15,23,42,0.1),0_4px_16px_rgba(47,107,255,0.08)]">
+          {/* Packwise Liquid Glass Segmented Switcher */}
+          <div className="mb-6 grid grid-cols-2 rounded-[22px] ios-glass-pill p-1 relative z-10">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setError(null);
               }}
-              className={`h-10 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
+              className={`h-10 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
                 !isSignUp
-                  ? 'ios-plump-primary text-white shadow-sm'
-                  : 'text-slate-600 active:text-slate-900'
+                  ? 'ios-filter-chip-active'
+                  : 'text-[#56647D] hover:text-[#2F6BFF]'
               }`}
             >
               Sign In
@@ -103,10 +136,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 setIsSignUp(true);
                 setError(null);
               }}
-              className={`h-10 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
+              className={`h-10 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
                 isSignUp
-                  ? 'ios-plump-primary text-white shadow-sm'
-                  : 'text-slate-600 active:text-slate-900'
+                  ? 'ios-filter-chip-active'
+                  : 'text-[#56647D] hover:text-[#2F6BFF]'
               }`}
             >
               Create Account
@@ -114,12 +147,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-[18px] border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 font-semibold shadow-2xs">
+            <div className="mb-4 rounded-[18px] border border-rose-300 bg-rose-50/90 p-3.5 text-xs text-rose-700 font-bold shadow-2xs backdrop-blur-md relative z-10">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
             {isSignUp && (
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5 px-1">Full Name</label>
@@ -131,7 +164,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Mercer"
                     required
-                    className="h-12 w-full rounded-[18px] bg-slate-50 border border-slate-200/90 pl-10 pr-4 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-2xs"
+                    className="glass-input h-12 w-full pl-10 pr-4 text-xs font-bold text-slate-900 placeholder-slate-400"
                   />
                 </div>
               </div>
@@ -147,7 +180,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  className="h-12 w-full rounded-[18px] bg-slate-50 border border-slate-200/90 pl-10 pr-4 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-2xs"
+                  className="glass-input h-12 w-full pl-10 pr-4 text-xs font-bold text-slate-900 placeholder-slate-400"
                 />
               </div>
             </div>
@@ -162,7 +195,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="h-12 w-full rounded-[18px] bg-slate-50 border border-slate-200/90 pl-10 pr-10 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-2xs"
+                  className="glass-input h-12 w-full pl-10 pr-10 text-xs font-bold text-slate-900 placeholder-slate-400"
                 />
                 <button
                   type="button"
@@ -177,26 +210,26 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="mt-4 flex h-13 w-full items-center justify-center gap-2 rounded-full ios-plump-primary font-bold text-white active:scale-[0.98] transition-transform disabled:opacity-60 text-xs shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_16px_rgba(37,99,235,0.35)]"
+              className="mt-4 flex h-13 w-full items-center justify-center gap-2 rounded-full ios-liquid-primary font-black text-white active:scale-[0.98] transition-transform disabled:opacity-60 text-xs shadow-[0_8px_24px_rgba(47,107,255,0.4)]"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin shrink-0" />
               ) : (
                 <>
                   <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                  <ArrowRight className="h-4 w-4 shrink-0 stroke-[2.2]" />
+                  <ArrowRight className="h-4 w-4 shrink-0 stroke-[2.4]" />
                 </>
               )}
             </button>
           </form>
 
           {/* Quick Sign-In Option */}
-          <div className="mt-4 pt-4 border-t border-black/[0.06] text-center">
+          <div className="mt-4 pt-4 border-t border-slate-200/80 text-center relative z-10">
             <button
               type="button"
               onClick={handleQuickSignIn}
               disabled={loading}
-              className="h-11 w-full rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 active:scale-[0.98] active:bg-slate-200 transition-transform flex items-center justify-center shadow-2xs"
+              className="h-11 w-full rounded-full ios-glass-pill text-xs font-extrabold text-[#2F6BFF] active:scale-[0.98] transition-transform flex items-center justify-center shadow-2xs hover:bg-white"
             >
               Quick Sign In with Default Account
             </button>
@@ -205,8 +238,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       </div>
 
       {/* Security Statement */}
-      <div className="relative z-10 flex items-center justify-center gap-2 text-center text-[11px] text-slate-500 font-medium">
-        <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.2]" />
+      <div className="relative z-10 flex items-center justify-center gap-2 text-center text-[11px] text-slate-600 font-semibold">
+        <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.4]" />
         <span>End-to-end user isolation • 100% private library</span>
       </div>
     </div>

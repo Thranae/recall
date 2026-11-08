@@ -112,21 +112,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       {/* Tap backdrop to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* iOS Light Liquid Glass Bottom Sheet */}
-      <div className="relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[36px] bg-white/95 backdrop-blur-3xl border-t border-black/[0.08] shadow-[0_-12px_48px_rgba(0,0,0,0.15)] pb-safe sm:max-h-[85vh] sm:max-w-lg sm:rounded-[32px] sm:border">
+      {/* Packwise Style Liquid Glass Bottom Sheet */}
+      <div className="relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[36px] ios-glass-card shadow-[0_-16px_48px_rgba(15,23,42,0.18)] pb-safe sm:max-h-[85vh] sm:max-w-lg sm:rounded-[32px] sm:border">
         {/* iOS Drag Handle */}
-        <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
+        <div className="flex w-full justify-center pt-3 pb-1 sm:hidden relative z-10">
           <div className="h-1.5 w-11 rounded-full bg-slate-300" />
         </div>
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-3 relative z-10">
           <div className="flex items-center gap-2.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-500">
               Details
             </span>
             {data?.screenshot.category && (
-              <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-[10px] font-bold text-blue-700 shadow-2xs">
+              <span className="rounded-full bg-blue-100/90 border border-blue-300/80 px-3 py-0.5 text-[10px] font-extrabold text-[#2F6BFF] shadow-2xs">
                 {data.screenshot.category.toUpperCase()}
               </span>
             )}
@@ -139,7 +139,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               disabled={isDeleting}
               title="Delete screenshot"
               aria-label="Delete screenshot"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 active:scale-90 active:bg-red-50 active:text-red-600 transition-transform"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full ios-glass-pill text-slate-600 active:scale-90 active:bg-red-50 active:text-red-600 transition-transform"
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin text-red-600" /> : <Trash2 className="h-4 w-4 shrink-0 stroke-[2.2]" />}
             </button>
@@ -147,7 +147,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close details"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 active:scale-90 active:text-slate-900 transition-transform"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full ios-glass-pill text-slate-600 active:scale-90 active:bg-white active:text-slate-900 transition-transform"
             >
               <X className="h-4 w-4 shrink-0 stroke-[2.2]" />
             </button>
@@ -155,9 +155,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 relative z-10">
           {/* Image Preview Card */}
-          <div className="relative overflow-hidden rounded-[26px] border border-black/[0.08] bg-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+          <div className="relative overflow-hidden rounded-[26px] border border-white/80 bg-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
             <img
               src={imageUrl}
               alt="Screenshot Preview"
@@ -168,7 +168,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setIsImageExpanded(!isImageExpanded)}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-white/90 border border-black/[0.08] px-3 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm active:scale-95"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full ios-glass-pill px-3 py-1.5 text-[10px] font-extrabold text-[#2F6BFF] shadow-sm active:scale-95"
             >
               <Maximize2 className="h-3 w-3 shrink-0 stroke-[2.2]" />
               <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
@@ -177,21 +177,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
           {/* Search Result Explanation Banner if present */}
           {searchResult?.match_explanation && (
-            <div className="rounded-[22px] border border-blue-200 bg-blue-50/90 p-3.5 text-xs text-blue-900 shadow-2xs">
-              <span className="font-bold block mb-0.5 text-blue-700">Matched Query:</span>
-              <p className="font-medium leading-relaxed">{searchResult.match_explanation}</p>
+            <div className="rounded-[22px] border border-blue-300/80 bg-blue-50/90 p-3.5 text-xs text-blue-900 shadow-2xs backdrop-blur-md">
+              <span className="font-extrabold block mb-0.5 text-[#2F6BFF]">Matched Query:</span>
+              <p className="font-semibold leading-relaxed">{searchResult.match_explanation}</p>
             </div>
           )}
 
-          {/* iOS Light Segmented Tab Control */}
-          <div className="grid grid-cols-3 rounded-full bg-slate-100 p-1 border border-black/[0.06]">
+          {/* Packwise Segmented Tab Control */}
+          <div className="grid grid-cols-3 rounded-[22px] ios-glass-pill p-1">
             <button
               type="button"
               onClick={() => setActiveTab('content')}
-              className={`h-9 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
+              className={`h-9 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
                 activeTab === 'content'
-                  ? 'ios-plump-primary text-white'
-                  : 'text-slate-600 active:text-slate-900'
+                  ? 'ios-filter-chip-active'
+                  : 'text-[#56647D] hover:text-[#2F6BFF]'
               }`}
             >
               Content
@@ -199,10 +199,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('ocr')}
-              className={`h-9 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
+              className={`h-9 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
                 activeTab === 'ocr'
-                  ? 'ios-plump-primary text-white'
-                  : 'text-slate-600 active:text-slate-900'
+                  ? 'ios-filter-chip-active'
+                  : 'text-[#56647D] hover:text-[#2F6BFF]'
               }`}
             >
               Text
@@ -210,10 +210,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('info')}
-              className={`h-9 rounded-full text-xs font-bold transition-transform duration-100 ease-out active:scale-95 flex items-center justify-center ${
+              className={`h-9 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
                 activeTab === 'info'
-                  ? 'ios-plump-primary text-white'
-                  : 'text-slate-600 active:text-slate-900'
+                  ? 'ios-filter-chip-active'
+                  : 'text-[#56647D] hover:text-[#2F6BFF]'
               }`}
             >
               Info
@@ -411,11 +411,11 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="border-t border-black/[0.06] px-5 py-3.5 bg-white/80">
+        <div className="border-t border-slate-200/80 px-5 py-3.5 relative z-10">
           <button
             type="button"
             onClick={onClose}
-            className="w-full h-12 rounded-full bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800 active:scale-[0.98] transition-transform flex items-center justify-center shadow-2xs"
+            className="w-full h-12 rounded-full ios-liquid-primary text-xs font-black text-white active:scale-[0.98] transition-transform flex items-center justify-center shadow-[0_6px_20px_rgba(47,107,255,0.4)]"
           >
             Done
           </button>

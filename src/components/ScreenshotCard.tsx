@@ -65,7 +65,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           onClick();
         }
       }}
-      className="relative flex flex-col overflow-hidden rounded-[24px] ios-plump-card border border-black/[0.06] shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-transform duration-100 ease-out active:scale-[0.97] select-none cursor-pointer"
+      className="relative flex flex-col overflow-hidden rounded-[26px] ios-glass-card shadow-[0_12px_32px_-4px_rgba(15,23,42,0.08),0_4px_12px_rgba(47,107,255,0.06)] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
     >
       {/* Thumbnail Aspect Frame */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
@@ -76,11 +76,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           className="h-full w-full object-cover"
         />
 
-        {/* Plumpy Liquid Glass Category & Status Badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
+        {/* Packwise Style Liquid Glass Category & Status Badges */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none z-10">
           {/* Category Chip */}
-          <span className={`h-6 max-w-[calc(100%-36px)] shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-bold shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,0,0,0.15)] ${color}`}>
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2] drop-shadow-xs" />
+          <span className={`h-6 max-w-[calc(100%-36px)] shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-black shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${color}`}>
+            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.4] drop-shadow-xs" />
             <span className="leading-none pt-0.5 truncate">{label}</span>
           </span>
 
@@ -88,7 +88,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           {screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-amber-800 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_6px_rgba(245,158,11,0.2)]"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-50/95 text-amber-800 shadow-[0_2px_8px_rgba(245,158,11,0.25)] backdrop-blur-md"
             >
               {screenshot.processing_status === 'processing' ? (
                 <Clock className="h-3.5 w-3.5 shrink-0 animate-spin stroke-[2.2]" />
@@ -103,12 +103,12 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
         {/* Search match overlay */}
         {searchResult && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent p-3 pt-8 backdrop-blur-xs">
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent p-3 pt-8 backdrop-blur-xs z-10">
             <div className="flex items-center justify-between text-[10px]">
               <span className="font-bold text-white truncate max-w-[70%] drop-shadow-xs">
                 {searchResult.match_type.replace('_', ' ')}
               </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-blue-600 px-2 py-0.5 rounded-full shadow-xs">
+              <span className="font-mono text-[9px] text-white font-bold bg-[#2F6BFF] px-2 py-0.5 rounded-full shadow-xs">
                 {Math.round(searchResult.match_score * 100)}%
               </span>
             </div>
@@ -123,14 +123,14 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
       {/* Card Footer */}
       {!searchResult && (
-        <div className="p-3 border-t border-black/[0.04] bg-white/75">
-          <p className="truncate text-[11px] font-bold text-slate-900 leading-tight">
+        <div className="p-3 border-t border-white/80 bg-gradient-to-b from-white/95 to-blue-50/30 relative z-10">
+          <p className="truncate text-[11px] font-black text-slate-900 leading-tight">
             {screenshot.original_filename}
           </p>
           <div className="mt-1 flex items-center justify-between text-[10px] text-slate-600">
-            <span className="font-medium">{new Date(screenshot.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+            <span className="font-semibold">{new Date(screenshot.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] text-blue-600 font-bold">
+              <span className="truncate max-w-[50%] text-[#2F6BFF] font-black">
                 #{tags[0]}
               </span>
             )}

@@ -44,8 +44,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
-      {/* 1. iOS Light Liquid 3 Filter Chips (Symmetrical Grid, Zero Clipping) */}
-      <div className="grid grid-cols-3 gap-2 w-full">
+      {/* 1. Packwise Expo Style 3D Liquid Glass Filter Chips (From TripsFilterTabs.tsx) */}
+      <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -54,28 +54,41 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-9 w-full rounded-full inline-flex items-center justify-center gap-1.5 px-2 text-xs font-bold transition-transform duration-100 ease-out active:scale-95 ${
+              className={`h-11 w-full rounded-[22px] inline-flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
                 isSelected
-                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_14px_rgba(37,99,235,0.35)]'
-                  : 'ios-plump-pill text-slate-700 active:text-slate-900 border border-black/[0.08]'
+                  ? 'ios-filter-chip-active'
+                  : 'ios-filter-chip-inactive active:bg-white/60'
               }`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] drop-shadow-xs" />
-              <span className="leading-none pt-0.5 truncate">{cat.label}</span>
+              <div className="inline-flex items-center justify-center gap-1.5 px-2">
+                <Icon
+                  className={`h-4 w-4 shrink-0 stroke-[2.4] ${
+                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_2px_6px_rgba(47,107,255,0.4)]' : 'text-[#56647D]'
+                  }`}
+                />
+                <span
+                  className={`text-[12.5px] tracking-tight leading-none truncate ${
+                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-[#56647D]'
+                  }`}
+                >
+                  {cat.label}
+                </span>
+              </div>
+              {isSelected && <span className="ios-active-dot mt-1" />}
             </button>
           );
         })}
       </div>
 
-      {/* 2. Visual Daily Highlights Reel (Apple Photos Style Visual Carousel) */}
+      {/* 2. Visual Daily Highlights Reel (Packwise Liquid Glass Carousel) */}
       {selectedCategory === 'all' && screenshots.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Flame className="h-3.5 w-3.5 text-amber-500 shrink-0 stroke-[2.5]" />
               <span>Visual Highlights</span>
             </span>
-            <span className="text-[10px] text-slate-500 font-mono font-semibold">Live Memory Reel</span>
+            <span className="text-[10px] text-blue-600 font-mono font-bold">Live Memory Reel</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -87,20 +100,22 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[22px] border border-blue-200/80 bg-gradient-to-b from-white/95 via-blue-50/70 to-blue-100/40 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(37,99,235,0.08)] active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[24px] ios-glass-card p-3.5 active:scale-[0.98] transition-transform cursor-pointer"
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-blue-500/15 text-blue-700 border border-blue-500/25">
-                  <MessageSquare className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
-                </span>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-mono font-bold text-blue-700 border border-blue-200">
-                  Relational
-                </span>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-blue-500/15 text-blue-700 border border-blue-500/30 shadow-2xs">
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
+                  </span>
+                  <span className="rounded-full bg-blue-100/90 px-2 py-0.5 text-[9px] font-mono font-extrabold text-blue-700 border border-blue-300/80 shadow-2xs">
+                    Relational
+                  </span>
+                </div>
+                <p className="text-xs font-black text-slate-900 leading-tight">Elena • WhatsApp</p>
+                <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-semibold">
+                  "I love you" ➔ "I love you too"
+                </p>
               </div>
-              <p className="text-xs font-bold text-slate-900 leading-tight">Elena • WhatsApp</p>
-              <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-medium">
-                "I love you" ➔ "I love you too"
-              </p>
             </div>
 
             {/* Visual Reel Card 2: Game Highlight */}
@@ -111,34 +126,36 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[22px] border border-amber-200/80 bg-gradient-to-b from-white/95 via-amber-50/70 to-orange-100/40 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(245,158,11,0.08)] active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[24px] ios-glass-card p-3.5 active:scale-[0.98] transition-transform cursor-pointer"
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-amber-500/15 text-amber-700 border border-amber-500/25">
-                  <Trophy className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
-                </span>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-mono font-bold text-amber-800 border border-amber-200">
-                  18 Kills
-                </span>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-amber-500/15 text-amber-700 border border-amber-500/30 shadow-2xs">
+                    <Trophy className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
+                  </span>
+                  <span className="rounded-full bg-amber-100/90 px-2 py-0.5 text-[9px] font-mono font-extrabold text-amber-800 border border-amber-300/80 shadow-2xs">
+                    18 Kills
+                  </span>
+                </div>
+                <p className="text-xs font-black text-slate-900 leading-tight">BGMI Winner</p>
+                <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-semibold">
+                  Chicken Dinner • Erangel Rank #1
+                </p>
               </div>
-              <p className="text-xs font-bold text-slate-900 leading-tight">BGMI Winner</p>
-              <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-medium">
-                Chicken Dinner • Erangel Rank #1
-              </p>
             </div>
           </div>
         </div>
       )}
 
       {/* 3. Visual Memory Analytics Strip */}
-      <div className="grid grid-cols-3 gap-2 rounded-[22px] ios-plump-card p-2 text-center">
+      <div className="grid grid-cols-3 gap-2 rounded-[24px] ios-glass-card p-2.5 text-center">
         <div className="py-1">
           <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Total</p>
           <p className="mt-0.5 font-mono text-base font-black text-slate-900">{screenshots.length}</p>
         </div>
-        <div className="py-1 border-x border-slate-200/80">
+        <div className="py-1 border-x border-slate-300/70">
           <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Chats</p>
-          <p className="mt-0.5 font-mono text-base font-black text-blue-600">{chatCount}</p>
+          <p className="mt-0.5 font-mono text-base font-black text-[#2F6BFF]">{chatCount}</p>
         </div>
         <div className="py-1">
           <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Gaming</p>

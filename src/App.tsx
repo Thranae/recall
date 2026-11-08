@@ -140,7 +140,7 @@ export const App: React.FC = () => {
   // Splash loading during token verification
   if (isInitializing) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F2F2F7] text-slate-800">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F0F4FA] text-slate-800">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
@@ -156,10 +156,54 @@ export const App: React.FC = () => {
   ).length;
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#F2F2F7] text-slate-900 flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 overflow-x-hidden font-sans">
-      {/* Background ambient pastel lighting for liquid glass refraction */}
-      <div className="pointer-events-none fixed top-[-10%] left-[-15%] w-[450px] h-[450px] rounded-full bg-blue-400/10 blur-[130px]" />
-      <div className="pointer-events-none fixed bottom-[10%] right-[-15%] w-[450px] h-[450px] rounded-full bg-purple-400/10 blur-[130px]" />
+    <div className="relative min-h-[100dvh] bg-[#F0F4FA] text-slate-900 flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-900 overflow-x-hidden font-sans">
+      {/* Packwise Expo VisionOS Style Freely Moving Aurora Mesh for Liquid Glass Refraction */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(90, 169, 255, 0.45) 0%, transparent 70%)',
+            width: '65vw',
+            height: '65vw',
+            top: '-10%',
+            left: '-10%',
+            animation: 'floatWide1 24s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.38) 0%, transparent 70%)',
+            width: '60vw',
+            height: '60vw',
+            bottom: '15%',
+            right: '-10%',
+            animation: 'floatWide3 28s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, transparent 70%)',
+            width: '70vw',
+            height: '70vw',
+            top: '30%',
+            left: '15%',
+            animation: 'floatWide2 26s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(251, 146, 60, 0.28) 0%, transparent 70%)',
+            width: '60vw',
+            height: '60vw',
+            bottom: '-10%',
+            left: '-10%',
+            animation: 'floatWide4 30s ease-in-out infinite',
+          }}
+        />
+      </div>
 
       {/* Top Mobile iOS Light Header */}
       <TopHeader

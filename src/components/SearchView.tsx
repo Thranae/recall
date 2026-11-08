@@ -93,14 +93,14 @@ export const SearchView: React.FC<SearchViewProps> = ({
 }) => {
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
-      {/* 1. iOS Light Plumpy Search Bar */}
+      {/* 1. Packwise Style Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-13 items-center rounded-full ios-plump-card px-3 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(0,0,0,0.05)] border border-black/[0.08]">
-          <div className="pl-1 text-slate-500 shrink-0">
+        <div className="flex h-13 items-center rounded-full ios-glass-card px-3.5 shadow-[0_8px_24px_rgba(47,107,255,0.08)]">
+          <div className="pl-1 text-slate-500 shrink-0 relative z-10">
             {isSearching ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin text-blue-600 shrink-0" />
+              <Loader2 className="h-4.5 w-4.5 animate-spin text-[#2F6BFF] shrink-0" />
             ) : (
-              <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.2]" />
+              <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.4] text-slate-500" />
             )}
           </div>
 
@@ -109,7 +109,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search chats, game stats, items..."
-            className="w-full bg-transparent px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent px-3 py-2 text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none relative z-10"
           />
 
           {query && (
@@ -117,7 +117,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="mr-1.5 p-1 text-slate-400 active:text-slate-800 shrink-0"
+              className="mr-1.5 p-1 text-slate-400 active:text-slate-800 shrink-0 relative z-10"
             >
               <X className="h-4 w-4" />
             </button>
@@ -126,15 +126,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <button
             type="submit"
             disabled={isSearching}
-            className="h-9 shrink-0 rounded-full px-4 text-xs font-bold text-white ios-plump-primary active:scale-95 transition-transform disabled:opacity-60"
+            className="h-10 shrink-0 rounded-full px-5 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-transform disabled:opacity-60 relative z-10"
           >
             Search
           </button>
         </div>
       </form>
 
-      {/* 2. iOS Light 3 Filter Chips (Symmetrical Grid, Zero Clipping) */}
-      <div className="grid grid-cols-3 gap-2 w-full">
+      {/* 2. Packwise Expo Style 3D Liquid Glass Filter Chips (From TripsFilterTabs.tsx) */}
+      <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -143,14 +143,27 @@ export const SearchView: React.FC<SearchViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-9 w-full rounded-full inline-flex items-center justify-center gap-1.5 px-2 text-xs font-bold transition-transform duration-100 ease-out active:scale-95 ${
+              className={`h-11 w-full rounded-[22px] inline-flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
                 isSelected
-                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_14px_rgba(37,99,235,0.35)]'
-                  : 'ios-plump-pill text-slate-700 active:text-slate-900 border border-black/[0.08]'
+                  ? 'ios-filter-chip-active'
+                  : 'ios-filter-chip-inactive active:bg-white/60'
               }`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] drop-shadow-xs" />
-              <span className="leading-none pt-0.5 truncate">{cat.label}</span>
+              <div className="inline-flex items-center justify-center gap-1.5 px-2">
+                <Icon
+                  className={`h-4 w-4 shrink-0 stroke-[2.4] ${
+                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_2px_6px_rgba(47,107,255,0.4)]' : 'text-[#56647D]'
+                  }`}
+                />
+                <span
+                  className={`text-[12.5px] tracking-tight leading-none truncate ${
+                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-[#56647D]'
+                  }`}
+                >
+                  {cat.label}
+                </span>
+              </div>
+              {isSelected && <span className="ios-active-dot mt-1" />}
             </button>
           );
         })}

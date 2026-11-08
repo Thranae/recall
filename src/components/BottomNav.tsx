@@ -16,7 +16,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onOpenUpload,
 }) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 ios-plump-bar pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 ios-glass-bar pb-safe">
       <div className="mx-auto grid max-w-md grid-cols-4 items-center px-3 py-2">
         {/* Tab 1: Library */}
         <button
@@ -27,15 +27,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'library'
-                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                ? 'bg-gradient-to-b from-white/95 via-blue-50/90 to-blue-100/60 border border-white text-[#2F6BFF] shadow-[0_4px_12px_rgba(47,107,255,0.22),inset_0_1.5px_1px_rgba(255,255,255,1)]'
                 : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <Layers className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
+            <Layers className="h-5 w-5 shrink-0 stroke-[2.3] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'library' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
+              currentTab === 'library' ? 'font-black text-[#2F6BFF]' : 'font-bold text-slate-600'
             }`}
           >
             Library
@@ -51,32 +51,32 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'search'
-                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                ? 'bg-gradient-to-b from-white/95 via-blue-50/90 to-blue-100/60 border border-white text-[#2F6BFF] shadow-[0_4px_12px_rgba(47,107,255,0.22),inset_0_1.5px_1px_rgba(255,255,255,1)]'
                 : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <Search className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
+            <Search className="h-5 w-5 shrink-0 stroke-[2.3] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'search' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
+              currentTab === 'search' ? 'font-black text-[#2F6BFF]' : 'font-bold text-slate-600'
             }`}
           >
             Search
           </span>
         </button>
 
-        {/* Tab 3: Add (Apple iOS Blue Liquid Dome) */}
+        {/* Tab 3: Add (Packwise Blue Liquid Dome) */}
         <button
           type="button"
           onClick={onOpenUpload}
           aria-label="Upload Screenshot"
           className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-90"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full ios-plump-primary text-white shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.85),0_6px_16px_rgba(37,99,235,0.35)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full ios-liquid-primary text-white shadow-[0_6px_16px_rgba(47,107,255,0.4)]">
             <Plus className="h-5 w-5 shrink-0 stroke-[3] drop-shadow-sm text-white" />
           </div>
-          <span className="mt-1 text-[10px] font-bold text-blue-600 tracking-tight leading-none text-center">
+          <span className="mt-1 text-[10px] font-black text-[#2F6BFF] tracking-tight leading-none text-center">
             Add
           </span>
         </button>
@@ -90,15 +90,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'settings'
-                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                ? 'bg-gradient-to-b from-white/95 via-blue-50/90 to-blue-100/60 border border-white text-[#2F6BFF] shadow-[0_4px_12px_rgba(47,107,255,0.22),inset_0_1.5px_1px_rgba(255,255,255,1)]'
                 : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <User className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
+            <User className="h-5 w-5 shrink-0 stroke-[2.3] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'settings' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
+              currentTab === 'settings' ? 'font-black text-[#2F6BFF]' : 'font-bold text-slate-600'
             }`}
           >
             Settings
