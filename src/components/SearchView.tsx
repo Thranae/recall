@@ -92,7 +92,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   onSelectScreenshot,
 }) => {
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
+    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-3.5">
       {/* 1. Packwise Style Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
         <div className="flex h-13 items-center rounded-full ios-glass-card px-3.5 shadow-[0_8px_24px_rgba(47,107,255,0.08)]">

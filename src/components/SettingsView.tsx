@@ -16,7 +16,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const readyCount = screenshots.filter((s) => s.processing_status === 'ready').length;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
+    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-3.5">
       {/* Packwise Style Liquid Glass User Profile Card */}
       <div className="flex items-center gap-3.5 rounded-[28px] ios-glass-card p-4.5">
         <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-[18px] ios-glass-icon-pod text-[#2F6BFF] relative z-10">

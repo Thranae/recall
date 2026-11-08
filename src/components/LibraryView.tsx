@@ -43,7 +43,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const gameCount = screenshots.filter((s) => s.category === 'game').length;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
+    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-3.5">
       {/* 1. Packwise Expo Style 3D Liquid Glass Filter Chips (From TripsFilterTabs.tsx) */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {

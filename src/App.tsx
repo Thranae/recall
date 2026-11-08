@@ -248,10 +248,16 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Mobile iOS Light Liquid Glass Tab Bar */}
+      {/* Packwise Expo Floating 3D Liquid Glass Bottom Navigation Bar */}
       <BottomNav
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        selectedCategory={selectedCategory}
+        onSelectTab={(tab, category) => {
+          setCurrentTab(tab);
+          if (category) {
+            setSelectedCategory(category);
+          }
+        }}
         onOpenUpload={() => setIsUploadOpen(true)}
         screenshotCount={screenshots.length}
       />
