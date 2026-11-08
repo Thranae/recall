@@ -4,7 +4,7 @@ import {
   MessageSquare,
   Trophy,
   Plus,
-  Sparkles as VisualSpark,
+  Sparkles,
   Flame,
 } from 'lucide-react';
 import type { Screenshot } from '../types';
@@ -18,7 +18,7 @@ interface LibraryViewProps {
   onOpenUpload: () => void;
 }
 
-// Exactly 3 filter chips as requested
+// Exactly 3 filter chips
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: SlidersHorizontal },
   { id: 'chat', label: 'Chats', icon: MessageSquare },
@@ -32,7 +32,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onSelectScreenshot,
   onOpenUpload,
 }) => {
-  // Filter screenshots based on selected category
   const filteredScreenshots = screenshots.filter((s) => {
     if (selectedCategory === 'all') return true;
     if (selectedCategory === 'chat') return s.category === 'chat';
@@ -45,7 +44,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
-      {/* 1. iOS 27 Exactly 3 Filter Chips (Symmetrical 3-Column Grid, Zero Clipping) */}
+      {/* 1. iOS Light Liquid 3 Filter Chips (Symmetrical Grid, Zero Clipping) */}
       <div className="grid grid-cols-3 gap-2 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
@@ -57,11 +56,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               onClick={() => onSelectCategory(cat.id)}
               className={`h-9 w-full rounded-full inline-flex items-center justify-center gap-1.5 px-2 text-xs font-bold transition-transform duration-100 ease-out active:scale-95 ${
                 isSelected
-                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_16px_rgba(0,122,255,0.5)]'
-                  : 'ios-plump-pill text-white/75 active:text-white'
+                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_14px_rgba(37,99,235,0.35)]'
+                  : 'ios-plump-pill text-slate-700 active:text-slate-900 border border-black/[0.08]'
               }`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
+              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] drop-shadow-xs" />
               <span className="leading-none pt-0.5 truncate">{cat.label}</span>
             </button>
           );
@@ -72,11 +71,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {selectedCategory === 'all' && screenshots.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/50 flex items-center gap-1.5">
-              <Flame className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <Flame className="h-3.5 w-3.5 text-amber-500 shrink-0 stroke-[2.5]" />
               <span>Visual Highlights</span>
             </span>
-            <span className="text-[10px] text-white/40 font-mono">Live Memory Reel</span>
+            <span className="text-[10px] text-slate-500 font-mono font-semibold">Live Memory Reel</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -88,18 +87,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[22px] border border-blue-400/30 bg-gradient-to-b from-blue-600/25 via-indigo-900/30 to-black/70 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35),0_6px_20px_rgba(0,0,0,0.4)] active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[22px] border border-blue-200/80 bg-gradient-to-b from-white/95 via-blue-50/70 to-blue-100/40 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(37,99,235,0.08)] active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-blue-500/30 text-blue-200 border border-blue-400/40">
-                  <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-blue-500/15 text-blue-700 border border-blue-500/25">
+                  <MessageSquare className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
                 </span>
-                <span className="rounded-full bg-blue-500/25 px-2 py-0.5 text-[9px] font-mono text-blue-200 border border-blue-400/30">
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-mono font-bold text-blue-700 border border-blue-200">
                   Relational
                 </span>
               </div>
-              <p className="text-xs font-bold text-white leading-tight">Elena • WhatsApp</p>
-              <p className="text-[10px] text-white/70 line-clamp-2 mt-1 leading-normal">
+              <p className="text-xs font-bold text-slate-900 leading-tight">Elena • WhatsApp</p>
+              <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-medium">
                 "I love you" ➔ "I love you too"
               </p>
             </div>
@@ -112,18 +111,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[22px] border border-amber-400/30 bg-gradient-to-b from-amber-600/25 via-orange-950/30 to-black/70 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35),0_6px_20px_rgba(0,0,0,0.4)] active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[22px] border border-amber-200/80 bg-gradient-to-b from-white/95 via-amber-50/70 to-orange-100/40 p-3.5 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(245,158,11,0.08)] active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-amber-500/30 text-amber-200 border border-amber-400/40">
-                  <Trophy className="h-3.5 w-3.5 shrink-0" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-amber-500/15 text-amber-700 border border-amber-500/25">
+                  <Trophy className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
                 </span>
-                <span className="rounded-full bg-amber-500/25 px-2 py-0.5 text-[9px] font-mono text-amber-200 border border-amber-400/30 font-bold">
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-mono font-bold text-amber-800 border border-amber-200">
                   18 Kills
                 </span>
               </div>
-              <p className="text-xs font-bold text-white leading-tight">BGMI Winner</p>
-              <p className="text-[10px] text-white/70 line-clamp-2 mt-1 leading-normal">
+              <p className="text-xs font-bold text-slate-900 leading-tight">BGMI Winner</p>
+              <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-medium">
                 Chicken Dinner • Erangel Rank #1
               </p>
             </div>
@@ -131,42 +130,42 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
       )}
 
-      {/* 3. Visual Memory Strip / Analytics Pills */}
+      {/* 3. Visual Memory Analytics Strip */}
       <div className="grid grid-cols-3 gap-2 rounded-[22px] ios-plump-card p-2 text-center">
         <div className="py-1">
-          <p className="text-[9px] uppercase tracking-wider text-white/45 font-bold">Total</p>
-          <p className="mt-0.5 font-mono text-base font-black text-white">{screenshots.length}</p>
+          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Total</p>
+          <p className="mt-0.5 font-mono text-base font-black text-slate-900">{screenshots.length}</p>
         </div>
-        <div className="py-1 border-x border-white/10">
-          <p className="text-[9px] uppercase tracking-wider text-white/45 font-bold">Chats</p>
-          <p className="mt-0.5 font-mono text-base font-black text-blue-400">{chatCount}</p>
+        <div className="py-1 border-x border-slate-200/80">
+          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Chats</p>
+          <p className="mt-0.5 font-mono text-base font-black text-blue-600">{chatCount}</p>
         </div>
         <div className="py-1">
-          <p className="text-[9px] uppercase tracking-wider text-white/45 font-bold">Gaming</p>
-          <p className="mt-0.5 font-mono text-base font-black text-amber-400">{gameCount}</p>
+          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Gaming</p>
+          <p className="mt-0.5 font-mono text-base font-black text-amber-600">{gameCount}</p>
         </div>
       </div>
 
       {/* 4. Subheader with item count */}
-      <div className="flex items-center justify-between py-1 text-xs text-white/50 px-1">
-        <span className="font-bold text-white/85">
+      <div className="flex items-center justify-between py-1 text-xs px-1">
+        <span className="font-bold text-slate-800">
           {selectedCategory === 'all'
             ? 'All Screenshots'
             : `${selectedCategory.toUpperCase()} Gallery`}
         </span>
-        <span className="font-mono text-[11px] text-white/45">
+        <span className="font-mono text-[11px] font-semibold text-slate-600">
           {filteredScreenshots.length} item{filteredScreenshots.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      {/* 5. Screenshots Grid or Visual Showcase Hub */}
+      {/* 5. Screenshots Grid */}
       {filteredScreenshots.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[28px] ios-plump-card p-8 text-center my-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[18px] ios-plump-icon-pod text-blue-400 mb-3">
-            <VisualSpark className="h-7 w-7 shrink-0 drop-shadow-sm" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-[18px] ios-plump-icon-pod text-blue-600 mb-3">
+            <Sparkles className="h-7 w-7 shrink-0 drop-shadow-xs" />
           </div>
-          <h3 className="text-base font-bold text-white tracking-tight">No screenshots in this category</h3>
-          <p className="mt-1.5 text-xs text-white/55 max-w-xs leading-relaxed">
+          <h3 className="text-base font-bold text-slate-900 tracking-tight">No screenshots in this category</h3>
+          <p className="mt-1.5 text-xs text-slate-500 max-w-xs leading-relaxed font-medium">
             Import new screenshots to analyze conversation flows and match statistics.
           </p>
           <button

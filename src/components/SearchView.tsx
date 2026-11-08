@@ -26,7 +26,7 @@ interface SearchViewProps {
   onSelectScreenshot: (id: string, searchResult?: SearchResultItem) => void;
 }
 
-// Exactly 3 filter chips as requested
+// Exactly 3 filter chips
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: SlidersHorizontal },
   { id: 'chat', label: 'Chats', icon: MessageSquare },
@@ -40,9 +40,10 @@ const VISUAL_TOPICS = [
     query: 'I said "I love you" and she replied "I love you too"',
     icon: MessageSquare,
     badge: 'Relational',
-    gradient: 'from-blue-600/30 via-indigo-900/30 to-black/80',
-    border: 'border-blue-400/30',
-    iconColor: 'text-blue-300 bg-blue-500/20 border-blue-400/40',
+    gradient: 'from-white via-blue-50/70 to-indigo-50/40',
+    border: 'border-blue-200/80',
+    iconColor: 'text-blue-700 bg-blue-100/90 border-blue-200',
+    badgeColor: 'text-blue-700 bg-blue-50 border-blue-200',
   },
   {
     title: 'Match Stats',
@@ -50,9 +51,10 @@ const VISUAL_TOPICS = [
     query: 'BGMI match with kills > 15',
     icon: Trophy,
     badge: 'Stats Filter',
-    gradient: 'from-amber-600/30 via-orange-950/30 to-black/80',
-    border: 'border-amber-400/30',
-    iconColor: 'text-amber-300 bg-amber-500/20 border-amber-400/40',
+    gradient: 'from-white via-amber-50/70 to-orange-50/40',
+    border: 'border-amber-200/80',
+    iconColor: 'text-amber-800 bg-amber-100/90 border-amber-200',
+    badgeColor: 'text-amber-800 bg-amber-50 border-amber-200',
   },
   {
     title: 'Visual Items',
@@ -60,9 +62,10 @@ const VISUAL_TOPICS = [
     query: 'black shirt',
     icon: ShoppingBag,
     badge: 'Visual Search',
-    gradient: 'from-purple-600/30 via-fuchsia-950/30 to-black/80',
-    border: 'border-purple-400/30',
-    iconColor: 'text-purple-300 bg-purple-500/20 border-purple-400/40',
+    gradient: 'from-white via-purple-50/70 to-fuchsia-50/40',
+    border: 'border-purple-200/80',
+    iconColor: 'text-purple-700 bg-purple-100/90 border-purple-200',
+    badgeColor: 'text-purple-700 bg-purple-50 border-purple-200',
   },
   {
     title: 'Posters & OCR',
@@ -70,9 +73,10 @@ const VISUAL_TOPICS = [
     query: 'Coimbatore fest address',
     icon: FileText,
     badge: 'Address OCR',
-    gradient: 'from-emerald-600/30 via-teal-950/30 to-black/80',
-    border: 'border-emerald-400/30',
-    iconColor: 'text-emerald-300 bg-emerald-500/20 border-emerald-400/40',
+    gradient: 'from-white via-emerald-50/70 to-teal-50/40',
+    border: 'border-emerald-200/80',
+    iconColor: 'text-emerald-700 bg-emerald-100/90 border-emerald-200',
+    badgeColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
   },
 ];
 
@@ -89,14 +93,14 @@ export const SearchView: React.FC<SearchViewProps> = ({
 }) => {
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32 space-y-3.5">
-      {/* 1. iOS 27 Plumpy Liquid Glass Search Input Bar */}
+      {/* 1. iOS Light Plumpy Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-13 items-center rounded-full ios-plump-card px-2.5 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.4),0_8px_24px_rgba(0,0,0,0.4)]">
-          <div className="pl-2 text-white/50 shrink-0">
+        <div className="flex h-13 items-center rounded-full ios-plump-card px-3 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(0,0,0,0.05)] border border-black/[0.08]">
+          <div className="pl-1 text-slate-500 shrink-0">
             {isSearching ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin text-blue-400 shrink-0" />
+              <Loader2 className="h-4.5 w-4.5 animate-spin text-blue-600 shrink-0" />
             ) : (
-              <Search className="h-4.5 w-4.5 shrink-0" />
+              <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.2]" />
             )}
           </div>
 
@@ -105,7 +109,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search chats, game stats, items..."
-            className="w-full bg-transparent px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none"
+            className="w-full bg-transparent px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none"
           />
 
           {query && (
@@ -113,7 +117,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="mr-1.5 p-1 text-white/40 active:text-white shrink-0"
+              className="mr-1.5 p-1 text-slate-400 active:text-slate-800 shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
@@ -129,7 +133,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </form>
 
-      {/* 2. iOS 27 Exactly 3 Filter Chips (Symmetrical 3-Column Grid, Zero Clipping) */}
+      {/* 2. iOS Light 3 Filter Chips (Symmetrical Grid, Zero Clipping) */}
       <div className="grid grid-cols-3 gap-2 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
@@ -141,11 +145,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
               onClick={() => onSelectCategory(cat.id)}
               className={`h-9 w-full rounded-full inline-flex items-center justify-center gap-1.5 px-2 text-xs font-bold transition-transform duration-100 ease-out active:scale-95 ${
                 isSelected
-                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_16px_rgba(0,122,255,0.5)]'
-                  : 'ios-plump-pill text-white/75 active:text-white'
+                  ? 'ios-plump-primary text-white shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.7),0_4px_14px_rgba(37,99,235,0.35)]'
+                  : 'ios-plump-pill text-slate-700 active:text-slate-900 border border-black/[0.08]'
               }`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
+              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] drop-shadow-xs" />
               <span className="leading-none pt-0.5 truncate">{cat.label}</span>
             </button>
           );
@@ -156,11 +160,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {!searchResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-white/50 flex items-center gap-1.5">
-              <Compass className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <Compass className="h-3.5 w-3.5 text-blue-600 shrink-0 stroke-[2.5]" />
               <span>Explore Visual Search Topics</span>
             </span>
-            <span className="text-[10px] text-white/40 font-mono">1-Tap Query</span>
+            <span className="text-[10px] text-slate-500 font-mono font-semibold">1-Tap Query</span>
           </div>
 
           {/* 2x2 Rich Visual Cards Grid */}
@@ -172,28 +176,28 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   key={i}
                   type="button"
                   onClick={() => onChangeQuery(topic.query)}
-                  className={`flex flex-col justify-between rounded-[22px] border ${topic.border} bg-gradient-to-b ${topic.gradient} p-3.5 text-left backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.3),0_6px_20px_rgba(0,0,0,0.4)] active:scale-[0.97] transition-transform`}
+                  className={`flex flex-col justify-between rounded-[22px] border ${topic.border} bg-gradient-to-b ${topic.gradient} p-3.5 text-left backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_4px_16px_rgba(0,0,0,0.04)] active:scale-[0.97] transition-transform`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className={`flex h-7 w-7 items-center justify-center rounded-[10px] border ${topic.iconColor}`}>
-                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
                       </span>
-                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-mono text-white/80 border border-white/15">
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-mono font-bold border ${topic.badgeColor}`}>
                         {topic.badge}
                       </span>
                     </div>
-                    <p className="text-xs font-bold text-white tracking-tight leading-snug">
+                    <p className="text-xs font-bold text-slate-900 tracking-tight leading-snug">
                       {topic.title}
                     </p>
-                    <p className="mt-1 text-[10px] text-white/65 line-clamp-2 leading-relaxed">
+                    <p className="mt-1 text-[10px] text-slate-600 line-clamp-2 leading-relaxed font-medium">
                       {topic.subtitle}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[9px] font-mono text-blue-300">
-                    <span className="truncate max-w-[85%] font-medium">"{topic.query}"</span>
-                    <span className="text-white/40">➔</span>
+                  <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[9px] font-mono text-blue-600">
+                    <span className="truncate max-w-[85%] font-semibold">"{topic.query}"</span>
+                    <span className="text-slate-400 font-bold">➔</span>
                   </div>
                 </button>
               );
@@ -201,36 +205,36 @@ export const SearchView: React.FC<SearchViewProps> = ({
           </div>
 
           {/* Smart Suggestion Chips */}
-          <div className="rounded-[22px] ios-plump-card p-3.5 space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white/50 block">
+          <div className="rounded-[22px] ios-plump-card p-3.5 space-y-2 border border-black/[0.06]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block">
               Quick Intent Filters
             </span>
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => onChangeQuery('BGMI match with kills > 15')}
-                className="h-7 px-3 rounded-full ios-plump-pill text-[10px] font-mono text-amber-200 active:scale-95"
+                className="h-7 px-3 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-mono font-bold text-amber-800 active:scale-95 shadow-2xs"
               >
                 kills &gt; 15
               </button>
               <button
                 type="button"
                 onClick={() => onChangeQuery('I said "I love you" and she replied "I love you too"')}
-                className="h-7 px-3 rounded-full ios-plump-pill text-[10px] font-mono text-blue-200 active:scale-95"
+                className="h-7 px-3 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-mono font-bold text-blue-700 active:scale-95 shadow-2xs"
               >
                 sequence: elena
               </button>
               <button
                 type="button"
                 onClick={() => onChangeQuery('black shirt')}
-                className="h-7 px-3 rounded-full ios-plump-pill text-[10px] font-mono text-purple-200 active:scale-95"
+                className="h-7 px-3 rounded-full bg-purple-50 border border-purple-200 text-[10px] font-mono font-bold text-purple-700 active:scale-95 shadow-2xs"
               >
                 object: shirt
               </button>
               <button
                 type="button"
                 onClick={() => onChangeQuery('Coimbatore fest address')}
-                className="h-7 px-3 rounded-full ios-plump-pill text-[10px] font-mono text-emerald-200 active:scale-95"
+                className="h-7 px-3 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-800 active:scale-95 shadow-2xs"
               >
                 venue: cit
               </button>
@@ -245,18 +249,18 @@ export const SearchView: React.FC<SearchViewProps> = ({
           {/* Active Intent Badges */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-white">
+              <span className="text-xs font-bold text-slate-900">
                 {searchResults.total_results} Result{searchResults.total_results !== 1 ? 's' : ''}
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="rounded-full border border-blue-400/40 bg-gradient-to-b from-blue-500/25 to-blue-700/20 px-3 py-1 text-[10px] font-mono text-blue-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)] shrink-0">
+                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[10px] font-mono font-bold text-blue-700 shadow-2xs shrink-0">
                   Chat Flow • Sequence Verified
                 </span>
               )}
 
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="rounded-full border border-amber-400/40 bg-gradient-to-b from-amber-500/25 to-amber-700/20 px-3 py-1 text-[10px] font-mono text-amber-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)] shrink-0">
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-mono font-bold text-amber-800 shadow-2xs shrink-0">
                   Match Filter • Exact Statistics
                 </span>
               )}
@@ -265,17 +269,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
             <button
               type="button"
               onClick={onClearSearch}
-              className="text-[11px] font-bold text-white/50 active:text-white"
+              className="text-[11px] font-bold text-slate-500 active:text-slate-900"
             >
               Clear
             </button>
           </div>
 
           {searchResults.total_results === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[28px] ios-plump-card p-8 text-center my-4">
-              <SearchX className="h-10 w-10 text-white/40 mb-2 shrink-0" />
-              <p className="text-xs font-bold text-white">No matching screenshots</p>
-              <p className="mt-1 text-[11px] text-white/55 max-w-xs leading-relaxed">
+            <div className="flex flex-col items-center justify-center rounded-[28px] ios-plump-card p-8 text-center my-4 border border-black/[0.06]">
+              <SearchX className="h-10 w-10 text-slate-400 mb-2 shrink-0" />
+              <p className="text-xs font-bold text-slate-900">No matching screenshots</p>
+              <p className="mt-1 text-[11px] text-slate-500 max-w-xs leading-relaxed font-medium">
                 For conversation queries, verify that both messages appear in the same screenshot in the exact chronological order.
               </p>
             </div>

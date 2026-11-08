@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --ios-bg: #000000;
-  --ios-blue: #007aff;
-  --ios-indigo: #5856d6;
-  
+  --ios-bg: #F2F2F7;
+  --ios-surface: #FFFFFF;
+  --ios-text-primary: #111827;
+  --ios-text-secondary: #4B5563;
+  --ios-text-tertiary: #9CA3AF;
+  --ios-blue: #007AFF;
+  --ios-indigo: #5856D6;
+
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro Rounded", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -14,7 +18,7 @@
 
 html, body {
   background-color: var(--ios-bg);
-  color: #f5f5f7;
+  color: var(--ios-text-primary);
   min-height: 100%;
   min-height: 100dvh;
   margin: 0;
@@ -29,7 +33,7 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  background-color: #000000;
+  background-color: var(--ios-bg);
 }
 
 /* Safe area insets */
@@ -42,67 +46,69 @@ html, body {
 }
 
 /* ========================================================
-   iOS 27 PLUMPY LIQUID GLASS DESIGN SYSTEM
+   iOS 27 LIGHT LIQUID GLASS DESIGN SYSTEM
    ======================================================== */
 
-/* Plumpy Liquid Glass Container / Card */
+/* Plumpy Light Liquid Glass Container / Card */
 .ios-plump-card {
-  background: radial-gradient(130% 100% at 50% 0%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.02) 100%), rgba(16, 18, 26, 0.7);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: radial-gradient(130% 100% at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(245, 247, 252, 0.7) 100%), rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -2px 3px 0 rgba(0, 0, 0, 0.35),
-    0 12px 32px -4px rgba(0, 0, 0, 0.5);
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.03),
+    0 8px 25px -4px rgba(0, 0, 0, 0.06),
+    0 2px 6px -1px rgba(0, 0, 0, 0.03);
 }
 
-/* Plumpy Liquid Glass Capsule / Pill */
+/* Plumpy Light Liquid Glass Capsule / Pill */
 .ios-plump-pill {
-  background: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.03) 100%);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.75) 60%, rgba(245, 247, 250, 0.6) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow: 
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25),
-    0 4px 14px -2px rgba(0, 0, 0, 0.35);
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 1.5px 0 rgba(0, 0, 0, 0.02),
+    0 2px 8px -1px rgba(0, 0, 0, 0.04);
 }
 
-/* Plumpy Primary Button (iOS Blue Liquid Glass Dome) */
+/* Plumpy Primary Button (Apple Vibrant iOS Blue Liquid Dome) */
 .ios-plump-primary {
-  background: radial-gradient(120% 120% at 50% 0%, rgba(96, 178, 255, 0.95) 0%, rgba(0, 122, 255, 0.92) 55%, rgba(0, 85, 204, 0.95) 100%);
+  background: radial-gradient(120% 120% at 50% 0%, #3B82F6 0%, #2563EB 55%, #1D4ED8 100%);
+  color: #FFFFFF;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -2px 3px 0 rgba(0, 35, 110, 0.45),
-    0 8px 24px -2px rgba(0, 122, 255, 0.5),
-    0 2px 6px 0 rgba(0, 0, 0, 0.3);
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -2px 3px 0 rgba(0, 35, 110, 0.4),
+    0 6px 20px -2px rgba(37, 99, 235, 0.4),
+    0 2px 6px 0 rgba(0, 0, 0, 0.06);
 }
 
-/* Plumpy Liquid Glass Icon Pebble / Pod */
+/* Plumpy Light Liquid Glass Icon Pod */
 .ios-plump-icon-pod {
-  background: radial-gradient(130% 130% at 35% 15%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 60%, rgba(0, 0, 0, 0.15) 100%);
+  background: radial-gradient(130% 130% at 35% 15%, rgba(255, 255, 255, 1) 0%, rgba(243, 246, 252, 0.9) 60%, rgba(228, 235, 246, 0.75) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 1);
   box-shadow: 
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.65),
-    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.35),
-    0 4px 12px rgba(0, 0, 0, 0.3);
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.05),
+    0 3px 10px rgba(0, 0, 0, 0.06);
 }
 
-/* Plumpy Floating Liquid Bottom Bar */
+/* Plumpy Floating Light Liquid Bottom Bar */
 .ios-plump-bar {
-  background: radial-gradient(150% 100% at 50% 0%, rgba(255, 255, 255, 0.12) 0%, rgba(20, 22, 30, 0.8) 50%, rgba(10, 12, 18, 0.88) 100%);
-  backdrop-filter: blur(36px) saturate(220%);
-  -webkit-backdrop-filter: blur(36px) saturate(220%);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(36px) saturate(210%);
+  -webkit-backdrop-filter: blur(36px) saturate(210%);
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow: 
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.3),
-    0 -10px 40px rgba(0, 0, 0, 0.7);
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    0 -8px 30px rgba(0, 0, 0, 0.05);
 }
 
 /* Hide scrollbars cleanly */

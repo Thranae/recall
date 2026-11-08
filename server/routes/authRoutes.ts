@@ -96,8 +96,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 router.post('/demo', async (_req: Request, res: Response): Promise<void> => {
   try {
     const demoEmail = 'alex@recall-search.dev';
-    const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    let user = getUser.get(demoEmail) as any;
+    const getUser = db.prepare('SELECT * FROM users WHERE email = ? OR id = ?');
+    let user = getUser.get(demoEmail, 'user_demo_primary') as any;
 
     if (!user) {
       const salt = await bcrypt.genSalt(10);
@@ -108,6 +108,7 @@ router.post('/demo', async (_req: Request, res: Response): Promise<void> => {
       const insertUser = db.prepare(`
         INSERT INTO users (id, email, password_hash, name, created_at)
         VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET email = excluded.email
       `);
       insertUser.run(id, demoEmail, password_hash, 'Alex Mercer', created_at);
       user = { id, email: demoEmail, name: 'Alex Mercer' };

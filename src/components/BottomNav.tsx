@@ -22,22 +22,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('library')}
-          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'library' ? 'text-white' : 'text-white/50 active:text-white'
-          }`}
+          className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95"
         >
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'library'
-                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
-                : 'hover:bg-white/5'
+                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <Layers className="h-5 w-5 shrink-0 drop-shadow-sm" />
+            <Layers className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'library' ? 'font-bold text-white' : 'font-medium text-white/55'
+              currentTab === 'library' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
             }`}
           >
             Library
@@ -48,39 +46,37 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('search')}
-          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'search' ? 'text-white' : 'text-white/50 active:text-white'
-          }`}
+          className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95"
         >
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'search'
-                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
-                : 'hover:bg-white/5'
+                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <Search className="h-5 w-5 shrink-0 drop-shadow-sm" />
+            <Search className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'search' ? 'font-bold text-white' : 'font-medium text-white/55'
+              currentTab === 'search' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
             }`}
           >
             Search
           </span>
         </button>
 
-        {/* Tab 3: Add / Import (Center Liquid Dome Pebble) */}
+        {/* Tab 3: Add (Apple iOS Blue Liquid Dome) */}
         <button
           type="button"
           onClick={onOpenUpload}
           aria-label="Upload Screenshot"
           className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-90"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full ios-plump-primary text-white shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.8),0_6px_18px_rgba(0,122,255,0.5)]">
-            <Plus className="h-5 w-5 shrink-0 stroke-[3] drop-shadow-md text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full ios-plump-primary text-white shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.85),0_6px_16px_rgba(37,99,235,0.35)]">
+            <Plus className="h-5 w-5 shrink-0 stroke-[3] drop-shadow-sm text-white" />
           </div>
-          <span className="mt-1 text-[10px] font-bold text-blue-300 tracking-tight leading-none text-center">
+          <span className="mt-1 text-[10px] font-bold text-blue-600 tracking-tight leading-none text-center">
             Add
           </span>
         </button>
@@ -89,22 +85,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('settings')}
-          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'settings' ? 'text-white' : 'text-white/50 active:text-white'
-          }`}
+          className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95"
         >
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
               currentTab === 'settings'
-                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
-                : 'hover:bg-white/5'
+                ? 'bg-blue-50/90 border border-blue-500/25 text-blue-600 shadow-[inset_0_1.5px_1px_rgba(255,255,255,1),0_2px_8px_rgba(37,99,235,0.15)]'
+                : 'text-slate-600 hover:text-slate-900 active:bg-slate-100/50'
             }`}
           >
-            <User className="h-5 w-5 shrink-0 drop-shadow-sm" />
+            <User className="h-5 w-5 shrink-0 stroke-[2.2] drop-shadow-xs" />
           </div>
           <span
             className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
-              currentTab === 'settings' ? 'font-bold text-white' : 'font-medium text-white/55'
+              currentTab === 'settings' ? 'font-bold text-blue-600' : 'font-medium text-slate-600'
             }`}
           >
             Settings
