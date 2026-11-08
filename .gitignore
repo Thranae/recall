@@ -1,3 +1,9 @@
+# Environment & Data
+.env
+.env*.local
+data/
+uploads/
+
 # Logs
 logs
 *.log
