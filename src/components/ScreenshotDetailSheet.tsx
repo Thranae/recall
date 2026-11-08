@@ -108,38 +108,38 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/80 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
-      {/* Background click to close */}
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/75 backdrop-blur-md sm:items-center sm:justify-center sm:p-4">
+      {/* Tap backdrop to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Mobile Slide-Up Sheet Container */}
-      <div className="relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-3xl border-t border-slate-800 bg-slate-950 sm:max-h-[85vh] sm:max-w-lg sm:rounded-2xl sm:border">
-        {/* Top Drag Indicator for mobile */}
-        <div className="flex w-full justify-center pt-2.5 pb-1 sm:hidden">
-          <div className="h-1 w-10 rounded-full bg-slate-700" />
+      {/* iOS Liquid Glass Bottom Sheet Container */}
+      <div className="relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[32px] border-t border-white/20 bg-[#0d0f17]/90 backdrop-blur-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_-12px_48px_rgba(0,0,0,0.7)] sm:max-h-[85vh] sm:max-w-lg sm:rounded-[28px] sm:border">
+        {/* iOS Drag Handle */}
+        <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
+          <div className="h-1.5 w-10 rounded-full bg-white/25 shadow-sm" />
         </div>
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Screenshot Details
+            <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
+              Details
             </span>
             {data?.screenshot.category && (
-              <span className="rounded-md bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold text-indigo-300">
+              <span className="rounded-full bg-white/12 border border-white/20 px-2.5 py-0.5 text-[10px] font-semibold text-blue-300 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                 {data.screenshot.category.toUpperCase()}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleDelete}
               disabled={isDeleting}
               title="Delete screenshot"
               aria-label="Delete screenshot"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-500/20 hover:text-red-400 active:scale-95"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 border border-white/15 text-white/60 active:scale-90 active:bg-red-500/25 active:text-red-300 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
             >
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin text-red-400" /> : <Trash2 className="h-4 w-4" />}
             </button>
@@ -147,7 +147,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close details"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-slate-400 hover:text-white active:scale-95"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 border border-white/15 text-white/60 active:scale-90 active:text-white transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -155,9 +155,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-          {/* Image Viewer */}
-          <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* iOS Liquid Glass Image Card */}
+          <div className="relative overflow-hidden rounded-[22px] border border-white/12 bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_20px_rgba(0,0,0,0.3)]">
             <img
               src={imageUrl}
               alt="Screenshot Preview"
@@ -168,7 +168,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setIsImageExpanded(!isImageExpanded)}
-              className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-slate-950/80 px-2 py-1 text-[10px] font-medium text-slate-300 backdrop-blur-md active:scale-95"
+              className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-full bg-black/60 border border-white/20 px-2.5 py-1 text-[10px] font-medium text-white/80 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-95"
             >
               <Maximize2 className="h-3 w-3" />
               <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
@@ -177,19 +177,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
           {/* Search Result Explanation Banner if present */}
           {searchResult?.match_explanation && (
-            <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-2.5 text-xs text-indigo-200">
-              <span className="font-semibold block mb-0.5">Matched Query:</span>
+            <div className="rounded-[18px] border border-blue-400/30 bg-blue-500/15 backdrop-blur-xl p-3 text-xs text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+              <span className="font-semibold block mb-0.5 text-blue-200">Matched Query:</span>
               {searchResult.match_explanation}
             </div>
           )}
 
-          {/* Segmented Tab Controls */}
-          <div className="grid grid-cols-3 rounded-xl bg-slate-900 p-1 border border-slate-800">
+          {/* iOS Frosted Segmented Tab Control */}
+          <div className="grid grid-cols-3 rounded-full bg-white/[0.08] backdrop-blur-2xl p-1 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
             <button
               type="button"
               onClick={() => setActiveTab('content')}
-              className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                activeTab === 'content' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              className={`rounded-full py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                activeTab === 'content'
+                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,122,255,0.3)]'
+                  : 'text-white/60 active:text-white'
               }`}
             >
               Content
@@ -197,44 +199,48 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('ocr')}
-              className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                activeTab === 'ocr' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              className={`rounded-full py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                activeTab === 'ocr'
+                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,122,255,0.3)]'
+                  : 'text-white/60 active:text-white'
               }`}
             >
-              Extracted Text
+              Text
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('info')}
-              className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                activeTab === 'info' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              className={`rounded-full py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                activeTab === 'info'
+                  ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,122,255,0.3)]'
+                  : 'text-white/60 active:text-white'
               }`}
             >
-              Info & Tags
+              Info
             </button>
           </div>
 
           {loading ? (
             <div className="flex h-36 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
             </div>
           ) : (
             <div>
               {/* TAB 1: STRUCTURED CONTENT (CHATS OR GAME STATS) */}
               {activeTab === 'content' && (
                 <div className="space-y-3">
-                  {/* Chat Conversation Thread */}
+                  {/* iOS Style Chat Conversation Thread */}
                   {data?.messages && data.messages.length > 0 && (
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-                      <div className="mb-2.5 flex items-center justify-between">
+                    <div className="rounded-[22px] border border-white/12 bg-white/[0.05] backdrop-blur-2xl p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                      <div className="mb-3 flex items-center justify-between px-1">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                          <MessageSquare className="h-3.5 w-3.5 text-indigo-400" />
+                          <MessageSquare className="h-3.5 w-3.5 text-blue-400" />
                           <span>Conversation Flow ({data.messages.length} messages)</span>
                         </div>
-                        <span className="text-[10px] font-mono text-slate-400">Chronological Order</span>
+                        <span className="text-[10px] font-mono text-white/50">Sequence Verified</span>
                       </div>
 
-                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
                         {data.messages.map((msg) => {
                           const isRight = msg.sender_side === 'right';
                           return (
@@ -242,17 +248,17 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                               key={msg.id}
                               className={`flex flex-col ${isRight ? 'items-end' : 'items-start'}`}
                             >
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <span className="font-mono text-[9px] text-slate-400">#{msg.sequence_number}</span>
-                                <span className="text-[10px] font-medium text-slate-400">
+                              <div className="flex items-center gap-1 mb-0.5 px-1">
+                                <span className="font-mono text-[9px] text-white/40">#{msg.sequence_number}</span>
+                                <span className="text-[10px] font-medium text-white/50">
                                   {msg.sender_label || (isRight ? 'You' : 'Sender')}
                                 </span>
                               </div>
                               <div
-                                className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                                className={`max-w-[85%] px-3.5 py-2 text-xs leading-relaxed ${
                                   isRight
-                                    ? 'bg-indigo-600 text-white rounded-tr-none'
-                                    : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700'
+                                    ? 'bg-gradient-to-b from-[#007aff] to-[#006fe6] text-white rounded-[18px] rounded-tr-sm shadow-[0_2px_8px_rgba(0,122,255,0.3)]'
+                                    : 'bg-white/15 border border-white/15 text-white/95 rounded-[18px] rounded-tl-sm backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
                                 }`}
                               >
                                 {msg.message_text}
@@ -266,41 +272,41 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
                   {/* Gaming Stats Dashboard */}
                   {data?.game_result && (
-                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5">
-                      <div className="mb-2.5 flex items-center justify-between">
+                    <div className="rounded-[22px] border border-amber-400/25 bg-amber-500/15 backdrop-blur-2xl p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                      <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-200">
                           <Trophy className="h-4 w-4 text-amber-400" />
                           <span>{data.game_result.game_name || 'Match Statistics'}</span>
                         </div>
                         {data.game_result.rank && (
-                          <span className="rounded-full bg-amber-400/20 px-2 py-0.5 font-mono text-xs font-bold text-amber-300">
+                          <span className="rounded-full bg-amber-400/25 border border-amber-400/30 px-2.5 py-0.5 font-mono text-xs font-bold text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                             Rank #{data.game_result.rank}
                           </span>
                         )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-                        <div className="rounded-xl bg-slate-900/80 p-2.5 border border-slate-800">
-                          <p className="text-[10px] uppercase tracking-wider text-slate-400">Kills</p>
+                        <div className="rounded-[16px] bg-white/[0.08] backdrop-blur-xl p-3 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                          <p className="text-[10px] uppercase tracking-wider text-white/50">Kills</p>
                           <p className="mt-0.5 font-mono text-xl font-black text-amber-400">
                             {data.game_result.kills ?? 'N/A'}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-slate-900/80 p-2.5 border border-slate-800">
-                          <p className="text-[10px] uppercase tracking-wider text-slate-400">Damage</p>
+                        <div className="rounded-[16px] bg-white/[0.08] backdrop-blur-xl p-3 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                          <p className="text-[10px] uppercase tracking-wider text-white/50">Damage</p>
                           <p className="mt-0.5 font-mono text-lg font-bold text-white">
                             {data.game_result.damage ?? 'N/A'}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-slate-900/80 p-2.5 border border-slate-800">
-                          <p className="text-[10px] uppercase tracking-wider text-slate-400">Map</p>
-                          <p className="mt-0.5 font-medium text-xs text-slate-200 truncate">
+                        <div className="rounded-[16px] bg-white/[0.08] backdrop-blur-xl p-3 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                          <p className="text-[10px] uppercase tracking-wider text-white/50">Map</p>
+                          <p className="mt-0.5 font-medium text-xs text-white/90 truncate">
                             {data.game_result.map_name || 'Standard'}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-slate-900/80 p-2.5 border border-slate-800">
-                          <p className="text-[10px] uppercase tracking-wider text-slate-400">Mode</p>
-                          <p className="mt-0.5 font-medium text-xs text-slate-200 truncate">
+                        <div className="rounded-[16px] bg-white/[0.08] backdrop-blur-xl p-3 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                          <p className="text-[10px] uppercase tracking-wider text-white/50">Mode</p>
+                          <p className="mt-0.5 font-medium text-xs text-white/90 truncate">
                             {data.game_result.mode || 'Classic'}
                           </p>
                         </div>
@@ -308,92 +314,92 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                   )}
 
-                  {/* Fallback if no structured game/chat was found */}
+                  {/* Fallback for standard images */}
                   {(!data?.messages || data.messages.length === 0) && !data?.game_result && (
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-center">
-                      <Layers className="h-6 w-6 text-slate-500 mx-auto mb-1.5" />
-                      <p className="text-xs text-slate-300 font-medium">Standard Visual Screenshot</p>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        No structured chat sequence or game match stats detected in this image. You can view extracted text in the Extracted Text tab.
+                    <div className="rounded-[22px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+                      <Layers className="h-6 w-6 text-white/40 mx-auto mb-1.5" />
+                      <p className="text-xs text-white/90 font-medium">Standard Visual Screenshot</p>
+                      <p className="mt-1 text-[11px] text-white/50">
+                        No structured chat sequence or game match stats detected in this image. You can view extracted text in the Text tab.
                       </p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* TAB 2: EXTRACTED OCR TEXT */}
+              {/* TAB 2: EXTRACTED TEXT */}
               {activeTab === 'ocr' && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-300">Verbatim On-Screen Text</span>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-xs font-medium text-white/60">Verbatim On-Screen Text</span>
                     <button
                       type="button"
                       onClick={handleCopyOcr}
                       disabled={!data?.screenshot.ocr_text}
-                      className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700 active:scale-95"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white/12 border border-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] active:scale-95"
                     >
                       {copiedOcr ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                       <span>{copiedOcr ? 'Copied' : 'Copy Text'}</span>
                     </button>
                   </div>
 
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3 font-mono text-xs text-slate-300 leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap select-text">
+                  <div className="rounded-[20px] border border-white/10 bg-black/40 backdrop-blur-2xl p-4 font-mono text-xs text-white/90 leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap select-text shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
                     {data?.screenshot.ocr_text || 'No text detected in this image.'}
                   </div>
                 </div>
               )}
 
-              {/* TAB 3: INFO & TAGS */}
+              {/* TAB 3: INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-3 text-xs">
                   {/* Category Selector */}
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                  <div className="rounded-[20px] border border-white/10 bg-white/[0.05] backdrop-blur-2xl p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                    <label className="block text-[11px] font-semibold text-white/50 mb-1.5 uppercase tracking-wider">
                       Category Classification
                     </label>
                     <select
                       value={data?.screenshot.category || 'other'}
                       onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full rounded-lg border border-slate-800 bg-slate-950 p-2 text-xs text-white focus:border-indigo-500 focus:outline-none"
+                      className="w-full rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl p-2.5 text-xs text-white focus:outline-none"
                     >
-                      <option value="chat">Chat Conversation</option>
-                      <option value="game">Gaming Stats (BGMI / PUBG)</option>
-                      <option value="product">Product / Shopping</option>
-                      <option value="poster_document">Poster / Document</option>
-                      <option value="other">Other Screenshot</option>
+                      <option value="chat" className="bg-slate-900">Chat Conversation</option>
+                      <option value="game" className="bg-slate-900">Gaming Stats (BGMI / PUBG)</option>
+                      <option value="product" className="bg-slate-900">Product / Shopping</option>
+                      <option value="poster_document" className="bg-slate-900">Poster / Document</option>
+                      <option value="other" className="bg-slate-900">Other Screenshot</option>
                     </select>
                   </div>
 
                   {/* Visual Description */}
                   {data?.screenshot.visual_description && (
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-                      <span className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">
+                    <div className="rounded-[20px] border border-white/10 bg-white/[0.05] backdrop-blur-2xl p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                      <span className="block text-[11px] font-semibold text-white/50 mb-1 uppercase tracking-wider">
                         Visual Description
                       </span>
-                      <p className="text-slate-200 leading-relaxed">
+                      <p className="text-white/85 leading-relaxed">
                         {data.screenshot.visual_description}
                       </p>
                     </div>
                   )}
 
                   {/* Metadata grid */}
-                  <div className="grid grid-cols-2 gap-2 text-slate-400">
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                      <div className="flex items-center gap-1 text-[10px] uppercase text-slate-500">
+                  <div className="grid grid-cols-2 gap-2 text-white/50">
+                    <div className="rounded-[16px] border border-white/10 bg-white/[0.05] backdrop-blur-2xl p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+                      <div className="flex items-center gap-1 text-[10px] uppercase text-white/40">
                         <Calendar className="h-3 w-3" />
                         <span>Date Captured</span>
                       </div>
-                      <p className="mt-1 font-medium text-slate-200">
+                      <p className="mt-1 font-medium text-white/90">
                         {data ? new Date(data.screenshot.created_at).toLocaleString() : 'N/A'}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                      <div className="flex items-center gap-1 text-[10px] uppercase text-slate-500">
+                    <div className="rounded-[16px] border border-white/10 bg-white/[0.05] backdrop-blur-2xl p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+                      <div className="flex items-center gap-1 text-[10px] uppercase text-white/40">
                         <Tag className="h-3 w-3" />
                         <span>Indexed Tags</span>
                       </div>
-                      <p className="mt-1 font-medium text-slate-200 truncate">
+                      <p className="mt-1 font-medium text-white/90 truncate">
                         {(data?.screenshot.tags || []).join(', ') || 'None'}
                       </p>
                     </div>
@@ -405,11 +411,11 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="border-t border-slate-800/80 px-4 py-3 pb-safe bg-slate-950">
+        <div className="border-t border-white/10 px-5 py-3 pb-safe bg-black/40 backdrop-blur-xl">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl bg-slate-900 py-3 text-xs font-semibold text-slate-200 hover:bg-slate-800 active:scale-[0.98]"
+            className="w-full rounded-full bg-white/12 border border-white/15 py-3 text-xs font-semibold text-white active:scale-[0.98] active:bg-white/20 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
           >
             Done
           </button>

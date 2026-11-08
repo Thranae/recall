@@ -140,13 +140,13 @@ export const App: React.FC = () => {
   // Splash loading during token verification
   if (isInitializing) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-100">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-black text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
-  // If unauthenticated, show production mobile sign-in / onboarding screen
+  // If unauthenticated, show mobile iOS Liquid Glass sign-in / onboarding screen
   if (!user) {
     return <AuthView onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)} />;
   }
@@ -156,8 +156,12 @@ export const App: React.FC = () => {
   ).length;
 
   return (
-    <div className="relative min-h-[100dvh] bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30 selection:text-white">
-      {/* Top Mobile Header */}
+    <div className="relative min-h-[100dvh] bg-black text-white flex flex-col antialiased selection:bg-blue-500/30 selection:text-white overflow-x-hidden">
+      {/* Background ambient lighting for liquid glass materials */}
+      <div className="pointer-events-none fixed top-[-10%] left-[-15%] w-[420px] h-[420px] rounded-full bg-blue-600/12 blur-[120px]" />
+      <div className="pointer-events-none fixed bottom-[10%] right-[-15%] w-[420px] h-[420px] rounded-full bg-indigo-600/10 blur-[120px]" />
+
+      {/* Top Mobile iOS Header */}
       <TopHeader
         isProcessing={processingCount > 0}
         processingCount={processingCount}
@@ -166,7 +170,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Tab Views */}
-      <main className="flex-1 w-full">
+      <main className="relative z-10 flex-1 w-full">
         {currentTab === 'library' && (
           <LibraryView
             screenshots={screenshots}
@@ -200,7 +204,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Mobile Tab Bar */}
+      {/* Bottom Mobile iOS Liquid Glass Tab Bar */}
       <BottomNav
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
@@ -235,4 +239,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
 export default App;

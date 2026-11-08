@@ -1,11 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --app-bg: #030712;
-  --surface-1: #0f172a;
-  --surface-2: #1e293b;
-  --accent: #6366f1;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --ios-bg: #000000;
+  --ios-card: rgba(255, 255, 255, 0.06);
+  --ios-card-border: rgba(255, 255, 255, 0.12);
+  --ios-blue: #007aff;
+  --ios-indigo: #5856d6;
+  --ios-tint: rgba(0, 122, 255, 0.85);
+
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -13,8 +16,8 @@
 }
 
 html, body {
-  background-color: var(--app-bg);
-  color: #f8fafc;
+  background-color: var(--ios-bg);
+  color: #f5f5f7;
   min-height: 100%;
   min-height: 100dvh;
   margin: 0;
@@ -28,18 +31,56 @@ html, body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  background-color: #000000;
 }
 
-/* Safe area insets for notched iPhones and mobile browsers */
+/* Safe area insets for mobile devices */
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 0.85rem);
 }
 
 .pt-safe {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
 
-/* Hide scrollbars for slick mobile pill lists */
+/* iOS Liquid Glass Card */
+.ios-glass-card {
+  background: rgba(26, 28, 36, 0.65);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 8px 32px 0 rgba(0, 0, 0, 0.32);
+}
+
+/* iOS Liquid Glass Pill / Button */
+.ios-glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.22);
+}
+
+/* iOS Liquid Glass Active / Selected */
+.ios-glass-active {
+  background: linear-gradient(180deg, rgba(0, 122, 255, 0.9) 0%, rgba(0, 95, 215, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 4px 16px rgba(0, 122, 255, 0.35);
+}
+
+/* iOS Floating Liquid Glass Bar */
+.ios-liquid-bar {
+  background: rgba(18, 19, 26, 0.72);
+  backdrop-filter: blur(32px) saturate(210%);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 -8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide scrollbars for smooth mobile pill carousels */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
