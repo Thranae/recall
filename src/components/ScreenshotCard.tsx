@@ -123,7 +123,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
       {/* Card Footer */}
       {!searchResult && (
-        <div className="p-3 border-t border-white/80 bg-gradient-to-b from-white/95 to-blue-50/30 relative z-10">
+        <div className="p-3 border-t border-white/80 bg-gradient-to-b from-white/95 to-slate-50/50 relative z-10">
           <p className="truncate text-[11px] font-black text-slate-900 leading-tight">
             {screenshot.original_filename}
           </p>

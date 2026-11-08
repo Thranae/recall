@@ -44,7 +44,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-3.5">
-      {/* 1. Packwise Expo Style 3D Liquid Glass Filter Chips (From TripsFilterTabs.tsx) */}
+      {/* 1. Packwise Expo Style 3D Plump Liquid Glass Filter Chips */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
@@ -54,21 +54,22 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-11 w-full rounded-[22px] inline-flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
+              className={`h-11.5 w-full rounded-[24px] inline-flex flex-col items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-92 cursor-pointer focus:outline-none ${
                 isSelected
-                  ? 'ios-filter-chip-active'
-                  : 'ios-filter-chip-inactive active:bg-white/60'
+                  ? 'ios-filter-chip-active shadow-[0_6px_20px_-2px_rgba(47,107,255,0.22)]'
+                  : 'ios-filter-chip-inactive'
               }`}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <div className="inline-flex items-center justify-center gap-1.5 px-2">
                 <Icon
-                  className={`h-4 w-4 shrink-0 stroke-[2.4] ${
-                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_2px_6px_rgba(47,107,255,0.4)]' : 'text-[#56647D]'
+                  className={`h-4 w-4 shrink-0 stroke-[2.4] transition-colors duration-200 ${
+                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_1px_4px_rgba(47,107,255,0.35)]' : 'text-slate-400'
                   }`}
                 />
                 <span
-                  className={`text-[12.5px] tracking-tight leading-none truncate ${
-                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-[#56647D]'
+                  className={`text-[12px] uppercase tracking-wider leading-none truncate transition-colors duration-200 ${
+                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-slate-500'
                   }`}
                 >
                   {cat.label}
@@ -88,7 +89,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               <Flame className="h-3.5 w-3.5 text-amber-500 shrink-0 stroke-[2.5]" />
               <span>Visual Highlights</span>
             </span>
-            <span className="text-[10px] text-blue-600 font-mono font-bold">Live Memory Reel</span>
+            <span className="text-[10px] text-[#2F6BFF] font-mono font-bold">Live Memory Reel</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -100,19 +101,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[24px] ios-glass-card p-3.5 active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[26px] ios-glass-card p-4 active:scale-[0.96] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-blue-500/15 text-blue-700 border border-blue-500/30 shadow-2xs">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[12px] nav-icon-pod-active text-[#2F6BFF]">
                     <MessageSquare className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
                   </span>
-                  <span className="rounded-full bg-blue-100/90 px-2 py-0.5 text-[9px] font-mono font-extrabold text-blue-700 border border-blue-300/80 shadow-2xs">
+                  <span className="rounded-full bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 text-[9px] font-mono font-extrabold text-[#2F6BFF]">
                     Relational
                   </span>
                 </div>
                 <p className="text-xs font-black text-slate-900 leading-tight">Elena • WhatsApp</p>
-                <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-semibold">
+                <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal font-semibold">
                   "I love you" ➔ "I love you too"
                 </p>
               </div>
@@ -126,19 +128,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
               role="button"
               tabIndex={0}
-              className="relative overflow-hidden rounded-[24px] ios-glass-card p-3.5 active:scale-[0.98] transition-transform cursor-pointer"
+              className="relative overflow-hidden rounded-[26px] ios-glass-card p-4 active:scale-[0.96] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-amber-500/15 text-amber-700 border border-amber-500/30 shadow-2xs">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-amber-500/10 border border-amber-500/20 text-amber-600">
                     <Trophy className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
                   </span>
-                  <span className="rounded-full bg-amber-100/90 px-2 py-0.5 text-[9px] font-mono font-extrabold text-amber-800 border border-amber-300/80 shadow-2xs">
+                  <span className="rounded-full bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[9px] font-mono font-extrabold text-amber-700">
                     18 Kills
                   </span>
                 </div>
                 <p className="text-xs font-black text-slate-900 leading-tight">BGMI Winner</p>
-                <p className="text-[10px] text-slate-600 line-clamp-2 mt-1 leading-normal font-semibold">
+                <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal font-semibold">
                   Chicken Dinner • Erangel Rank #1
                 </p>
               </div>
@@ -148,17 +151,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       )}
 
       {/* 3. Visual Memory Analytics Strip */}
-      <div className="grid grid-cols-3 gap-2 rounded-[24px] ios-glass-card p-2.5 text-center">
+      <div className="grid grid-cols-3 gap-2 rounded-[26px] ios-glass-card p-3 text-center">
         <div className="py-1">
-          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Total</p>
+          <p className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold">Total</p>
           <p className="mt-0.5 font-mono text-base font-black text-slate-900">{screenshots.length}</p>
         </div>
-        <div className="py-1 border-x border-slate-300/70">
-          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Chats</p>
+        <div className="py-1 border-x border-slate-200/60">
+          <p className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold">Chats</p>
           <p className="mt-0.5 font-mono text-base font-black text-[#2F6BFF]">{chatCount}</p>
         </div>
         <div className="py-1">
-          <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">Gaming</p>
+          <p className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold">Gaming</p>
           <p className="mt-0.5 font-mono text-base font-black text-amber-600">{gameCount}</p>
         </div>
       </div>

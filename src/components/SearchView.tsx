@@ -93,14 +93,14 @@ export const SearchView: React.FC<SearchViewProps> = ({
 }) => {
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-3.5">
-      {/* 1. Packwise Style Liquid Glass Search Bar */}
+      {/* 1. Packwise Style Plump Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-13 items-center rounded-full ios-glass-card px-3.5 shadow-[0_8px_24px_rgba(47,107,255,0.08)]">
-          <div className="pl-1 text-slate-500 shrink-0 relative z-10">
+        <div className="flex h-13 items-center rounded-full ios-glass-card px-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
+          <div className="pl-1 text-slate-400 shrink-0 relative z-10">
             {isSearching ? (
               <Loader2 className="h-4.5 w-4.5 animate-spin text-[#2F6BFF] shrink-0" />
             ) : (
-              <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.4] text-slate-500" />
+              <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.4] text-slate-400" />
             )}
           </div>
 
@@ -126,14 +126,14 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <button
             type="submit"
             disabled={isSearching}
-            className="h-10 shrink-0 rounded-full px-5 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-transform disabled:opacity-60 relative z-10"
+            className="h-9.5 shrink-0 rounded-full px-5 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-transform disabled:opacity-60 relative z-10 shadow-[0_4px_14px_rgba(47,107,255,0.35)]"
           >
             Search
           </button>
         </div>
       </form>
 
-      {/* 2. Packwise Expo Style 3D Liquid Glass Filter Chips (From TripsFilterTabs.tsx) */}
+      {/* 2. Packwise Expo Style 3D Plump Liquid Glass Filter Chips */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
@@ -143,21 +143,22 @@ export const SearchView: React.FC<SearchViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-11 w-full rounded-[22px] inline-flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
+              className={`h-11.5 w-full rounded-[24px] inline-flex flex-col items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-92 cursor-pointer focus:outline-none ${
                 isSelected
-                  ? 'ios-filter-chip-active'
-                  : 'ios-filter-chip-inactive active:bg-white/60'
+                  ? 'ios-filter-chip-active shadow-[0_6px_20px_-2px_rgba(47,107,255,0.22)]'
+                  : 'ios-filter-chip-inactive'
               }`}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <div className="inline-flex items-center justify-center gap-1.5 px-2">
                 <Icon
-                  className={`h-4 w-4 shrink-0 stroke-[2.4] ${
-                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_2px_6px_rgba(47,107,255,0.4)]' : 'text-[#56647D]'
+                  className={`h-4 w-4 shrink-0 stroke-[2.4] transition-colors duration-200 ${
+                    isSelected ? 'text-[#2F6BFF] drop-shadow-[0_1px_4px_rgba(47,107,255,0.35)]' : 'text-slate-400'
                   }`}
                 />
                 <span
-                  className={`text-[12.5px] tracking-tight leading-none truncate ${
-                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-[#56647D]'
+                  className={`text-[12px] uppercase tracking-wider leading-none truncate transition-colors duration-200 ${
+                    isSelected ? 'font-black text-[#2F6BFF]' : 'font-bold text-slate-500'
                   }`}
                 >
                   {cat.label}
