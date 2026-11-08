@@ -16,60 +16,99 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onOpenUpload,
 }) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 ios-plump-bar pb-safe overflow-visible">
-      <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2 relative">
-        {/* Library Tab */}
+    <nav className="fixed bottom-0 left-0 right-0 z-40 ios-plump-bar pb-safe">
+      <div className="mx-auto grid max-w-md grid-cols-4 items-center px-3 py-2">
+        {/* Tab 1: Library */}
         <button
           type="button"
           onClick={() => onSelectTab('library')}
-          className={`flex min-h-[44px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-[16px] py-1.5 px-3 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'library'
-              ? 'text-white font-semibold bg-gradient-to-b from-white/[0.2] to-white/[0.06] border border-white/25 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.3)]'
-              : 'text-white/50 active:text-white'
+          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
+            currentTab === 'library' ? 'text-white' : 'text-white/50 active:text-white'
           }`}
         >
-          <Layers className="h-5 w-5 shrink-0" />
-          <span className="text-[10px] tracking-tight leading-none">Library</span>
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
+              currentTab === 'library'
+                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
+                : 'hover:bg-white/5'
+            }`}
+          >
+            <Layers className="h-5 w-5 shrink-0 drop-shadow-sm" />
+          </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
+              currentTab === 'library' ? 'font-bold text-white' : 'font-medium text-white/55'
+            }`}
+          >
+            Library
+          </span>
         </button>
 
-        {/* Center Plumpy Liquid Glass Dome Action Button */}
-        <div className="relative -top-3 flex items-center justify-center">
-          <button
-            type="button"
-            onClick={onOpenUpload}
-            aria-label="Upload Screenshot"
-            className="flex h-13 w-13 items-center justify-center rounded-full ios-plump-primary transition-transform duration-100 ease-out active:scale-90"
-          >
-            <Plus className="h-6 w-6 shrink-0 stroke-[2.75] text-white drop-shadow-md" />
-          </button>
-        </div>
-
-        {/* Search Tab */}
+        {/* Tab 2: Search */}
         <button
           type="button"
           onClick={() => onSelectTab('search')}
-          className={`flex min-h-[44px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-[16px] py-1.5 px-3 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'search'
-              ? 'text-white font-semibold bg-gradient-to-b from-white/[0.2] to-white/[0.06] border border-white/25 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.3)]'
-              : 'text-white/50 active:text-white'
+          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
+            currentTab === 'search' ? 'text-white' : 'text-white/50 active:text-white'
           }`}
         >
-          <Search className="h-5 w-5 shrink-0" />
-          <span className="text-[10px] tracking-tight leading-none">Search</span>
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
+              currentTab === 'search'
+                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
+                : 'hover:bg-white/5'
+            }`}
+          >
+            <Search className="h-5 w-5 shrink-0 drop-shadow-sm" />
+          </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
+              currentTab === 'search' ? 'font-bold text-white' : 'font-medium text-white/55'
+            }`}
+          >
+            Search
+          </span>
         </button>
 
-        {/* Settings Tab */}
+        {/* Tab 3: Add / Import (Center Liquid Dome Pebble) */}
+        <button
+          type="button"
+          onClick={onOpenUpload}
+          aria-label="Upload Screenshot"
+          className="group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-90"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full ios-plump-primary text-white shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.8),0_6px_18px_rgba(0,122,255,0.5)]">
+            <Plus className="h-5 w-5 shrink-0 stroke-[3] drop-shadow-md text-white" />
+          </div>
+          <span className="mt-1 text-[10px] font-bold text-blue-300 tracking-tight leading-none text-center">
+            Add
+          </span>
+        </button>
+
+        {/* Tab 4: Settings */}
         <button
           type="button"
           onClick={() => onSelectTab('settings')}
-          className={`flex min-h-[44px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-[16px] py-1.5 px-3 transition-transform duration-100 ease-out active:scale-95 ${
-            currentTab === 'settings'
-              ? 'text-white font-semibold bg-gradient-to-b from-white/[0.2] to-white/[0.06] border border-white/25 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.5),0_4px_12px_rgba(0,0,0,0.3)]'
-              : 'text-white/50 active:text-white'
+          className={`group flex flex-col items-center justify-center py-1 transition-transform duration-100 ease-out active:scale-95 ${
+            currentTab === 'settings' ? 'text-white' : 'text-white/50 active:text-white'
           }`}
         >
-          <User className="h-5 w-5 shrink-0" />
-          <span className="text-[10px] tracking-tight leading-none">Settings</span>
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150 ${
+              currentTab === 'settings'
+                ? 'bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.6),0_4px_14px_rgba(0,0,0,0.35)]'
+                : 'hover:bg-white/5'
+            }`}
+          >
+            <User className="h-5 w-5 shrink-0 drop-shadow-sm" />
+          </div>
+          <span
+            className={`mt-1 text-[10px] tracking-tight leading-none text-center ${
+              currentTab === 'settings' ? 'font-bold text-white' : 'font-medium text-white/55'
+            }`}
+          >
+            Settings
+          </span>
         </button>
       </div>
     </nav>

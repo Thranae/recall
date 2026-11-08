@@ -22,31 +22,31 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
         return {
           label: 'Chat',
           icon: MessageSquare,
-          color: 'bg-gradient-to-b from-blue-500/40 to-blue-700/30 text-blue-100 border-white/30',
+          color: 'bg-gradient-to-b from-blue-500/45 to-blue-700/35 text-blue-100 border-white/30',
         };
       case 'game':
         return {
           label: 'Game Stats',
           icon: Trophy,
-          color: 'bg-gradient-to-b from-amber-500/40 to-amber-700/30 text-amber-100 border-white/30',
+          color: 'bg-gradient-to-b from-amber-500/45 to-amber-700/35 text-amber-100 border-white/30',
         };
       case 'product':
         return {
           label: 'Product',
           icon: ShoppingBag,
-          color: 'bg-gradient-to-b from-purple-500/40 to-purple-700/30 text-purple-100 border-white/30',
+          color: 'bg-gradient-to-b from-purple-500/45 to-purple-700/35 text-purple-100 border-white/30',
         };
       case 'poster_document':
         return {
           label: 'Document',
           icon: FileText,
-          color: 'bg-gradient-to-b from-emerald-500/40 to-emerald-700/30 text-emerald-100 border-white/30',
+          color: 'bg-gradient-to-b from-emerald-500/45 to-emerald-700/35 text-emerald-100 border-white/30',
         };
       default:
         return {
           label: 'Screenshot',
           icon: Layers,
-          color: 'bg-gradient-to-b from-white/20 to-white/10 text-white border-white/30',
+          color: 'bg-gradient-to-b from-white/25 to-white/10 text-white border-white/30',
         };
     }
   };
@@ -76,30 +76,26 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           className="h-full w-full object-cover"
         />
 
-        {/* Plumpy Liquid Glass Category & Status Badges */}
+        {/* Plumpy Liquid Glass Category & Status Badges (Zero Clipping Design) */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
-          <span className={`h-6 shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-bold backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.45),0_3px_8px_rgba(0,0,0,0.35)] ${color}`}>
+          {/* Category Chip */}
+          <span className={`h-6 max-w-[calc(100%-36px)] shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-bold backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.45),0_3px_8px_rgba(0,0,0,0.35)] ${color}`}>
             <CatIcon className="h-3 w-3 shrink-0 drop-shadow-sm" />
-            <span className="leading-none pt-0.5">{label}</span>
+            <span className="leading-none pt-0.5 truncate">{label}</span>
           </span>
 
+          {/* Compact Unclipped Status Pod */}
           {screenshot.processing_status !== 'ready' && (
-            <span className="h-6 shrink-0 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-gradient-to-b from-amber-500/30 to-amber-700/30 px-2.5 text-[9px] font-bold text-amber-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)]">
+            <span
+              title={`Status: ${screenshot.processing_status}`}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-400/40 bg-gradient-to-b from-amber-500/40 to-amber-700/30 text-amber-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.4),0_2px_8px_rgba(0,0,0,0.35)]"
+            >
               {screenshot.processing_status === 'processing' ? (
-                <>
-                  <Clock className="h-3 w-3 shrink-0 animate-spin" />
-                  <span className="leading-none pt-0.5">Indexing</span>
-                </>
+                <Clock className="h-3.5 w-3.5 shrink-0 animate-spin" />
               ) : screenshot.processing_status === 'queued' ? (
-                <>
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span className="leading-none pt-0.5">Queued</span>
-                </>
+                <Clock className="h-3.5 w-3.5 shrink-0" />
               ) : (
-                <>
-                  <AlertCircle className="h-3 w-3 shrink-0 text-red-400" />
-                  <span className="leading-none pt-0.5">Error</span>
-                </>
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-400" />
               )}
             </span>
           )}

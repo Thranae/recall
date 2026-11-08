@@ -36,8 +36,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 }) => {
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-32">
-      {/* iOS 27 Unclipped Plumpy Liquid Filter Chips Carousel */}
-      <div className="-mx-4 px-4 py-2 mb-2 overflow-x-auto no-scrollbar scroll-pl-4 flex items-center gap-2.5">
+      {/* iOS 27 Unclipped Filter Chips (Clean Multi-Chip Wrap, Zero Clipping) */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 px-0.5">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -46,19 +46,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-9 shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-full px-4 text-xs font-semibold transition-transform duration-100 ease-out active:scale-95 ${
+              className={`h-9 shrink-0 inline-flex items-center justify-center gap-2 rounded-full px-3.5 text-xs font-semibold transition-transform duration-100 ease-out active:scale-95 ${
                 isSelected
                   ? 'ios-plump-primary text-white'
                   : 'ios-plump-pill text-white/80 active:text-white'
               }`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
-              <span className="leading-none pt-0.5">{cat.label}</span>
+              <span className="leading-none pt-0.5 whitespace-nowrap">{cat.label}</span>
             </button>
           );
         })}
-        {/* Trailing space so last chip never hugs screen border */}
-        <div className="w-1 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Grid Subheader */}

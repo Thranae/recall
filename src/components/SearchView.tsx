@@ -105,8 +105,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </form>
 
-      {/* iOS 27 Unclipped Filter Chips Carousel */}
-      <div className="-mx-4 px-4 py-2 mb-2 overflow-x-auto no-scrollbar scroll-pl-4 flex items-center gap-2.5">
+      {/* iOS 27 Unclipped Filter Chips (Clean Multi-Chip Wrap, Zero Clipping) */}
+      <div className="flex flex-wrap items-center gap-2 mb-3.5 px-0.5">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -115,18 +115,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`h-9 shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-full px-4 text-xs font-semibold transition-transform duration-100 ease-out active:scale-95 ${
+              className={`h-9 shrink-0 inline-flex items-center justify-center gap-2 rounded-full px-3.5 text-xs font-semibold transition-transform duration-100 ease-out active:scale-95 ${
                 isSelected
                   ? 'ios-plump-primary text-white'
                   : 'ios-plump-pill text-white/80 active:text-white'
               }`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0 drop-shadow-sm" />
-              <span className="leading-none pt-0.5">{cat.label}</span>
+              <span className="leading-none pt-0.5 whitespace-nowrap">{cat.label}</span>
             </button>
           );
         })}
-        <div className="w-1 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Suggested Searches if query is empty */}
@@ -143,10 +142,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 onClick={() => {
                   onChangeQuery(ex.label);
                 }}
-                className="flex items-center justify-between rounded-[20px] ios-plump-card p-3.5 text-left transition-transform duration-100 ease-out active:scale-[0.98]"
+                className="flex items-center justify-between gap-3 rounded-[20px] ios-plump-card p-3.5 text-left transition-transform duration-100 ease-out active:scale-[0.98]"
               >
-                <span className="text-xs text-white/90 line-clamp-1 font-medium">{ex.label}</span>
-                <span className="rounded-full ios-plump-pill px-2.5 py-1 text-[9px] font-mono text-blue-300 shrink-0 ml-2">
+                <span className="text-xs text-white/90 truncate font-medium flex-1">{ex.label}</span>
+                <span className="rounded-full ios-plump-pill px-2.5 py-1 text-[9px] font-mono text-blue-300 shrink-0 whitespace-nowrap">
                   {ex.category}
                 </span>
               </button>
@@ -166,13 +165,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="rounded-full border border-blue-400/40 bg-gradient-to-b from-blue-500/25 to-blue-700/20 px-3 py-1 text-[10px] font-mono text-blue-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)]">
+                <span className="rounded-full border border-blue-400/40 bg-gradient-to-b from-blue-500/25 to-blue-700/20 px-3 py-1 text-[10px] font-mono text-blue-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)] shrink-0">
                   Chat Flow • Sequence Verified
                 </span>
               )}
 
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="rounded-full border border-amber-400/40 bg-gradient-to-b from-amber-500/25 to-amber-700/20 px-3 py-1 text-[10px] font-mono text-amber-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)]">
+                <span className="rounded-full border border-amber-400/40 bg-gradient-to-b from-amber-500/25 to-amber-700/20 px-3 py-1 text-[10px] font-mono text-amber-200 backdrop-blur-2xl shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.35)] shrink-0">
                   Match Filter • Exact Statistics
                 </span>
               )}
