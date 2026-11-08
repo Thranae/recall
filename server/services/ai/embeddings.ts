@@ -8,13 +8,19 @@ export async function generateTextEmbedding(text: string): Promise<number[]> {
     return [];
   }
 
-  // 1. Try Gemini Text Embedding if API key is active
+  // 1. Try Gemini Text Embedding if API key is active with 1.5s timeout
   if (genAI && apiKey) {
     try {
       const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-      const result = await model.embedContent(text.substring(0, 1000));
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 1500)
+      );
+      const result = await Promise.race([
+        model.embedContent(text.substring(0, 1000)),
+        timeoutPromise,
+      ]);
       return result.embedding.values;
-    } catch (err) {
+    } catch {
       // Fallback gracefully
     }
   }
@@ -49,30 +55,39 @@ export function generateLocalSemanticVector(text: string): number[] {
   }
 
   // Normalize vector to unit length
-  const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-  if (magnitude > 0) {
+  let norm = 0;
+  for (let i = 0; i < DIMENSIONS; i++) {
+    norm += vector[i] * vector[i];
+  }
+  norm = Math.sqrt(norm);
+  if (norm > 0) {
     for (let i = 0; i < DIMENSIONS; i++) {
-      vector[i] = vector[i] / magnitude;
+      vector[i] /= norm;
     }
   }
 
   return vector;
 }
 
-// Compute cosine similarity between two vectors
-export function computeCosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0 || vecA.length !== vecB.length) {
-    return 0;
-  }
+// Cosine similarity between two vectors
+export function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
+  if (vecA.length !== vecB.length) return 0;
+
   let dotProduct = 0;
-  let magA = 0;
-  let magB = 0;
+  let normA = 0;
+  let normB = 0;
+
   for (let i = 0; i < vecA.length; i++) {
     dotProduct += vecA[i] * vecB[i];
-    magA += vecA[i] * vecA[i];
-    magB += vecB[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
   }
-  const denominator = Math.sqrt(magA) * Math.sqrt(magB);
-  return denominator > 0 ? dotProduct / denominator : 0;
+
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denominator === 0) return 0;
+
+  return dotProduct / denominator;
 }
 
+export const computeCosineSimilarity = cosineSimilarity;
