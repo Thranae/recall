@@ -343,3 +343,4 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
     results: rankedResults,
   };
 }
+

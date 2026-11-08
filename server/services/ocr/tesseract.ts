@@ -22,3 +22,4 @@ export async function performLocalOCR(imagePath: string): Promise<string> {
     return '';
   }
 }
+

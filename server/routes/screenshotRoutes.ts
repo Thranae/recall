@@ -311,3 +311,4 @@ router.delete('/:id', authMiddleware, (req: AuthRequest, res: Response): void =>
 });
 
 export default router;
+

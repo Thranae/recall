@@ -237,3 +237,4 @@ export function analyzeScreenshotHeuristics(ocrText: string, filename: string): 
     game_result: null,
   };
 }
+

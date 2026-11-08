@@ -145,3 +145,4 @@ CRITICAL RULES:
     game_result: heuristic.game_result,
   };
 }
+

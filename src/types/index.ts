@@ -74,3 +74,4 @@ export interface SearchResponse {
   total_results: number;
   results: SearchResultItem[];
 }
+

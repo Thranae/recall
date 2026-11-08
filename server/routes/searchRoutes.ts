@@ -29,3 +29,4 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promis
 });
 
 export default router;
+

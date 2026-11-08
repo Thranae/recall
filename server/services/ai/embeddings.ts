@@ -75,3 +75,4 @@ export function computeCosineSimilarity(vecA: number[], vecB: number[]): number 
   const denominator = Math.sqrt(magA) * Math.sqrt(magB);
   return denominator > 0 ? dotProduct / denominator : 0;
 }
+

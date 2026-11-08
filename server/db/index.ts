@@ -127,3 +127,4 @@ export function initDatabase() {
 
   console.log('✅ SQLite database initialized at:', DB_PATH);
 }
+

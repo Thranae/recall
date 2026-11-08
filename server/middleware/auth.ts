@@ -37,3 +37,4 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     res.status(401).json({ error: 'Unauthorized: Token is invalid or expired' });
   }
 }
+

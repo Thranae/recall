@@ -136,3 +136,4 @@ router.get('/me', authMiddleware, (req: AuthRequest, res: Response): void => {
 });
 
 export default router;
+
