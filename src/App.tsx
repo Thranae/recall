@@ -140,8 +140,8 @@ export const App: React.FC = () => {
   // Splash loading during token verification
   if (isInitializing) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F8F9F5] text-stone-800">
-        <Loader2 className="h-8 w-8 animate-spin text-[#708238]" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F3F7FC] text-[#172B4D]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#3478F6]" />
       </div>
     );
   }
@@ -156,13 +156,13 @@ export const App: React.FC = () => {
   ).length;
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#F8F9F5] text-stone-900 flex flex-col antialiased selection:bg-[#708238]/20 selection:text-[#4F5D27] overflow-x-hidden">
-      {/* Ambient Aurora Light for Liquid Glass Refraction (Olive Green #708238 palette) */}
+    <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
+      {/* Ambient Aurora Light for Liquid Glass Refraction (Arctic Blue palette) */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(112, 130, 56, 0.13) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(52, 120, 246, 0.12) 0%, transparent 70%)',
             width: '65vw',
             height: '65vw',
             top: '-10%',
@@ -173,7 +173,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(135, 156, 68, 0.10) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.35) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '15%',
@@ -184,7 +184,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(79, 93, 39, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(74, 140, 247, 0.09) 0%, transparent 70%)',
             width: '70vw',
             height: '70vw',
             top: '30%',
@@ -195,7 +195,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(145, 168, 72, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.28) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '-10%',

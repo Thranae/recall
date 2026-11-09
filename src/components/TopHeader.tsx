@@ -27,7 +27,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         style={{
           height: 'calc(84px + env(safe-area-inset-top, 0px))',
           background:
-            'linear-gradient(to bottom, rgba(248, 249, 245, 0.92) 0%, rgba(242, 246, 235, 0.40) 50%, transparent 100%)',
+            'linear-gradient(to bottom, rgba(243, 247, 252, 0.92) 0%, rgba(235, 243, 253, 0.40) 50%, transparent 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
@@ -47,13 +47,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }}
           />
 
-          {/* Brand / Title section with Plump Olive Liquid Pod */}
+          {/* Brand / Title section with Plump Arctic Electric Blue Liquid Pod */}
           <div className="flex items-center gap-2.5">
             <div className="flex h-8.5 w-8.5 items-center justify-center rounded-[14px] liquid-btn-primary text-white shadow-xs">
               <Camera className="h-4 w-4 stroke-[2.2]" />
             </div>
             <div>
-              <span className="text-[17px] font-bold tracking-tight text-stone-900 leading-none">
+              <span className="text-[17px] font-bold tracking-tight text-[#172B4D] leading-none">
                 {title || 'Recall'}
               </span>
             </div>
@@ -67,7 +67,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 <span>Indexing {processingCount}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 rounded-full liquid-glass-pill px-3 py-1 text-[11px] font-semibold text-stone-600">
+              <div className="flex items-center gap-1.5 rounded-full liquid-glass-pill px-3 py-1 text-[11px] font-semibold text-slate-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />
                 <span>Synced</span>
               </div>
@@ -78,12 +78,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               onClick={onRefresh}
               disabled={isRefreshing}
               aria-label="Refresh library"
-              className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-stone-600 active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
+              className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-slate-600 active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 stroke-[2] ${
-                  isRefreshing ? 'animate-spin text-[#708238]' : 'text-stone-600'
+                  isRefreshing ? 'animate-spin text-[#3478F6]' : 'text-slate-600'
                 }`}
               />
             </button>

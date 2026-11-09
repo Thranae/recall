@@ -58,13 +58,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F8F9F5] px-6 pt-12 pb-8 text-stone-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
-      {/* Subtle Ambient Olive Green Light */}
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F3F7FC] px-6 pt-12 pb-8 text-[#172B4D] sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
+      {/* Subtle Ambient Arctic Blue Light */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(112, 130, 56, 0.13) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(52, 120, 246, 0.12) 0%, transparent 70%)',
             width: '65vw',
             height: '65vw',
             top: '-10%',
@@ -75,7 +75,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(79, 93, 39, 0.09) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.35) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '15%',
@@ -91,8 +91,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           <Camera className="h-7 w-7 stroke-[2.2]" />
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-stone-800">RECALL</h1>
-        <p className="mt-1 text-xs text-stone-500 font-medium">
+        <h1 className="text-2xl font-bold tracking-tight text-[#172B4D]">RECALL</h1>
+        <p className="mt-1 text-xs text-[#4A5D78] font-medium">
           Private search engine for personal screenshot history
         </p>
       </div>

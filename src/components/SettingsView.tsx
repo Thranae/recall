@@ -23,7 +23,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <UserIcon className="h-6 w-6 stroke-[2]" />
         </div>
         <div className="flex-1 overflow-hidden">
-          <h2 className="text-[15px] font-bold text-slate-800 truncate tracking-tight">{user.name}</h2>
+          <h2 className="text-[15px] font-bold text-[#172B4D] truncate tracking-tight">{user.name}</h2>
           <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{user.email}</p>
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
             <CheckCircle2 className="h-3.5 w-3.5 stroke-[2.2]" />
@@ -35,18 +35,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* 2. Library Storage Summary (No nested boxes) */}
       <div className="liquid-glass-card rounded-[22px] p-4.5 space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-          <Database className="h-4 w-4 text-[#708238] stroke-[2]" />
+          <Database className="h-4 w-4 text-[#3478F6] stroke-[2]" />
           <span>Library Storage</span>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-center pt-1">
           <div>
             <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Screenshots</span>
-            <p className="mt-1 font-mono text-2xl font-bold text-slate-800 leading-none">{screenshots.length}</p>
+            <p className="mt-1 font-mono text-2xl font-bold text-[#172B4D] leading-none">{screenshots.length}</p>
           </div>
           <div>
             <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Indexed</span>
-            <p className="mt-1 font-mono text-2xl font-bold text-[#708238] leading-none">{readyCount}</p>
+            <p className="mt-1 font-mono text-2xl font-bold text-[#3478F6] leading-none">{readyCount}</p>
           </div>
         </div>
       </div>

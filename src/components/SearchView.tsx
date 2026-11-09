@@ -88,7 +88,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search conversations, stats, text..."
-            className="w-full bg-transparent px-3 text-[13px] font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
+            className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-slate-400 focus:outline-none"
           />
 
           {query && (
@@ -127,7 +127,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#4F5D27]' : 'text-stone-500'}`} />
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
               <span className="truncate">{cat.label}</span>
             </button>
           );
@@ -138,11 +138,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {!searchResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[13px] font-bold text-stone-900 flex items-center gap-1.5 tracking-tight">
-              <Sparkles className="h-4 w-4 text-[#708238]" />
+            <span className="text-[13px] font-bold text-[#172B4D] flex items-center gap-1.5 tracking-tight">
+              <Sparkles className="h-4 w-4 text-[#3478F6]" />
               <span>Suggested Explorations</span>
             </span>
-            <span className="text-[11px] font-mono text-stone-400">Tap to search</span>
+            <span className="text-[11px] font-mono text-slate-400">Tap to search</span>
           </div>
 
           {/* 2x2 Clean Plump Liquid Glass Card Grid */}
@@ -150,10 +150,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
             {SUGGESTED_QUERIES.map((item, idx) => {
               const Icon = item.icon;
               const iconColors = [
-                'bg-orange-50 text-orange-700 border border-orange-100',
-                'bg-amber-50 text-amber-700 border border-amber-100',
-                'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                'bg-rose-50 text-rose-700 border border-rose-100',
+                'bg-blue-50 text-[#3478F6] border border-blue-100',
+                'bg-sky-50 text-sky-700 border border-sky-100',
+                'bg-indigo-50 text-indigo-700 border border-indigo-100',
+                'bg-cyan-50 text-cyan-700 border border-cyan-100',
               ][idx % 4];
 
               return (
@@ -169,15 +169,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
                         <Icon className="h-4 w-4 stroke-[2.2]" />
                       </div>
                     </div>
-                    <p className="text-[13px] font-bold text-stone-900 leading-tight">
+                    <p className="text-[13px] font-bold text-[#172B4D] leading-tight">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[11px] text-stone-500 line-clamp-2 leading-relaxed font-normal">
+                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-normal">
                       {item.description}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-[#708238] truncate font-semibold">
+                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-[#3478F6] truncate font-semibold">
                     "{item.query}"
                   </div>
                 </button>

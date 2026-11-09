@@ -51,7 +51,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         style={{
           height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
           background:
-            'linear-gradient(to top, rgba(248, 249, 245, 0.92) 0%, rgba(242, 246, 235, 0.40) 45%, transparent 100%)',
+            'linear-gradient(to top, rgba(243, 247, 252, 0.92) 0%, rgba(235, 243, 253, 0.40) 45%, transparent 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
@@ -95,7 +95,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                           </div>
                         </div>
                       </button>
-                      <span className="mt-8 text-[9.5px] font-bold text-stone-600 uppercase tracking-wider leading-none">
+                      <span className="mt-8 text-[9.5px] font-bold text-[#4A5D78] uppercase tracking-wider leading-none">
                         Add
                       </span>
                     </div>
@@ -117,11 +117,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <div className="relative z-10 flex items-center justify-center">
                       {active ? (
                         <div className="nav-selected-icon-pod">
-                          <Icon className="h-5 w-5 stroke-[2.4] text-[#4F5D27]" />
+                          <Icon className="h-5 w-5 stroke-[2.4] text-[#3478F6]" />
                         </div>
                       ) : (
                         <div className="nav-unselected-icon-pod">
-                          <Icon className="h-4.5 w-4.5 stroke-[2.4] text-stone-800" />
+                          <Icon className="h-4.5 w-4.5 stroke-[2.4] text-[#172B4D]" />
                         </div>
                       )}
                     </div>
@@ -129,8 +129,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <span
                       className={`relative z-10 text-[9.5px] uppercase tracking-wider leading-none transition-all duration-200 ${
                         active
-                          ? 'mt-0.5 font-extrabold text-[#4F5D27]'
-                          : 'mt-1 font-bold text-stone-600'
+                          ? 'mt-0.5 font-extrabold text-[#3478F6]'
+                          : 'mt-1 font-bold text-[#4A5D78]'
                       }`}
                     >
                       {label}
