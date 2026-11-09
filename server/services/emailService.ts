@@ -1,21 +1,23 @@
 import nodemailer from 'nodemailer';
 
 const SMTP_USER = process.env.SMTP_USER || 'teamsupport.recall@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'aksbmxwfedmczkqa';
+const SMTP_PASS = process.env.SMTP_PASS || '';
 
-let transporter: nodemailer.Transporter | null = null;
+function getTransporter(): nodemailer.Transporter | null {
+  const user = process.env.SMTP_USER || 'teamsupport.recall@gmail.com';
+  const pass = process.env.SMTP_PASS;
 
-function getTransporter() {
-  if (!transporter && SMTP_USER && SMTP_PASS) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    });
+  if (!pass || pass.trim() === '') {
+    return null;
   }
-  return transporter;
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: user.trim(),
+      pass: pass.trim(),
+    },
+  });
 }
 
 export async function sendOtpEmail(

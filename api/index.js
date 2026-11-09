@@ -52224,7 +52224,7 @@ import dns2 from "node:dns";
 import crypto6 from "node:crypto";
 var DEFAULT_MAX_RECIPIENTS = 1e5;
 var Mail = class extends EventEmitter {
-  constructor(transporter2, options, defaults) {
+  constructor(transporter, options, defaults) {
     super();
     this.options = options || {};
     this._defaults = defaults || {};
@@ -52238,7 +52238,7 @@ var Mail = class extends EventEmitter {
     };
     this.meta = /* @__PURE__ */ new Map();
     this.dkim = this.options.dkim ? new dkim_default(this.options.dkim) : false;
-    this.transporter = transporter2;
+    this.transporter = transporter;
     this.transporter.mailer = this;
     this.logger = getLogger(this.options, {
       component: this.options.component || "mail"
@@ -57065,28 +57065,28 @@ var etherealWeb = () => (process.env.ETHEREAL_WEB || "https://ethereal.email").r
 var etherealApiKey = () => (process.env.ETHEREAL_API_KEY || "").replace(/\s*/g, "") || null;
 var etherealCache = () => ["true", "yes", "y", "1"].includes((process.env.ETHEREAL_CACHE || "yes").toString().trim().toLowerCase());
 var testAccount = false;
-function createTransport(transporter2, defaults) {
+function createTransport(transporter, defaults) {
   let options;
   if (
     // provided transporter is a configuration object, not transporter plugin
-    typeof transporter2 === "object" && typeof transporter2.send !== "function" || // provided transporter looks like a connection url
-    typeof transporter2 === "string" && /^(smtps?|direct):/i.test(transporter2)
+    typeof transporter === "object" && typeof transporter.send !== "function" || // provided transporter looks like a connection url
+    typeof transporter === "string" && /^(smtps?|direct):/i.test(transporter)
   ) {
-    const urlConfig = typeof transporter2 === "string" ? transporter2 : transporter2.url;
+    const urlConfig = typeof transporter === "string" ? transporter : transporter.url;
     if (urlConfig) {
       const parsed = parseConnectionUrl(urlConfig);
-      options = typeof transporter2 === "object" ? assign(false, copyOwnKeys({}, transporter2, (key) => key === "url"), parsed) : parsed;
+      options = typeof transporter === "object" ? assign(false, copyOwnKeys({}, transporter, (key) => key === "url"), parsed) : parsed;
     } else {
-      options = transporter2;
+      options = transporter;
     }
     if (options.pool) {
-      transporter2 = new smtp_pool_default(options);
+      transporter = new smtp_pool_default(options);
     } else if (options.sendmail) {
-      transporter2 = new sendmail_transport_default(options);
+      transporter = new sendmail_transport_default(options);
     } else if (options.streamTransport) {
-      transporter2 = new stream_transport_default(options);
+      transporter = new stream_transport_default(options);
     } else if (options.jsonTransport) {
-      transporter2 = new json_transport_default(options);
+      transporter = new json_transport_default(options);
     } else if (options.SES) {
       const ses = options.SES;
       if (ses.ses && ses.aws) {
@@ -57094,12 +57094,12 @@ function createTransport(transporter2, defaults) {
         error2.code = ECONFIG;
         throw error2;
       }
-      transporter2 = new ses_transport_default(options);
+      transporter = new ses_transport_default(options);
     } else {
-      transporter2 = new smtp_transport_default(options);
+      transporter = new smtp_transport_default(options);
     }
   }
-  return new mailer_default(transporter2, options, defaults);
+  return new mailer_default(transporter, options, defaults);
 }
 function createTestAccount(apiUrl, callback) {
   let promise;
@@ -57194,19 +57194,20 @@ var nodemailer_default = nodemailer;
 
 // server/services/emailService.ts
 var SMTP_USER = process.env.SMTP_USER || "teamsupport.recall@gmail.com";
-var SMTP_PASS = process.env.SMTP_PASS || "aksbmxwfedmczkqa";
-var transporter = null;
+var SMTP_PASS = process.env.SMTP_PASS || "";
 function getTransporter() {
-  if (!transporter && SMTP_USER && SMTP_PASS) {
-    transporter = nodemailer_default.createTransport({
-      service: "gmail",
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS
-      }
-    });
+  const user = process.env.SMTP_USER || "teamsupport.recall@gmail.com";
+  const pass = process.env.SMTP_PASS;
+  if (!pass || pass.trim() === "") {
+    return null;
   }
-  return transporter;
+  return nodemailer_default.createTransport({
+    service: "gmail",
+    auth: {
+      user: user.trim(),
+      pass: pass.trim()
+    }
+  });
 }
 async function sendOtpEmail(toEmail, otpCode, purpose = "signup") {
   const mailer = getTransporter();
