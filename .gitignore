@@ -3,6 +3,8 @@
 .env*.local
 data/
 uploads/
+*.traineddata
+.vercel/
 
 # Logs
 logs

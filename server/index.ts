@@ -51,11 +51,13 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 RECALL Server running on http://localhost:${PORT}`);
-  console.log(`📡 Storage Path: ${path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads')}`);
-});
+// Start Server (when not running in Vercel Serverless environment)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 RECALL Server running on http://localhost:${PORT}`);
+    console.log(`📡 Storage Path: ${path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads')}`);
+  });
+}
 
 export default app;
 

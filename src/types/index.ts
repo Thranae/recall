@@ -2,6 +2,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  avatar_url?: string;
+  google_id?: string;
 }
 
 export interface ExtractedMessage {

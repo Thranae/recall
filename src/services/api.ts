@@ -67,6 +67,21 @@ export const api = {
     return data;
   },
 
+  async loginGoogle(payload: {
+    credential?: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+    sub?: string;
+  }): Promise<{ token: string; user: User }> {
+    const data = await request<{ token: string; user: User }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    setAuthToken(data.token);
+    return data;
+  },
+
   async getCurrentUser(): Promise<User | null> {
     const token = getAuthToken();
     if (!token) return null;

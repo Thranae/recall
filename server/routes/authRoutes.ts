@@ -76,7 +76,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -84,11 +84,89 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     res.json({
       message: 'Logged in successfully',
       token,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
     });
   } catch (err: any) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Failed to authenticate' });
+  }
+});
+
+// Google Sign-In Route (Supports Google Credential JWT or OAuth profile payload)
+router.post('/google', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { credential, email, name, picture, sub } = req.body;
+
+    let userEmail = email ? String(email).toLowerCase().trim() : '';
+    let userName = name ? String(name).trim() : '';
+    let userAvatar = picture || '';
+    let googleId = sub || '';
+
+    // If client provided a Google ID token credential, decode it
+    if (credential && typeof credential === 'string') {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+          if (payload.email) userEmail = payload.email.toLowerCase().trim();
+          if (payload.name) userName = payload.name.trim();
+          if (payload.picture) userAvatar = payload.picture;
+          if (payload.sub) googleId = payload.sub;
+        }
+      } catch (decodeErr) {
+        console.warn('Failed to parse Google JWT payload:', decodeErr);
+      }
+    }
+
+    if (!userEmail) {
+      res.status(400).json({ error: 'Valid Google account email is required' });
+      return;
+    }
+
+    if (!userName) {
+      userName = userEmail.split('@')[0];
+    }
+
+    // Check if user already exists
+    const getUser = db.prepare('SELECT * FROM users WHERE email = ? OR google_id = ?');
+    let user = getUser.get(userEmail, googleId || 'none') as any;
+
+    if (!user) {
+      const id = `user_g_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const created_at = new Date().toISOString();
+      const insertUser = db.prepare(`
+        INSERT INTO users (id, email, password_hash, name, avatar_url, google_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertUser.run(id, userEmail, '', userName, userAvatar, googleId, created_at);
+      user = { id, email: userEmail, name: userName, avatar_url: userAvatar, google_id: googleId };
+    } else {
+      if (userAvatar && user.avatar_url !== userAvatar) {
+        const updateAvatar = db.prepare('UPDATE users SET avatar_url = ?, google_id = COALESCE(google_id, ?) WHERE id = ?');
+        updateAvatar.run(userAvatar, googleId, user.id);
+        user.avatar_url = userAvatar;
+      }
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      message: 'Signed in with Google successfully',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatar_url,
+      },
+    });
+  } catch (err: any) {
+    console.error('Google authentication error:', err);
+    res.status(500).json({ error: 'Google authentication failed' });
   }
 });
 

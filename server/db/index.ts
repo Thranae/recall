@@ -2,12 +2,29 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'path';
 import fs from 'fs';
 
-const DB_DIR = path.resolve(process.cwd(), 'data');
+const isVercel = Boolean(process.env.VERCEL);
+const DB_DIR = isVercel
+  ? path.resolve('/tmp', 'recall-data')
+  : path.resolve(process.cwd(), 'data');
+
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
 const DB_PATH = path.join(DB_DIR, 'recall.db');
+
+// If in serverless Vercel environment and seed DB exists, copy into /tmp on cold start
+if (isVercel && !fs.existsSync(DB_PATH)) {
+  const sourceDb = path.resolve(process.cwd(), 'data', 'recall.db');
+  if (fs.existsSync(sourceDb)) {
+    try {
+      fs.copyFileSync(sourceDb, DB_PATH);
+    } catch (e) {
+      console.warn('Could not copy seed DB to /tmp in Vercel:', e);
+    }
+  }
+}
+
 export const db = new DatabaseSync(DB_PATH);
 
 // Initialize database tables and full-text search indexes
@@ -15,16 +32,26 @@ export function initDatabase() {
   // Enforce foreign keys and WAL mode for reliability
   db.exec('PRAGMA foreign_keys = ON;');
 
-  // 1. Users Table
+  // 1. Users Table (Supports standard email/password and Google SSO)
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT,
       name TEXT NOT NULL,
+      avatar_url TEXT,
+      google_id TEXT,
       created_at TEXT NOT NULL
     );
   `);
+
+  // Migrate schema safely if columns do not exist yet
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT;');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN google_id TEXT;');
+  } catch {}
 
   // 2. Screenshots Table
   db.exec(`
