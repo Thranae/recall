@@ -74,7 +74,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
     <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
       {/* 1. Plump Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-13 items-center rounded-[20px] liquid-glass-input px-3.5 shadow-sm transition-all duration-150">
+        <div className="flex h-13 items-center rounded-[20px] liquid-glass-input px-3.5 transition-all duration-150">
           <div className="shrink-0 relative z-10 flex items-center justify-center">
             {isSearching ? (
               <Loader2 className="h-4.5 w-4.5 animate-spin text-[#3478F6]" />
