@@ -159,8 +159,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Image Preview with Plump Frame */}
-          <div className="relative overflow-hidden rounded-[20px] border border-white/80 bg-slate-100/60 shadow-xs">
+          {/* Image Preview with Plump Liquid Glass Frame */}
+          <div className="relative overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
             <img
               src={imageUrl}
               alt="Screenshot Preview"
@@ -168,12 +168,25 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
               }`}
             />
+
+            {/* Plump Liquid Glass Inner Stroke Overlay */}
+            <div className="liquid-card-inner-stroke" />
+
+            {/* Top Specular Hairline Highlight */}
+            <div
+              className="pointer-events-none absolute top-0 left-6 right-6 h-px z-20 rounded-full"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 75%, transparent 100%)',
+              }}
+            />
+
             <button
               type="button"
               onClick={() => setIsImageExpanded(!isImageExpanded)}
-              className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-full bg-slate-900/65 backdrop-blur-md px-2.5 py-1 text-[10px] font-medium text-white border border-white/20 active:scale-95 cursor-pointer shadow-xs"
+              className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-1.5 rounded-full liquid-category-badge px-3 py-1 text-[10.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-sm"
             >
-              <Maximize2 className="h-3 w-3" />
+              <Maximize2 className="h-3.2 w-3.2 text-[#3478F6] stroke-[2.2]" />
               <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
             </button>
           </div>

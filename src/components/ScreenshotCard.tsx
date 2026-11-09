@@ -48,6 +48,9 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       className="liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
+      {/* Full Card Plump Liquid Glass Inner Stroke Overlay */}
+      <div className="liquid-card-inner-stroke" />
+
       {/* Thumbnail Aspect Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100/50">
         <img
@@ -55,6 +58,25 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           alt={screenshot.original_filename}
           loading="lazy"
           className="h-full w-full object-cover"
+        />
+
+        {/* Plump Liquid Glass Inner Stroke on Image */}
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            borderBottom: '1.5px solid rgba(255, 255, 255, 0.75)',
+            boxShadow:
+              'inset 0 2.5px 3.5px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -3px 6px 0 rgba(23, 43, 77, 0.12)',
+          }}
+        />
+
+        {/* Top Specular Hairline Highlight */}
+        <div
+          className="pointer-events-none absolute top-0 left-3 right-3 h-px z-20 rounded-full"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 75%, transparent 100%)',
+          }}
         />
 
         {/* Floating Liquid Glass Category Badge */}
