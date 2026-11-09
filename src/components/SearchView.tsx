@@ -38,28 +38,24 @@ const SUGGESTED_QUERIES = [
     description: 'Find replies in conversation flow',
     query: 'I said "I love you" and she replied "I love you too"',
     icon: MessageSquare,
-    badge: 'Relational',
   },
   {
     title: 'Match Stats',
     description: 'Find matches with high kill count',
     query: 'BGMI match with kills > 15',
     icon: Trophy,
-    badge: 'Stats',
   },
   {
     title: 'Visual Object',
     description: 'Clothing, sneakers, and apparel',
     query: 'black shirt',
     icon: ShoppingBag,
-    badge: 'Visual',
   },
   {
     title: 'Document & OCR',
     description: 'Event dates, addresses, text',
     query: 'Coimbatore fest address',
     icon: FileText,
-    badge: 'Text',
   },
 ];
 
@@ -75,15 +71,15 @@ export const SearchView: React.FC<SearchViewProps> = ({
   onSelectScreenshot,
 }) => {
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-4">
+    <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
       {/* 1. Plump Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-14 items-center rounded-[22px] liquid-glass-input px-4 shadow-[0_6px_20px_rgba(47,107,255,0.08)] transition-all duration-150">
+        <div className="flex h-13 items-center rounded-[20px] liquid-glass-input px-3.5 shadow-sm transition-all duration-150">
           <div className="text-slate-400 shrink-0">
             {isSearching ? (
-              <Loader2 className="h-5 w-5 animate-spin text-[#2F6BFF]" />
+              <Loader2 className="h-4.5 w-4.5 animate-spin text-slate-600" />
             ) : (
-              <Search className="h-5 w-5 stroke-[2.4] text-[#2F6BFF]" />
+              <Search className="h-4.5 w-4.5 stroke-[2.2] text-slate-500" />
             )}
           </div>
 
@@ -92,7 +88,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search conversations, stats, text..."
-            className="w-full bg-transparent px-3 text-xs font-black text-slate-900 placeholder:text-slate-500 placeholder:font-semibold focus:outline-none"
+            className="w-full bg-transparent px-3 text-[13px] font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
 
           {query && (
@@ -100,24 +96,24 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="p-1 text-slate-600 hover:text-slate-900 active:scale-90 transition-transform cursor-pointer mr-1"
+              className="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
             >
-              <X className="h-4 w-4 stroke-[2.6]" />
+              <X className="h-4 w-4 stroke-[2.2]" />
             </button>
           )}
 
           <button
             type="submit"
             disabled={isSearching || !query.trim()}
-            className="h-10 shrink-0 rounded-full px-5 text-xs font-black text-white liquid-btn-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-md"
+            className="h-9 shrink-0 rounded-full px-4 text-xs font-semibold text-white liquid-btn-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-xs"
           >
             Search
           </button>
         </div>
       </form>
 
-      {/* 2. Plump Liquid Glass Filter Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+      {/* 2. Standalone Filter Chips (Free-floating, No enclosing wrapper container) */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -131,7 +127,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-4 w-4 shrink-0 stroke-[2.4] ${isSelected ? 'text-white' : 'text-[#2F6BFF]'}`} />
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-white' : 'text-slate-600'}`} />
               <span>{cat.label}</span>
             </button>
           );
@@ -142,13 +138,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {!searchResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
+            <span className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5 tracking-tight">
+              <Sparkles className="h-4 w-4 text-slate-500" />
               <span>Suggested Queries</span>
             </span>
           </div>
 
-          {/* 2x2 Clean Plump Liquid Glass Card Grid */}
+          {/* 2x2 Clean Plump Liquid Glass Card Grid (No nested cards) */}
           <div className="grid grid-cols-2 gap-3">
             {SUGGESTED_QUERIES.map((item, idx) => {
               const Icon = item.icon;
@@ -157,26 +153,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => onChangeQuery(item.query)}
-                  className="liquid-glass-card flex flex-col justify-between rounded-[24px] p-4 text-left active:scale-[0.97] transition-all duration-200 cursor-pointer"
+                  className="liquid-glass-card flex flex-col justify-between rounded-[22px] p-4 text-left active:scale-[0.97] transition-all duration-200 cursor-pointer"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-[16px] liquid-icon-pod text-[#2F6BFF]">
-                        <Icon className="h-4.5 w-4.5 stroke-[2.4]" />
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-[14px] liquid-icon-pod text-slate-700">
+                        <Icon className="h-4 w-4 stroke-[2]" />
                       </div>
-                      <span className="text-[10px] font-black text-slate-900 bg-white/80 border border-white px-2 py-0.5 rounded-full shadow-2xs">
-                        {item.badge}
-                      </span>
                     </div>
-                    <p className="text-xs font-black text-slate-900 leading-tight">
+                    <p className="text-[13px] font-bold text-slate-800 leading-tight">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[11.5px] text-slate-700 line-clamp-2 leading-relaxed font-bold">
+                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-normal">
                       {item.description}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-200/80 text-[10.5px] font-mono text-[#2F6BFF] truncate font-black">
+                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-slate-600 truncate font-semibold">
                     "{item.query}"
                   </div>
                 </button>
@@ -191,17 +184,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-semibold text-slate-800 font-mono">
                 {searchResults.total_results} {searchResults.total_results === 1 ? 'result' : 'results'}
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="rounded-full liquid-glass-pill px-3 py-1 text-[10px] font-black text-[#2F6BFF]">
+                <span className="rounded-full liquid-glass-pill px-2.5 py-0.5 text-[10px] font-semibold text-slate-700">
                   Chat Sequence
                 </span>
               )}
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="rounded-full liquid-glass-pill px-3 py-1 text-[10px] font-black text-amber-600">
+                <span className="rounded-full liquid-glass-pill px-2.5 py-0.5 text-[10px] font-semibold text-amber-700">
                   Game Filter
                 </span>
               )}
@@ -209,17 +202,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
           </div>
 
           {searchResults.results.length === 0 ? (
-            <div className="liquid-glass-card flex flex-col items-center justify-center rounded-[28px] p-8 text-center my-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-[22px] liquid-icon-pod mb-3 text-slate-400">
-                <SearchX className="h-8 w-8 stroke-[2.2]" />
+            <div className="liquid-glass-card flex flex-col items-center justify-center rounded-[24px] p-8 text-center my-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[20px] liquid-icon-pod mb-3 text-slate-400">
+                <SearchX className="h-7 w-7 stroke-[2]" />
               </div>
-              <h3 className="text-sm font-black text-slate-900">No matching screenshots</h3>
-              <p className="mt-1 text-xs text-slate-600 max-w-xs font-semibold">
-                Try searching by what was said in the chat, who replied, or game stats like 'kills &gt; 10'.
+              <h3 className="text-sm font-bold text-slate-800">No matching screenshots</h3>
+              <p className="mt-1 text-xs text-slate-500 max-w-xs font-normal">
+                Try searching by words spoken in a chat, victory rank, or game stats like 'kills &gt; 10'.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-3">
               {searchResults.results.map((item) => (
                 <ScreenshotCard
                   key={item.screenshot.id}

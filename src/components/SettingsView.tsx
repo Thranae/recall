@@ -16,80 +16,80 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const readyCount = screenshots.filter((s) => s.processing_status === 'ready').length;
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-4">
-      {/* 1. Plump Liquid Glass User Profile Card */}
-      <div className="liquid-glass-card flex items-center gap-4 rounded-[28px] p-5">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] liquid-icon-pod text-[#2F6BFF]">
-          <UserIcon className="h-8 w-8 stroke-[2.2]" />
+    <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
+      {/* 1. User Profile Card */}
+      <div className="liquid-glass-card flex items-center gap-3.5 rounded-[22px] p-4.5">
+        <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-[18px] liquid-icon-pod text-slate-700">
+          <UserIcon className="h-6 w-6 stroke-[2]" />
         </div>
         <div className="flex-1 overflow-hidden">
-          <h2 className="text-base font-black text-slate-900 truncate tracking-tight">{user.name}</h2>
-          <p className="text-xs text-slate-700 font-bold truncate mt-0.5">{user.email}</p>
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-700 font-black">
-            <CheckCircle2 className="h-4 w-4 stroke-[2.6]" />
+          <h2 className="text-[15px] font-bold text-slate-800 truncate tracking-tight">{user.name}</h2>
+          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{user.email}</p>
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
+            <CheckCircle2 className="h-3.5 w-3.5 stroke-[2.2]" />
             <span>Encrypted Session</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Library Statistics Inset Group */}
-      <div className="liquid-glass-card rounded-[28px] p-5 space-y-3.5">
-        <div className="flex items-center gap-2 text-xs font-black text-slate-900">
-          <Database className="h-4.5 w-4.5 text-[#2F6BFF] stroke-[2.4]" />
+      {/* 2. Library Storage Summary (No nested boxes) */}
+      <div className="liquid-glass-card rounded-[22px] p-4.5 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+          <Database className="h-4 w-4 text-[#3A628B] stroke-[2]" />
           <span>Library Storage</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="rounded-[20px] bg-white/70 border border-white/90 backdrop-blur-md p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-slate-700 block">Screenshots</span>
-            <p className="mt-1 font-mono text-2xl font-black text-slate-900 leading-none">{screenshots.length}</p>
+        <div className="grid grid-cols-2 gap-4 text-center pt-1">
+          <div>
+            <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Screenshots</span>
+            <p className="mt-1 font-mono text-2xl font-bold text-slate-800 leading-none">{screenshots.length}</p>
           </div>
-          <div className="rounded-[20px] bg-white/70 border border-white/90 backdrop-blur-md p-4 shadow-sm">
-            <span className="text-[11px] font-bold text-slate-700 block">Indexed</span>
-            <p className="mt-1 font-mono text-2xl font-black text-[#2F6BFF] leading-none">{readyCount}</p>
+          <div>
+            <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Indexed</span>
+            <p className="mt-1 font-mono text-2xl font-bold text-[#3A628B] leading-none">{readyCount}</p>
           </div>
         </div>
       </div>
 
-      {/* 3. Security & Isolation Inset Group */}
-      <div className="liquid-glass-card rounded-[28px] p-5 space-y-4">
-        <div className="flex items-center gap-2 text-xs font-black text-slate-900">
-          <Shield className="h-4.5 w-4.5 text-emerald-600 stroke-[2.4]" />
+      {/* 3. Security & Isolation Inset Group (No nested boxes) */}
+      <div className="liquid-glass-card rounded-[22px] p-4.5 space-y-3.5">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+          <Shield className="h-4 w-4 text-emerald-700 stroke-[2]" />
           <span>Security & Privacy Architecture</span>
         </div>
 
-        <div className="space-y-4 text-xs">
+        <div className="space-y-3.5 text-xs">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] liquid-icon-pod text-[#2F6BFF] mt-0.5">
-              <Lock className="h-4.5 w-4.5 stroke-[2.4]" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] liquid-icon-pod text-slate-600 mt-0.5">
+              <Lock className="h-3.5 w-3.5 stroke-[2]" />
             </div>
             <div>
-              <p className="font-black text-slate-900 leading-tight">Isolated Tenant Architecture</p>
-              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
+              <p className="font-bold text-slate-800 leading-snug">Isolated Tenant Architecture</p>
+              <p className="text-[11.5px] text-slate-500 leading-relaxed mt-0.5 font-normal">
                 Your images, OCR text, and relational data are scoped strictly by your user ID.
               </p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] liquid-icon-pod text-emerald-600 mt-0.5">
-              <Shield className="h-4.5 w-4.5 stroke-[2.4]" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] liquid-icon-pod text-emerald-700 mt-0.5">
+              <Shield className="h-3.5 w-3.5 stroke-[2]" />
             </div>
             <div>
-              <p className="font-black text-slate-900 leading-tight">Zero AI Model Training</p>
-              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
+              <p className="font-bold text-slate-800 leading-snug">Zero AI Model Training</p>
+              <p className="text-[11.5px] text-slate-500 leading-relaxed mt-0.5 font-normal">
                 Screenshots are indexed for your personal search only. Data is never used to train public models.
               </p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] liquid-icon-pod text-purple-600 mt-0.5">
-              <Database className="h-4.5 w-4.5 stroke-[2.4]" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] liquid-icon-pod text-purple-700 mt-0.5">
+              <Database className="h-3.5 w-3.5 stroke-[2]" />
             </div>
             <div>
-              <p className="font-black text-slate-900 leading-tight">Cascading Deletion</p>
-              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
+              <p className="font-bold text-slate-800 leading-snug">Cascading Deletion</p>
+              <p className="text-[11.5px] text-slate-500 leading-relaxed mt-0.5 font-normal">
                 Deleting a screenshot immediately purges the disk file, OCR text, chat nodes, and vector indices.
               </p>
             </div>
@@ -97,18 +97,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Apple Destructive Sign Out Button */}
+      {/* 4. Sign Out Button */}
       <button
         type="button"
         onClick={onLogout}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full liquid-glass-pill border-rose-300/70 text-xs font-black text-rose-600 hover:bg-rose-50/50 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-glass-pill border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50/50 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
       >
-        <LogOut className="h-4 w-4 stroke-[2.4]" />
+        <LogOut className="h-4 w-4 stroke-[2]" />
         <span>Sign Out</span>
       </button>
 
-      <div className="text-center pt-2 text-[11px] text-slate-400 font-semibold">
-        RECALL for iOS & Web • Production Build
+      <div className="text-center pt-2 text-[11px] text-slate-400 font-mono">
+        RECALL for iOS & Web • v1.0.0
       </div>
     </div>
   );

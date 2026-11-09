@@ -109,15 +109,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       {active ? (
                         <div className="nav-selected-icon-pod">
                           {/* 3D Bottom Specular Highlight (white) */}
-                          <Icon className="absolute top-[9px] h-5 w-5 stroke-[2.8] text-white opacity-95 pointer-events-none" />
+                          <Icon className="absolute top-[9px] h-5 w-5 stroke-[2.4] text-white opacity-85 pointer-events-none" />
                           {/* 3D Top Depth Shadow */}
-                          <Icon className="absolute top-[7px] h-5 w-5 stroke-[2.8] text-blue-950/25 pointer-events-none" />
+                          <Icon className="absolute top-[7px] h-5 w-5 stroke-[2.4] text-slate-900/15 pointer-events-none" />
                           {/* Main Liquid Jewel Icon */}
-                          <Icon className="relative z-10 h-5 w-5 stroke-[2.6] text-[#2F6BFF]" />
+                          <Icon className="relative z-10 h-5 w-5 stroke-[2.2] text-[#3A628B]" />
                         </div>
                       ) : (
-                        <div className="flex h-9 w-9 items-center justify-center text-slate-600 hover:text-slate-900 transition-colors">
-                          <Icon className="h-5 w-5 stroke-[2.2]" />
+                        <div className="flex h-9 w-9 items-center justify-center text-slate-500 hover:text-slate-800 transition-colors">
+                          <Icon className="h-5 w-5 stroke-[2]" />
                         </div>
                       )}
                     </div>
@@ -125,8 +125,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <span
                       className={`relative z-10 text-[9.5px] uppercase tracking-wider leading-none transition-all duration-200 ${
                         active
-                          ? 'mt-0.5 font-black text-[#0F172A]'
-                          : 'mt-1 font-bold text-slate-500'
+                          ? 'mt-0.5 font-bold text-slate-800'
+                          : 'mt-1 font-medium text-slate-400'
                       }`}
                     >
                       {label}
