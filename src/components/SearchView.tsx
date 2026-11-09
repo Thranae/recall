@@ -197,12 +197,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="rounded-full liquid-glass-pill px-2.5 py-0.5 text-[10px] font-semibold text-slate-700">
+                <span className="liquid-category-badge px-2.5 py-0.5 text-[10px]">
                   Chat Sequence
                 </span>
               )}
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="rounded-full liquid-glass-pill px-2.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                <span className="liquid-category-badge px-2.5 py-0.5 text-[10px] text-amber-700">
                   Game Filter
                 </span>
               )}

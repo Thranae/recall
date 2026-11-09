@@ -129,7 +129,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               Details
             </span>
             {data?.screenshot.category && (
-              <span className="rounded-full liquid-glass-pill px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+              <span className="liquid-category-badge px-2.5 py-0.5 text-[10px] font-bold tracking-wider">
                 {data.screenshot.category.toUpperCase()}
               </span>
             )}
