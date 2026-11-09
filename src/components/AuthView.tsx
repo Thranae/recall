@@ -58,13 +58,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F0F4FA] px-6 pt-12 pb-8 text-slate-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden font-sans">
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#EEF4FB] px-6 pt-12 pb-8 text-slate-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden font-sans">
       {/* Packwise Expo VisionOS Style Aurora Mesh */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(90, 169, 255, 0.45) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(90, 169, 255, 0.55) 0%, transparent 70%)',
             width: '65vw',
             height: '65vw',
             top: '-10%',
@@ -75,7 +75,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.38) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.50) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '15%',
@@ -86,7 +86,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.45) 0%, transparent 70%)',
             width: '70vw',
             height: '70vw',
             top: '30%',
@@ -94,23 +94,34 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             animation: 'floatWide2 26s ease-in-out infinite',
           }}
         />
+        <div
+          className="vision-blob"
+          style={{
+            background: 'radial-gradient(circle, rgba(251, 146, 60, 0.38) 0%, transparent 70%)',
+            width: '60vw',
+            height: '60vw',
+            bottom: '-10%',
+            left: '-10%',
+            animation: 'floatWide4 30s ease-in-out infinite',
+          }}
+        />
       </div>
 
       {/* Brand & Hero */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#2F6BFF] to-[#5AA9FF] text-white shadow-[0_4px_16px_rgba(47,107,255,0.35)]">
-          <Camera className="h-7 w-7 stroke-[2.2]" />
+        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#2F6BFF] via-[#3B82F6] to-[#5AA9FF] text-white shadow-[0_8px_24px_rgba(47,107,255,0.4),inset_0_2px_3px_rgba(255,255,255,0.7)]">
+          <Camera className="h-8 w-8 stroke-[2.4]" />
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">RECALL</h1>
-        <p className="mt-1 text-xs text-slate-500 font-medium">
+        <h1 className="text-3xl font-black tracking-tight text-slate-900">RECALL</h1>
+        <p className="mt-1 text-xs text-slate-500 font-semibold">
           Private search engine for personal screenshot history
         </p>
       </div>
 
       {/* Main Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
-        <div className="rounded-3xl bg-white/80 border border-white/90 p-6 shadow-[0_8px_32px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
+        <div className="ios-glass-card rounded-[32px] p-7">
           {/* Segmented Switcher */}
           <div className="mb-5 ios-segmented-control w-full">
             <button

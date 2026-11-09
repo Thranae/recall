@@ -50,19 +50,19 @@ html, body {
    ======================================================== */
 @keyframes floatWide1 {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(10vw, 8vh, 0) scale(1.12); }
+  50% { transform: translate3d(12vw, 10vh, 0) scale(1.15); }
 }
 @keyframes floatWide2 {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-10vw, -8vh, 0) scale(1.1); }
+  50% { transform: translate3d(-12vw, -10vh, 0) scale(1.12); }
 }
 @keyframes floatWide3 {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(12vw, -12vh, 0) scale(1.08); }
+  50% { transform: translate3d(14vw, -14vh, 0) scale(1.1); }
 }
 @keyframes floatWide4 {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-12vw, 10vh, 0) scale(1.06); }
+  50% { transform: translate3d(-14vw, 12vh, 0) scale(1.08); }
 }
 
 .vision-blob {
@@ -70,42 +70,47 @@ html, body {
   border-radius: 50%;
   pointer-events: none;
   will-change: transform;
-  filter: blur(80px);
+  filter: blur(70px);
   z-index: 0;
   transform: translateZ(0);
 }
 
 /* ========================================================
-   PACKWISE EXPO 3D PLUMPY LIQUID GLASS SYSTEM
+   PACKWISE EXPO 3D LIQUID GLASS SYSTEM (IDENTICAL TO EXPO)
    ======================================================== */
 
-/* 1. Plumpy Liquid Glass Card */
+/* 1. Packwise Expo Liquid Glass Card */
 .glass-card,
 .ios-glass-card,
 .ios-plump-card {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 254, 0.72) 50%, rgba(240, 246, 255, 0.50) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.98);
-  border-right-color: rgba(255, 255, 255, 0.65);
-  border-bottom-color: rgba(47, 107, 255, 0.12);
-  border-radius: 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(240, 246, 255, 0.45) 100%
+  ) !important;
+  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-left-color: rgba(255, 255, 255, 0.95) !important;
+  border-right-color: rgba(255, 255, 255, 0.5) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.35) !important;
+  border-radius: 28px;
   box-shadow: 
-    0 12px 32px -4px rgba(15, 23, 42, 0.08),
-    0 4px 12px rgba(47, 107, 255, 0.05),
-    inset 0 2px 2px rgba(255, 255, 255, 1),
-    inset 0 -2px 4px rgba(47, 107, 255, 0.05),
-    inset 0 0 20px rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
+    0 16px 36px -6px rgba(15, 23, 42, 0.09),
+    0 4px 16px rgba(47, 107, 255, 0.06),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 0 24px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.03);
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, box-shadow;
   transform: translateZ(0);
 }
 
-/* Subtle top edge specular highlight */
+/* Expo Glass Card Reflection Sheen */
 .glass-card::before,
 .ios-glass-card::before,
 .ios-plump-card::before {
@@ -114,24 +119,38 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 30%, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, 0.95) 70%, transparent 100%);
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 80%, transparent 100%);
+  transform: skewY(-8deg) translateY(-10px);
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
 }
 
-/* 2. Plumpy Segmented Control & Filter Chips */
+.glass-card:hover,
+.ios-glass-card:hover,
+.ios-plump-card:hover {
+  box-shadow: 
+    0 22px 44px -8px rgba(15, 23, 42, 0.12),
+    0 8px 24px rgba(47, 107, 255, 0.10),
+    inset 0 2px 4px rgba(255, 255, 255, 1),
+    inset 0 0 28px rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* 2. Expo Plump Segmented Control & Filter Chips */
 .ios-segmented-control {
   display: flex;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   border-top-color: rgba(255, 255, 255, 1);
+  border-left-color: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  padding: 3.5px;
+  padding: 4px;
   border-radius: 9999px;
   box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.04),
+    0 6px 20px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px rgba(255, 255, 255, 0.9),
     inset 0 -1px 2px rgba(0, 0, 0, 0.03);
   transform: translateZ(0);
@@ -155,32 +174,32 @@ html, body {
 }
 
 .ios-segment-btn-active {
-  background: linear-gradient(145deg, #FFFFFF 0%, #F5F9FF 100%);
+  background: linear-gradient(145deg, #FFFFFF 0%, #F0F6FF 100%);
   color: #2F6BFF;
   font-weight: 800;
   border: 1px solid rgba(255, 255, 255, 1);
   box-shadow: 
-    0 4px 14px rgba(47, 107, 255, 0.18),
+    0 4px 14px rgba(47, 107, 255, 0.20),
     0 1px 3px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
     inset 0 -1px 2px rgba(47, 107, 255, 0.08);
 }
 
-/* 3. Plumpy Liquid Primary Button */
+/* 3. Expo Glass Primary Liquid Button */
 .ios-liquid-primary,
 .primary-liquid-button,
 .ios-plump-primary {
   position: relative;
-  background: linear-gradient(145deg, #5CA0FF 0%, #2F6BFF 45%, #1A5AE8 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  border-top-color: rgba(255, 255, 255, 0.95);
-  border-left-color: rgba(255, 255, 255, 0.85);
-  border-bottom-color: rgba(0, 20, 80, 0.35);
+  background: linear-gradient(135deg, #5AA9FF 0%, #2F6BFF 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.65) !important;
+  border-top-color: rgba(255, 255, 255, 0.98) !important;
+  border-left-color: rgba(255, 255, 255, 0.85) !important;
+  border-bottom-color: rgba(0, 20, 80, 0.3) !important;
   box-shadow: 
-    0 8px 24px -2px rgba(47, 107, 255, 0.45),
-    0 2px 6px rgba(47, 107, 255, 0.2),
-    inset 0 2px 2.5px rgba(255, 255, 255, 0.8),
-    inset 0 -2px 3.5px rgba(0, 20, 80, 0.3);
+    0 10px 28px -2px rgba(47, 107, 255, 0.45),
+    0 3px 8px rgba(47, 107, 255, 0.25),
+    inset 0 2px 3px rgba(255, 255, 255, 0.85),
+    inset 0 -2px 4px rgba(0, 20, 80, 0.25);
   color: #FFFFFF;
   font-weight: 800;
   overflow: hidden;
@@ -203,37 +222,47 @@ html, body {
   pointer-events: none;
 }
 
-/* 4. Plumpy Liquid Glass Capsule / Pill */
+.ios-liquid-primary:active,
+.primary-liquid-button:active,
+.ios-plump-primary:active {
+  transform: scale(0.96) translateZ(0);
+}
+
+/* 4. Expo Plump Glass Capsule / Pill */
 .ios-glass-pill,
 .ios-plump-pill {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 249, 254, 0.72) 100%);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.98);
-  border-bottom-color: rgba(47, 107, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-left-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.4) !important;
   box-shadow: 
-    0 4px 14px rgba(0, 0, 0, 0.04),
+    0 6px 16px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(47, 107, 255, 0.03);
+    inset 0 -1px 2px rgba(47, 107, 255, 0.04);
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease;
   transform: translateZ(0);
 }
 
-/* 5. Plumpy 3D Icon Pod */
+.ios-glass-pill:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
+}
+
+/* 5. Expo Plump 3D Icon Pod */
 .ios-glass-icon-pod,
 .ios-plump-icon-pod {
   position: relative;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(235, 244, 255, 0.8) 50%, rgba(220, 235, 255, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(235, 244, 255, 0.65) 50%, rgba(220, 235, 255, 0.45) 100%) !important;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1.5px solid rgba(255, 255, 255, 1);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.98);
-  border-bottom-color: rgba(47, 107, 255, 0.16);
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-left-color: rgba(255, 255, 255, 0.98) !important;
+  border-bottom-color: rgba(47, 107, 255, 0.16) !important;
   box-shadow: 
     0 6px 18px rgba(47, 107, 255, 0.16),
     inset 0 1.5px 2px rgba(255, 255, 255, 1),
@@ -242,69 +271,70 @@ html, body {
   transform: translateZ(0);
 }
 
-/* 6. Plumpy Glass Input */
+/* 6. Expo Plump Glass Input */
 .glass-input {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 254, 0.78) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.45) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.4) !important;
   border-radius: 20px;
   box-shadow: 
     inset 0 2px 4px rgba(15, 23, 42, 0.03), 
-    0 2px 8px rgba(0, 0, 0, 0.02);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
+    0 4px 12px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 
 .glass-input:focus-within,
 .glass-input:focus {
-  background: rgba(255, 255, 255, 0.98);
-  border-color: #5AA9FF;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: #5AA9FF !important;
   box-shadow: 
-    0 0 0 3px rgba(47, 107, 255, 0.18), 
+    0 0 0 3px rgba(47, 107, 255, 0.22), 
     inset 0 1px 2px rgba(15, 23, 42, 0.02);
   outline: none;
 }
 
-/* 7. Bottom Navigation Bar — Plumpy Liquid Glass */
+/* 7. Bottom Navigation Bar — Packwise Expo Liquid Glass */
 .nav-glass-bar {
   background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(252, 253, 255, 0.92) 40%,
-    rgba(246, 249, 254, 0.88) 100%
-  );
-  backdrop-filter: blur(48px) saturate(1.8);
-  -webkit-backdrop-filter: blur(48px) saturate(1.8);
-  border: 1.5px solid rgba(255, 255, 255, 0.92);
-  border-top-width: 2px;
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.12);
+    180deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(240, 248, 255, 0.45) 50%,
+    rgba(215, 235, 255, 0.30) 100%
+  ) !important;
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1.5px solid rgba(255, 255, 255, 0.92) !important;
+  border-top-width: 2px !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-left-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
   box-shadow:
-    0 16px 48px -8px rgba(15, 23, 42, 0.14),
-    0 6px 18px -4px rgba(47, 107, 255, 0.08),
-    inset 0 2px 1px rgba(255, 255, 255, 1),
-    inset 0 -1.5px 2px rgba(47, 107, 255, 0.05);
+    0 20px 48px -10px rgba(15, 23, 42, 0.16),
+    0 6px 18px rgba(47, 107, 255, 0.10),
+    inset 0 2px 2px rgba(255, 255, 255, 1),
+    inset 0 0 20px rgba(255, 255, 255, 0.45);
   transform: translateZ(0);
 }
 
 /* Active tab backdrop pill inside bar */
 .nav-active-pill {
   background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(248, 251, 255, 0.92) 50%,
-    rgba(240, 246, 255, 0.85) 100%
-  );
-  border: 1.5px solid rgba(255, 255, 255, 1);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.15);
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.75) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-bottom-color: rgba(47, 107, 255, 0.15) !important;
   box-shadow:
-    0 4px 14px -2px rgba(47, 107, 255, 0.18),
+    0 4px 16px rgba(47, 107, 255, 0.22),
     0 1px 3px rgba(0, 0, 0, 0.03),
-    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 1.5px 2px rgba(255, 255, 255, 1),
     inset 0 -1px 2px rgba(47, 107, 255, 0.06);
 }
 
@@ -314,10 +344,10 @@ html, body {
     rgba(240, 248, 255, 0.98) 0%,
     rgba(225, 240, 255, 0.75) 50%,
     rgba(215, 233, 255, 0.55) 100%
-  );
-  border: 1.2px solid rgba(255, 255, 255, 1);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.14);
+  ) !important;
+  border: 1.2px solid rgba(255, 255, 255, 1) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-bottom-color: rgba(47, 107, 255, 0.14) !important;
   box-shadow:
     0 4px 12px -2px rgba(47, 107, 255, 0.18),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
@@ -330,38 +360,37 @@ html, body {
 /* Center orb halo */
 .nav-orb-halo {
   background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(248, 250, 253, 0.85) 60%,
-    rgba(238, 244, 255, 0.7) 100%
-  );
-  backdrop-filter: blur(32px) saturate(1.6);
-  -webkit-backdrop-filter: blur(32px) saturate(1.6);
-  border: 1.5px solid rgba(255, 255, 255, 1);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.16);
+    180deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(248, 250, 253, 0.55) 60%,
+    rgba(238, 244, 255, 0.35) 100%
+  ) !important;
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  border: 1.5px solid rgba(255, 255, 255, 1) !important;
+  border-top-color: rgba(255, 255, 255, 1) !important;
+  border-bottom-color: rgba(47, 107, 255, 0.18) !important;
   box-shadow:
-    0 8px 24px -4px rgba(47, 107, 255, 0.22),
+    0 8px 26px -4px rgba(47, 107, 255, 0.30),
     0 3px 10px rgba(0, 0, 0, 0.06),
-    inset 0 2px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(47, 107, 255, 0.06);
+    inset 0 2px 2px rgba(255, 255, 255, 1),
+    inset 0 -1px 2px rgba(47, 107, 255, 0.08);
   transform: translateZ(0);
 }
 
 .nav-orb-dome {
   background: linear-gradient(
-    145deg,
-    #5FA3FF 0%,
-    #2F6BFF 45%,
-    #1E5AE0 100%
-  );
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
-  border-top-color: rgba(255, 255, 255, 0.9);
-  border-bottom-color: rgba(0, 20, 80, 0.35);
+    135deg,
+    #5AA9FF 0%,
+    #2F6BFF 100%
+  ) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.65) !important;
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: rgba(0, 20, 80, 0.35) !important;
   box-shadow:
-    0 6px 20px -2px rgba(47, 107, 255, 0.5),
-    0 2px 6px rgba(47, 107, 255, 0.25),
-    inset 0 2px 3px rgba(255, 255, 255, 0.75),
+    0 8px 24px -2px rgba(47, 107, 255, 0.55),
+    0 2px 8px rgba(47, 107, 255, 0.3),
+    inset 0 2px 3px rgba(255, 255, 255, 0.8),
     inset 0 -2px 4px rgba(0, 20, 80, 0.3);
   transform: translateZ(0);
 }

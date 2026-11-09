@@ -45,11 +45,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           onClick();
         }
       }}
-      className="group relative flex flex-col overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
+      className="ios-glass-card group relative flex flex-col overflow-hidden rounded-[24px] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       {/* Thumbnail Aspect Container */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100/40">
         <img
           src={imageUrl}
           alt={screenshot.original_filename}
@@ -59,15 +59,15 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
         {/* Floating Category & Processing Badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-white border border-white/20 shadow-xs">
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2]" />
+          <span className="inline-flex items-center gap-1 rounded-full ios-glass-pill px-2.5 py-1 text-[10px] font-bold text-slate-800 shadow-xs">
+            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.4] text-[#2F6BFF]" />
             <span className="leading-none pt-0.5 truncate">{label}</span>
           </span>
 
           {screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-xs backdrop-blur-xs"
+              className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-xs backdrop-blur-xs"
             >
               {screenshot.processing_status === 'processing' ? (
                 <Clock className="h-3 w-3 animate-spin stroke-[2.5]" />
@@ -102,11 +102,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
       {/* Card Info Footer */}
       {!searchResult && (
-        <div className="p-2.5 border-t border-slate-100 bg-white">
-          <p className="truncate text-[12px] font-semibold text-slate-800 leading-tight">
+        <div className="p-3 border-t border-white/60 bg-white/40 backdrop-blur-md">
+          <p className="truncate text-[12px] font-bold text-slate-900 leading-tight">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
             <span>
               {new Date(screenshot.created_at).toLocaleDateString(undefined, {
                 month: 'short',
@@ -114,7 +114,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] font-medium text-slate-500">
+              <span className="truncate max-w-[50%] font-bold text-[#2F6BFF]">
                 #{tags[0]}
               </span>
             )}

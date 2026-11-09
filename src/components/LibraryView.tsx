@@ -88,20 +88,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
       {/* 3. Screenshots Gallery Grid */}
       {filteredScreenshots.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[24px] bg-white/70 border border-white/80 p-8 text-center my-6 backdrop-blur-xl shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#2F6BFF] mb-3 border border-blue-100">
-            <Sparkles className="h-6 w-6 stroke-[2]" />
+        <div className="ios-glass-card flex flex-col items-center justify-center rounded-[28px] p-8 text-center my-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl ios-glass-icon-pod mb-3 text-[#2F6BFF]">
+            <Sparkles className="h-7 w-7 stroke-[2.2]" />
           </div>
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">No screenshots in this view</h3>
-          <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed font-normal">
+          <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed font-medium">
             Upload conversation captures, game victory screens, or receipts to index them automatically.
           </p>
           <button
             type="button"
             onClick={onOpenUpload}
-            className="mt-4 flex h-10 items-center justify-center gap-1.5 rounded-full px-5 text-xs font-semibold text-white bg-[#2F6BFF] hover:bg-[#1A56E8] active:scale-95 transition-all shadow-[0_2px_8px_rgba(47,107,255,0.35)] cursor-pointer"
+            className="mt-5 flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-all cursor-pointer"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-4 w-4 stroke-[2.8]" />
             <span>Upload Screenshot</span>
           </button>
         </div>

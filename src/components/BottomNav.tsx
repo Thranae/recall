@@ -49,7 +49,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* Outer container allows elevated orb to extend upward cleanly */}
         <div className="pointer-events-auto relative w-full">
           {/* Main Floating Glass Bar Body */}
-          <div className="relative rounded-[28px] bg-white/85 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_-8px_rgba(15,23,42,0.12),0_4px_16px_rgba(0,0,0,0.04)] px-1">
+          <div className="relative rounded-[32px] nav-glass-bar px-1">
             {/* Top specular highlight hairline */}
             <div
               className="absolute top-0 left-6 right-6 h-px pointer-events-none rounded-full"
@@ -60,7 +60,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             />
 
             {/* 5-Column Symmetrical Grid */}
-            <div className="relative z-10 grid grid-cols-5 h-15 items-center">
+            <div className="relative z-10 grid grid-cols-5 h-16 items-center">
               {TABS.map((item, idx) => {
                 if (item === null) {
                   return (
@@ -70,18 +70,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                         type="button"
                         onClick={onOpenUpload}
                         aria-label="Upload Screenshot"
-                        className="absolute -top-5.5 flex items-center justify-center cursor-pointer focus:outline-none active:scale-90 transition-transform duration-200"
+                        className="absolute -top-6 flex items-center justify-center cursor-pointer focus:outline-none active:scale-90 transition-transform duration-200"
                         style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
                         {/* Outer Frosted Halo Ring */}
-                        <div className="flex h-13.5 w-13.5 items-center justify-center rounded-full bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full nav-orb-halo">
                           {/* Inner Royal Blue Dome */}
-                          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-[#2F6BFF] via-[#3876FF] to-[#5AA9FF] text-white shadow-[0_4px_14px_rgba(47,107,255,0.45),inset_0_1.5px_2px_rgba(255,255,255,0.65)]">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-full nav-orb-dome text-white">
                             <Plus className="h-5 w-5 stroke-[2.8]" />
                           </div>
                         </div>
                       </button>
-                      <span className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">
+                      <span className="mt-8 text-[9px] font-bold text-slate-500 uppercase tracking-wider leading-none">
                         Add
                       </span>
                     </div>
@@ -101,7 +101,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   >
                     {/* Active Tab Background Pill */}
                     {active && (
-                      <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[20px] bg-white border border-white shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)]" />
+                      <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[22px] nav-active-pill" />
                     )}
 
                     <div
@@ -113,7 +113,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                         className={`h-5 w-5 shrink-0 stroke-[2.2] transition-colors duration-200 ${
                           active
                             ? 'text-[#2F6BFF]'
-                            : 'text-slate-400 hover:text-slate-600'
+                            : 'text-slate-500 hover:text-slate-700'
                         }`}
                       />
                     </div>
@@ -122,7 +122,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       className={`relative z-10 mt-1 text-[10px] leading-none transition-colors duration-200 ${
                         active
                           ? 'font-bold text-slate-900'
-                          : 'font-medium text-slate-400'
+                          : 'font-semibold text-slate-500'
                       }`}
                     >
                       {label}

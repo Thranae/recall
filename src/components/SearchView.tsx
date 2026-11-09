@@ -78,12 +78,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-4">
       {/* 1. iOS Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
-        <div className="flex h-11.5 items-center rounded-2xl bg-white border border-black/[0.08] px-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#2F6BFF] focus-within:ring-2 focus-within:ring-[#2F6BFF]/20 transition-all duration-150">
+        <div className="flex h-13 items-center rounded-2xl glass-input px-3.5 shadow-[0_4px_16px_rgba(47,107,255,0.06)] focus-within:border-[#2F6BFF] focus-within:ring-2 focus-within:ring-[#2F6BFF]/20 transition-all duration-150">
           <div className="text-slate-400 shrink-0">
             {isSearching ? (
-              <Loader2 className="h-4 w-4 animate-spin text-[#2F6BFF]" />
+              <Loader2 className="h-4.5 w-4.5 animate-spin text-[#2F6BFF]" />
             ) : (
-              <Search className="h-4 w-4 stroke-[2.2]" />
+              <Search className="h-4.5 w-4.5 stroke-[2.2] text-[#2F6BFF]" />
             )}
           </div>
 
@@ -92,7 +92,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search conversations, stats, text..."
-            className="w-full bg-transparent px-2.5 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent px-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none"
           />
 
           {query && (
@@ -100,7 +100,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition-transform cursor-pointer"
+              className="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -109,7 +109,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <button
             type="submit"
             disabled={isSearching || !query.trim()}
-            className="h-8 shrink-0 rounded-xl px-3.5 text-xs font-semibold text-white bg-[#2F6BFF] hover:bg-[#1A56E8] active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="h-9 shrink-0 rounded-xl px-4 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-xs"
           >
             Search
           </button>
@@ -140,13 +140,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {!searchResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-[#2F6BFF]" />
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
               <span>Suggested Queries</span>
             </span>
           </div>
 
-          {/* 2x2 Clean Minimalist Card Grid */}
+          {/* 2x2 Clean Plump Liquid Glass Card Grid */}
           <div className="grid grid-cols-2 gap-2.5">
             {SUGGESTED_QUERIES.map((item, idx) => {
               const Icon = item.icon;
@@ -155,26 +155,26 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => onChangeQuery(item.query)}
-                  className="flex flex-col justify-between rounded-2xl bg-white border border-black/[0.06] p-3.5 text-left shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-slate-300 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+                  className="ios-glass-card flex flex-col justify-between rounded-2xl p-4 text-left active:scale-[0.98] transition-all duration-200 cursor-pointer"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                        <Icon className="h-3.5 w-3.5 stroke-[2]" />
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl ios-glass-icon-pod text-[#2F6BFF]">
+                        <Icon className="h-4 w-4 stroke-[2.4]" />
                       </div>
-                      <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200/60">
+                      <span className="text-[10px] font-bold text-slate-700 ios-glass-pill px-2 py-0.5 rounded-full">
                         {item.badge}
                       </span>
                     </div>
-                    <p className="text-xs font-semibold text-slate-900 leading-tight">
+                    <p className="text-xs font-bold text-slate-900 leading-tight">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium">
                       {item.description}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] font-mono text-[#2F6BFF] truncate font-medium">
+                  <div className="mt-3 pt-2.5 border-t border-white/60 text-[10px] font-mono text-[#2F6BFF] truncate font-bold">
                     "{item.query}"
                   </div>
                 </button>
@@ -189,18 +189,18 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-900">
+              <span className="text-xs font-bold text-slate-900">
                 {searchResults.total_results} {searchResults.total_results === 1 ? 'result' : 'results'}
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-medium text-[#2F6BFF]">
+                <span className="rounded-full ios-glass-pill px-2.5 py-0.5 text-[10px] font-bold text-[#2F6BFF]">
                   Chat Sequence
                 </span>
               )}
 
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                <span className="rounded-full ios-glass-pill px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
                   Stats Match
                 </span>
               )}
@@ -209,17 +209,19 @@ export const SearchView: React.FC<SearchViewProps> = ({
             <button
               type="button"
               onClick={onClearSearch}
-              className="text-[11px] font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
+              className="text-[11px] font-bold text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               Clear
             </button>
           </div>
 
           {searchResults.total_results === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-white border border-black/[0.06] p-8 text-center my-4">
-              <SearchX className="h-8 w-8 text-slate-400 mb-2" />
-              <p className="text-xs font-semibold text-slate-900">No matching screenshots</p>
-              <p className="mt-1 text-[11px] text-slate-500 max-w-xs leading-relaxed">
+            <div className="ios-glass-card flex flex-col items-center justify-center rounded-[28px] p-8 text-center my-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl ios-glass-icon-pod text-slate-400 mb-2">
+                <SearchX className="h-6 w-6 stroke-[2]" />
+              </div>
+              <p className="text-xs font-bold text-slate-900">No matching screenshots</p>
+              <p className="mt-1 text-[11px] text-slate-500 max-w-xs leading-relaxed font-medium">
                 Try searching for specific message quotes, game scores, or OCR text keywords.
               </p>
             </div>
