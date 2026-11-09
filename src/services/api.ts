@@ -50,16 +50,60 @@ export const api = {
     return data;
   },
 
+  async signup(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<{ success: boolean; message: string; email: string; dev_otp?: string }> {
+    return request<{ success: boolean; message: string; email: string; dev_otp?: string }>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+  },
+
+  async verifySignupOtp(email: string, otp: string): Promise<{ token: string; user: User }> {
+    const data = await request<{ token: string; user: User }>('/auth/verify-signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+    setAuthToken(data.token);
+    return data;
+  },
+
+  async resendOtp(email: string): Promise<{ success: boolean; message: string; dev_otp?: string }> {
+    return request<{ success: boolean; message: string; dev_otp?: string }>('/auth/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string; dev_otp?: string }> {
+    return request<{ success: boolean; message: string; dev_otp?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async verifyOtp(email: string, otp: string): Promise<{ token: string; user: User }> {
+    const data = await request<{ token: string; user: User }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+    setAuthToken(data.token);
+    return data;
+  },
+
   async register(email: string, password: string, name: string): Promise<{ token: string; user: User }> {
     const data = await request<{ token: string; user: User }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, direct: true }),
     });
     setAuthToken(data.token);
     return data;
   },
 
   async loginGoogle(payload: {
+    tokenId?: string;
     credential?: string;
     email?: string;
     name?: string;

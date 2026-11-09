@@ -32,7 +32,7 @@ export function initDatabase() {
   // Enforce foreign keys and WAL mode for reliability
   db.exec('PRAGMA foreign_keys = ON;');
 
-  // 1. Users Table (Supports standard email/password and Google SSO)
+  // 1. Users Table (Supports standard email/password, OTP verification, and Google SSO)
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -41,6 +41,9 @@ export function initDatabase() {
       name TEXT NOT NULL,
       avatar_url TEXT,
       google_id TEXT,
+      is_verified INTEGER DEFAULT 1,
+      otp_code TEXT,
+      otp_expires TEXT,
       created_at TEXT NOT NULL
     );
   `);
@@ -51,6 +54,15 @@ export function initDatabase() {
   } catch {}
   try {
     db.exec('ALTER TABLE users ADD COLUMN google_id TEXT;');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 1;');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN otp_code TEXT;');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN otp_expires TEXT;');
   } catch {}
 
   // 2. Screenshots Table

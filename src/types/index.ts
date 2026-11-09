@@ -4,6 +4,7 @@ export interface User {
   name: string;
   avatar_url?: string;
   google_id?: string;
+  is_verified?: number | boolean;
 }
 
 export interface ExtractedMessage {
