@@ -45,14 +45,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       className="fixed bottom-0 inset-x-0 z-40 pointer-events-none select-none"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      {/* Ambient liquid diffusion scrim - smoothly diffuses dark content scrolling under the floating nav */}
+      {/* Subtle Cloudy Footer Blur under the Bottom Nav Bar (Expo project reference) */}
       <div
-        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none -z-10"
+        className="absolute inset-x-0 bottom-0 pointer-events-none -z-10"
         style={{
+          height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
           background:
-            'linear-gradient(to top, rgba(242, 245, 249, 0.96) 0%, rgba(242, 245, 249, 0.75) 50%, transparent 100%)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
+            'linear-gradient(to top, rgba(242, 245, 249, 0.82) 0%, rgba(220, 235, 255, 0.35) 45%, transparent 100%)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
         }}
       />
 
