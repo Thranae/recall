@@ -7,9 +7,10 @@
   --theme-blue: #2F6BFF;
   --theme-blue-light: #5AA9FF;
 
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro Rounded", system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -22,6 +23,7 @@ html, body {
   margin: 0;
   padding: 0;
   overscroll-behavior-y: none;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 #root {
@@ -70,33 +72,40 @@ html, body {
   will-change: transform;
   filter: blur(80px);
   z-index: 0;
+  transform: translateZ(0);
 }
 
 /* ========================================================
-   PACKWISE EXPO 3D LIQUID GLASS SYSTEM (iOS 27 Plump Glass)
+   PACKWISE EXPO 3D PLUMPY LIQUID GLASS SYSTEM
    ======================================================== */
 
-/* 1. Packwise Liquid Glass Card — Authentic Apple / VisionOS Refraction */
+/* 1. Plumpy Liquid Glass Card */
 .glass-card,
 .ios-glass-card,
 .ios-plump-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 254, 0.72) 50%, rgba(240, 246, 255, 0.50) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
   border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(0, 0, 0, 0.05);
-  border-radius: 20px;
+  border-left-color: rgba(255, 255, 255, 0.98);
+  border-right-color: rgba(255, 255, 255, 0.65);
+  border-bottom-color: rgba(47, 107, 255, 0.12);
+  border-radius: 24px;
   box-shadow: 
-    0 4px 20px -2px rgba(15, 23, 42, 0.06),
-    0 1px 3px rgba(0, 0, 0, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 12px 32px -4px rgba(15, 23, 42, 0.08),
+    0 4px 12px rgba(47, 107, 255, 0.05),
+    inset 0 2px 2px rgba(255, 255, 255, 1),
+    inset 0 -2px 4px rgba(47, 107, 255, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 
-/* Subtle top edge specular sheen */
+/* Subtle top edge specular highlight */
 .glass-card::before,
 .ios-glass-card::before,
 .ios-plump-card::before {
@@ -105,22 +114,27 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 40%, rgba(255, 255, 255, 0.95) 60%, transparent 100%);
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 30%, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, 0.95) 70%, transparent 100%);
   pointer-events: none;
   z-index: 2;
 }
 
-/* 2. Unified Apple iOS Segmented Control & Filter Chips */
+/* 2. Plumpy Segmented Control & Filter Chips */
 .ios-segmented-control {
   display: flex;
-  background: rgba(226, 232, 240, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-top-color: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   padding: 3.5px;
   border-radius: 9999px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.04),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+  transform: translateZ(0);
 }
 
 .ios-segment-btn {
@@ -129,75 +143,49 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 34px;
+  height: 36px;
   border-radius: 9999px;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: #64748B;
-  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   user-select: none;
+  border: 1px solid transparent;
 }
 
 .ios-segment-btn-active {
-  background: #FFFFFF;
-  color: #0F172A;
-  font-weight: 700;
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.ios-filter-chip-active {
-  position: relative;
-  background: #FFFFFF;
+  background: linear-gradient(145deg, #FFFFFF 0%, #F5F9FF 100%);
+  color: #2F6BFF;
+  font-weight: 800;
   border: 1px solid rgba(255, 255, 255, 1);
   box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-  color: #0F172A;
-  font-weight: 700;
+    0 4px 14px rgba(47, 107, 255, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 2px rgba(47, 107, 255, 0.08);
 }
 
-.ios-filter-chip-inactive {
-  position: relative;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  color: #64748B;
-  font-weight: 600;
-}
-
-/* Active glowing indicator dot from TripsFilterTabs */
-.ios-active-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background-color: #2F6BFF;
-  box-shadow: 0 0 8px #2F6BFF, 0 0 2px #5AA9FF;
-}
-
-/* 3. Packwise Liquid Glass Primary Button (From GlassLoginCard.tsx & primary-liquid-button) */
+/* 3. Plumpy Liquid Primary Button */
 .ios-liquid-primary,
 .primary-liquid-button,
 .ios-plump-primary {
   position: relative;
   background: linear-gradient(145deg, #5CA0FF 0%, #2F6BFF 45%, #1A5AE8 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  border-top-color: rgba(255, 255, 255, 0.85);
-  border-left-color: rgba(255, 255, 255, 0.7);
-  border-bottom-color: rgba(0, 20, 80, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  border-left-color: rgba(255, 255, 255, 0.85);
+  border-bottom-color: rgba(0, 20, 80, 0.35);
   box-shadow: 
-    0 8px 24px -4px rgba(47, 107, 255, 0.42),
-    0 2px 6px rgba(47, 107, 255, 0.18),
-    inset 0 2px 2.5px rgba(255, 255, 255, 0.7),
-    inset 0 -2px 3px rgba(0, 20, 80, 0.25);
+    0 8px 24px -2px rgba(47, 107, 255, 0.45),
+    0 2px 6px rgba(47, 107, 255, 0.2),
+    inset 0 2px 2.5px rgba(255, 255, 255, 0.8),
+    inset 0 -2px 3.5px rgba(0, 20, 80, 0.3);
   color: #FFFFFF;
   font-weight: 800;
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  transform: translateZ(0);
 }
 
 .ios-liquid-primary::before,
@@ -215,94 +203,59 @@ html, body {
   pointer-events: none;
 }
 
-/* 4. Packwise Liquid Glass Capsule / Pill */
+/* 4. Plumpy Liquid Glass Capsule / Pill */
 .ios-glass-pill,
 .ios-plump-pill {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.90) 0%, rgba(246, 249, 254, 0.70) 100%);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 249, 254, 0.72) 100%);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
   border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.95);
-  border-bottom-color: rgba(0, 0, 0, 0.03);
+  border-left-color: rgba(255, 255, 255, 0.98);
+  border-bottom-color: rgba(47, 107, 255, 0.08);
   box-shadow: 
     0 4px 14px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02);
+    inset 0 -1px 2px rgba(47, 107, 255, 0.03);
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
 }
 
-/* 5. Packwise Liquid Glass Icon Pod */
+/* 5. Plumpy 3D Icon Pod */
 .ios-glass-icon-pod,
 .ios-plump-icon-pod {
   position: relative;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 246, 255, 0.75) 50%, rgba(228, 238, 255, 0.55) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(235, 244, 255, 0.8) 50%, rgba(220, 235, 255, 0.6) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 1);
   border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.95);
-  border-bottom-color: rgba(47, 107, 255, 0.10);
+  border-left-color: rgba(255, 255, 255, 0.98);
+  border-bottom-color: rgba(47, 107, 255, 0.16);
   box-shadow: 
-    0 4px 14px rgba(47, 107, 255, 0.12),
+    0 6px 18px rgba(47, 107, 255, 0.16),
     inset 0 1.5px 2px rgba(255, 255, 255, 1),
-    inset 0 -1.5px 2px rgba(47, 107, 255, 0.05);
+    inset 0 -1.5px 3px rgba(47, 107, 255, 0.08);
   overflow: hidden;
+  transform: translateZ(0);
 }
 
-/* 6. Packwise Glass Bar (Header / Bottom Nav) */
-.ios-glass-bar,
-.ios-plump-bar {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(252, 253, 255, 0.90) 40%,
-    rgba(248, 250, 253, 0.88) 100%
-  );
-  backdrop-filter: blur(52px) saturate(1.7);
-  -webkit-backdrop-filter: blur(52px) saturate(1.7);
-  border: 1.2px solid rgba(255, 255, 255, 0.85);
-  border-top-width: 1.5px;
-  border-top-color: rgba(255, 255, 255, 0.95);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-  box-shadow:
-    0 -2px 0 rgba(255, 255, 255, 0.6),
-    0 16px 48px -8px rgba(0, 0, 0, 0.14),
-    0 6px 18px -4px rgba(0, 0, 0, 0.06),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.ios-glass-header {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(252, 253, 255, 0.90) 40%,
-    rgba(248, 250, 253, 0.88) 100%
-  );
-  backdrop-filter: blur(52px) saturate(1.7);
-  -webkit-backdrop-filter: blur(52px) saturate(1.7);
-  border-bottom: 1.2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 
-    0 8px 32px rgba(15, 23, 42, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-}
-
-/* 7. Packwise Glass Input (From GlassLoginCard.tsx & index.css) */
+/* 6. Plumpy Glass Input */
 .glass-input {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 254, 0.75) 100%);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 254, 0.78) 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.95);
   border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-  border-radius: 22px;
+  border-bottom-color: rgba(47, 107, 255, 0.08);
+  border-radius: 20px;
   box-shadow: 
     inset 0 2px 4px rgba(15, 23, 42, 0.03), 
     0 2px 8px rgba(0, 0, 0, 0.02);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
 }
 
 .glass-input:focus-within,
@@ -310,9 +263,115 @@ html, body {
   background: rgba(255, 255, 255, 0.98);
   border-color: #5AA9FF;
   box-shadow: 
-    0 0 0 3px rgba(47, 107, 255, 0.15), 
+    0 0 0 3px rgba(47, 107, 255, 0.18), 
     inset 0 1px 2px rgba(15, 23, 42, 0.02);
   outline: none;
+}
+
+/* 7. Bottom Navigation Bar — Plumpy Liquid Glass */
+.nav-glass-bar {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(252, 253, 255, 0.92) 40%,
+    rgba(246, 249, 254, 0.88) 100%
+  );
+  backdrop-filter: blur(48px) saturate(1.8);
+  -webkit-backdrop-filter: blur(48px) saturate(1.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-top-width: 2px;
+  border-top-color: rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(47, 107, 255, 0.12);
+  box-shadow:
+    0 16px 48px -8px rgba(15, 23, 42, 0.14),
+    0 6px 18px -4px rgba(47, 107, 255, 0.08),
+    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(47, 107, 255, 0.05);
+  transform: translateZ(0);
+}
+
+/* Active tab backdrop pill inside bar */
+.nav-active-pill {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(248, 251, 255, 0.92) 50%,
+    rgba(240, 246, 255, 0.85) 100%
+  );
+  border: 1.5px solid rgba(255, 255, 255, 1);
+  border-top-color: rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(47, 107, 255, 0.15);
+  box-shadow:
+    0 4px 14px -2px rgba(47, 107, 255, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1px 2px rgba(47, 107, 255, 0.06);
+}
+
+.nav-icon-pod-active {
+  background: linear-gradient(
+    135deg,
+    rgba(240, 248, 255, 0.98) 0%,
+    rgba(225, 240, 255, 0.75) 50%,
+    rgba(215, 233, 255, 0.55) 100%
+  );
+  border: 1.2px solid rgba(255, 255, 255, 1);
+  border-top-color: rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(47, 107, 255, 0.14);
+  box-shadow:
+    0 4px 12px -2px rgba(47, 107, 255, 0.18),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 2px rgba(47, 107, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+}
+
+/* Center orb halo */
+.nav-orb-halo {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(248, 250, 253, 0.85) 60%,
+    rgba(238, 244, 255, 0.7) 100%
+  );
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1.5px solid rgba(255, 255, 255, 1);
+  border-top-color: rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(47, 107, 255, 0.16);
+  box-shadow:
+    0 8px 24px -4px rgba(47, 107, 255, 0.22),
+    0 3px 10px rgba(0, 0, 0, 0.06),
+    inset 0 2px 1.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 2px rgba(47, 107, 255, 0.06);
+  transform: translateZ(0);
+}
+
+.nav-orb-dome {
+  background: linear-gradient(
+    145deg,
+    #5FA3FF 0%,
+    #2F6BFF 45%,
+    #1E5AE0 100%
+  );
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-bottom-color: rgba(0, 20, 80, 0.35);
+  box-shadow:
+    0 6px 20px -2px rgba(47, 107, 255, 0.5),
+    0 2px 6px rgba(47, 107, 255, 0.25),
+    inset 0 2px 3px rgba(255, 255, 255, 0.75),
+    inset 0 -2px 4px rgba(0, 20, 80, 0.3);
+  transform: translateZ(0);
+}
+
+/* Physics bounce animation */
+.nav-orb-bounce {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nav-orb-bounce:active {
+  transform: translateX(-50%) scale(0.88);
 }
 
 /* Hide scrollbars cleanly */
@@ -324,123 +383,6 @@ html, body {
   scrollbar-width: none;
 }
 
-/* ========================================================
-   BOTTOM NAVBAR — PLUMP LIQUID GLASS SYSTEM
-   ======================================================== */
-
-/* The floating bar body */
-.nav-glass-bar {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(252, 253, 255, 0.90) 40%,
-    rgba(248, 250, 253, 0.88) 100%
-  );
-  backdrop-filter: blur(52px) saturate(1.7);
-  -webkit-backdrop-filter: blur(52px) saturate(1.7);
-  border: 1.2px solid rgba(255, 255, 255, 0.85);
-  border-top-width: 1.5px;
-  border-top-color: rgba(255, 255, 255, 0.95);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-  box-shadow:
-    0 -2px 0 rgba(255, 255, 255, 0.6),
-    0 16px 48px -8px rgba(0, 0, 0, 0.14),
-    0 6px 18px -4px rgba(0, 0, 0, 0.06),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02);
-}
-
-/* Active tab backdrop pill — plump frosted capsule */
-.nav-active-pill {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(250, 252, 255, 0.85) 50%,
-    rgba(245, 248, 253, 0.78) 100%
-  );
-  border: 1.2px solid rgba(255, 255, 255, 0.92);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(0, 0, 0, 0.03);
-  box-shadow:
-    0 3px 12px -2px rgba(0, 0, 0, 0.06),
-    0 1px 4px rgba(0, 0, 0, 0.03),
-    inset 0 1.5px 1px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.015);
-}
-
-/* Icon pods — the plump glass container behind each icon */
-.nav-icon-pod-active {
-  background: linear-gradient(
-    135deg,
-    rgba(240, 248, 255, 0.95) 0%,
-    rgba(225, 240, 255, 0.70) 50%,
-    rgba(215, 233, 255, 0.50) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(47, 107, 255, 0.10);
-  box-shadow:
-    0 3px 10px -2px rgba(47, 107, 255, 0.15),
-    0 1px 3px rgba(47, 107, 255, 0.06),
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(47, 107, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.nav-icon-pod-idle {
-  background: transparent;
-  border: 1px solid transparent;
-  box-shadow: none;
-}
-
-/* Center orb halo — outer frosted ring */
-.nav-orb-halo {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.96) 0%,
-    rgba(248, 250, 253, 0.80) 60%,
-    rgba(240, 245, 252, 0.65) 100%
-  );
-  backdrop-filter: blur(28px) saturate(1.4);
-  -webkit-backdrop-filter: blur(28px) saturate(1.4);
-  border: 1.5px solid rgba(255, 255, 255, 0.90);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-  box-shadow:
-    0 8px 24px -4px rgba(0, 0, 0, 0.12),
-    0 3px 10px rgba(0, 0, 0, 0.05),
-    inset 0 1.5px 1px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02);
-}
-
-/* Center orb dome — the blue button */
-.nav-orb-dome {
-  background: linear-gradient(
-    145deg,
-    #5FA3FF 0%,
-    #2F6BFF 45%,
-    #1E5AE0 100%
-  );
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  border-top-color: rgba(255, 255, 255, 0.75);
-  border-bottom-color: rgba(0, 20, 80, 0.25);
-  box-shadow:
-    0 6px 20px -2px rgba(47, 107, 255, 0.42),
-    0 2px 6px rgba(47, 107, 255, 0.18),
-    inset 0 2px 3px rgba(255, 255, 255, 0.65),
-    inset 0 -2px 4px rgba(0, 20, 80, 0.25);
-}
-
-/* Orb press animation */
-.nav-orb-bounce {
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.nav-orb-bounce:active {
-  transform: translateX(-50%) scale(0.88);
-}
-
-/* Smooth page transitions */
 * {
   -webkit-overflow-scrolling: touch;
 }
