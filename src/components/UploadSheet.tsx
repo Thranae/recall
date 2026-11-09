@@ -21,10 +21,19 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
 
   if (!isOpen) return null;
 
+  const MAX_UPLOAD_LIMIT = 50;
+
   const handleFilesAdded = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const newFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
-    setSelectedFiles((prev) => [...prev, ...newFiles]);
+    setSelectedFiles((prev) => {
+      const combined = [...prev, ...newFiles];
+      if (combined.length > MAX_UPLOAD_LIMIT) {
+        alert(`You can upload up to 50 screenshots at once. Selected the first 50 files.`);
+        return combined.slice(0, MAX_UPLOAD_LIMIT);
+      }
+      return combined;
+    });
   };
 
   const handleRemoveFile = (index: number) => {
@@ -111,9 +120,15 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-slate-800">Photos</span>
-                  <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Choose from files</span>
+                  <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Batch up to 50 files</span>
                 </div>
               </button>
+            </div>
+
+            {/* Batch capacity indicator */}
+            <div className="flex items-center justify-between px-1 text-[11px] text-[#4A5D78]">
+              <span>Batch capacity: 50 screenshots / upload</span>
+              <span className="font-mono font-bold text-[#3478F6]">{selectedFiles.length}/50</span>
             </div>
 
             {/* Hidden native file pickers */}

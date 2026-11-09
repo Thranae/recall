@@ -13,21 +13,26 @@ interface Job {
 }
 
 const jobQueue: Job[] = [];
-let isProcessing = false;
+const MAX_CONCURRENT_JOBS = 5;
+let activeWorkers = 0;
 
 export function enqueueScreenshotJob(job: Omit<Job, 'retryCount'>): void {
   jobQueue.push({ ...job, retryCount: 0 });
-  processNextJob();
+  pumpQueue();
 }
 
-async function processNextJob(): Promise<void> {
-  if (isProcessing || jobQueue.length === 0) {
-    return;
+function pumpQueue(): void {
+  while (activeWorkers < MAX_CONCURRENT_JOBS && jobQueue.length > 0) {
+    const job = jobQueue.shift()!;
+    activeWorkers++;
+    executeJob(job).finally(() => {
+      activeWorkers--;
+      pumpQueue();
+    });
   }
+}
 
-  isProcessing = true;
-  const job = jobQueue.shift()!;
-
+async function executeJob(job: Job): Promise<void> {
   try {
     // 1. Mark status as processing in DB
     const updateStatus = db.prepare(`
@@ -169,9 +174,6 @@ async function processNextJob(): Promise<void> {
       `);
       markFailed.run(err.message || 'Processing failed', new Date().toISOString(), job.screenshotId, job.userId);
     }
-  } finally {
-    isProcessing = false;
-    processNextJob();
   }
 }
 

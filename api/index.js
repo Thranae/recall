@@ -44334,39 +44334,6 @@ router.post("/google", async (req, res) => {
     res.status(500).json({ error: "Google authentication failed" });
   }
 });
-router.post("/demo", async (_req, res) => {
-  try {
-    const demoEmail = "alex@recall-search.dev";
-    const getUser = db.prepare("SELECT * FROM users WHERE email = ? OR id = ?");
-    let user = getUser.get(demoEmail, "user_demo_primary");
-    if (!user) {
-      const salt = await bcryptjs_default.genSalt(10);
-      const password_hash = await bcryptjs_default.hash("recallDemo2026", salt);
-      const id = "user_demo_primary";
-      const created_at = (/* @__PURE__ */ new Date()).toISOString();
-      const insertUser = db.prepare(`
-        INSERT INTO users (id, email, password_hash, name, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET email = excluded.email
-      `);
-      insertUser.run(id, demoEmail, password_hash, "Alex Mercer", created_at);
-      user = { id, email: demoEmail, name: "Alex Mercer" };
-    }
-    const token = import_jsonwebtoken2.default.sign(
-      { id: user.id, email: user.email, name: user.name },
-      JWT_SECRET2,
-      { expiresIn: "30d" }
-    );
-    res.json({
-      message: "Logged in as Demo User",
-      token,
-      user: { id: user.id, email: user.email, name: user.name }
-    });
-  } catch (err) {
-    console.error("Demo login error:", err);
-    res.status(500).json({ error: "Failed to create demo session" });
-  }
-});
 router.get("/me", authMiddleware, (req, res) => {
   res.json({ user: req.user });
 });
@@ -45802,17 +45769,23 @@ var computeCosineSimilarity = cosineSimilarity;
 
 // server/services/processingQueue.ts
 var jobQueue = [];
-var isProcessing = false;
+var MAX_CONCURRENT_JOBS = 5;
+var activeWorkers = 0;
 function enqueueScreenshotJob(job) {
   jobQueue.push({ ...job, retryCount: 0 });
-  processNextJob();
+  pumpQueue();
 }
-async function processNextJob() {
-  if (isProcessing || jobQueue.length === 0) {
-    return;
+function pumpQueue() {
+  while (activeWorkers < MAX_CONCURRENT_JOBS && jobQueue.length > 0) {
+    const job = jobQueue.shift();
+    activeWorkers++;
+    executeJob(job).finally(() => {
+      activeWorkers--;
+      pumpQueue();
+    });
   }
-  isProcessing = true;
-  const job = jobQueue.shift();
+}
+async function executeJob(job) {
   try {
     const updateStatus = db.prepare(`
       UPDATE screenshots 
@@ -45930,9 +45903,6 @@ async function processNextJob() {
       `);
       markFailed.run(err.message || "Processing failed", (/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
     }
-  } finally {
-    isProcessing = false;
-    processNextJob();
   }
 }
 
@@ -45959,20 +45929,20 @@ var storage = import_multer.default.diskStorage({
 });
 var upload = (0, import_multer.default)({
   storage,
-  limits: { fileSize: 30 * 1024 * 1024 },
-  // 30 MB
+  limits: { fileSize: 35 * 1024 * 1024, files: 50 },
+  // 35 MB per file, up to 50 files
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files (PNG, JPG, WEBP) are supported"));
+      cb(new Error("Only image files (PNG, JPG, WEBP, SVG) are supported"));
     }
   }
 });
 router2.post(
   "/upload",
   authMiddleware,
-  upload.array("screenshots", 15),
+  upload.array("screenshots", 50),
   async (req, res) => {
     try {
       const files = req.files;
@@ -46747,8 +46717,8 @@ app.use((0, import_cors.default)({
   origin: true,
   credentials: true
 }));
-app.use(import_express5.default.json({ limit: "30mb" }));
-app.use(import_express5.default.urlencoded({ extended: true, limit: "30mb" }));
+app.use(import_express5.default.json({ limit: "150mb" }));
+app.use(import_express5.default.urlencoded({ extended: true, limit: "150mb" }));
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "online",

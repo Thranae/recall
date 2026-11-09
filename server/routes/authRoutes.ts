@@ -170,45 +170,6 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// Demo One-Click Login for immediate testing
-router.post('/demo', async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const demoEmail = 'alex@recall-search.dev';
-    const getUser = db.prepare('SELECT * FROM users WHERE email = ? OR id = ?');
-    let user = getUser.get(demoEmail, 'user_demo_primary') as any;
-
-    if (!user) {
-      const salt = await bcrypt.genSalt(10);
-      const password_hash = await bcrypt.hash('recallDemo2026', salt);
-      const id = 'user_demo_primary';
-      const created_at = new Date().toISOString();
-
-      const insertUser = db.prepare(`
-        INSERT INTO users (id, email, password_hash, name, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET email = excluded.email
-      `);
-      insertUser.run(id, demoEmail, password_hash, 'Alex Mercer', created_at);
-      user = { id, email: demoEmail, name: 'Alex Mercer' };
-    }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
-      JWT_SECRET,
-      { expiresIn: '30d' }
-    );
-
-    res.json({
-      message: 'Logged in as Demo User',
-      token,
-      user: { id: user.id, email: user.email, name: user.name },
-    });
-  } catch (err: any) {
-    console.error('Demo login error:', err);
-    res.status(500).json({ error: 'Failed to create demo session' });
-  }
-});
-
 // Get Current User Profile
 router.get('/me', authMiddleware, (req: AuthRequest, res: Response): void => {
   res.json({ user: req.user });

@@ -32,21 +32,21 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
+  limits: { fileSize: 35 * 1024 * 1024, files: 50 }, // 35 MB per file, up to 50 files
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files (PNG, JPG, WEBP) are supported'));
+      cb(new Error('Only image files (PNG, JPG, WEBP, SVG) are supported'));
     }
   },
 });
 
-// 1. Upload Screenshots (Single or Multiple)
+// 1. Upload Screenshots (Single or Multiple, up to 50 per batch)
 router.post(
   '/upload',
   authMiddleware,
-  upload.array('screenshots', 15),
+  upload.array('screenshots', 50),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const files = req.files as Express.Multer.File[];

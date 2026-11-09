@@ -59,14 +59,6 @@ export const api = {
     return data;
   },
 
-  async loginDemo(): Promise<{ token: string; user: User }> {
-    const data = await request<{ token: string; user: User }>('/auth/demo', {
-      method: 'POST',
-    });
-    setAuthToken(data.token);
-    return data;
-  },
-
   async loginGoogle(payload: {
     credential?: string;
     email?: string;
