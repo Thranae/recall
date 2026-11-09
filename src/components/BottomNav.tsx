@@ -48,7 +48,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       <div className="max-w-md mx-auto px-4 pb-3">
         {/* Outer container allows elevated orb to extend upward cleanly */}
         <div className="pointer-events-auto relative w-full">
-          {/* Main Floating Glass Bar Body */}
+          {/* Main Floating Plump Liquid Glass Bar Body */}
           <div className="relative rounded-[40px] nav-glass-bar px-1.5">
             {/* Top specular highlight hairline */}
             <div
@@ -60,7 +60,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             />
 
             {/* 5-Column Symmetrical Grid */}
-            <div className="relative z-10 grid grid-cols-5 h-16 items-center">
+            <div className="relative z-10 grid grid-cols-5 h-17 items-center">
               {TABS.map((item, idx) => {
                 if (item === null) {
                   return (
@@ -70,18 +70,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                         type="button"
                         onClick={onOpenUpload}
                         aria-label="Upload Screenshot"
-                        className="absolute -top-6 flex items-center justify-center cursor-pointer focus:outline-none active:scale-90 transition-transform duration-200"
+                        className="absolute -top-5 flex items-center justify-center cursor-pointer focus:outline-none active:scale-90 transition-transform duration-200"
                         style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
                         {/* Outer Frosted Halo Ring */}
                         <div className="flex h-14 w-14 items-center justify-center rounded-full nav-orb-halo">
-                          {/* Inner Royal Blue Dome */}
+                          {/* Inner Slate-Blue Liquid Dome with Glossy Crest */}
                           <div className="flex h-11 w-11 items-center justify-center rounded-full nav-orb-dome text-white">
                             <Plus className="h-5 w-5 stroke-[2.8]" />
                           </div>
                         </div>
                       </button>
-                      <span className="mt-8 text-[9px] font-bold text-slate-500 uppercase tracking-wider leading-none">
+                      <span className="mt-8 text-[9.5px] font-bold text-slate-600 uppercase tracking-wider leading-none">
                         Add
                       </span>
                     </div>
@@ -96,28 +96,23 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     key={`${item.key}-${label}-${idx}`}
                     type="button"
                     onClick={() => onSelectTab(item.key, item.category)}
-                    className="relative flex flex-col items-center justify-center h-full w-full cursor-pointer focus:outline-none transition-all duration-200 active:scale-95"
+                    className="relative flex flex-col items-center justify-center h-full w-full cursor-pointer focus:outline-none transition-all duration-200 active:scale-95 py-1"
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
-                    {/* Active Tab Background Pill */}
-                    {active && (
-                      <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[22px] nav-active-pill" />
-                    )}
-
                     {/* Plumpy Liquid Glass Icon Pod (Expo Style) */}
                     <div className="relative z-10 flex items-center justify-center">
                       {active ? (
                         <div className="nav-selected-icon-pod">
                           {/* 3D Bottom Specular Highlight (white) */}
-                          <Icon className="absolute top-[9px] h-5 w-5 stroke-[2.4] text-white opacity-85 pointer-events-none" />
+                          <Icon className="absolute top-[10px] h-5 w-5 stroke-[2.6] text-white opacity-95 pointer-events-none" />
                           {/* 3D Top Depth Shadow */}
-                          <Icon className="absolute top-[7px] h-5 w-5 stroke-[2.4] text-slate-900/15 pointer-events-none" />
+                          <Icon className="absolute top-[8px] h-5 w-5 stroke-[2.6] text-slate-900/20 pointer-events-none" />
                           {/* Main Liquid Jewel Icon */}
-                          <Icon className="relative z-10 h-5 w-5 stroke-[2.2] text-[#3A628B]" />
+                          <Icon className="relative z-10 h-5 w-5 stroke-[2.4] text-[#1D3E64]" />
                         </div>
                       ) : (
-                        <div className="flex h-9 w-9 items-center justify-center text-slate-500 hover:text-slate-800 transition-colors">
-                          <Icon className="h-5 w-5 stroke-[2]" />
+                        <div className="nav-unselected-icon-pod">
+                          <Icon className="h-4.5 w-4.5 stroke-[2.4] text-slate-800" />
                         </div>
                       )}
                     </div>
@@ -125,8 +120,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <span
                       className={`relative z-10 text-[9.5px] uppercase tracking-wider leading-none transition-all duration-200 ${
                         active
-                          ? 'mt-0.5 font-bold text-slate-800'
-                          : 'mt-1 font-medium text-slate-400'
+                          ? 'mt-0.5 font-extrabold text-[#0F172A]'
+                          : 'mt-1 font-bold text-slate-700'
                       }`}
                     >
                       {label}
