@@ -201,12 +201,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
               </span>
 
               {searchResults.parsed_intent.is_conversation_sequence && (
-                <span className="liquid-category-badge px-2.5 py-0.5 text-[10px]">
+                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px]">
                   Chat Sequence
                 </span>
               )}
               {searchResults.parsed_intent.is_game_stat_query && (
-                <span className="liquid-category-badge px-2.5 py-0.5 text-[10px] text-amber-700">
+                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] text-amber-700">
                   Game Filter
                 </span>
               )}

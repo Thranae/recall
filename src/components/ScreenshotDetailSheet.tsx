@@ -129,7 +129,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               Details
             </span>
             {data?.screenshot.category && (
-              <span className="liquid-category-badge px-2.5 py-0.5 text-[10px] font-bold tracking-wider">
+              <span className="liquid-category-badge px-2 py-0.5 text-[9px] font-bold tracking-wider">
                 {data.screenshot.category.toUpperCase()}
               </span>
             )}
@@ -184,9 +184,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setIsImageExpanded(!isImageExpanded)}
-              className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-1.5 rounded-full liquid-category-badge px-3 py-1 text-[10.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-sm"
+              className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
             >
-              <Maximize2 className="h-3.2 w-3.2 text-[#3478F6] stroke-[2.2]" />
+              <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
               <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
             </button>
           </div>

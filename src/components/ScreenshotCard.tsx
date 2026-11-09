@@ -80,23 +80,23 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
         />
 
         {/* Floating Liquid Glass Category Badge */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1 pointer-events-none z-10">
-          <span className="liquid-category-badge shadow-sm">
-            <CatIcon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] text-[#3478F6]" />
-            <span className="leading-none pt-0.5 truncate text-[#172B4D]">{label}</span>
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
+          <span className="liquid-category-badge shadow-xs">
+            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2] text-[#3478F6]" />
+            <span className="leading-none truncate text-[#172B4D]">{label}</span>
           </span>
 
           {screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
-              className="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full liquid-glass-badge p-0 shadow-sm text-amber-600"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full liquid-glass-badge p-0 shadow-xs text-amber-600"
             >
               {screenshot.processing_status === 'processing' ? (
-                <Clock className="h-3.5 w-3.5 animate-spin stroke-[2.2]" />
+                <Clock className="h-2.5 w-2.5 animate-spin stroke-[2.2]" />
               ) : screenshot.processing_status === 'queued' ? (
-                <Clock className="h-3.5 w-3.5 stroke-[2.2]" />
+                <Clock className="h-2.5 w-2.5 stroke-[2.2]" />
               ) : (
-                <AlertCircle className="h-3.5 w-3.5 text-rose-500 stroke-[2.2]" />
+                <AlertCircle className="h-2.5 w-2.5 text-rose-500 stroke-[2.2]" />
               )}
             </span>
           )}
