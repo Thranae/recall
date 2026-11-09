@@ -207,6 +207,7 @@ export const App: React.FC = () => {
 
       {/* Top Mobile iOS Light Header */}
       <TopHeader
+        title={currentTab === 'library' ? 'Recalls' : currentTab === 'search' ? 'Search' : 'Settings'}
         isProcessing={processingCount > 0}
         processingCount={processingCount}
         onRefresh={fetchScreenshots}

@@ -98,35 +98,28 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
       {/* Brand & Hero */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-17 w-17 items-center justify-center rounded-[24px] ios-liquid-primary shadow-[0_8px_24px_rgba(47,107,255,0.4)]">
-          <Camera className="h-8 w-8 text-white drop-shadow-sm shrink-0 stroke-[2.4]" />
+        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#2F6BFF] to-[#5AA9FF] text-white shadow-[0_4px_16px_rgba(47,107,255,0.35)]">
+          <Camera className="h-7 w-7 stroke-[2.2]" />
         </div>
 
-        <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">RECALL</h1>
-        <p className="mt-1.5 text-xs font-black tracking-wider text-[#2F6BFF] uppercase">
-          Save Once • Find Later
-        </p>
-        <p className="mt-2 text-xs text-slate-600 max-w-xs leading-relaxed font-semibold">
-          A private search engine for your screenshot history. Find chat conversations, game stats, and visual objects instantly.
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">RECALL</h1>
+        <p className="mt-1 text-xs text-slate-500 font-medium">
+          Private search engine for personal screenshot history
         </p>
       </div>
 
       {/* Main Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
-        <div className="rounded-[32px] ios-glass-card p-6 shadow-[0_16px_40px_-4px_rgba(15,23,42,0.1),0_4px_16px_rgba(47,107,255,0.08)]">
-          {/* Packwise Liquid Glass Segmented Switcher */}
-          <div className="mb-6 grid grid-cols-2 rounded-[22px] ios-glass-pill p-1 relative z-10">
+        <div className="rounded-3xl bg-white/80 border border-white/90 p-6 shadow-[0_8px_32px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
+          {/* Segmented Switcher */}
+          <div className="mb-5 ios-segmented-control w-full">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setError(null);
               }}
-              className={`h-10 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
-                !isSignUp
-                  ? 'ios-filter-chip-active'
-                  : 'text-[#56647D] hover:text-[#2F6BFF]'
-              }`}
+              className={`ios-segment-btn ${!isSignUp ? 'ios-segment-btn-active' : ''}`}
             >
               Sign In
             </button>
@@ -136,11 +129,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 setIsSignUp(true);
                 setError(null);
               }}
-              className={`h-10 rounded-[18px] text-xs font-extrabold transition-all duration-200 active:scale-95 flex items-center justify-center ${
-                isSignUp
-                  ? 'ios-filter-chip-active'
-                  : 'text-[#56647D] hover:text-[#2F6BFF]'
-              }`}
+              className={`ios-segment-btn ${isSignUp ? 'ios-segment-btn-active' : ''}`}
             >
               Create Account
             </button>

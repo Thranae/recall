@@ -19,39 +19,19 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   const getCategoryDetails = (cat: string) => {
     switch (cat) {
       case 'chat':
-        return {
-          label: 'Chat',
-          icon: MessageSquare,
-          color: 'bg-gradient-to-b from-blue-600 to-blue-700 text-white border-white/40',
-        };
+        return { label: 'Chat', icon: MessageSquare };
       case 'game':
-        return {
-          label: 'Game Stats',
-          icon: Trophy,
-          color: 'bg-gradient-to-b from-amber-500 to-amber-600 text-white border-white/40',
-        };
+        return { label: 'Game Stats', icon: Trophy };
       case 'product':
-        return {
-          label: 'Product',
-          icon: ShoppingBag,
-          color: 'bg-gradient-to-b from-purple-600 to-purple-700 text-white border-white/40',
-        };
+        return { label: 'Product', icon: ShoppingBag };
       case 'poster_document':
-        return {
-          label: 'Document',
-          icon: FileText,
-          color: 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white border-white/40',
-        };
+        return { label: 'Document', icon: FileText };
       default:
-        return {
-          label: 'Screenshot',
-          icon: Layers,
-          color: 'bg-gradient-to-b from-slate-700 to-slate-800 text-white border-white/40',
-        };
+        return { label: 'Image', icon: Layers };
     }
   };
 
-  const { label, icon: CatIcon, color } = getCategoryDetails(screenshot.category);
+  const { label, icon: CatIcon } = getCategoryDetails(screenshot.category);
   const tags = screenshot.tags || [];
 
   return (
@@ -65,55 +45,54 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           onClick();
         }
       }}
-      className="relative flex flex-col overflow-hidden rounded-[26px] ios-glass-card shadow-[0_12px_32px_-4px_rgba(15,23,42,0.08),0_4px_12px_rgba(47,107,255,0.06)] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
+      className="group relative flex flex-col overflow-hidden rounded-[18px] bg-white border border-black/[0.06] shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
+      style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      {/* Thumbnail Aspect Frame */}
+      {/* Thumbnail Aspect Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
         <img
           src={imageUrl}
           alt={screenshot.original_filename}
           loading="lazy"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
-        {/* Packwise Style Liquid Glass Category & Status Badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none z-10">
-          {/* Category Chip */}
-          <span className={`h-6 max-w-[calc(100%-36px)] shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-black shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${color}`}>
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.4] drop-shadow-xs" />
+        {/* Floating Category & Processing Badges */}
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-white border border-white/20 shadow-xs">
+            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2]" />
             <span className="leading-none pt-0.5 truncate">{label}</span>
           </span>
 
-          {/* Compact Status Pod */}
           {screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-50/95 text-amber-800 shadow-[0_2px_8px_rgba(245,158,11,0.25)] backdrop-blur-md"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-xs backdrop-blur-xs"
             >
               {screenshot.processing_status === 'processing' ? (
-                <Clock className="h-3.5 w-3.5 shrink-0 animate-spin stroke-[2.2]" />
+                <Clock className="h-3 w-3 animate-spin stroke-[2.5]" />
               ) : screenshot.processing_status === 'queued' ? (
-                <Clock className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
+                <Clock className="h-3 w-3 stroke-[2.5]" />
               ) : (
-                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600 stroke-[2.2]" />
+                <AlertCircle className="h-3 w-3 text-white stroke-[2.5]" />
               )}
             </span>
           )}
         </div>
 
-        {/* Search match overlay */}
+        {/* Search match explanation overlay */}
         {searchResult && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent p-3 pt-8 backdrop-blur-xs z-10">
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-2.5 pt-6 backdrop-blur-[2px] z-10">
             <div className="flex items-center justify-between text-[10px]">
-              <span className="font-bold text-white truncate max-w-[70%] drop-shadow-xs">
+              <span className="font-semibold text-white truncate max-w-[75%]">
                 {searchResult.match_type.replace('_', ' ')}
               </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-[#2F6BFF] px-2 py-0.5 rounded-full shadow-xs">
+              <span className="font-mono text-[9px] text-white font-bold bg-[#2F6BFF] px-1.5 py-0.2 rounded-full">
                 {Math.round(searchResult.match_score * 100)}%
               </span>
             </div>
             {searchResult.match_explanation && (
-              <p className="mt-1 text-[9px] text-white/90 line-clamp-1 font-semibold leading-tight">
+              <p className="mt-0.5 text-[9px] text-white/80 line-clamp-1 font-normal leading-tight">
                 {searchResult.match_explanation}
               </p>
             )}
@@ -121,16 +100,21 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
         )}
       </div>
 
-      {/* Card Footer */}
+      {/* Card Info Footer */}
       {!searchResult && (
-        <div className="p-3 border-t border-white/80 bg-gradient-to-b from-white/95 to-slate-50/50 relative z-10">
-          <p className="truncate text-[11px] font-black text-slate-900 leading-tight">
+        <div className="p-2.5 border-t border-slate-100 bg-white">
+          <p className="truncate text-[12px] font-semibold text-slate-800 leading-tight">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between text-[10px] text-slate-600">
-            <span className="font-semibold">{new Date(screenshot.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <span>
+              {new Date(screenshot.created_at).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] text-[#2F6BFF] font-black">
+              <span className="truncate max-w-[50%] font-medium text-slate-500">
                 #{tags[0]}
               </span>
             )}

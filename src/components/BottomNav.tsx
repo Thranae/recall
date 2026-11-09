@@ -45,43 +45,43 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       className="fixed bottom-0 inset-x-0 z-40 pointer-events-none select-none"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="max-w-md mx-auto px-3 pb-2.5">
-        {/* Outer wrapper — NO overflow hidden so center orb can poke out */}
+      <div className="max-w-md mx-auto px-4 pb-3">
+        {/* Outer container allows elevated orb to extend upward cleanly */}
         <div className="pointer-events-auto relative w-full">
-
-          {/* Glass bar body — the visible rounded bar */}
-          <div className="nav-glass-bar relative rounded-[32px] px-1.5">
-
-            {/* Top caustic specular edge */}
+          {/* Main Floating Glass Bar Body */}
+          <div className="relative rounded-[28px] bg-white/85 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_-8px_rgba(15,23,42,0.12),0_4px_16px_rgba(0,0,0,0.04)] px-1">
+            {/* Top specular highlight hairline */}
             <div
               className="absolute top-0 left-6 right-6 h-px pointer-events-none rounded-full"
-              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.9) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.9) 70%, transparent 100%)' }}
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+              }}
             />
 
-            {/* 5-column grid */}
-            <div className="relative z-10 grid grid-cols-5 h-16">
-
-              {TABS.map((item) => {
+            {/* 5-Column Symmetrical Grid */}
+            <div className="relative z-10 grid grid-cols-5 h-15 items-center">
+              {TABS.map((item, idx) => {
                 if (item === null) {
                   return (
-                    <div key="center-orb" className="relative flex flex-col items-center justify-end h-16 pb-1.5">
-                      {/* Center floating orb — positioned above the bar */}
+                    <div key="center-add-orb" className="relative flex flex-col items-center justify-center h-full">
+                      {/* Packwise Elevated Center Add Orb */}
                       <button
                         type="button"
                         onClick={onOpenUpload}
-                        aria-label="Add Screenshot"
-                        className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center justify-center cursor-pointer focus:outline-none nav-orb-bounce"
+                        aria-label="Upload Screenshot"
+                        className="absolute -top-5.5 flex items-center justify-center cursor-pointer focus:outline-none active:scale-90 transition-transform duration-200"
                         style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
-                        {/* Outer frosted glass halo ring */}
-                        <div className="nav-orb-halo flex items-center justify-center h-14 w-14 rounded-full">
-                          {/* Inner blue dome */}
-                          <div className="nav-orb-dome flex items-center justify-center h-11 w-11 rounded-full">
-                            <Plus className="h-5 w-5 stroke-[2.8] text-white" />
+                        {/* Outer Frosted Halo Ring */}
+                        <div className="flex h-13.5 w-13.5 items-center justify-center rounded-full bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+                          {/* Inner Royal Blue Dome */}
+                          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-[#2F6BFF] via-[#3876FF] to-[#5AA9FF] text-white shadow-[0_4px_14px_rgba(47,107,255,0.45),inset_0_1.5px_2px_rgba(255,255,255,0.65)]">
+                            <Plus className="h-5 w-5 stroke-[2.8]" />
                           </div>
                         </div>
                       </button>
-                      <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-slate-400/80 leading-none">
+                      <span className="mt-8 text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">
                         Add
                       </span>
                     </div>
@@ -93,42 +93,36 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                 return (
                   <button
-                    key={label}
+                    key={`${item.key}-${label}-${idx}`}
                     type="button"
                     onClick={() => onSelectTab(item.key, item.category)}
-                    className="relative flex flex-col items-center justify-center h-16 w-full cursor-pointer focus:outline-none"
+                    className="relative flex flex-col items-center justify-center h-full w-full cursor-pointer focus:outline-none transition-all duration-200 active:scale-95"
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
-                    {/* Active glass pill backdrop */}
-                    <div
-                      className={`absolute inset-x-1.5 top-1.5 bottom-1.5 rounded-[18px] nav-active-pill transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                        active ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
-                    />
+                    {/* Active Tab Background Pill */}
+                    {active && (
+                      <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[20px] bg-white border border-white shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)]" />
+                    )}
 
-                    {/* Icon in glass pod */}
                     <div
-                      className={`relative z-10 flex items-center justify-center w-9 h-9 rounded-[14px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                        active
-                          ? 'nav-icon-pod-active -translate-y-0.5 scale-105'
-                          : 'nav-icon-pod-idle scale-100 translate-y-0'
+                      className={`relative z-10 flex items-center justify-center transition-transform duration-200 ${
+                        active ? '-translate-y-0.5 scale-105' : ''
                       }`}
                     >
                       <Icon
-                        className={`h-[18px] w-[18px] shrink-0 transition-all duration-300 ${
+                        className={`h-5 w-5 shrink-0 stroke-[2.2] transition-colors duration-200 ${
                           active
-                            ? 'text-[#2F6BFF] stroke-[2.3]'
-                            : 'text-slate-400 stroke-[1.8]'
+                            ? 'text-[#2F6BFF]'
+                            : 'text-slate-400 hover:text-slate-600'
                         }`}
                       />
                     </div>
 
-                    {/* Label */}
                     <span
-                      className={`relative z-10 mt-0.5 text-[8.5px] uppercase tracking-[0.06em] leading-none transition-all duration-300 ${
+                      className={`relative z-10 mt-1 text-[10px] leading-none transition-colors duration-200 ${
                         active
-                          ? 'font-extrabold text-slate-700 translate-y-0 opacity-100'
-                          : 'font-semibold text-slate-400 translate-y-0 opacity-70'
+                          ? 'font-bold text-slate-900'
+                          : 'font-medium text-slate-400'
                       }`}
                     >
                       {label}

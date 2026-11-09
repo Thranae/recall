@@ -76,31 +76,27 @@ html, body {
    PACKWISE EXPO 3D LIQUID GLASS SYSTEM (iOS 27 Plump Glass)
    ======================================================== */
 
-/* 1. Packwise Liquid Glass Card */
+/* 1. Packwise Liquid Glass Card — Authentic Apple / VisionOS Refraction */
 .glass-card,
 .ios-glass-card,
 .ios-plump-card {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 254, 0.72) 45%, rgba(240, 245, 252, 0.58) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.98);
-  border-right-color: rgba(255, 255, 255, 0.65);
-  border-bottom-color: rgba(0, 0, 0, 0.04);
-  border-radius: 28px;
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
   box-shadow: 
-    0 16px 40px -8px rgba(15, 23, 42, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.03),
-    inset 0 2px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02),
-    inset 0 0 20px rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+    0 4px 20px -2px rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
 
-/* Card glass diagonal light reflection */
+/* Subtle top edge specular sheen */
 .glass-card::before,
 .ios-glass-card::before,
 .ios-plump-card::before {
@@ -109,74 +105,69 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  height: 42%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.10) 60%, transparent 100%);
-  transform: skewY(-6deg) translateY(-25%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 40%, rgba(255, 255, 255, 0.95) 60%, transparent 100%);
   pointer-events: none;
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* 2. Packwise Expo Filter Chips (From TripsFilterTabs.tsx) */
+/* 2. Unified Apple iOS Segmented Control & Filter Chips */
+.ios-segmented-control {
+  display: flex;
+  background: rgba(226, 232, 240, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 3.5px;
+  border-radius: 9999px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ios-segment-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748B;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ios-segment-btn-active {
+  background: #FFFFFF;
+  color: #0F172A;
+  font-weight: 700;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
 .ios-filter-chip-active {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(242, 247, 255, 0.92) 50%, rgba(230, 240, 255, 0.85) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 1);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.98);
-  border-right-color: rgba(255, 255, 255, 0.8);
-  border-bottom-color: rgba(47, 107, 255, 0.18);
+  background: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 1);
   box-shadow: 
-    0 6px 18px -2px rgba(47, 107, 255, 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.04),
-    inset 0 2px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1.5px 2px rgba(47, 107, 255, 0.08);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  color: #2F6BFF;
-  font-weight: 800;
-  overflow: hidden;
-}
-
-.ios-filter-chip-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
-  pointer-events: none;
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  color: #0F172A;
+  font-weight: 700;
 }
 
 .ios-filter-chip-inactive {
   position: relative;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(248, 250, 253, 0.65) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
-  border-top-color: rgba(255, 255, 255, 1);
-  border-left-color: rgba(255, 255, 255, 0.92);
-  border-bottom-color: rgba(0, 0, 0, 0.03);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.03),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.02);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   color: #64748B;
-  font-weight: 700;
-  overflow: hidden;
-}
-
-.ios-filter-chip-inactive::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%);
-  pointer-events: none;
+  font-weight: 600;
 }
 
 /* Active glowing indicator dot from TripsFilterTabs */
