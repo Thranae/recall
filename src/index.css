@@ -103,18 +103,15 @@ html, body {
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1),
     inset 0 -1px 2px 0 rgba(15, 23, 42, 0.05) !important;
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   will-change: transform, box-shadow;
   transform: translateZ(0);
 }
 
-.liquid-glass-card:hover,
-.ios-glass-card:hover,
-.ios-plump-card:hover {
-  box-shadow: 
-    0 14px 34px -4px rgba(15, 23, 42, 0.09),
-    inset 0 2px 2px 0 rgba(255, 255, 255, 1) !important;
-  transform: translateY(-1.5px) translateZ(0);
+.liquid-glass-card:active,
+.ios-glass-card:active,
+.ios-plump-card:active {
+  transform: scale(0.98);
 }
 
 /* 2. LIQUID GLASS CONTAINER (Sheets & Modals) */
@@ -168,16 +165,8 @@ html, body {
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
   transform: translateZ(0);
-}
-
-.liquid-filter-chip:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  transform: translateY(-1px);
-  box-shadow: 
-    0 5px 14px rgba(15, 23, 42, 0.06),
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 1);
 }
 
 .liquid-filter-chip:active {
@@ -195,23 +184,11 @@ html, body {
   border-top-color: rgba(255, 255, 255, 0.65) !important;
   border-bottom-color: rgba(20, 35, 55, 0.30) !important;
   box-shadow: 
-    0 6px 16px rgba(45, 75, 110, 0.22),
+    0 4px 12px rgba(45, 75, 110, 0.20),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 0.40),
     inset 0 -1.5px 2px rgba(0, 0, 0, 0.15) !important;
   color: #FFFFFF !important;
   font-weight: 700 !important;
-  transform: translateY(-0.5px);
-}
-
-.liquid-filter-chip-active:hover {
-  background: linear-gradient(
-    145deg,
-    #537B9F 0%,
-    #3C6086 100%
-  ) !important;
-  box-shadow: 
-    0 8px 18px rgba(45, 75, 110, 0.26),
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.5);
 }
 
 .liquid-filter-chip-active:active {
@@ -233,14 +210,14 @@ html, body {
   border-top-color: rgba(255, 255, 255, 0.60) !important;
   border-bottom-color: rgba(15, 25, 45, 0.35) !important;
   box-shadow: 
-    0 8px 20px -2px rgba(45, 75, 110, 0.24),
-    0 2px 6px rgba(0, 0, 0, 0.04),
+    0 6px 16px -2px rgba(45, 75, 110, 0.22),
+    0 2px 4px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px rgba(255, 255, 255, 0.45),
     inset 0 -1.5px 3px rgba(0, 0, 0, 0.20) !important;
   color: #FFFFFF !important;
   font-weight: 700 !important;
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 
@@ -257,20 +234,6 @@ html, body {
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
   pointer-events: none;
-}
-
-.ios-liquid-primary:hover,
-.primary-liquid-button:hover,
-.liquid-btn-primary:hover {
-  background: linear-gradient(
-    145deg,
-    #537B9F 0%,
-    #3A5E82 100%
-  ) !important;
-  box-shadow: 
-    0 10px 24px -2px rgba(45, 75, 110, 0.30),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.55);
-  transform: translateY(-1px);
 }
 
 .ios-liquid-primary:active,
@@ -295,19 +258,12 @@ html, body {
   border-top-color: #FFFFFF !important;
   border-bottom-color: rgba(180, 195, 215, 0.35) !important;
   box-shadow: 
-    0 3px 10px rgba(15, 23, 42, 0.04),
+    0 2px 8px rgba(15, 23, 42, 0.04),
     inset 0 1px 1.5px rgba(255, 255, 255, 1),
     inset 0 -1px 2px rgba(15, 23, 42, 0.04) !important;
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
-}
-
-.ios-glass-pill:hover,
-.liquid-glass-pill:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .ios-glass-pill:active,
@@ -438,17 +394,15 @@ html, body {
     inset 0 1.5px 2px rgba(255, 255, 255, 1),
     inset 0 -1px 2px rgba(15, 23, 42, 0.04) !important;
   color: #1E293B !important; /* Deep slate - 100% visible */
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 
-.nav-unselected-icon-pod:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+.nav-unselected-icon-pod:active {
+  transform: scale(0.92);
 }
 
-/* Plump 3D Liquid Glass Jewel for SELECTED tab icon */
+/* Plump Liquid Glass Jewel for SELECTED tab icon */
 .nav-selected-icon-pod {
   position: relative;
   display: flex;
@@ -470,13 +424,17 @@ html, body {
   border-bottom-width: 2px !important;
   border-bottom-color: rgba(45, 75, 110, 0.35) !important;
   box-shadow:
-    0 8px 22px rgba(40, 70, 110, 0.24),
-    0 2px 6px rgba(0, 0, 0, 0.04),
-    inset 0 2px 3px rgba(255, 255, 255, 1),
-    inset 0 4px 12px rgba(255, 255, 255, 0.85),
-    inset 0 -2px 4px rgba(40, 70, 110, 0.18) !important;
-  transform: translateY(-2px) scale(1.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    0 4px 14px rgba(40, 70, 110, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1.5px 2px #FFFFFF,
+    inset 0 3px 8px rgba(255, 255, 255, 0.85),
+    inset 0 -1.5px 3px rgba(40, 70, 110, 0.14) !important;
+  transform: scale(1.04);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-selected-icon-pod:active {
+  transform: scale(0.96);
 }
 
 /* Center orb halo */

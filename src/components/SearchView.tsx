@@ -96,7 +96,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
+              className="p-1 text-slate-400 active:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
             >
               <X className="h-4 w-4 stroke-[2.2]" />
             </button>

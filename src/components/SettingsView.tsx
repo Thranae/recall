@@ -101,7 +101,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <button
         type="button"
         onClick={onLogout}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-glass-pill border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50/50 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-glass-pill border-rose-200 text-xs font-semibold text-rose-600 active:bg-rose-50 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
       >
         <LogOut className="h-4 w-4 stroke-[2]" />
         <span>Sign Out</span>

@@ -45,7 +45,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           onClick();
         }
       }}
-      className="liquid-glass-card group relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
+      className="liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       {/* Thumbnail Aspect Container */}
@@ -54,7 +54,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           src={imageUrl}
           alt={screenshot.original_filename}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-full w-full object-cover"
         />
 
         {/* Floating Category Pill */}

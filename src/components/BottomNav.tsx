@@ -103,12 +103,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <div className="relative z-10 flex items-center justify-center">
                       {active ? (
                         <div className="nav-selected-icon-pod">
-                          {/* 3D Bottom Specular Highlight (white) */}
-                          <Icon className="absolute top-[10px] h-5 w-5 stroke-[2.6] text-white opacity-95 pointer-events-none" />
-                          {/* 3D Top Depth Shadow */}
-                          <Icon className="absolute top-[8px] h-5 w-5 stroke-[2.6] text-slate-900/20 pointer-events-none" />
-                          {/* Main Liquid Jewel Icon */}
-                          <Icon className="relative z-10 h-5 w-5 stroke-[2.4] text-[#1D3E64]" />
+                          <Icon className="h-5 w-5 stroke-[2.4] text-[#1D3E64]" />
                         </div>
                       ) : (
                         <div className="nav-unselected-icon-pod">

@@ -142,7 +142,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               disabled={isDeleting}
               title="Delete screenshot"
               aria-label="Delete screenshot"
-              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-400 hover:text-rose-600 active:scale-90 transition-all cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:text-rose-600 active:scale-90 transition-all cursor-pointer"
             >
               {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin text-rose-600" /> : <Trash2 className="h-3.5 w-3.5 stroke-[2]" />}
             </button>

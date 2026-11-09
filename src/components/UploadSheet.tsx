@@ -142,7 +142,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedFiles([])}
-                    className="text-rose-600 font-semibold hover:underline cursor-pointer"
+                    className="text-rose-600 font-semibold active:opacity-70 cursor-pointer"
                   >
                     Clear all
                   </button>
@@ -158,7 +158,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(index)}
-                        className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                        className="text-slate-400 active:text-rose-600 active:scale-90 p-0.5 cursor-pointer"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
