@@ -58,13 +58,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#FAF7F5] px-6 pt-12 pb-8 text-stone-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
-      {/* Subtle Ambient Copper & Rustic Maroon Light */}
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F8F9F5] px-6 pt-12 pb-8 text-stone-900 sm:mx-auto sm:max-w-md sm:justify-center sm:py-16 relative overflow-hidden">
+      {/* Subtle Ambient Olive Green Light */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(166, 75, 59, 0.12) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(112, 130, 56, 0.13) 0%, transparent 70%)',
             width: '65vw',
             height: '65vw',
             top: '-10%',
@@ -75,7 +75,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(142, 57, 41, 0.09) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(79, 93, 39, 0.09) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '15%',

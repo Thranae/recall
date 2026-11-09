@@ -8,7 +8,7 @@ import App from './App.tsx'
 
 if (Capacitor.isNativePlatform()) {
   StatusBar.setStyle({ style: Style.Light })
-  StatusBar.setBackgroundColor({ color: '#FAF7F5' })
+  StatusBar.setBackgroundColor({ color: '#F8F9F5' })
   SplashScreen.hide()
 }
 

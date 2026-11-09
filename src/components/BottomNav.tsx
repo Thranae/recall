@@ -51,7 +51,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         style={{
           height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
           background:
-            'linear-gradient(to top, rgba(250, 247, 245, 0.90) 0%, rgba(247, 235, 230, 0.40) 45%, transparent 100%)',
+            'linear-gradient(to top, rgba(248, 249, 245, 0.92) 0%, rgba(242, 246, 235, 0.40) 45%, transparent 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
@@ -117,7 +117,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <div className="relative z-10 flex items-center justify-center">
                       {active ? (
                         <div className="nav-selected-icon-pod">
-                          <Icon className="h-5 w-5 stroke-[2.4] text-[#7D2820]" />
+                          <Icon className="h-5 w-5 stroke-[2.4] text-[#4F5D27]" />
                         </div>
                       ) : (
                         <div className="nav-unselected-icon-pod">
@@ -129,7 +129,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     <span
                       className={`relative z-10 text-[9.5px] uppercase tracking-wider leading-none transition-all duration-200 ${
                         active
-                          ? 'mt-0.5 font-extrabold text-[#7D2820]'
+                          ? 'mt-0.5 font-extrabold text-[#4F5D27]'
                           : 'mt-1 font-bold text-stone-600'
                       }`}
                     >

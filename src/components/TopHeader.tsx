@@ -17,14 +17,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   isRefreshing,
 }) => {
   return (
-    <div className="sticky top-0 inset-x-0 z-30 pointer-events-none select-none pt-safe">
+    <div
+      className="fixed top-0 inset-x-0 z-30 pointer-events-none select-none"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       {/* Subtle Cloudy Header Blur under the Top Nav Bar (Expo Project reference) */}
       <div
         className="absolute inset-x-0 top-0 pointer-events-none -z-10"
         style={{
-          height: 'calc(80px + env(safe-area-inset-top, 0px))',
+          height: 'calc(84px + env(safe-area-inset-top, 0px))',
           background:
-            'linear-gradient(to bottom, rgba(250, 247, 245, 0.90) 0%, rgba(247, 235, 230, 0.40) 50%, transparent 100%)',
+            'linear-gradient(to bottom, rgba(248, 249, 245, 0.92) 0%, rgba(242, 246, 235, 0.40) 50%, transparent 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
@@ -44,7 +47,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }}
           />
 
-          {/* Brand / Title section with Plump Copper Liquid Pod */}
+          {/* Brand / Title section with Plump Olive Liquid Pod */}
           <div className="flex items-center gap-2.5">
             <div className="flex h-8.5 w-8.5 items-center justify-center rounded-[14px] liquid-btn-primary text-white shadow-xs">
               <Camera className="h-4 w-4 stroke-[2.2]" />
@@ -80,7 +83,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 stroke-[2] ${
-                  isRefreshing ? 'animate-spin text-[#9A4635]' : 'text-stone-600'
+                  isRefreshing ? 'animate-spin text-[#708238]' : 'text-stone-600'
                 }`}
               />
             </button>

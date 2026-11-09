@@ -127,7 +127,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#7D2820]' : 'text-stone-500'}`} />
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#4F5D27]' : 'text-stone-500'}`} />
               <span className="truncate">{cat.label}</span>
             </button>
           );
@@ -139,7 +139,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-stone-900 flex items-center gap-1.5 tracking-tight">
-              <Sparkles className="h-4 w-4 text-[#9A4635]" />
+              <Sparkles className="h-4 w-4 text-[#708238]" />
               <span>Suggested Explorations</span>
             </span>
             <span className="text-[11px] font-mono text-stone-400">Tap to search</span>
@@ -177,7 +177,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-[#9A4635] truncate font-semibold">
+                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-[#708238] truncate font-semibold">
                     "{item.query}"
                   </div>
                 </button>

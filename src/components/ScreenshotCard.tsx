@@ -87,7 +87,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               <span className="font-semibold text-white truncate max-w-[75%]">
                 {searchResult.match_type.replace('_', ' ')}
               </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-[#873628] px-2 py-0.5 rounded-full shadow-xs">
+              <span className="font-mono text-[9px] text-white font-bold bg-[#708238] px-2 py-0.5 rounded-full shadow-xs">
                 {Math.round(searchResult.match_score * 100)}%
               </span>
             </div>
@@ -114,7 +114,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] font-semibold text-[#9A4635]">
+              <span className="truncate max-w-[50%] font-semibold text-[#708238]">
                 #{tags[0]}
               </span>
             )}

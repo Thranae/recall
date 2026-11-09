@@ -140,8 +140,8 @@ export const App: React.FC = () => {
   // Splash loading during token verification
   if (isInitializing) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#FAF7F5] text-stone-800">
-        <Loader2 className="h-8 w-8 animate-spin text-[#9A4635]" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F8F9F5] text-stone-800">
+        <Loader2 className="h-8 w-8 animate-spin text-[#708238]" />
       </div>
     );
   }
@@ -156,13 +156,13 @@ export const App: React.FC = () => {
   ).length;
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#F2F5F9] text-slate-900 flex flex-col antialiased selection:bg-slate-500/20 selection:text-slate-900 overflow-x-hidden">
-      {/* Ambient Aurora Light for Liquid Glass Refraction (Rustic Maroon & Warm Copper palette) */}
+    <div className="relative min-h-[100dvh] bg-[#F8F9F5] text-stone-900 flex flex-col antialiased selection:bg-[#708238]/20 selection:text-[#4F5D27] overflow-x-hidden">
+      {/* Ambient Aurora Light for Liquid Glass Refraction (Olive Green #708238 palette) */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(166, 75, 59, 0.12) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(112, 130, 56, 0.13) 0%, transparent 70%)',
             width: '65vw',
             height: '65vw',
             top: '-10%',
@@ -173,7 +173,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(184, 93, 72, 0.10) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(135, 156, 68, 0.10) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '15%',
@@ -184,7 +184,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(142, 57, 41, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(79, 93, 39, 0.08) 0%, transparent 70%)',
             width: '70vw',
             height: '70vw',
             top: '30%',
@@ -195,7 +195,7 @@ export const App: React.FC = () => {
         <div
           className="vision-blob"
           style={{
-            background: 'radial-gradient(circle, rgba(194, 114, 82, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(145, 168, 72, 0.08) 0%, transparent 70%)',
             width: '60vw',
             height: '60vw',
             bottom: '-10%',
@@ -205,7 +205,7 @@ export const App: React.FC = () => {
         />
       </div>
 
-      {/* Top Mobile iOS Light Header */}
+      {/* Top Mobile iOS Light Header (Statically Fixed) */}
       <TopHeader
         title={currentTab === 'library' ? 'Recalls' : currentTab === 'search' ? 'Search' : 'Settings'}
         isProcessing={processingCount > 0}
@@ -214,8 +214,11 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
       />
 
-      {/* Main Tab Views */}
-      <main className="relative z-10 flex-1 w-full">
+      {/* Main Tab Views with Top Padding for Fixed Static Top Navbar */}
+      <main
+        className="relative z-10 flex-1 w-full"
+        style={{ paddingTop: 'calc(70px + env(safe-area-inset-top, 0px))' }}
+      >
         {currentTab === 'library' && (
           <LibraryView
             screenshots={screenshots}
