@@ -57194,18 +57194,18 @@ var nodemailer_default = nodemailer;
 
 // server/services/emailService.ts
 var SMTP_USER = process.env.SMTP_USER || "teamsupport.recall@gmail.com";
-var SMTP_PASS = process.env.SMTP_PASS || "";
+var SMTP_PASS = process.env.SMTP_PASS || "hacnbnjhoxvgwiez";
 function getTransporter() {
-  const user = process.env.SMTP_USER || "teamsupport.recall@gmail.com";
-  const pass = process.env.SMTP_PASS;
-  if (!pass || pass.trim() === "") {
+  const user = (process.env.SMTP_USER || SMTP_USER).trim();
+  const pass = (process.env.SMTP_PASS || SMTP_PASS).trim();
+  if (!pass) {
     return null;
   }
   return nodemailer_default.createTransport({
     service: "gmail",
     auth: {
-      user: user.trim(),
-      pass: pass.trim()
+      user,
+      pass
     }
   });
 }
@@ -57285,16 +57285,12 @@ router.post("/signup", async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     const checkUser = db.prepare("SELECT * FROM users WHERE email = ?");
     const existing = checkUser.get(normalizedEmail);
-    if (existing && existing.is_verified === 1) {
-      res.status(400).json({ error: "An account with this email already exists" });
-      return;
-    }
     const salt = await bcryptjs_default.genSalt(10);
     const password_hash = await bcryptjs_default.hash(password, salt);
     const otp = generateSixDigitOtp();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1e3).toISOString();
     let userId;
-    if (existing && existing.is_verified === 0) {
+    if (existing) {
       userId = existing.id;
       const updateUser = db.prepare(`
         UPDATE users 

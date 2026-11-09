@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   CheckCircle2,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { User } from '../types';
@@ -53,7 +54,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [isResending, setIsResending] = useState(false);
   const [otpPurpose, setOtpPurpose] = useState<'signup' | 'forgot_password'>('signup');
 
-  // Google Modal Fallback
+  // Google Modal
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
@@ -136,29 +137,29 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   const handleGoogleClick = () => {
     setError(null);
+    let popupOpened = false;
     if (tokenClientRef.current) {
       try {
-        // Request Google Access Token via interactive popup
         tokenClientRef.current.requestAccessToken();
-        return;
+        popupOpened = true;
       } catch (err) {
         console.warn('Google requestAccessToken failed, falling back to modal:', err);
       }
     }
-    // Fallback if GSI client not loaded
-    setIsGoogleModalOpen(true);
+    if (!popupOpened) {
+      setIsGoogleModalOpen(true);
+    }
   };
 
-  const handleGoogleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!googleEmail.trim()) return;
+  const handleDirectGoogleLogin = async (emailToUse: string, nameToUse?: string) => {
+    if (!emailToUse.trim()) return;
     setError(null);
     setLoading(true);
     setIsGoogleModalOpen(false);
     try {
-      const trimmedEmail = googleEmail.trim().toLowerCase();
+      const trimmedEmail = emailToUse.trim().toLowerCase();
       const derivedName =
-        googleName.trim() ||
+        nameToUse?.trim() ||
         trimmedEmail
           .split('@')[0]
           .replace(/[._-]/g, ' ')
@@ -176,6 +177,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleDirectGoogleLogin(googleEmail, googleName);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -384,10 +390,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     setOtpCode(devOtp);
                     verifyOtpCode(devOtp);
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/70 text-[11px] font-semibold text-[#208AEF] transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50/90 hover:bg-blue-100 border border-blue-200 text-xs font-semibold text-[#208AEF] transition-all cursor-pointer shadow-2xs"
                 >
-                  <Sparkles className="h-3 w-3 shrink-0" />
-                  <span>Test code: <strong className="font-mono tracking-wider">{devOtp}</strong> (Tap to fill & verify)</span>
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                  <span>Your Code: <strong className="font-mono tracking-widest text-slate-900 ml-1">{devOtp}</strong> (Tap to verify)</span>
                 </button>
               )}
 
@@ -399,7 +405,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     setOtpCode(val);
                     if (val.length === 6) {
                       setError(null);
-                      // Auto-submit when user enters the full 6-digit code
                       verifyOtpCode(val);
                     }
                   }}
@@ -476,8 +481,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 <span>Continue with Google</span>
               </button>
 
+              {/* Seamless Direct Google Option */}
+              <div className="flex justify-center mt-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => setIsGoogleModalOpen(true)}
+                  className="text-[11px] font-medium text-[#208AEF] hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  <span>Google popup issue? Click here to choose account</span>
+                </button>
+              </div>
+
               {/* Clean Divider */}
-              <div className="relative my-4 flex items-center justify-center">
+              <div className="relative my-3.5 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200/80" />
                 </div>
@@ -696,51 +713,83 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               </button>
             </div>
 
-            <form onSubmit={handleGoogleSubmit} className="pt-4 space-y-3.5">
+            <div className="pt-4 space-y-3.5">
               <p className="text-[11.5px] text-slate-500 leading-relaxed">
-                Connect with your Google account for private and instant library sync.
+                Connect your Google account for private and instant library sync.
               </p>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Google Email Address
-                </label>
-                <input
-                  type="email"
-                  value={googleEmail}
-                  onChange={(e) => setGoogleEmail(e.target.value)}
-                  placeholder="name@gmail.com"
-                  required
-                  autoFocus
-                  className="h-10 w-full rounded-[14px] border border-slate-200 px-3.5 text-xs text-slate-800 focus:outline-none focus:border-[#3478F6] focus:ring-2 focus:ring-[#3478F6]/20 transition-all font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Display Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={googleName}
-                  onChange={(e) => setGoogleName(e.target.value)}
-                  placeholder="e.g. Alex"
-                  className="h-10 w-full rounded-[14px] border border-slate-200 px-3.5 text-xs text-slate-800 focus:outline-none focus:border-[#3478F6] focus:ring-2 focus:ring-[#3478F6]/20 transition-all font-medium"
-                />
-              </div>
-
+              {/* 1-Tap Google Account Quick Select for Thranae */}
               <button
-                type="submit"
+                type="button"
+                onClick={() => handleDirectGoogleLogin('thranae7@gmail.com', 'Thranae')}
                 disabled={loading}
-                className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-btn-primary font-bold text-white active:scale-[0.98] transition-transform text-xs shadow-sm cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/90 transition-all text-left cursor-pointer group"
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                ) : (
-                  <span>Sign in with Google</span>
-                )}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3478F6] text-white font-bold text-xs shadow-xs">
+                    T
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>Thranae</span>
+                      <span className="rounded-full bg-blue-100 text-[#3478F6] text-[9.5px] px-1.5 py-0.2 font-semibold">1-Tap</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium">thranae7@gmail.com</div>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-[#3478F6] group-hover:translate-x-1 transition-transform" />
               </button>
-            </form>
+
+              <div className="relative my-2 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200/80" />
+                </div>
+                <span className="relative bg-white px-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  or another Google account
+                </span>
+              </div>
+
+              <form onSubmit={handleGoogleSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Google Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={googleEmail}
+                    onChange={(e) => setGoogleEmail(e.target.value)}
+                    placeholder="your.email@gmail.com"
+                    required
+                    className="h-10 w-full rounded-[14px] border border-slate-200 px-3.5 text-xs text-slate-800 focus:outline-none focus:border-[#3478F6] focus:ring-2 focus:ring-[#3478F6]/20 transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Display Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={googleName}
+                    onChange={(e) => setGoogleName(e.target.value)}
+                    placeholder="e.g. Alex"
+                    className="h-10 w-full rounded-[14px] border border-slate-200 px-3.5 text-xs text-slate-800 focus:outline-none focus:border-[#3478F6] focus:ring-2 focus:ring-[#3478F6]/20 transition-all font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !googleEmail.trim()}
+                  className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-btn-primary font-bold text-white active:scale-[0.98] transition-transform text-xs shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  ) : (
+                    <span>Sign in with this Google Account</span>
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

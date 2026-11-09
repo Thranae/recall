@@ -27,19 +27,14 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
     const checkUser = db.prepare('SELECT * FROM users WHERE email = ?');
     const existing = checkUser.get(normalizedEmail) as any;
 
-    if (existing && existing.is_verified === 1) {
-      res.status(400).json({ error: 'An account with this email already exists' });
-      return;
-    }
-
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
     const otp = generateSixDigitOtp();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
     let userId: string;
-    if (existing && existing.is_verified === 0) {
-      // Re-use unverified user account, update details and new OTP
+    if (existing) {
+      // Re-use user account, update details, new password hash, and new 6-digit OTP
       userId = existing.id;
       const updateUser = db.prepare(`
         UPDATE users 

@@ -1,21 +1,21 @@
 import nodemailer from 'nodemailer';
 
 const SMTP_USER = process.env.SMTP_USER || 'teamsupport.recall@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_PASS = process.env.SMTP_PASS || 'hacnbnjhoxvgwiez';
 
 function getTransporter(): nodemailer.Transporter | null {
-  const user = process.env.SMTP_USER || 'teamsupport.recall@gmail.com';
-  const pass = process.env.SMTP_PASS;
+  const user = (process.env.SMTP_USER || SMTP_USER).trim();
+  const pass = (process.env.SMTP_PASS || SMTP_PASS).trim();
 
-  if (!pass || pass.trim() === '') {
+  if (!pass) {
     return null;
   }
 
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: user.trim(),
-      pass: pass.trim(),
+      user,
+      pass,
     },
   });
 }
