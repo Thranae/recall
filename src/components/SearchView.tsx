@@ -75,11 +75,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {/* 1. Plump Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
         <div className="flex h-13 items-center rounded-[20px] liquid-glass-input px-3.5 shadow-sm transition-all duration-150">
-          <div className="text-slate-400 shrink-0">
+          <div className="shrink-0 relative z-10 flex items-center justify-center">
             {isSearching ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin text-slate-600" />
+              <Loader2 className="h-4.5 w-4.5 animate-spin text-[#3478F6]" />
             ) : (
-              <Search className="h-4.5 w-4.5 stroke-[2.2] text-slate-500" />
+              <Search className="h-4.5 w-4.5 stroke-[2.3] text-[#3478F6]" />
             )}
           </div>
 
@@ -88,7 +88,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search conversations, stats, text..."
-            className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-slate-400 focus:outline-none"
+            className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none relative z-10"
           />
 
           {query && (
@@ -96,7 +96,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="p-1 text-slate-400 active:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
+              className="p-1 text-[#4A5D78] hover:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
             >
               <X className="h-4 w-4 stroke-[2.2]" />
             </button>
@@ -104,8 +104,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
           <button
             type="submit"
-            disabled={isSearching || !query.trim()}
-            className="h-9 shrink-0 rounded-full px-4 text-xs font-semibold text-white liquid-btn-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-xs"
+            disabled={isSearching}
+            className={`h-9 shrink-0 rounded-full px-4 text-xs font-bold relative z-10 transition-all cursor-pointer shadow-xs flex items-center justify-center ${
+              query.trim()
+                ? 'liquid-btn-primary text-white active:scale-95'
+                : 'liquid-glass-pill text-[#3478F6] active:scale-95'
+            }`}
           >
             Search
           </button>

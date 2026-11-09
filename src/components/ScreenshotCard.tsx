@@ -60,13 +60,13 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           className="h-full w-full object-cover"
         />
 
-        {/* Plump Liquid Glass Inner Stroke on Image */}
+        {/* Minimal Liquid Glass Inner Stroke on Image */}
         <div
           className="pointer-events-none absolute inset-0 z-10"
           style={{
-            borderBottom: '1.5px solid rgba(255, 255, 255, 0.75)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.60)',
             boxShadow:
-              'inset 0 2.5px 3.5px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -3px 6px 0 rgba(23, 43, 77, 0.12)',
+              'inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.30), inset 0 -1.5px 3px 0 rgba(23, 43, 77, 0.06)',
           }}
         />
 

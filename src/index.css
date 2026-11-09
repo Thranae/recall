@@ -289,34 +289,68 @@ html, body {
   transform: translateZ(0);
 }
 
-/* 7. LIQUID GLASS INPUT */
+/* 7. LIQUID GLASS INPUT (Bright, Translucent, Glossy iOS-inspired) */
 .glass-input,
 .liquid-glass-input {
-  background: rgba(255, 255, 255, 0.90) !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
-  border-top-width: 1.5px !important;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(246, 250, 255, 0.88) 50%,
+    rgba(235, 243, 253, 0.80) 100%
+  ) !important;
+  backdrop-filter: blur(32px) saturate(160%) brightness(103%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(103%) !important;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.98) !important;
+  border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
+  border-left-color: rgba(255, 255, 255, 0.98) !important;
+  border-right-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-width: 1.5px !important;
   border-bottom-color: rgba(185, 217, 255, 0.40) !important;
-  border-radius: 18px;
   box-shadow: 
-    inset 0 1.5px 3px rgba(23, 43, 77, 0.03), 
-    0 3px 10px rgba(23, 43, 77, 0.03) !important;
-  backdrop-filter: blur(20px) saturate(130%);
-  -webkit-backdrop-filter: blur(20px) saturate(130%);
+    0 8px 24px -4px rgba(23, 43, 77, 0.08),
+    0 2px 6px rgba(52, 120, 246, 0.04),
+    inset 0 1.5px 2px #FFFFFF,
+    inset 0 4px 12px rgba(255, 255, 255, 0.90),
+    inset 0 -1.5px 2px rgba(52, 120, 246, 0.06) !important;
   color: #172B4D !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 
+.glass-input::before,
+.liquid-glass-input::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.08) 80%, transparent 100%);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .glass-input:focus-within,
-.glass-input:focus,
-.liquid-glass-input:focus-within,
-.liquid-glass-input:focus {
-  background: #FFFFFF !important;
+.liquid-glass-input:focus-within {
+  background: linear-gradient(
+    180deg,
+    #FFFFFF 0%,
+    rgba(248, 251, 255, 0.96) 50%,
+    rgba(238, 245, 255, 0.90) 100%
+  ) !important;
   border-color: #3478F6 !important;
+  border-top-color: #FFFFFF !important;
   box-shadow: 
-    0 0 0 3px rgba(52, 120, 246, 0.18), 
-    0 4px 14px rgba(23, 43, 77, 0.05) !important;
+    0 0 0 3px rgba(52, 120, 246, 0.20), 
+    0 8px 24px -2px rgba(52, 120, 246, 0.12),
+    inset 0 1.5px 2px #FFFFFF,
+    inset 0 -1.5px 2px rgba(52, 120, 246, 0.10) !important;
   outline: none;
 }
 
@@ -576,24 +610,19 @@ html, body {
   will-change: transform;
 }
 
-/* 12. PLUMP LIQUID GLASS INNER STROKE OVERLAY FOR IMAGE CARDS */
+/* 12. MINIMAL LIQUID GLASS INNER STROKE OVERLAY FOR IMAGE CARDS */
 .liquid-card-inner-stroke {
   position: absolute;
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
   z-index: 15;
-  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
-  border-top-width: 2px !important;
-  border-top-color: #FFFFFF !important;
-  border-left-color: rgba(255, 255, 255, 0.90) !important;
-  border-right-color: rgba(255, 255, 255, 0.90) !important;
-  border-bottom-width: 1.5px !important;
-  border-bottom-color: rgba(185, 217, 255, 0.50) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: rgba(185, 217, 255, 0.35) !important;
   box-shadow:
-    inset 0 2.5px 3.5px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
-    inset 0 -2px 3px 0 rgba(23, 43, 77, 0.08) !important;
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 1px 0 rgba(23, 43, 77, 0.04) !important;
 }
 
 /* Hide scrollbars cleanly */
