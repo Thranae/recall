@@ -35,7 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* 2. Library Storage Summary (No nested boxes) */}
       <div className="liquid-glass-card rounded-[22px] p-4.5 space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-          <Database className="h-4 w-4 text-[#3A628B] stroke-[2]" />
+          <Database className="h-4 w-4 text-[#9A4635] stroke-[2]" />
           <span>Library Storage</span>
         </div>
 
@@ -46,7 +46,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div>
             <span className="text-[11px] font-medium text-slate-400 block uppercase tracking-wider">Indexed</span>
-            <p className="mt-1 font-mono text-2xl font-bold text-[#3A628B] leading-none">{readyCount}</p>
+            <p className="mt-1 font-mono text-2xl font-bold text-[#9A4635] leading-none">{readyCount}</p>
           </div>
         </div>
       </div>

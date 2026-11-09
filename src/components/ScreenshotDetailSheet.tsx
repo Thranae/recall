@@ -180,8 +180,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
           {/* Search Result Explanation Banner if present */}
           {searchResult?.match_explanation && (
-            <div className="rounded-[18px] border border-blue-200/70 bg-blue-50/70 backdrop-blur-md p-3.5 text-xs text-slate-800 shadow-2xs">
-              <span className="font-bold block mb-0.5 text-[#3A628B]">Match Explanation</span>
+            <div className="rounded-[18px] border border-amber-200/70 bg-amber-50/60 backdrop-blur-md p-3.5 text-xs text-stone-800 shadow-2xs">
+              <span className="font-bold block mb-0.5 text-[#9A4635]">Match Explanation</span>
               <p className="leading-relaxed font-normal">{searchResult.match_explanation}</p>
             </div>
           )}
@@ -225,7 +225,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <div className="rounded-[20px] liquid-glass-card p-4 space-y-3 shadow-xs">
                       <div className="flex items-center justify-between text-xs text-slate-700 font-bold px-0.5">
                         <div className="flex items-center gap-1.5">
-                          <MessageSquare className="h-3.5 w-3.5 text-[#3A628B] stroke-[2]" />
+                          <MessageSquare className="h-3.5 w-3.5 text-[#9A4635] stroke-[2]" />
                           <span>Conversation Flow ({data.messages.length})</span>
                         </div>
                         <span className="text-[10px] text-slate-400 font-mono">Verified Order</span>

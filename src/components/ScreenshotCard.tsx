@@ -87,7 +87,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               <span className="font-semibold text-white truncate max-w-[75%]">
                 {searchResult.match_type.replace('_', ' ')}
               </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-[#3A628B] px-2 py-0.5 rounded-full shadow-xs">
+              <span className="font-mono text-[9px] text-white font-bold bg-[#873628] px-2 py-0.5 rounded-full shadow-xs">
                 {Math.round(searchResult.match_score * 100)}%
               </span>
             </div>
@@ -103,10 +103,10 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       {/* Card Info Details */}
       {!searchResult && (
         <div className="p-3">
-          <p className="truncate text-[12.5px] font-bold text-slate-800 leading-snug">
+          <p className="truncate text-[12.5px] font-bold text-stone-900 leading-snug">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-[11px] text-stone-500">
             <span className="font-mono">
               {new Date(screenshot.created_at).toLocaleDateString(undefined, {
                 month: 'short',
@@ -114,7 +114,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] font-semibold text-[#3A628B]">
+              <span className="truncate max-w-[50%] font-semibold text-[#9A4635]">
                 #{tags[0]}
               </span>
             )}

@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --theme-bg-base: #F2F5F9;
-  --theme-text-primary: #0F172A;
-  --theme-text-secondary: #475569;
-  --theme-blue: #3A628B;
-  --theme-blue-light: #527FA8;
+  --theme-bg-base: #FAF7F5;
+  --theme-text-primary: #1C1917;
+  --theme-text-secondary: #574B46;
+  --theme-copper: #9A4635;
+  --theme-copper-light: #B85D48;
+  --theme-maroon: #7D2820;
 
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -86,9 +87,9 @@ html, body {
   position: relative;
   background: linear-gradient(
     145deg,
-    rgba(255, 255, 255, 0.88) 0%,
-    rgba(247, 250, 255, 0.65) 50%,
-    rgba(255, 255, 255, 0.78) 100%
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(255, 250, 248, 0.70) 50%,
+    rgba(255, 255, 255, 0.82) 100%
   ) !important;
   backdrop-filter: blur(24px) saturate(135%);
   -webkit-backdrop-filter: blur(24px) saturate(135%);
@@ -96,12 +97,12 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.95) !important;
   border-top-width: 1.5px !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.35) !important;
+  border-bottom-color: rgba(200, 180, 175, 0.35) !important;
   box-shadow: 
-    0 10px 28px -4px rgba(15, 23, 42, 0.06),
+    0 10px 28px -4px rgba(45, 25, 20, 0.05),
     0 2px 6px rgba(0, 0, 0, 0.02),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 2px 0 rgba(15, 23, 42, 0.05) !important;
+    inset 0 -1px 2px 0 rgba(45, 25, 20, 0.04) !important;
   overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   will-change: transform, box-shadow;
@@ -121,16 +122,16 @@ html, body {
   background: linear-gradient(
     155deg,
     rgba(255, 255, 255, 0.96) 0%,
-    rgba(247, 250, 255, 0.88) 100%
+    rgba(255, 250, 248, 0.90) 100%
   ) !important;
   backdrop-filter: blur(28px) saturate(135%);
   -webkit-backdrop-filter: blur(28px) saturate(135%);
   border: 1px solid rgba(255, 255, 255, 0.98) !important;
   border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.30) !important;
+  border-bottom-color: rgba(200, 180, 175, 0.30) !important;
   box-shadow: 
-    0 20px 48px -8px rgba(15, 23, 42, 0.12),
+    0 20px 48px -8px rgba(45, 25, 20, 0.10),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1) !important;
   transform: translateZ(0);
 }
@@ -149,8 +150,8 @@ html, body {
   border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
   border-top-color: #FFFFFF !important;
   border-bottom-color: rgba(255, 255, 255, 0.60) !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
-  color: #475569;
+  box-shadow: 0 2px 8px rgba(45, 25, 20, 0.03) !important;
+  color: #574B46;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -164,24 +165,24 @@ html, body {
   transform: scale(0.96);
 }
 
-/* Expo Plump Liquid Active Filter Chip */
+/* Rustic Maroon / Copper Active Filter Chip */
 .liquid-filter-chip-active {
   background: linear-gradient(
     145deg,
     #FFFFFF 0%,
-    rgba(235, 245, 255, 0.98) 45%,
-    rgba(205, 228, 255, 0.90) 100%
+    rgba(255, 245, 242, 0.98) 45%,
+    rgba(250, 228, 222, 0.90) 100%
   ) !important;
   border: 1.5px solid #FFFFFF !important;
   border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(45, 75, 110, 0.25) !important;
+  border-bottom-color: rgba(127, 46, 35, 0.25) !important;
   box-shadow: 
-    0 4px 14px rgba(45, 75, 110, 0.16),
+    0 4px 14px rgba(127, 46, 35, 0.16),
     0 1px 3px rgba(0, 0, 0, 0.03),
     inset 0 1.5px 2px #FFFFFF,
-    inset 0 -1px 2px rgba(45, 75, 110, 0.10) !important;
-  color: #1D3E64 !important;
+    inset 0 -1px 2px rgba(127, 46, 35, 0.10) !important;
+  color: #7D2820 !important;
   font-weight: 700 !important;
 }
 
@@ -189,25 +190,25 @@ html, body {
   transform: scale(0.96);
 }
 
-/* 4. SUBTLE SLATE-BLUE PRIMARY BUTTON */
+/* 4. RUSTIC MAROON & COPPER PRIMARY BUTTON */
 .ios-liquid-primary,
 .primary-liquid-button,
 .liquid-btn-primary {
   position: relative;
   background: linear-gradient(
     145deg,
-    #4A7099 0%,
-    #335578 100%
+    #A64B3B 0%,
+    #7F2E23 100%
   ) !important;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-top-width: 1.5px !important;
-  border-top-color: rgba(255, 255, 255, 0.60) !important;
-  border-bottom-color: rgba(15, 25, 45, 0.35) !important;
+  border-top-color: rgba(255, 255, 255, 0.65) !important;
+  border-bottom-color: rgba(60, 20, 15, 0.40) !important;
   box-shadow: 
-    0 6px 16px -2px rgba(45, 75, 110, 0.22),
+    0 6px 18px -2px rgba(127, 46, 35, 0.28),
     0 2px 4px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px rgba(255, 255, 255, 0.45),
-    inset 0 -1.5px 3px rgba(0, 0, 0, 0.20) !important;
+    inset 0 -1.5px 3px rgba(0, 0, 0, 0.22) !important;
   color: #FFFFFF !important;
   font-weight: 700 !important;
   overflow: hidden;
@@ -278,11 +279,11 @@ html, body {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 1) !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.35) !important;
+  border-bottom-color: rgba(200, 180, 175, 0.35) !important;
   box-shadow: 
-    0 4px 12px rgba(15, 23, 42, 0.05),
+    0 4px 12px rgba(45, 25, 20, 0.05),
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(45, 75, 110, 0.06) !important;
+    inset 0 -1px 2px rgba(127, 46, 35, 0.06) !important;
   overflow: hidden;
   transform: translateZ(0);
 }
@@ -294,14 +295,14 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.95) !important;
   border-top-width: 1.5px !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.35) !important;
+  border-bottom-color: rgba(200, 180, 175, 0.35) !important;
   border-radius: 18px;
   box-shadow: 
-    inset 0 1.5px 3px rgba(15, 23, 42, 0.03), 
-    0 3px 10px rgba(15, 23, 42, 0.03) !important;
+    inset 0 1.5px 3px rgba(45, 25, 20, 0.03), 
+    0 3px 10px rgba(45, 25, 20, 0.03) !important;
   backdrop-filter: blur(20px) saturate(130%);
   -webkit-backdrop-filter: blur(20px) saturate(130%);
-  color: #0F172A !important;
+  color: #1C1917 !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
@@ -311,31 +312,39 @@ html, body {
 .liquid-glass-input:focus-within,
 .liquid-glass-input:focus {
   background: #FFFFFF !important;
-  border-color: #527FA8 !important;
+  border-color: #9A4635 !important;
   box-shadow: 
-    0 0 0 3px rgba(58, 98, 139, 0.15), 
-    0 4px 14px rgba(15, 23, 42, 0.05) !important;
+    0 0 0 3px rgba(154, 70, 53, 0.15), 
+    0 4px 14px rgba(45, 25, 20, 0.05) !important;
   outline: none;
 }
 
-/* 8. TOP NAVBAR — MATCHING BOTTOM NAVBAR VOLUMETRIC LIQUID GLASS */
+/* 8. TOP NAVBAR — SEPARATE FLOATING CAPSULE LIKE BOTTOM NAVBAR */
+.top-glass-bar,
 .top-liquid-nav {
   position: relative;
-  width: 100%;
-  user-select: none;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(247, 251, 255, 0.88) 50%,
-    rgba(228, 240, 254, 0.78) 100%
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 250, 248, 0.88) 50%,
+    rgba(247, 235, 230, 0.78) 100%
   ) !important;
   backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 
-    0 10px 30px -4px rgba(15, 23, 42, 0.08),
-    inset 0 -1.5px 2px rgba(148, 163, 184, 0.20),
-    inset 0 1.5px 2px #FFFFFF !important;
+  border-radius: 32px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.98) !important;
+  border-top-width: 2.5px !important;
+  border-top-color: #FFFFFF !important;
+  border-left-color: rgba(255, 255, 255, 0.98) !important;
+  border-right-color: rgba(255, 255, 255, 0.90) !important;
+  border-bottom-width: 2px !important;
+  border-bottom-color: rgba(190, 160, 150, 0.30) !important;
+  box-shadow:
+    0 16px 40px -6px rgba(45, 25, 20, 0.10),
+    0 4px 12px rgba(127, 46, 35, 0.04),
+    inset 0 2px 3px rgba(255, 255, 255, 1),
+    inset 0 6px 22px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 6px rgba(127, 46, 35, 0.05) !important;
   transform: translateZ(0);
 }
 
@@ -343,9 +352,9 @@ html, body {
 .nav-glass-bar {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(247, 251, 255, 0.88) 50%,
-    rgba(228, 240, 254, 0.78) 100%
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 250, 248, 0.88) 50%,
+    rgba(247, 235, 230, 0.78) 100%
   ) !important;
   backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
@@ -356,13 +365,13 @@ html, body {
   border-left-color: rgba(255, 255, 255, 0.98) !important;
   border-right-color: rgba(255, 255, 255, 0.90) !important;
   border-bottom-width: 2px !important;
-  border-bottom-color: rgba(148, 163, 184, 0.25) !important;
+  border-bottom-color: rgba(190, 160, 150, 0.30) !important;
   box-shadow:
-    0 16px 40px -6px rgba(15, 23, 42, 0.10),
-    0 4px 12px rgba(45, 75, 110, 0.04),
+    0 16px 40px -6px rgba(45, 25, 20, 0.10),
+    0 4px 12px rgba(127, 46, 35, 0.04),
     inset 0 2px 3px rgba(255, 255, 255, 1),
     inset 0 6px 22px rgba(255, 255, 255, 0.95),
-    inset 0 -2px 6px rgba(45, 75, 110, 0.05) !important;
+    inset 0 -2px 6px rgba(127, 46, 35, 0.05) !important;
   transform: translateZ(0);
 }
 
@@ -378,16 +387,16 @@ html, body {
   background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.92) 0%,
-    rgba(244, 248, 255, 0.82) 100%
+    rgba(254, 247, 245, 0.82) 100%
   ) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.98) !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.35) !important;
+  border-bottom-color: rgba(200, 180, 175, 0.35) !important;
   box-shadow: 
-    0 2px 8px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(45, 25, 20, 0.05),
     inset 0 1.5px 2px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(15, 23, 42, 0.04) !important;
-  color: #1E293B !important; /* Deep slate - 100% visible */
+    inset 0 -1px 2px rgba(45, 25, 20, 0.04) !important;
+  color: #291D1A !important;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
@@ -408,21 +417,21 @@ html, body {
   background: linear-gradient(
     145deg,
     #FFFFFF 0%,
-    rgba(235, 245, 255, 0.95) 45%,
-    rgba(205, 228, 255, 0.85) 100%
+    rgba(255, 246, 244, 0.98) 45%,
+    rgba(250, 228, 222, 0.88) 100%
   ) !important;
   border: 1.5px solid rgba(255, 255, 255, 1) !important;
   border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
   border-left-color: rgba(255, 255, 255, 0.98) !important;
   border-bottom-width: 2px !important;
-  border-bottom-color: rgba(45, 75, 110, 0.35) !important;
+  border-bottom-color: rgba(127, 46, 35, 0.30) !important;
   box-shadow:
-    0 4px 14px rgba(40, 70, 110, 0.18),
+    0 4px 14px rgba(127, 46, 35, 0.18),
     0 1px 3px rgba(0, 0, 0, 0.04),
     inset 0 1.5px 2px #FFFFFF,
     inset 0 3px 8px rgba(255, 255, 255, 0.85),
-    inset 0 -1.5px 3px rgba(40, 70, 110, 0.14) !important;
+    inset 0 -1.5px 3px rgba(127, 46, 35, 0.14) !important;
   transform: scale(1.04);
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -436,17 +445,17 @@ html, body {
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.98) 0%,
-    rgba(246, 250, 255, 0.92) 60%,
-    rgba(238, 245, 254, 0.88) 100%
+    rgba(255, 248, 245, 0.92) 60%,
+    rgba(247, 235, 230, 0.88) 100%
   ) !important;
   backdrop-filter: blur(40px) saturate(180%) brightness(104%);
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(104%);
   border: 1.5px solid rgba(255, 255, 255, 1) !important;
   border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(45, 75, 110, 0.20) !important;
+  border-bottom-color: rgba(127, 46, 35, 0.20) !important;
   box-shadow:
-    0 8px 24px -2px rgba(15, 23, 42, 0.10),
+    0 8px 24px -2px rgba(45, 25, 20, 0.10),
     inset 0 2px 2px #FFFFFF,
     inset 0 4px 12px rgba(255, 255, 255, 0.95) !important;
   transform: translateZ(0);
@@ -456,21 +465,21 @@ html, body {
   position: relative;
   background: linear-gradient(
     145deg,
-    #527DA8 0%,
-    #385D86 55%,
-    #29486D 100%
+    #B85D48 0%,
+    #8E3929 55%,
+    #692318 100%
   ) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.50) !important;
   border-top-width: 2px !important;
   border-top-color: #FFFFFF !important;
   border-bottom-width: 2px !important;
-  border-bottom-color: rgba(10, 20, 35, 0.45) !important;
+  border-bottom-color: rgba(45, 12, 8, 0.45) !important;
   box-shadow:
-    0 10px 24px -2px rgba(40, 70, 105, 0.40),
+    0 10px 24px -2px rgba(110, 35, 24, 0.40),
     0 3px 8px rgba(0, 0, 0, 0.10),
     inset 0 2px 3px rgba(255, 255, 255, 0.80),
     inset 0 4px 10px rgba(255, 255, 255, 0.40),
-    inset 0 -2px 4px rgba(0, 15, 30, 0.35) !important;
+    inset 0 -2px 4px rgba(45, 12, 8, 0.35) !important;
   overflow: hidden;
   transform: translateZ(0);
 }

@@ -17,14 +17,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   isRefreshing,
 }) => {
   return (
-    <div className="sticky top-0 inset-x-0 z-30 pointer-events-none select-none">
+    <div className="sticky top-0 inset-x-0 z-30 pointer-events-none select-none pt-safe">
       {/* Subtle Cloudy Header Blur under the Top Nav Bar (Expo Project reference) */}
       <div
         className="absolute inset-x-0 top-0 pointer-events-none -z-10"
         style={{
           height: 'calc(80px + env(safe-area-inset-top, 0px))',
           background:
-            'linear-gradient(to bottom, rgba(242, 245, 249, 0.82) 0%, rgba(220, 235, 255, 0.35) 45%, transparent 100%)',
+            'linear-gradient(to bottom, rgba(250, 247, 245, 0.90) 0%, rgba(247, 235, 230, 0.40) 50%, transparent 100%)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
@@ -32,15 +32,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         }}
       />
 
-      <header className="top-liquid-nav pt-safe pointer-events-auto">
-        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-          {/* Brand / Title section with 3D Plump Liquid Pod */}
+      <div className="max-w-md mx-auto px-4 pt-2">
+        {/* Separate Floating Top Capsule like Bottom Nav Bar */}
+        <header className="pointer-events-auto relative rounded-[32px] top-glass-bar px-4 h-13.5 flex items-center justify-between">
+          {/* Top specular highlight hairline */}
+          <div
+            className="absolute top-0 left-6 right-6 h-px pointer-events-none rounded-full"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+            }}
+          />
+
+          {/* Brand / Title section with Plump Copper Liquid Pod */}
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[16px] liquid-btn-primary text-white shadow-xs">
-              <Camera className="h-4.5 w-4.5 stroke-[2.2]" />
+            <div className="flex h-8.5 w-8.5 items-center justify-center rounded-[14px] liquid-btn-primary text-white shadow-xs">
+              <Camera className="h-4 w-4 stroke-[2.2]" />
             </div>
             <div>
-              <span className="text-[18px] font-bold tracking-tight text-slate-800 leading-none">
+              <span className="text-[17px] font-bold tracking-tight text-stone-900 leading-none">
                 {title || 'Recall'}
               </span>
             </div>
@@ -54,7 +64,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 <span>Indexing {processingCount}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 rounded-full liquid-glass-pill px-3 py-1 text-[11px] font-semibold text-slate-600">
+              <div className="flex items-center gap-1.5 rounded-full liquid-glass-pill px-3 py-1 text-[11px] font-semibold text-stone-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />
                 <span>Synced</span>
               </div>
@@ -65,18 +75,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               onClick={onRefresh}
               disabled={isRefreshing}
               aria-label="Refresh library"
-              className="flex h-9 w-9 items-center justify-center rounded-full liquid-glass-pill text-slate-600 active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
+              className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-stone-600 active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 stroke-[2] ${
-                  isRefreshing ? 'animate-spin text-[#3A628B]' : 'text-slate-600'
+                  isRefreshing ? 'animate-spin text-[#9A4635]' : 'text-stone-600'
                 }`}
               />
             </button>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
     </div>
   );
 };
