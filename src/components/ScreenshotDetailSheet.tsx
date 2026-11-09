@@ -186,26 +186,26 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
           )}
 
-          {/* Standalone Filter Chips for Tabs (NO WRAPPER CONTAINER) */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+          {/* Symmetrical Liquid Glass Filter Tabs Grid (Aligned Full Width, No Box Wrappers) */}
+          <div className="grid grid-cols-3 gap-2.5 w-full">
             <button
               type="button"
               onClick={() => setActiveTab('content')}
-              className={`liquid-filter-chip ${activeTab === 'content' ? 'liquid-filter-chip-active' : ''}`}
+              className={`liquid-filter-chip w-full flex items-center justify-center ${activeTab === 'content' ? 'liquid-filter-chip-active' : ''}`}
             >
               Content
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('ocr')}
-              className={`liquid-filter-chip ${activeTab === 'ocr' ? 'liquid-filter-chip-active' : ''}`}
+              className={`liquid-filter-chip w-full flex items-center justify-center ${activeTab === 'ocr' ? 'liquid-filter-chip-active' : ''}`}
             >
               Text
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('info')}
-              className={`liquid-filter-chip ${activeTab === 'info' ? 'liquid-filter-chip-active' : ''}`}
+              className={`liquid-filter-chip w-full flex items-center justify-center ${activeTab === 'info' ? 'liquid-filter-chip-active' : ''}`}
             >
               Info
             </button>

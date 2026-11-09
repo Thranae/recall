@@ -112,8 +112,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </form>
 
-      {/* 2. Standalone Filter Chips (Free-floating, No enclosing wrapper container) */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+      {/* 2. Symmetrical Liquid Glass Filter Chips (Aligned Full Width, No Box Wrappers) */}
+      <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -123,12 +123,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`liquid-filter-chip ${
+              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-2 ${
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-white' : 'text-slate-600'}`} />
-              <span>{cat.label}</span>
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#1D3E64]' : 'text-slate-500'}`} />
+              <span className="truncate">{cat.label}</span>
             </button>
           );
         })}
@@ -139,15 +139,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5 tracking-tight">
-              <Sparkles className="h-4 w-4 text-slate-500" />
-              <span>Suggested Queries</span>
+              <Sparkles className="h-4 w-4 text-[#3A628B]" />
+              <span>Suggested Explorations</span>
             </span>
+            <span className="text-[11px] font-mono text-slate-400">Tap to search</span>
           </div>
 
-          {/* 2x2 Clean Plump Liquid Glass Card Grid (No nested cards) */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 2x2 Clean Plump Liquid Glass Card Grid */}
+          <div className="grid grid-cols-2 gap-3.5">
             {SUGGESTED_QUERIES.map((item, idx) => {
               const Icon = item.icon;
+              const iconColors = [
+                'bg-indigo-50 text-indigo-600 border border-indigo-100',
+                'bg-amber-50 text-amber-600 border border-amber-100',
+                'bg-emerald-50 text-emerald-600 border border-emerald-100',
+                'bg-sky-50 text-sky-600 border border-sky-100',
+              ][idx % 4];
+
               return (
                 <button
                   key={idx}
@@ -156,9 +164,9 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   className="liquid-glass-card flex flex-col justify-between rounded-[22px] p-4 text-left active:scale-[0.97] transition-all duration-200 cursor-pointer"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-[14px] liquid-icon-pod text-slate-700">
-                        <Icon className="h-4 w-4 stroke-[2]" />
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-[14px] shadow-2xs ${iconColors}`}>
+                        <Icon className="h-4 w-4 stroke-[2.2]" />
                       </div>
                     </div>
                     <p className="text-[13px] font-bold text-slate-800 leading-tight">
@@ -169,7 +177,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-slate-600 truncate font-semibold">
+                  <div className="mt-3 pt-2 text-[10.5px] font-mono text-[#3A628B] truncate font-semibold">
                     "{item.query}"
                   </div>
                 </button>

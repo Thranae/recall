@@ -135,37 +135,28 @@ html, body {
   transform: translateZ(0);
 }
 
-/* 3. STANDALONE FILTER CHIPS (NO WRAPPER CONTAINER) */
+/* 3. EXPO-STYLE AIRY LIQUID GLASS FILTER CHIPS (NO CONTAINER WRAPPER BORDER) */
 .liquid-filter-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 38px;
-  padding: 0 15px;
+  height: 40px;
   border-radius: 9999px;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.90) 0%,
-    rgba(247, 250, 255, 0.70) 100%
-  ) !important;
-  backdrop-filter: blur(20px) saturate(130%);
-  -webkit-backdrop-filter: blur(20px) saturate(130%);
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
-  border-top-width: 1.5px !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
   border-top-color: #FFFFFF !important;
-  border-bottom-color: rgba(180, 195, 215, 0.35) !important;
-  box-shadow: 
-    0 3px 10px rgba(15, 23, 42, 0.04),
-    inset 0 1px 1.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 2px rgba(15, 23, 42, 0.04) !important;
-  color: #334155;
+  border-bottom-color: rgba(255, 255, 255, 0.60) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+  color: #475569;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, color 0.15s ease;
   transform: translateZ(0);
 }
 
@@ -173,21 +164,24 @@ html, body {
   transform: scale(0.96);
 }
 
-/* Subtle Slate-Blue Active Filter Chip */
+/* Expo Plump Liquid Active Filter Chip */
 .liquid-filter-chip-active {
   background: linear-gradient(
     145deg,
-    #4A7099 0%,
-    #36577E 100%
+    #FFFFFF 0%,
+    rgba(235, 245, 255, 0.98) 45%,
+    rgba(205, 228, 255, 0.90) 100%
   ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.40) !important;
-  border-top-color: rgba(255, 255, 255, 0.65) !important;
-  border-bottom-color: rgba(20, 35, 55, 0.30) !important;
+  border: 1.5px solid #FFFFFF !important;
+  border-top-width: 2px !important;
+  border-top-color: #FFFFFF !important;
+  border-bottom-color: rgba(45, 75, 110, 0.25) !important;
   box-shadow: 
-    0 4px 12px rgba(45, 75, 110, 0.20),
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.40),
-    inset 0 -1.5px 2px rgba(0, 0, 0, 0.15) !important;
-  color: #FFFFFF !important;
+    0 4px 14px rgba(45, 75, 110, 0.16),
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    inset 0 1.5px 2px #FFFFFF,
+    inset 0 -1px 2px rgba(45, 75, 110, 0.10) !important;
+  color: #1D3E64 !important;
   font-weight: 700 !important;
 }
 
@@ -324,24 +318,24 @@ html, body {
   outline: none;
 }
 
-/* 8. TOP NAVBAR */
+/* 8. TOP NAVBAR — MATCHING BOTTOM NAVBAR VOLUMETRIC LIQUID GLASS */
 .top-liquid-nav {
-  position: sticky;
-  top: 0;
-  inset-x: 0;
-  z-index: 30;
+  position: relative;
   width: 100%;
   user-select: none;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(247, 250, 255, 0.85) 100%
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(247, 251, 255, 0.88) 50%,
+    rgba(228, 240, 254, 0.78) 100%
   ) !important;
-  backdrop-filter: blur(24px) saturate(135%);
-  -webkit-backdrop-filter: blur(24px) saturate(135%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.03) !important;
-  transition: all 0.2s ease;
+  backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(170%) brightness(103%) !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 
+    0 10px 30px -4px rgba(15, 23, 42, 0.08),
+    inset 0 -1.5px 2px rgba(148, 163, 184, 0.20),
+    inset 0 1.5px 2px #FFFFFF !important;
   transform: translateZ(0);
 }
 

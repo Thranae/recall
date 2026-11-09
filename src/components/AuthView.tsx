@@ -100,15 +100,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       {/* Main Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
         <div className="liquid-glass-container rounded-[28px] p-6 shadow-lg">
-          {/* Standalone Filter Pills (No wrapper container) */}
-          <div className="mb-5 flex items-center justify-center gap-2">
+          {/* Symmetrical Liquid Glass Filter Tabs (Aligned Full Width, No Box Wrappers) */}
+          <div className="mb-5 grid grid-cols-2 gap-2.5 w-full">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setError(null);
               }}
-              className={`liquid-filter-chip flex-1 ${!isSignUp ? 'liquid-filter-chip-active' : ''}`}
+              className={`liquid-filter-chip w-full flex items-center justify-center ${!isSignUp ? 'liquid-filter-chip-active' : ''}`}
             >
               Sign In
             </button>
@@ -118,7 +118,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 setIsSignUp(true);
                 setError(null);
               }}
-              className={`liquid-filter-chip flex-1 ${isSignUp ? 'liquid-filter-chip-active' : ''}`}
+              className={`liquid-filter-chip w-full flex items-center justify-center ${isSignUp ? 'liquid-filter-chip-active' : ''}`}
             >
               Create Account
             </button>
