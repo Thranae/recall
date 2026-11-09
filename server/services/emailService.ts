@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-const SMTP_USER = process.env.SMTP_USER || 'support.packwise@gmail.com';
+const SMTP_USER = process.env.SMTP_USER || 'teamsupport.recall@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'aksbmxwfedmczkqa';
 
 let transporter: nodemailer.Transporter | null = null;
@@ -89,3 +89,4 @@ export async function sendOtpEmail(
     return false;
   }
 }
+

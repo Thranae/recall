@@ -110,3 +110,4 @@ export const OtpInput: React.FC<OtpInputProps> = ({
 };
 
 export default OtpInput;
+
