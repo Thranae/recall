@@ -219,13 +219,13 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <div className="space-y-3">
                   {/* Chat Conversation Thread */}
                   {data?.messages && data.messages.length > 0 && (
-                    <div className="rounded-2xl bg-white/40 border border-white/65 backdrop-blur-md p-3.5 space-y-3">
-                      <div className="flex items-center justify-between text-xs text-slate-800 font-bold px-1">
+                    <div className="rounded-2xl bg-white/65 border border-white/80 backdrop-blur-md p-4 space-y-3.5 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs text-slate-900 font-black px-1">
                         <div className="flex items-center gap-1.5">
                           <MessageSquare className="h-4 w-4 text-[#2F6BFF]" />
                           <span>Conversation Flow ({data.messages.length})</span>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-bold">Verified Order</span>
+                        <span className="text-[10px] text-slate-600 font-black">Verified Order</span>
                       </div>
 
                       <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
@@ -237,16 +237,16 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                               className={`flex flex-col ${isRight ? 'items-end' : 'items-start'}`}
                             >
                               <div className="flex items-center gap-1 mb-0.5 px-1">
-                                <span className="font-mono text-[9px] text-slate-400">#{msg.sequence_number}</span>
-                                <span className="text-[10px] font-bold text-slate-500">
+                                <span className="font-mono text-[9px] text-slate-500 font-bold">#{msg.sequence_number}</span>
+                                <span className="text-[10px] font-black text-slate-700">
                                   {msg.sender_label || (isRight ? 'You' : 'Sender')}
                                 </span>
                               </div>
                               <div
-                                className={`max-w-[85%] px-3.5 py-2 text-xs font-medium leading-relaxed rounded-2xl ${
+                                className={`max-w-[85%] px-3.5 py-2 text-xs font-bold leading-relaxed rounded-2xl ${
                                   isRight
                                     ? 'bg-gradient-to-tr from-[#2F6BFF] to-[#5AA9FF] text-white rounded-tr-xs shadow-xs'
-                                    : 'bg-white/80 border border-white text-slate-900 rounded-tl-xs shadow-2xs backdrop-blur-xs'
+                                    : 'bg-white border border-slate-200/90 text-slate-900 rounded-tl-xs shadow-2xs'
                                 }`}
                               >
                                 {msg.message_text}

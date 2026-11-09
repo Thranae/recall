@@ -57,24 +57,24 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
-        {/* Floating Category & Processing Badges */}
+        {/* Floating Category & Processing Badges (Packwise TripCard Style) */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-          <span className="inline-flex items-center gap-1 rounded-full ios-glass-pill px-2.5 py-1 text-[10px] font-bold text-slate-800 shadow-xs">
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.4] text-[#2F6BFF]" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/65 backdrop-blur-md px-2.5 py-1 text-[10px] font-extrabold text-white border border-white/25 shadow-md">
+            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.6] text-blue-400" />
             <span className="leading-none pt-0.5 truncate">{label}</span>
           </span>
 
           {screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
-              className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-xs backdrop-blur-xs"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-md backdrop-blur-xs border border-white/30"
             >
               {screenshot.processing_status === 'processing' ? (
-                <Clock className="h-3 w-3 animate-spin stroke-[2.5]" />
+                <Clock className="h-3.5 w-3.5 animate-spin stroke-[2.5]" />
               ) : screenshot.processing_status === 'queued' ? (
-                <Clock className="h-3 w-3 stroke-[2.5]" />
+                <Clock className="h-3.5 w-3.5 stroke-[2.5]" />
               ) : (
-                <AlertCircle className="h-3 w-3 text-white stroke-[2.5]" />
+                <AlertCircle className="h-3.5 w-3.5 text-white stroke-[2.5]" />
               )}
             </span>
           )}
@@ -82,17 +82,17 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
         {/* Search match explanation overlay */}
         {searchResult && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-2.5 pt-6 backdrop-blur-[2px] z-10">
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="font-semibold text-white truncate max-w-[75%]">
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent p-3 pt-6 backdrop-blur-[2px] z-10">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-extrabold text-white truncate max-w-[75%]">
                 {searchResult.match_type.replace('_', ' ')}
               </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-[#2F6BFF] px-1.5 py-0.2 rounded-full">
+              <span className="font-mono text-[9px] text-white font-black bg-[#2F6BFF] px-2 py-0.5 rounded-full shadow-xs">
                 {Math.round(searchResult.match_score * 100)}%
               </span>
             </div>
             {searchResult.match_explanation && (
-              <p className="mt-0.5 text-[9px] text-white/80 line-clamp-1 font-normal leading-tight">
+              <p className="mt-1 text-[10px] text-white/90 line-clamp-1 font-medium leading-tight">
                 {searchResult.match_explanation}
               </p>
             )}
@@ -102,11 +102,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
       {/* Card Info Footer */}
       {!searchResult && (
-        <div className="p-3 border-t border-white/60 bg-white/40 backdrop-blur-md">
-          <p className="truncate text-[12px] font-bold text-slate-900 leading-tight">
+        <div className="p-3.5 border-t border-white/80 bg-white/60 backdrop-blur-md">
+          <p className="truncate text-xs font-black text-slate-900 leading-tight">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-700 font-bold">
             <span>
               {new Date(screenshot.created_at).toLocaleDateString(undefined, {
                 month: 'short',
@@ -114,7 +114,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] font-bold text-[#2F6BFF]">
+              <span className="truncate max-w-[50%] font-black text-[#2F6BFF]">
                 #{tags[0]}
               </span>
             )}

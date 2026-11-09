@@ -56,13 +56,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               onClick={() => onSelectCategory(cat.id)}
               className={`ios-segment-btn ${isSelected ? 'ios-segment-btn-active' : ''}`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
-              <span>{cat.label}</span>
+              <Icon className="h-4 w-4 shrink-0 stroke-[2.4]" />
+              <span className="font-extrabold text-[13px]">{cat.label}</span>
               <span
-                className={`text-[11px] font-mono px-1.5 py-0.2 rounded-full leading-none ${
+                className={`text-[11px] font-mono px-2 py-0.5 rounded-full leading-none font-bold ${
                   isSelected
-                    ? 'bg-slate-100 text-slate-700 font-bold'
-                    : 'text-slate-400 font-medium'
+                    ? 'bg-blue-100/90 text-[#2F6BFF]'
+                    : 'bg-slate-200/80 text-slate-800'
                 }`}
               >
                 {count}
@@ -74,14 +74,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
       {/* 2. Clean Library Status & Sort Strip */}
       <div className="flex items-center justify-between px-1 text-xs">
-        <span className="font-semibold text-slate-800">
+        <span className="font-black text-slate-900 text-sm">
           {selectedCategory === 'all'
             ? 'All Screenshots'
             : selectedCategory === 'chat'
-            ? 'Conversation History'
-            : 'Match Summaries'}
+              ? 'Conversation History'
+              : 'Match Summaries'}
         </span>
-        <span className="text-[12px] text-slate-500 font-medium">
+        <span className="text-xs text-slate-700 font-bold">
           {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
         </span>
       </div>

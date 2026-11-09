@@ -24,9 +24,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
         <div className="flex-1 overflow-hidden">
           <h2 className="text-sm font-black text-slate-900 truncate tracking-tight">{user.name}</h2>
-          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{user.email}</p>
-          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold">
-            <CheckCircle2 className="h-3.5 w-3.5 stroke-[2.4]" />
+          <p className="text-xs text-slate-700 font-bold truncate mt-0.5">{user.email}</p>
+          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-700 font-black">
+            <CheckCircle2 className="h-3.5 w-3.5 stroke-[2.6]" />
             <span>Encrypted Session</span>
           </div>
         </div>
@@ -34,18 +34,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* 2. Library Statistics Inset Group */}
       <div className="ios-glass-card rounded-[28px] p-5 space-y-3.5">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+        <div className="flex items-center gap-2 text-xs font-black text-slate-900">
           <Database className="h-4 w-4 text-[#2F6BFF] stroke-[2.4]" />
           <span>Library Storage</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="rounded-2xl bg-white/40 border border-white/70 backdrop-blur-md p-3.5 shadow-2xs">
-            <span className="text-[11px] font-bold text-slate-500 block">Screenshots</span>
+          <div className="rounded-2xl bg-white/65 border border-white/80 backdrop-blur-md p-3.5 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-700 block">Screenshots</span>
             <p className="mt-1 font-mono text-2xl font-black text-slate-900 leading-none">{screenshots.length}</p>
           </div>
-          <div className="rounded-2xl bg-white/40 border border-white/70 backdrop-blur-md p-3.5 shadow-2xs">
-            <span className="text-[11px] font-bold text-slate-500 block">Indexed</span>
+          <div className="rounded-2xl bg-white/65 border border-white/80 backdrop-blur-md p-3.5 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-700 block">Indexed</span>
             <p className="mt-1 font-mono text-2xl font-black text-[#2F6BFF] leading-none">{readyCount}</p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* 3. Security & Isolation Inset Group */}
       <div className="ios-glass-card rounded-[28px] p-5 space-y-4">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+        <div className="flex items-center gap-2 text-xs font-black text-slate-900">
           <Shield className="h-4 w-4 text-emerald-600 stroke-[2.4]" />
           <span>Security & Privacy Architecture</span>
         </div>
@@ -61,11 +61,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="space-y-3.5 text-xs">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ios-glass-icon-pod text-[#2F6BFF] mt-0.5">
-              <Lock className="h-4 w-4 stroke-[2.2]" />
+              <Lock className="h-4 w-4 stroke-[2.4]" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 leading-tight">Isolated Tenant Architecture</p>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5 font-medium">
+              <p className="font-black text-slate-900 leading-tight">Isolated Tenant Architecture</p>
+              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
                 Your images, OCR text, and relational data are scoped strictly by your user ID.
               </p>
             </div>
@@ -73,11 +73,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ios-glass-icon-pod text-emerald-600 mt-0.5">
-              <Shield className="h-4 w-4 stroke-[2.2]" />
+              <Shield className="h-4 w-4 stroke-[2.4]" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 leading-tight">Zero AI Model Training</p>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5 font-medium">
+              <p className="font-black text-slate-900 leading-tight">Zero AI Model Training</p>
+              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
                 Screenshots are indexed for your personal search only. Data is never used to train public models.
               </p>
             </div>
@@ -85,11 +85,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ios-glass-icon-pod text-purple-600 mt-0.5">
-              <Database className="h-4 w-4 stroke-[2.2]" />
+              <Database className="h-4 w-4 stroke-[2.4]" />
             </div>
             <div>
-              <p className="font-bold text-slate-900 leading-tight">Cascading Deletion</p>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5 font-medium">
+              <p className="font-black text-slate-900 leading-tight">Cascading Deletion</p>
+              <p className="text-[11.5px] text-slate-700 leading-relaxed mt-0.5 font-semibold">
                 Deleting a screenshot immediately purges the disk file, OCR text, chat nodes, and vector indices.
               </p>
             </div>

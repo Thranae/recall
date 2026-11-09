@@ -104,25 +104,29 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[22px] nav-active-pill" />
                     )}
 
-                    <div
-                      className={`relative z-10 flex items-center justify-center transition-transform duration-200 ${
-                        active ? '-translate-y-0.5 scale-105' : ''
-                      }`}
-                    >
-                      <Icon
-                        className={`h-5 w-5 shrink-0 stroke-[2.2] transition-colors duration-200 ${
-                          active
-                            ? 'text-[#2F6BFF]'
-                            : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      />
+                    {/* Plumpy Liquid Glass Icon Pod (Expo Style) */}
+                    <div className="relative z-10 flex items-center justify-center">
+                      {active ? (
+                        <div className="nav-selected-icon-pod">
+                          {/* 3D Bottom Specular Highlight (white) */}
+                          <Icon className="absolute top-[9px] h-5 w-5 stroke-[2.8] text-white opacity-95 pointer-events-none" />
+                          {/* 3D Top Depth Shadow */}
+                          <Icon className="absolute top-[7px] h-5 w-5 stroke-[2.8] text-blue-950/25 pointer-events-none" />
+                          {/* Main Liquid Jewel Icon */}
+                          <Icon className="relative z-10 h-5 w-5 stroke-[2.6] text-[#2F6BFF]" />
+                        </div>
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center text-slate-600 hover:text-slate-900 transition-colors">
+                          <Icon className="h-5 w-5 stroke-[2.2]" />
+                        </div>
+                      )}
                     </div>
 
                     <span
-                      className={`relative z-10 mt-1 text-[10px] leading-none transition-colors duration-200 ${
+                      className={`relative z-10 text-[9.5px] uppercase tracking-wider leading-none transition-all duration-200 ${
                         active
-                          ? 'font-bold text-slate-900'
-                          : 'font-semibold text-slate-500'
+                          ? 'mt-0.5 font-black text-[#0F172A]'
+                          : 'mt-1 font-bold text-slate-500'
                       }`}
                     >
                       {label}

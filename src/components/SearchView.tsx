@@ -92,7 +92,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
             placeholder="Search conversations, stats, text..."
-            className="w-full bg-transparent px-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent px-2.5 text-xs font-black text-slate-900 placeholder:text-slate-500 placeholder:font-semibold focus:outline-none"
           />
 
           {query && (
@@ -100,9 +100,9 @@ export const SearchView: React.FC<SearchViewProps> = ({
               type="button"
               onClick={onClearSearch}
               aria-label="Clear search"
-              className="p-1 text-slate-400 hover:text-slate-700 active:scale-90 transition-transform cursor-pointer mr-1"
+              className="p-1 text-slate-600 hover:text-slate-900 active:scale-90 transition-transform cursor-pointer mr-1"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5 stroke-[2.5]" />
             </button>
           )}
 
@@ -129,8 +129,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
               onClick={() => onSelectCategory(cat.id)}
               className={`ios-segment-btn ${isSelected ? 'ios-segment-btn-active' : ''}`}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0 stroke-[2.2]" />
-              <span>{cat.label}</span>
+              <Icon className="h-4 w-4 shrink-0 stroke-[2.4]" />
+              <span className="font-extrabold text-[13px]">{cat.label}</span>
             </button>
           );
         })}
@@ -140,7 +140,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {!searchResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-[#2F6BFF]" />
               <span>Suggested Queries</span>
             </span>
@@ -162,19 +162,19 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl ios-glass-icon-pod text-[#2F6BFF]">
                         <Icon className="h-4 w-4 stroke-[2.4]" />
                       </div>
-                      <span className="text-[10px] font-bold text-slate-700 ios-glass-pill px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black text-slate-900 bg-white/80 border border-white px-2 py-0.5 rounded-full shadow-2xs">
                         {item.badge}
                       </span>
                     </div>
-                    <p className="text-xs font-bold text-slate-900 leading-tight">
+                    <p className="text-xs font-black text-slate-900 leading-tight">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium">
+                    <p className="mt-1 text-[11.5px] text-slate-700 line-clamp-2 leading-relaxed font-bold">
                       {item.description}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-white/60 text-[10px] font-mono text-[#2F6BFF] truncate font-bold">
+                  <div className="mt-3 pt-2.5 border-t border-slate-200/80 text-[10px] font-mono text-[#2F6BFF] truncate font-black">
                     "{item.query}"
                   </div>
                 </button>
