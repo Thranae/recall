@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "vite",
     "server": "tsx watch server/index.ts",
-    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=api/index.js --external:node:sqlite --external:tesseract.js",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=api/index.js --external:node:sqlite --external:tesseract.js",
     "build": "npm run build:server && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
