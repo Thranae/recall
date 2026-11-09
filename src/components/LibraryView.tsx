@@ -42,8 +42,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-3 pb-36 space-y-4">
-      {/* 1. iOS Native Unified Segmented Control */}
-      <div className="ios-segmented-control w-full">
+      {/* 1. Packwise Expo Plump Liquid Glass Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -54,15 +54,15 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`ios-segment-btn ${isSelected ? 'ios-segment-btn-active' : ''}`}
+              className={`liquid-filter-chip ${
+                isSelected ? 'liquid-filter-chip-active' : ''
+              }`}
             >
-              <Icon className="h-4 w-4 shrink-0 stroke-[2.4]" />
-              <span className="font-extrabold text-[13px]">{cat.label}</span>
+              <Icon className={`h-4 w-4 shrink-0 stroke-[2.4] ${isSelected ? 'text-white' : 'text-[#2F6BFF]'}`} />
+              <span>{cat.label}</span>
               <span
-                className={`text-[11px] font-mono px-2 py-0.5 rounded-full leading-none font-bold ${
-                  isSelected
-                    ? 'bg-blue-100/90 text-[#2F6BFF]'
-                    : 'bg-slate-200/80 text-slate-800'
+                className={`chip-count-badge ${
+                  isSelected ? 'chip-count-badge-active' : 'chip-count-badge-inactive'
                 }`}
               >
                 {count}
@@ -72,7 +72,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         })}
       </div>
 
-      {/* 2. Clean Library Status & Sort Strip */}
+      {/* 2. Library Status & Sort Strip */}
       <div className="flex items-center justify-between px-1 text-xs">
         <span className="font-black text-slate-900 text-sm">
           {selectedCategory === 'all'
@@ -88,25 +88,25 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
       {/* 3. Screenshots Gallery Grid */}
       {filteredScreenshots.length === 0 ? (
-        <div className="ios-glass-card flex flex-col items-center justify-center rounded-[28px] p-8 text-center my-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl ios-glass-icon-pod mb-3 text-[#2F6BFF]">
-            <Sparkles className="h-7 w-7 stroke-[2.2]" />
+        <div className="liquid-glass-card flex flex-col items-center justify-center rounded-[28px] p-8 text-center my-6">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[22px] liquid-icon-pod mb-3 text-[#2F6BFF]">
+            <Sparkles className="h-8 w-8 stroke-[2.2]" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight">No screenshots in this view</h3>
-          <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed font-medium">
+          <h3 className="text-sm font-black text-slate-900 tracking-tight">No screenshots in this view</h3>
+          <p className="mt-1 text-xs text-slate-600 max-w-xs leading-relaxed font-semibold">
             Upload conversation captures, game victory screens, or receipts to index them automatically.
           </p>
           <button
             type="button"
             onClick={onOpenUpload}
-            className="mt-5 flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-black text-white ios-liquid-primary active:scale-95 transition-all cursor-pointer"
+            className="mt-5 flex h-12 items-center justify-center gap-2 rounded-full px-6 text-xs font-black text-white liquid-btn-primary active:scale-95 transition-all cursor-pointer"
           >
-            <Plus className="h-4 w-4 stroke-[2.8]" />
+            <Plus className="h-4.5 w-4.5 stroke-[2.8]" />
             <span>Upload Screenshot</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3.5">
           {filteredScreenshots.map((s) => (
             <ScreenshotCard
               key={s.id}

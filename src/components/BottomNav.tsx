@@ -49,7 +49,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {/* Outer container allows elevated orb to extend upward cleanly */}
         <div className="pointer-events-auto relative w-full">
           {/* Main Floating Glass Bar Body */}
-          <div className="relative rounded-[32px] nav-glass-bar px-1">
+          <div className="relative rounded-[40px] nav-glass-bar px-1.5">
             {/* Top specular highlight hairline */}
             <div
               className="absolute top-0 left-6 right-6 h-px pointer-events-none rounded-full"

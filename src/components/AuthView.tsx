@@ -107,30 +107,30 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         />
       </div>
 
-      {/* Brand & Hero */}
+      {/* Brand & Hero with Plump 3D Liquid Pod */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#2F6BFF] via-[#3B82F6] to-[#5AA9FF] text-white shadow-[0_8px_24px_rgba(47,107,255,0.4),inset_0_2px_3px_rgba(255,255,255,0.7)]">
-          <Camera className="h-8 w-8 stroke-[2.4]" />
+        <div className="mb-3.5 flex h-18 w-18 items-center justify-center rounded-[26px] liquid-btn-primary text-white shadow-xl">
+          <Camera className="h-9 w-9 stroke-[2.4]" />
         </div>
 
         <h1 className="text-3xl font-black tracking-tight text-slate-900">RECALL</h1>
-        <p className="mt-1 text-xs text-slate-500 font-semibold">
+        <p className="mt-1 text-xs text-slate-600 font-bold">
           Private search engine for personal screenshot history
         </p>
       </div>
 
-      {/* Main Liquid Glass Form Container */}
+      {/* Main Plump Liquid Glass Form Container */}
       <div className="relative z-10 my-auto w-full py-6">
-        <div className="ios-glass-card rounded-[32px] p-7">
-          {/* Segmented Switcher */}
-          <div className="mb-5 ios-segmented-control w-full">
+        <div className="liquid-glass-container rounded-[34px] p-7 shadow-2xl">
+          {/* Plump Filter Chips for Auth Mode Switcher */}
+          <div className="mb-5 flex items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setError(null);
               }}
-              className={`ios-segment-btn ${!isSignUp ? 'ios-segment-btn-active' : ''}`}
+              className={`liquid-filter-chip flex-1 ${!isSignUp ? 'liquid-filter-chip-active' : ''}`}
             >
               Sign In
             </button>
@@ -140,14 +140,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 setIsSignUp(true);
                 setError(null);
               }}
-              className={`ios-segment-btn ${isSignUp ? 'ios-segment-btn-active' : ''}`}
+              className={`liquid-filter-chip flex-1 ${isSignUp ? 'liquid-filter-chip-active' : ''}`}
             >
               Create Account
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-[18px] border border-rose-300 bg-rose-50/90 p-3.5 text-xs text-rose-700 font-bold shadow-2xs backdrop-blur-md relative z-10">
+            <div className="mb-4 rounded-[20px] border-2 border-rose-300 bg-rose-50/95 p-3.5 text-xs text-rose-700 font-black shadow-2xs backdrop-blur-md relative z-10">
               {error}
             </div>
           )}
@@ -155,54 +155,54 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
             {isSignUp && (
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1.5 px-1">Full Name</label>
+                <label className="block text-[11px] font-black text-slate-800 mb-1.5 px-1 uppercase tracking-wide">Full Name</label>
                 <div className="relative flex items-center">
-                  <UserIcon className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2.2]" />
+                  <UserIcon className="absolute left-4 h-4.5 w-4.5 text-slate-400 shrink-0 stroke-[2.4]" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Mercer"
                     required
-                    className="glass-input h-12 w-full pl-10 pr-4 text-xs font-bold text-slate-900 placeholder-slate-400"
+                    className="liquid-glass-input h-13 w-full pl-11 pr-4 text-xs font-black text-slate-900 placeholder-slate-400"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1.5 px-1">Email Address</label>
+              <label className="block text-[11px] font-black text-slate-800 mb-1.5 px-1 uppercase tracking-wide">Email Address</label>
               <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2.2]" />
+                <Mail className="absolute left-4 h-4.5 w-4.5 text-slate-400 shrink-0 stroke-[2.4]" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   required
-                  className="glass-input h-12 w-full pl-10 pr-4 text-xs font-bold text-slate-900 placeholder-slate-400"
+                  className="liquid-glass-input h-13 w-full pl-11 pr-4 text-xs font-black text-slate-900 placeholder-slate-400"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1.5 px-1">Password</label>
+              <label className="block text-[11px] font-black text-slate-800 mb-1.5 px-1 uppercase tracking-wide">Password</label>
               <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2.2]" />
+                <Lock className="absolute left-4 h-4.5 w-4.5 text-slate-400 shrink-0 stroke-[2.4]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="glass-input h-12 w-full pl-10 pr-10 text-xs font-bold text-slate-900 placeholder-slate-400"
+                  className="liquid-glass-input h-13 w-full pl-11 pr-11 text-xs font-black text-slate-900 placeholder-slate-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 text-slate-400 active:text-slate-800 p-1"
+                  className="absolute right-3.5 text-slate-400 active:text-slate-800 p-1.5 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4 shrink-0 stroke-[2.2]" /> : <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" />}
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5 shrink-0 stroke-[2.4]" /> : <Eye className="h-4.5 w-4.5 shrink-0 stroke-[2.4]" />}
                 </button>
               </div>
             </div>
@@ -210,14 +210,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="mt-4 flex h-13 w-full items-center justify-center gap-2 rounded-full ios-liquid-primary font-black text-white active:scale-[0.98] transition-transform disabled:opacity-60 text-xs shadow-[0_8px_24px_rgba(47,107,255,0.4)]"
+              className="mt-4 flex h-13 w-full items-center justify-center gap-2 rounded-full liquid-btn-primary font-black text-white active:scale-[0.98] transition-transform disabled:opacity-60 text-xs shadow-lg cursor-pointer"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin shrink-0" />
               ) : (
                 <>
                   <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                  <ArrowRight className="h-4 w-4 shrink-0 stroke-[2.4]" />
+                  <ArrowRight className="h-4 w-4 shrink-0 stroke-[2.6]" />
                 </>
               )}
             </button>
@@ -229,7 +229,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               type="button"
               onClick={handleQuickSignIn}
               disabled={loading}
-              className="h-11 w-full rounded-full ios-glass-pill text-xs font-extrabold text-[#2F6BFF] active:scale-[0.98] transition-transform flex items-center justify-center shadow-2xs hover:bg-white"
+              className="h-12 w-full rounded-full liquid-glass-pill text-xs font-black text-[#2F6BFF] active:scale-[0.98] transition-transform flex items-center justify-center shadow-xs cursor-pointer"
             >
               Quick Sign In with Default Account
             </button>
@@ -238,8 +238,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       </div>
 
       {/* Security Statement */}
-      <div className="relative z-10 flex items-center justify-center gap-2 text-center text-[11px] text-slate-600 font-semibold">
-        <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.4]" />
+      <div className="relative z-10 flex items-center justify-center gap-2 text-center text-[11px] text-slate-700 font-bold">
+        <Shield className="h-4 w-4 text-emerald-600 shrink-0 stroke-[2.6]" />
         <span>End-to-end user isolation • 100% private library</span>
       </div>
     </div>
