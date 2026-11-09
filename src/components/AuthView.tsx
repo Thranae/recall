@@ -14,6 +14,7 @@ import {
   RotateCcw,
   ChevronLeft,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { User } from '../types';
@@ -47,6 +48,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   // OTP Verification States (Packwise Standard)
   const [otpCode, setOtpCode] = useState('');
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(40);
   const [isResending, setIsResending] = useState(false);
   const [otpPurpose, setOtpPurpose] = useState<'signup' | 'forgot_password'>('signup');
@@ -57,36 +59,67 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [googleName, setGoogleName] = useState('');
   const tokenClientRef = useRef<any>(null);
 
-  // Initialize Google Identity Services Token Client
+  // Initialize Google Identity Services (Both OAuth Token Client & One Tap)
   useEffect(() => {
     try {
-      if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
-        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'email profile openid',
-          callback: async (tokenResponse: any) => {
-            if (tokenResponse?.access_token) {
-              setLoading(true);
-              setError(null);
-              try {
-                const res = await api.loginGoogle({ tokenId: tokenResponse.access_token });
-                onAuthSuccess(res.user);
-              } catch (err: unknown) {
-                if (err instanceof Error) setError(err.message);
-                else setError('Google Sign-In failed');
-              } finally {
-                setLoading(false);
+      if (typeof window !== 'undefined' && window.google?.accounts) {
+        // 1. Google OAuth2 Token Client (Packwise standard for access token)
+        if (window.google.accounts.oauth2) {
+          tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'email profile openid',
+            callback: async (tokenResponse: any) => {
+              if (tokenResponse?.access_token) {
+                setLoading(true);
+                setError(null);
+                try {
+                  const res = await api.loginGoogle({ tokenId: tokenResponse.access_token });
+                  onAuthSuccess(res.user);
+                } catch (err: unknown) {
+                  if (err instanceof Error) setError(err.message);
+                  else setError('Google Sign-In failed');
+                } finally {
+                  setLoading(false);
+                }
+              } else if (tokenResponse?.error) {
+                console.warn('Google OAuth token error:', tokenResponse.error);
+                setIsGoogleModalOpen(true);
               }
-            } else if (tokenResponse?.error) {
-              console.warn('Google OAuth token error:', tokenResponse.error);
-            }
-          },
-        });
+            },
+            error_callback: (nonOAuthErr: any) => {
+              console.warn('Google Token Client init error, falling back to modal:', nonOAuthErr);
+              setIsGoogleModalOpen(true);
+            },
+          });
+        }
+
+        // 2. Google Identity Services ID Token / Credential helper
+        if (window.google.accounts.id) {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            auto_select: false,
+            callback: async (response: any) => {
+              if (response?.credential) {
+                setLoading(true);
+                setError(null);
+                try {
+                  const res = await api.loginGoogle({ credential: response.credential });
+                  onAuthSuccess(res.user);
+                } catch (err: unknown) {
+                  if (err instanceof Error) setError(err.message);
+                  else setError('Google authentication failed');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            },
+          });
+        }
       }
     } catch (e) {
-      console.warn('Google Identity Services init error:', e);
+      console.warn('Google Identity Services setup warning:', e);
     }
-  }, []);
+  }, [onAuthSuccess]);
 
   // 40-second Countdown Timer for OTP Resend
   useEffect(() => {
@@ -160,6 +193,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         const res = await api.signup(email.trim(), password, name.trim());
         setOtpPurpose('signup');
         setOtpCode('');
+        setDevOtp(res.dev_otp || null);
         setResendTimer(40);
         setMode('otp_verify');
         setSuccessMessage(res.message || 'Verification code sent to your email.');
@@ -185,6 +219,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         const res = await api.forgotPassword(email.trim());
         setOtpPurpose('forgot_password');
         setOtpCode('');
+        setDevOtp(res.dev_otp || null);
         setResendTimer(40);
         setMode('otp_verify');
         setSuccessMessage(res.message || 'Password reset code sent to your email.');
@@ -200,9 +235,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     }
   };
 
-  const handleVerifyOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!otpCode || otpCode.length !== 6) {
+  const verifyOtpCode = async (codeToVerify: string) => {
+    if (!codeToVerify || codeToVerify.length !== 6) {
       setError('Please enter the complete 6-digit code');
       return;
     }
@@ -212,10 +246,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
     try {
       if (otpPurpose === 'signup') {
-        const res = await api.verifySignupOtp(email.trim(), otpCode);
+        const res = await api.verifySignupOtp(email.trim(), codeToVerify);
         onAuthSuccess(res.user);
       } else {
-        const res = await api.verifyOtp(email.trim(), otpCode);
+        const res = await api.verifyOtp(email.trim(), codeToVerify);
         onAuthSuccess(res.user);
       }
     } catch (err: unknown) {
@@ -229,17 +263,24 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await verifyOtpCode(otpCode);
+  };
+
   const handleResendOtp = async () => {
     if (resendTimer > 0 || isResending) return;
     setIsResending(true);
     setError(null);
     try {
+      let res: { success: boolean; message: string; dev_otp?: string };
       if (otpPurpose === 'signup') {
-        await api.resendOtp(email.trim());
+        res = await api.resendOtp(email.trim());
       } else {
-        await api.forgotPassword(email.trim());
+        res = await api.forgotPassword(email.trim());
       }
       setResendTimer(40);
+      if (res.dev_otp) setDevOtp(res.dev_otp);
       setSuccessMessage('A fresh verification code has been dispatched to your email.');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -335,6 +376,21 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 </div>
               )}
 
+              {/* Dev / Preview Fast-fill Helper */}
+              {devOtp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpCode(devOtp);
+                    verifyOtpCode(devOtp);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/70 text-[11px] font-semibold text-[#208AEF] transition-all cursor-pointer"
+                >
+                  <Sparkles className="h-3 w-3 shrink-0" />
+                  <span>Test code: <strong className="font-mono tracking-wider">{devOtp}</strong> (Tap to fill & verify)</span>
+                </button>
+              )}
+
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <OtpInput
                   length={6}
@@ -343,6 +399,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     setOtpCode(val);
                     if (val.length === 6) {
                       setError(null);
+                      // Auto-submit when user enters the full 6-digit code
+                      verifyOtpCode(val);
                     }
                   }}
                   disabled={loading}
@@ -499,7 +557,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       <input
                         type="text"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (error) setError(null);
+                        }}
                         placeholder="Alex Mercer"
                         required
                         className="liquid-glass-input h-11 w-full pl-10 pr-3.5 text-xs font-semibold text-slate-800 placeholder-slate-400"
@@ -517,7 +578,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError(null);
+                      }}
                       placeholder="name@example.com"
                       required
                       className="liquid-glass-input h-11 w-full pl-10 pr-3.5 text-xs font-semibold text-slate-800 placeholder-slate-400"
@@ -547,7 +611,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (error) setError(null);
+                        }}
                         placeholder="••••••••"
                         required
                         minLength={6}
