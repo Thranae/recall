@@ -560,6 +560,22 @@ html, body {
   z-index: 2;
 }
 
+/* 11. SUBTLE SMOOTH REFRESH SPIN */
+@keyframes subtleRefreshSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.subtle-refresh-spin {
+  animation: subtleRefreshSpin 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
 /* Hide scrollbars cleanly */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

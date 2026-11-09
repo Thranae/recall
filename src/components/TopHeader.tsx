@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
 
 interface TopHeaderProps {
@@ -16,6 +16,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onRefresh,
   isRefreshing,
 }) => {
+  const [isLocalSpinning, setIsLocalSpinning] = useState(false);
+
+  const handleRefreshClick = () => {
+    if (isRefreshing || isLocalSpinning) return;
+    setIsLocalSpinning(true);
+    onRefresh();
+    setTimeout(() => {
+      setIsLocalSpinning(false);
+    }, 750);
+  };
+
+  const isSpinning = isRefreshing || isLocalSpinning;
+
   return (
     <div
       className="fixed top-0 inset-x-0 z-30 pointer-events-none select-none"
@@ -103,22 +116,26 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#4A5D78]/80 font-medium select-none">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
-                <span className="tracking-tight">Synced</span>
+                <span
+                  className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                    isSpinning ? 'bg-[#3478F6] scale-110 shadow-[0_0_6px_rgba(52,120,246,0.6)]' : 'bg-emerald-500/80'
+                  }`}
+                />
+                <span className="tracking-tight">{isSpinning ? 'Updating...' : 'Synced'}</span>
               </div>
             )}
 
             <button
               type="button"
-              onClick={onRefresh}
-              disabled={isRefreshing}
+              onClick={handleRefreshClick}
+              disabled={isSpinning}
               aria-label="Refresh library"
               className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-[#4A5D78] active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 stroke-[2] ${
-                  isRefreshing ? 'animate-spin text-[#3478F6]' : 'text-[#4A5D78]'
+                className={`h-3.5 w-3.5 stroke-[2] transition-colors duration-200 ${
+                  isSpinning ? 'subtle-refresh-spin text-[#3478F6]' : 'text-[#4A5D78]'
                 }`}
               />
             </button>

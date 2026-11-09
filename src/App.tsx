@@ -51,8 +51,12 @@ export const App: React.FC = () => {
   const fetchScreenshots = useCallback(async () => {
     if (!user) return;
     setIsRefreshing(true);
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 650));
     try {
-      const res = await api.getScreenshots(selectedCategory);
+      const [res] = await Promise.all([
+        api.getScreenshots(selectedCategory),
+        minDelay,
+      ]);
       setScreenshots(res.screenshots);
     } catch (err) {
       console.error('Failed to fetch screenshots:', err);
