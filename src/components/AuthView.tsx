@@ -213,6 +213,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           if (loginErr.message?.toLowerCase().includes('not verified')) {
             setOtpPurpose('signup');
             setOtpCode('');
+            if (loginErr.dev_otp) setDevOtp(loginErr.dev_otp);
             setResendTimer(40);
             setMode('otp_verify');
             setSuccessMessage('Please enter the 6-digit verification code sent to your email.');

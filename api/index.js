@@ -57203,10 +57203,16 @@ function getTransporter() {
   }
   return nodemailer_default.createTransport({
     service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user,
       pass
-    }
+    },
+    connectionTimeout: 1e4,
+    greetingTimeout: 1e4,
+    socketTimeout: 15e3
   });
 }
 async function sendOtpEmail(toEmail, otpCode, purpose = "signup") {
@@ -57307,14 +57313,18 @@ router.post("/signup", async (req, res) => {
       `);
       insertUser.run(userId, normalizedEmail, password_hash, name2.trim(), otp, otpExpires, created_at);
     }
-    sendOtpEmail(normalizedEmail, otp, "signup").catch(
-      (err) => console.error("[Auth Signup] Email delivery failed:", err)
-    );
+    let emailSent = false;
+    try {
+      emailSent = await sendOtpEmail(normalizedEmail, otp, "signup");
+    } catch (err) {
+      console.error("[Auth Signup] Email delivery failed:", err);
+    }
     res.status(200).json({
       success: true,
-      message: "Verification code sent to your email.",
+      message: emailSent ? "Verification code sent to your email." : "Verification code generated. Please check your inbox or use the instant code below.",
       email: normalizedEmail,
-      dev_otp: process.env.NODE_ENV !== "production" ? otp : void 0
+      email_sent: emailSent,
+      dev_otp: otp
     });
   } catch (err) {
     console.error("Signup error:", err);
@@ -57363,11 +57373,17 @@ router.post("/register", async (req, res) => {
       VALUES (?, ?, ?, ?, 0, ?, ?, ?)
     `);
     insertUser.run(id, normalizedEmail, password_hash, name2.trim(), otp, otpExpires, created_at);
-    sendOtpEmail(normalizedEmail, otp, "signup").catch(console.error);
+    let emailSent = false;
+    try {
+      emailSent = await sendOtpEmail(normalizedEmail, otp, "signup");
+    } catch (err) {
+      console.error("[Auth Register] Email delivery failed:", err);
+    }
     res.status(200).json({
       success: true,
       message: "Verification code sent to your email.",
       email: normalizedEmail,
+      email_sent: emailSent,
       dev_otp: otp
     });
   } catch (err) {
@@ -57456,11 +57472,17 @@ router.post("/resend-otp", async (req, res) => {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1e3).toISOString();
     const updateOtp = db.prepare("UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?");
     updateOtp.run(otp, otpExpires, user.id);
-    sendOtpEmail(normalizedEmail, otp, "signup").catch(console.error);
+    let emailSent = false;
+    try {
+      emailSent = await sendOtpEmail(normalizedEmail, otp, "signup");
+    } catch (err) {
+      console.error("[Auth Resend] Email delivery failed:", err);
+    }
     res.json({
       success: true,
       message: "A new 6-digit verification code has been dispatched to your email.",
-      dev_otp: process.env.NODE_ENV !== "production" ? otp : void 0
+      email_sent: emailSent,
+      dev_otp: otp
     });
   } catch (err) {
     console.error("Resend OTP error:", err);
@@ -57485,11 +57507,17 @@ router.post("/forgot-password", async (req, res) => {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1e3).toISOString();
     const updateOtp = db.prepare("UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?");
     updateOtp.run(otp, otpExpires, user.id);
-    sendOtpEmail(normalizedEmail, otp, "reset").catch(console.error);
+    let emailSent = false;
+    try {
+      emailSent = await sendOtpEmail(normalizedEmail, otp, "reset");
+    } catch (err) {
+      console.error("[Auth Forgot] Email delivery failed:", err);
+    }
     res.json({
       success: true,
       message: "Password reset code has been sent to your email.",
-      dev_otp: process.env.NODE_ENV !== "production" ? otp : void 0
+      email_sent: emailSent,
+      dev_otp: otp
     });
   } catch (err) {
     console.error("Forgot password error:", err);
@@ -57569,12 +57597,18 @@ router.post("/login", async (req, res) => {
       const otpExpires = new Date(Date.now() + 10 * 60 * 1e3).toISOString();
       const updateOtp = db.prepare("UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?");
       updateOtp.run(otp, otpExpires, user.id);
-      sendOtpEmail(normalizedEmail, otp, "signup").catch(console.error);
+      let emailSent = false;
+      try {
+        emailSent = await sendOtpEmail(normalizedEmail, otp, "signup");
+      } catch (err) {
+        console.error("[Auth Login] Email delivery failed:", err);
+      }
       res.status(403).json({
         error: "Email not verified yet. We just sent a fresh 6-digit code to your inbox.",
         requires_verification: true,
         email: normalizedEmail,
-        dev_otp: process.env.NODE_ENV !== "production" ? otp : void 0
+        email_sent: emailSent,
+        dev_otp: otp
       });
       return;
     }

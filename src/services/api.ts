@@ -33,7 +33,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody.error || `Request failed with status ${res.status}`);
+    const err = new Error(errorBody.error || `Request failed with status ${res.status}`);
+    Object.assign(err, errorBody);
+    throw err;
   }
 
   return res.json() as Promise<T>;
