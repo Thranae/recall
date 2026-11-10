@@ -29,7 +29,7 @@ declare global {
 
 const GOOGLE_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-  '251191916495-p6clibvcoaaoqbu8l5l1n6lndqf5ql2e.apps.googleusercontent.com';
+  '600516818739-gjb0v49sblaakj41t1au37tkcsknhand.apps.googleusercontent.com';
 
 interface AuthViewProps {
   onAuthSuccess: (user: User) => void;
@@ -137,8 +137,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   const handleGoogleClick = () => {
     setError(null);
-    // Open Google Account Selection Modal directly so users are never blocked by Google OAuth origin_mismatch
-    setIsGoogleModalOpen(true);
+    let popupTriggered = false;
+    if (tokenClientRef.current) {
+      try {
+        tokenClientRef.current.requestAccessToken();
+        popupTriggered = true;
+      } catch (err) {
+        console.warn('Google requestAccessToken failed, falling back to modal:', err);
+      }
+    }
+    if (!popupTriggered) {
+      setIsGoogleModalOpen(true);
+    }
   };
 
   const handleDirectGoogleLogin = async (emailToUse: string, nameToUse?: string) => {
