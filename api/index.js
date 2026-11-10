@@ -51013,13 +51013,13 @@ import fs2 from "fs";
 
 // node_modules/@google/generative-ai/dist/index.mjs
 var SchemaType;
-(function(SchemaType3) {
-  SchemaType3["STRING"] = "string";
-  SchemaType3["NUMBER"] = "number";
-  SchemaType3["INTEGER"] = "integer";
-  SchemaType3["BOOLEAN"] = "boolean";
-  SchemaType3["ARRAY"] = "array";
-  SchemaType3["OBJECT"] = "object";
+(function(SchemaType2) {
+  SchemaType2["STRING"] = "string";
+  SchemaType2["NUMBER"] = "number";
+  SchemaType2["INTEGER"] = "integer";
+  SchemaType2["BOOLEAN"] = "boolean";
+  SchemaType2["ARRAY"] = "array";
+  SchemaType2["OBJECT"] = "object";
 })(SchemaType || (SchemaType = {}));
 var ExecutableCodeLanguage;
 (function(ExecutableCodeLanguage2) {
@@ -51136,10 +51136,10 @@ var Task;
   Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
 })(Task || (Task = {}));
 var RequestUrl = class {
-  constructor(model, task, apiKey3, stream, requestOptions) {
+  constructor(model, task, apiKey2, stream, requestOptions) {
     this.model = model;
     this.task = task;
-    this.apiKey = apiKey3;
+    this.apiKey = apiKey2;
     this.stream = stream;
     this.requestOptions = requestOptions;
   }
@@ -51188,15 +51188,15 @@ async function getHeaders(url) {
   }
   return headers;
 }
-async function constructModelRequest(model, task, apiKey3, stream, body, requestOptions) {
-  const url = new RequestUrl(model, task, apiKey3, stream, requestOptions);
+async function constructModelRequest(model, task, apiKey2, stream, body, requestOptions) {
+  const url = new RequestUrl(model, task, apiKey2, stream, requestOptions);
   return {
     url: url.toString(),
     fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
   };
 }
-async function makeModelRequest(model, task, apiKey3, stream, body, requestOptions = {}, fetchFn = fetch) {
-  const { url, fetchOptions } = await constructModelRequest(model, task, apiKey3, stream, body, requestOptions);
+async function makeModelRequest(model, task, apiKey2, stream, body, requestOptions = {}, fetchFn = fetch) {
+  const { url, fetchOptions } = await constructModelRequest(model, task, apiKey2, stream, body, requestOptions);
   return makeRequest(url, fetchOptions, fetchFn);
 }
 async function makeRequest(url, fetchOptions, fetchFn = fetch) {
@@ -51539,11 +51539,11 @@ function aggregateResponses(responses) {
   }
   return aggregatedResponse;
 }
-async function generateContentStream(apiKey3, model, params, requestOptions) {
+async function generateContentStream(apiKey2, model, params, requestOptions) {
   const response = await makeModelRequest(
     model,
     Task.STREAM_GENERATE_CONTENT,
-    apiKey3,
+    apiKey2,
     /* stream */
     true,
     JSON.stringify(params),
@@ -51551,11 +51551,11 @@ async function generateContentStream(apiKey3, model, params, requestOptions) {
   );
   return processStream(response);
 }
-async function generateContent(apiKey3, model, params, requestOptions) {
+async function generateContent(apiKey2, model, params, requestOptions) {
   const response = await makeModelRequest(
     model,
     Task.GENERATE_CONTENT,
-    apiKey3,
+    apiKey2,
     /* stream */
     false,
     JSON.stringify(params),
@@ -51748,13 +51748,13 @@ function isValidResponse(response) {
 }
 var SILENT_ERROR = "SILENT_ERROR";
 var ChatSession = class {
-  constructor(apiKey3, model, params, _requestOptions = {}) {
+  constructor(apiKey2, model, params, _requestOptions = {}) {
     this.model = model;
     this.params = params;
     this._requestOptions = _requestOptions;
     this._history = [];
     this._sendPromise = Promise.resolve();
-    this._apiKey = apiKey3;
+    this._apiKey = apiKey2;
     if (params === null || params === void 0 ? void 0 : params.history) {
       validateChatHistory(params.history);
       this._history = params.history;
@@ -51864,24 +51864,24 @@ var ChatSession = class {
     return streamPromise;
   }
 };
-async function countTokens(apiKey3, model, params, singleRequestOptions) {
-  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey3, false, JSON.stringify(params), singleRequestOptions);
+async function countTokens(apiKey2, model, params, singleRequestOptions) {
+  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey2, false, JSON.stringify(params), singleRequestOptions);
   return response.json();
 }
-async function embedContent(apiKey3, model, params, requestOptions) {
-  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey3, false, JSON.stringify(params), requestOptions);
+async function embedContent(apiKey2, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey2, false, JSON.stringify(params), requestOptions);
   return response.json();
 }
-async function batchEmbedContents(apiKey3, model, params, requestOptions) {
+async function batchEmbedContents(apiKey2, model, params, requestOptions) {
   const requestsWithModel = params.requests.map((request) => {
     return Object.assign(Object.assign({}, request), { model });
   });
-  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey3, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
+  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey2, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
   return response.json();
 }
 var GenerativeModel = class {
-  constructor(apiKey3, modelParams, _requestOptions = {}) {
-    this.apiKey = apiKey3;
+  constructor(apiKey2, modelParams, _requestOptions = {}) {
+    this.apiKey = apiKey2;
     this._requestOptions = _requestOptions;
     if (modelParams.model.includes("/")) {
       this.model = modelParams.model;
@@ -51978,8 +51978,8 @@ var GenerativeModel = class {
   }
 };
 var GoogleGenerativeAI = class {
-  constructor(apiKey3) {
-    this.apiKey = apiKey3;
+  constructor(apiKey2) {
+    this.apiKey = apiKey2;
   }
   /**
    * Gets a {@link GenerativeModel} instance for the provided model name.
@@ -52192,9 +52192,11 @@ function analyzeScreenshotHeuristics(ocrText, filename) {
 }
 
 // server/services/ai/gemini.ts
-var apiKey = process.env.GEMINI_API_KEY || "";
+var geminiApiKey = process.env.GEMINI_API_KEY || "";
+var mistralApiKey = process.env.MISTRAL_API_KEY || "";
+var openrouterApiKey = process.env.OPENROUTER_API_KEY || "";
 var groqApiKey = process.env.GROQ_API_KEY || "";
-var genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+var genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 var CANDIDATE_GEMINI_MODELS = [
   "gemini-flash-lite-latest",
   "gemini-3.5-flash",
@@ -52202,26 +52204,7 @@ var CANDIDATE_GEMINI_MODELS = [
   "gemini-flash-latest",
   "gemini-pro-latest"
 ];
-async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
-  let rawBase64 = fallbackBase64 || null;
-  if (!rawBase64 && filePath && fs2.existsSync(filePath)) {
-    try {
-      rawBase64 = fs2.readFileSync(filePath).toString("base64");
-    } catch (readErr) {
-      console.warn("Failed to read image file from disk:", readErr);
-    }
-  }
-  const base64Data = rawBase64 ? rawBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "").trim() : null;
-  let resolvedMime = mimeType || "image/jpeg";
-  if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
-    resolvedMime = "image/svg+xml";
-  } else if (originalFilename.endsWith(".png")) {
-    resolvedMime = "image/png";
-  } else if (originalFilename.endsWith(".webp")) {
-    resolvedMime = "image/webp";
-  }
-  if (genAI && apiKey && base64Data) {
-    const prompt = `You are RECALL's high-precision AI multimodal vision engine.
+var COMMON_PROMPT = `You are RECALL's high-precision AI multimodal vision engine.
 Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
 
 Return a VALID JSON object matching this structure:
@@ -52266,63 +52249,225 @@ PRECISION REQUIREMENT:
 - If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
 - If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
 - Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
-    for (const modelName of CANDIDATE_GEMINI_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.1
-          }
-        });
-        const result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: resolvedMime
-            }
-          }
-        ]);
-        const responseText = result.response.text().trim();
-        const parsed = JSON.parse(responseText);
-        if (parsed) {
-          let category = parsed.category || "other";
-          const ocrLower = ((parsed.ocr_text || "") + " " + (parsed.visual_description || "")).toLowerCase();
-          if (category === "other") {
-            if (parsed.messages?.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
-              category = "chat";
-            } else if (parsed.game_result?.kills != null || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
-              category = "game";
-            } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
-              category = "product";
-            } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
-              category = "poster_document";
-            }
-          }
-          return {
-            category,
-            confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.98,
-            ocr_text: parsed.ocr_text || "",
-            visual_description: parsed.visual_description || "",
-            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-            game_result: parsed.game_result ? {
-              game_name: parsed.game_result.game_name || "Game",
-              mode: parsed.game_result.mode || null,
-              map_name: parsed.game_result.map_name || null,
-              kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
-              score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
-              rank: parsed.game_result.rank || null,
-              damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
-              match_date: parsed.game_result.match_date || null,
-              extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
-              raw_extracted_text: (parsed.ocr_text || "").substring(0, 500)
-            } : null
-          };
+function normalizeAnalysis(parsed, provider) {
+  let category = "other";
+  if (["chat", "game", "product", "poster_document", "other"].includes(parsed.category)) {
+    category = parsed.category;
+  }
+  let ocrText = "";
+  if (typeof parsed.ocr_text === "string") {
+    ocrText = parsed.ocr_text;
+  } else if (parsed.ocr_text && typeof parsed.ocr_text === "object") {
+    ocrText = Object.values(parsed.ocr_text).map((v) => typeof v === "object" ? JSON.stringify(v) : String(v)).join("\n");
+  }
+  let visualDescription = "";
+  if (typeof parsed.visual_description === "string") {
+    visualDescription = parsed.visual_description;
+  } else if (parsed.visual_description && typeof parsed.visual_description === "object") {
+    visualDescription = Object.entries(parsed.visual_description).map(([k, v]) => `${k}: ${v}`).join(". ");
+  }
+  const ocrLower = (ocrText + " " + visualDescription).toLowerCase();
+  if (category === "other") {
+    if (Array.isArray(parsed.messages) && parsed.messages.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
+      category = "chat";
+    } else if (parsed.game_result && typeof parsed.game_result.kills === "number" || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
+      category = "game";
+    } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
+      category = "product";
+    } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
+      category = "poster_document";
+    }
+  }
+  return {
+    category,
+    confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.98,
+    ocr_text: ocrText,
+    visual_description: visualDescription,
+    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    provider,
+    messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+    game_result: parsed.game_result ? {
+      game_name: parsed.game_result.game_name || "Game",
+      mode: parsed.game_result.mode || null,
+      map_name: parsed.game_result.map_name || null,
+      kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
+      score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
+      rank: parsed.game_result.rank || null,
+      damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
+      match_date: parsed.game_result.match_date || null,
+      extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
+      raw_extracted_text: ocrText.substring(0, 500)
+    } : null
+  };
+}
+async function callGeminiVision(base64Data, mimeType) {
+  if (!genAI || !geminiApiKey) throw new Error("Gemini API not configured");
+  for (const modelName of CANDIDATE_GEMINI_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1
         }
-      } catch (modelError) {
-        console.warn(`Gemini model ${modelName} returned notice (${modelError.status || modelError.message?.substring(0, 80)}), trying next candidate...`);
+      });
+      const result = await model.generateContent([
+        COMMON_PROMPT,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType
+          }
+        }
+      ]);
+      const responseText = result.response.text().trim();
+      const parsed = JSON.parse(responseText);
+      return normalizeAnalysis(parsed, `Google Gemini (${modelName})`);
+    } catch (err) {
+      console.warn(`Gemini ${modelName} returned status ${err.status || err.message?.substring(0, 50)}, falling back...`);
+    }
+  }
+  throw new Error("All Gemini candidate models failed");
+}
+async function callMistralVision(base64Data, mimeType) {
+  if (!mistralApiKey) throw new Error("Mistral API not configured");
+  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${mistralApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "pixtral-12b-2409",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: COMMON_PROMPT },
+            { type: "image_url", image_url: `data:${mimeType};base64,${base64Data}` }
+          ]
+        }
+      ],
+      temperature: 0.1
+    })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(`Mistral API error: ${JSON.stringify(errorData)}`);
+  }
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content?.trim() || "";
+  const parsed = JSON.parse(content);
+  return normalizeAnalysis(parsed, "Mistral Pixtral 12B");
+}
+async function callOpenRouterVision(base64Data, mimeType) {
+  if (!openrouterApiKey) throw new Error("OpenRouter API not configured");
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openrouterApiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://recall.dev",
+      "X-Title": "Recall AI"
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-4o-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: COMMON_PROMPT },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+          ]
+        }
+      ],
+      max_tokens: 1500,
+      temperature: 0.1
+    })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(`OpenRouter error: ${JSON.stringify(errorData)}`);
+  }
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content?.trim() || "";
+  const parsed = JSON.parse(content);
+  return normalizeAnalysis(parsed, "OpenAI GPT-4o-mini (OpenRouter)");
+}
+async function callGroqStructuring(ocrText, originalFilename) {
+  if (!groqApiKey) throw new Error("Groq API not configured");
+  const groqPrompt = `You are RECALL's secondary AI structuring engine.
+Analyze this text extracted from screenshot filename "${originalFilename}":
+"""
+${ocrText.substring(0, 3e3) || originalFilename}
+"""
+
+Return a VALID JSON object matching:
+{
+  "category": "chat" | "game" | "product" | "poster_document" | "other",
+  "confidence": 0.90,
+  "visual_description": "Clear visual description of content and layout",
+  "tags": ["array", "of", "searchable", "tags"],
+  "messages": [],
+  "game_result": null
+}`;
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${groqApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-oss-120b",
+      messages: [{ role: "user", content: groqPrompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.1
+    })
+  });
+  if (!res.ok) throw new Error("Groq structuring request failed");
+  const groqData = await res.json();
+  const content = groqData.choices?.[0]?.message?.content?.trim() || "";
+  const parsed = JSON.parse(content);
+  return normalizeAnalysis({ ...parsed, ocr_text: ocrText }, "Groq LPU (GPT-OSS-120B)");
+}
+async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
+  let rawBase64 = fallbackBase64 || null;
+  if (!rawBase64 && filePath && fs2.existsSync(filePath)) {
+    try {
+      rawBase64 = fs2.readFileSync(filePath).toString("base64");
+    } catch (readErr) {
+      console.warn("Failed to read image file from disk:", readErr);
+    }
+  }
+  const base64Data = rawBase64 ? rawBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "").trim() : null;
+  let resolvedMime = mimeType || "image/jpeg";
+  if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
+    resolvedMime = "image/svg+xml";
+  } else if (originalFilename.endsWith(".png")) {
+    resolvedMime = "image/png";
+  } else if (originalFilename.endsWith(".webp")) {
+    resolvedMime = "image/webp";
+  }
+  if (base64Data) {
+    const visionTasks = [];
+    if (geminiApiKey) {
+      visionTasks.push(callGeminiVision(base64Data, resolvedMime));
+    }
+    if (mistralApiKey) {
+      visionTasks.push(callMistralVision(base64Data, resolvedMime));
+    }
+    if (openrouterApiKey) {
+      visionTasks.push(callOpenRouterVision(base64Data, resolvedMime));
+    }
+    if (visionTasks.length > 0) {
+      try {
+        const winningResult = await Promise.any(visionTasks);
+        console.log(`\u26A1 AI Vision processed screenshot via ${winningResult.provider || "Ensemble"}`);
+        return winningResult;
+      } catch (raceErr) {
+        console.warn("All multi-provider vision models failed or were busy, proceeding to Tier 2:", raceErr);
       }
     }
   }
@@ -52334,78 +52479,10 @@ PRECISION REQUIREMENT:
   } catch (ocrErr) {
     console.warn("Local OCR execution notice:", ocrErr);
   }
-  const effectiveGroqKey = process.env.GROQ_API_KEY || groqApiKey;
-  if (effectiveGroqKey && (localOcrText.trim().length > 0 || originalFilename.length > 0)) {
+  if (groqApiKey && (localOcrText.trim().length > 0 || originalFilename.length > 0)) {
     try {
-      const groqPrompt = `You are RECALL's secondary AI structuring engine.
-Analyze this text extracted from screenshot filename "${originalFilename}":
-"""
-${localOcrText.substring(0, 3e3) || originalFilename}
-"""
-
-Return a VALID JSON object matching this structure:
-{
-  "category": "chat" | "game" | "product" | "poster_document" | "other",
-  "confidence": 0.90,
-  "visual_description": "Clear visual description of content and layout",
-  "tags": ["array", "of", "searchable", "tags"],
-  "messages": [
-    // IF chat:
-    {"sequence_number": 1, "message_text": "text", "sender_side": "left" | "right" | "unknown", "sender_label": "Name", "confidence": 0.9}
-  ],
-  "game_result": {
-    // IF game:
-    "game_name": "BGMI",
-    "kills": 18,
-    "rank": "#1 Winner Winner Chicken Dinner",
-    "mode": "Classic",
-    "map_name": "Erangel",
-    "score": null,
-    "damage": null,
-    "match_date": null,
-    "extraction_confidence": 0.95
-  }
-}`;
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${effectiveGroqKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: groqPrompt }],
-          response_format: { type: "json_object" },
-          temperature: 0.1
-        })
-      });
-      if (groqRes.ok) {
-        const groqData = await groqRes.json();
-        const content = groqData.choices?.[0]?.message?.content?.trim() || "";
-        if (content) {
-          const parsed = JSON.parse(content);
-          return {
-            category: parsed.category || "other",
-            confidence: parsed.confidence || 0.9,
-            ocr_text: localOcrText || originalFilename,
-            visual_description: parsed.visual_description || "",
-            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-            game_result: parsed.game_result ? {
-              game_name: parsed.game_result.game_name || "BGMI",
-              mode: parsed.game_result.mode || null,
-              map_name: parsed.game_result.map_name || null,
-              kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
-              score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
-              rank: parsed.game_result.rank || null,
-              damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
-              match_date: parsed.game_result.match_date || null,
-              extraction_confidence: parsed.game_result.extraction_confidence || 0.9,
-              raw_extracted_text: localOcrText.substring(0, 500)
-            } : null
-          };
-        }
-      }
+      const groqResult = await callGroqStructuring(localOcrText || originalFilename, originalFilename);
+      return groqResult;
     } catch (groqErr) {
       console.warn("Groq structuring failed, falling back to heuristics:", groqErr);
     }
@@ -52417,19 +52494,20 @@ Return a VALID JSON object matching this structure:
     ocr_text: localOcrText || originalFilename,
     visual_description: heuristic.visual_description,
     tags: heuristic.tags,
+    provider: "Rule-Based Heuristics",
     messages: heuristic.messages,
     game_result: heuristic.game_result
   };
 }
 
 // server/services/ai/embeddings.ts
-var apiKey2 = process.env.GEMINI_API_KEY || "";
-var genAI2 = apiKey2 ? new GoogleGenerativeAI(apiKey2) : null;
+var apiKey = process.env.GEMINI_API_KEY || "";
+var genAI2 = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 async function generateTextEmbedding(text) {
   if (!text || text.trim().length === 0) {
     return [];
   }
-  if (genAI2 && apiKey2) {
+  if (genAI2 && apiKey) {
     try {
       const model = genAI2.getGenerativeModel({ model: "text-embedding-004" });
       const timeoutPromise = new Promise(
@@ -67399,9 +67477,9 @@ function createTestAccount(apiUrl, callback) {
     requestor: name,
     version: version2
   };
-  const apiKey3 = etherealApiKey();
-  if (apiKey3) {
-    requestHeaders.Authorization = "Bearer " + apiKey3;
+  const apiKey2 = etherealApiKey();
+  if (apiKey2) {
+    requestHeaders.Authorization = "Bearer " + apiKey2;
   }
   const fetchOptions = {
     contentType: "application/json",
@@ -69106,7 +69184,13 @@ app.get("/api/health", (_req, res) => {
     app: "RECALL API",
     version: "1.0.0",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    ai_vision_active: Boolean(process.env.GEMINI_API_KEY),
+    ai_vision_active: Boolean(process.env.GEMINI_API_KEY || process.env.MISTRAL_API_KEY || process.env.OPENROUTER_API_KEY),
+    ai_providers: {
+      gemini: Boolean(process.env.GEMINI_API_KEY),
+      mistral_pixtral: Boolean(process.env.MISTRAL_API_KEY),
+      openrouter_gpt4o: Boolean(process.env.OPENROUTER_API_KEY),
+      groq_lpu: Boolean(process.env.GROQ_API_KEY)
+    },
     mode: process.env.VERCEL ? "serverless" : "persistent-server"
   });
 });

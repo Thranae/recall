@@ -540,7 +540,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                     <div className="flex items-center justify-between text-slate-700">
                       <span className="text-[11px] text-slate-500">Recognition Model</span>
-                      <span className="font-semibold text-[11px] text-[#3478F6]">Gemini Multimodal Vision</span>
+                      <span className="font-semibold text-[11px] text-[#3478F6]">Multi-AI Ensemble (Gemini + Mistral + GPT-4o)</span>
                     </div>
                   </div>
 

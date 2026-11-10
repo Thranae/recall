@@ -35,7 +35,13 @@ app.get('/api/health', (_req, res) => {
     app: 'RECALL API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    ai_vision_active: Boolean(process.env.GEMINI_API_KEY),
+    ai_vision_active: Boolean(process.env.GEMINI_API_KEY || process.env.MISTRAL_API_KEY || process.env.OPENROUTER_API_KEY),
+    ai_providers: {
+      gemini: Boolean(process.env.GEMINI_API_KEY),
+      mistral_pixtral: Boolean(process.env.MISTRAL_API_KEY),
+      openrouter_gpt4o: Boolean(process.env.OPENROUTER_API_KEY),
+      groq_lpu: Boolean(process.env.GROQ_API_KEY),
+    },
     mode: process.env.VERCEL ? 'serverless' : 'persistent-server',
   });
 });
