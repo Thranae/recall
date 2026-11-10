@@ -24,9 +24,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/api ./api
-COPY --from=builder /app/data ./data
 COPY --from=builder /app/server ./server
-COPY eng.traineddata ./
 
 # Ensure persistent directories exist
 RUN mkdir -p /app/data /app/uploads
@@ -34,3 +32,4 @@ RUN mkdir -p /app/data /app/uploads
 EXPOSE 5000
 
 CMD ["node", "api/index.js"]
+
