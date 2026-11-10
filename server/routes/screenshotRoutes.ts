@@ -8,20 +8,32 @@ import { enqueueScreenshotJob } from '../services/processingQueue';
 
 const router = Router();
 
-const UPLOADS_BASE = path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
-if (!fs.existsSync(UPLOADS_BASE)) {
-  fs.mkdirSync(UPLOADS_BASE, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOADS_BASE = isVercel
+  ? path.resolve('/tmp', 'recall-uploads')
+  : path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
+
+try {
+  if (!fs.existsSync(UPLOADS_BASE)) {
+    fs.mkdirSync(UPLOADS_BASE, { recursive: true });
+  }
+} catch (e) {
+  console.warn('Could not initialize UPLOADS_BASE:', e);
 }
 
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req: any, _file, cb) => {
-    const userId = req.user?.id || 'anonymous';
-    const userDir = path.join(UPLOADS_BASE, userId);
-    if (!fs.existsSync(userDir)) {
-      fs.mkdirSync(userDir, { recursive: true });
+    try {
+      const userId = req.user?.id || 'anonymous';
+      const userDir = path.join(UPLOADS_BASE, userId);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+      cb(null, userDir);
+    } catch (err: any) {
+      cb(err, UPLOADS_BASE);
     }
-    cb(null, userDir);
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || '.png';
@@ -63,12 +75,21 @@ router.post(
         const storageKey = path.join(userId, file.filename).replace(/\\/g, '/');
         const now = new Date().toISOString();
 
+        let base64Data: string | null = null;
+        try {
+          if (file.path && fs.existsSync(file.path)) {
+            base64Data = fs.readFileSync(file.path).toString('base64');
+          }
+        } catch (e) {
+          console.warn('Could not read image file for base64 storage:', e);
+        }
+
         const insertStmt = db.prepare(`
           INSERT INTO screenshots (
             id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
             captured_at, uploaded_at, category, processing_status, processing_error,
-            ocr_text, visual_description, text_embedding, tags, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ocr_text, visual_description, text_embedding, tags, image_data, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         insertStmt.run(
@@ -89,6 +110,7 @@ router.post(
           '',
           null,
           '[]',
+          base64Data,
           now,
           now
         );
@@ -206,7 +228,7 @@ router.get('/image/:id', authMiddleware, (req: AuthRequest, res: Response): void
     const userId = req.user!.id;
     const { id } = req.params;
 
-    const getScreenshot = db.prepare('SELECT storage_key, mime_type FROM screenshots WHERE id = ? AND user_id = ?');
+    const getScreenshot = db.prepare('SELECT storage_key, mime_type, image_data FROM screenshots WHERE id = ? AND user_id = ?');
     const row = getScreenshot.get(id, userId) as any;
 
     if (!row) {
@@ -215,14 +237,21 @@ router.get('/image/:id', authMiddleware, (req: AuthRequest, res: Response): void
     }
 
     const fullPath = path.join(UPLOADS_BASE, row.storage_key);
-    if (!fs.existsSync(fullPath)) {
-      res.status(404).json({ error: 'Image file does not exist on disk' });
+    if (fs.existsSync(fullPath)) {
+      res.setHeader('Content-Type', row.mime_type || 'image/png');
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      fs.createReadStream(fullPath).pipe(res);
       return;
     }
 
-    res.setHeader('Content-Type', row.mime_type || 'image/png');
-    res.setHeader('Cache-Control', 'private, max-age=86400');
-    fs.createReadStream(fullPath).pipe(res);
+    if (row.image_data) {
+      res.setHeader('Content-Type', row.mime_type || 'image/png');
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      res.send(Buffer.from(row.image_data, 'base64'));
+      return;
+    }
+
+    res.status(404).json({ error: 'Image file does not exist on disk' });
   } catch (err: any) {
     console.error('Image streaming error:', err);
     res.status(500).json({ error: 'Failed to stream image' });

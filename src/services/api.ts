@@ -136,16 +136,24 @@ export const api = {
     removeAuthToken();
   },
 
-  // Screenshots
+  // Screenshots (Upload files individually so serverless 4.5MB request payload limit is never exceeded)
   async uploadScreenshots(files: File[]): Promise<{ message: string; screenshots: any[] }> {
-    const formData = new FormData();
+    const allScreenshots: any[] = [];
     for (const file of files) {
+      const formData = new FormData();
       formData.append('screenshots', file);
+      const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.screenshots) {
+        allScreenshots.push(...res.screenshots);
+      }
     }
-    return request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    return {
+      message: `Successfully uploaded ${allScreenshots.length} screenshots.`,
+      screenshots: allScreenshots,
+    };
   },
 
   async getScreenshots(category?: string, status?: string): Promise<{ screenshots: Screenshot[]; total: number }> {

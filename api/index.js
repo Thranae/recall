@@ -19163,7 +19163,7 @@ var require_view = __commonJS({
     "use strict";
     var debug = require_src()("express:view");
     var path8 = __require("node:path");
-    var fs8 = __require("node:fs");
+    var fs9 = __require("node:fs");
     var dirname = path8.dirname;
     var basename = path8.basename;
     var extname = path8.extname;
@@ -19243,7 +19243,7 @@ var require_view = __commonJS({
     function tryStat(path9) {
       debug('stat "%s"', path9);
       try {
-        return fs8.statSync(path9);
+        return fs9.statSync(path9);
       } catch (e) {
         return void 0;
       }
@@ -22961,7 +22961,7 @@ var require_send = __commonJS({
     var escapeHtml = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
-    var fs8 = __require("fs");
+    var fs9 = __require("fs");
     var mime = require_mime_types();
     var ms = require_ms();
     var onFinished = require_on_finished();
@@ -23243,7 +23243,7 @@ var require_send = __commonJS({
       var i = 0;
       var self = this;
       debug('stat "%s"', path9);
-      fs8.stat(path9, function onstat(err, stat) {
+      fs9.stat(path9, function onstat(err, stat) {
         var pathEndsWithSep = path9[path9.length - 1] === sep;
         if (err && err.code === "ENOENT" && !extname(path9) && !pathEndsWithSep) {
           return next(err);
@@ -23260,7 +23260,7 @@ var require_send = __commonJS({
         }
         var p = path9 + "." + self._extensions[i++];
         debug('stat "%s"', p);
-        fs8.stat(p, function(err2, stat) {
+        fs9.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23278,7 +23278,7 @@ var require_send = __commonJS({
         }
         var p = join(path9, self._index[i]);
         debug('stat "%s"', p);
-        fs8.stat(p, function(err2, stat) {
+        fs9.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23290,7 +23290,7 @@ var require_send = __commonJS({
     SendStream.prototype.stream = function stream(path9, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs8.createReadStream(path9, options);
+      var stream2 = fs9.createReadStream(path9, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -42050,7 +42050,7 @@ var require_make_middleware = __commonJS({
 // node_modules/multer/storage/disk.js
 var require_disk = __commonJS({
   "node_modules/multer/storage/disk.js"(exports, module) {
-    var fs8 = __require("fs");
+    var fs9 = __require("fs");
     var os4 = __require("os");
     var path8 = __require("path");
     var crypto10 = __require("crypto");
@@ -42077,7 +42077,7 @@ var require_disk = __commonJS({
       this.getFilename = opts.filename || getFilename;
       this.flush = opts.flush;
       if (typeof opts.destination === "string") {
-        fs8.mkdirSync(opts.destination, { recursive: true });
+        fs9.mkdirSync(opts.destination, { recursive: true });
         this.getDestination = function($0, $1, cb) {
           cb(null, opts.destination);
         };
@@ -42093,7 +42093,7 @@ var require_disk = __commonJS({
           if (err2) return cb(err2);
           var finalPath = path8.join(destination, filename);
           if (file.stream.destroyed) return cb(new MulterError("STREAM_DESTROYED"));
-          var outStream = fs8.createWriteStream(finalPath);
+          var outStream = fs9.createWriteStream(finalPath);
           file.path = finalPath;
           openStreams.set(file, outStream);
           outStream.once("close", function() {
@@ -42115,13 +42115,13 @@ var require_disk = __commonJS({
               });
             };
             if (!that.flush) return done();
-            fs8.open(finalPath, "r+", function(err4, fd) {
+            fs9.open(finalPath, "r+", function(err4, fd) {
               if (err4) {
                 endFlush(file);
                 return done(err4);
               }
-              fs8.fsync(fd, function(syncErr) {
-                fs8.close(fd, function(closeErr) {
+              fs9.fsync(fd, function(syncErr) {
+                fs9.close(fd, function(closeErr) {
                   endFlush(file);
                   done(syncErr || closeErr);
                 });
@@ -42138,9 +42138,9 @@ var require_disk = __commonJS({
       delete file.path;
       function unlink() {
         var flush = flushingFiles.get(file);
-        if (!flush) return fs8.unlink(path9, cb);
+        if (!flush) return fs9.unlink(path9, cb);
         flush.onClosed = function() {
-          fs8.unlink(path9, cb);
+          fs9.unlink(path9, cb);
         };
       }
       var outStream = openStreams.get(file);
@@ -42315,18 +42315,18 @@ import path7 from "path";
 // server/db/index.ts
 import { DatabaseSync } from "node:sqlite";
 import path from "path";
-import fs from "fs";
+import fs2 from "fs";
 var isVercel = Boolean(process.env.VERCEL);
 var DB_DIR = isVercel ? path.resolve("/tmp", "recall-data") : path.resolve(process.cwd(), "data");
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+if (!fs2.existsSync(DB_DIR)) {
+  fs2.mkdirSync(DB_DIR, { recursive: true });
 }
 var DB_PATH = path.join(DB_DIR, "recall.db");
-if (isVercel && !fs.existsSync(DB_PATH)) {
+if (isVercel && !fs2.existsSync(DB_PATH)) {
   const sourceDb = path.resolve(process.cwd(), "data", "recall.db");
-  if (fs.existsSync(sourceDb)) {
+  if (fs2.existsSync(sourceDb)) {
     try {
-      fs.copyFileSync(sourceDb, DB_PATH);
+      fs2.copyFileSync(sourceDb, DB_PATH);
     } catch (e) {
       console.warn("Could not copy seed DB to /tmp in Vercel:", e);
     }
@@ -42388,11 +42388,16 @@ function initDatabase() {
       visual_description TEXT,
       text_embedding TEXT,
       tags TEXT,
+      image_data TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+  try {
+    db.exec("ALTER TABLE screenshots ADD COLUMN image_data TEXT;");
+  } catch (_) {
+  }
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
     CREATE INDEX IF NOT EXISTS idx_screenshots_category ON screenshots(category);
@@ -44565,7 +44570,7 @@ var resolve = (from, to) => {
 
 // node_modules/nodemailer/dist/esm/shared/index.js
 import util from "node:util";
-import fs2 from "node:fs";
+import fs3 from "node:fs";
 
 // node_modules/nodemailer/dist/esm/fetch/index.js
 import http from "node:http";
@@ -45567,7 +45572,7 @@ function resolveContentValue(data, key, options, callback) {
         });
         return;
       }
-      return resolveStream(fs2.createReadStream(content.path), callback);
+      return resolveStream(fs3.createReadStream(content.path), callback);
     }
   }
   if (typeof data[key].content === "string" && !["utf8", "usascii", "ascii"].includes(encoding)) {
@@ -47797,7 +47802,7 @@ function detectExtension(mimeType) {
 
 // node_modules/nodemailer/dist/esm/mime-node/index.js
 import crypto2 from "node:crypto";
-import fs3 from "node:fs";
+import fs4 from "node:fs";
 import { PassThrough as PassThrough2, finished as finished2, pipeline } from "node:stream";
 import urlModule from "node:url";
 
@@ -50304,7 +50309,7 @@ var MimeNode = class _MimeNode {
         });
         return contentStream;
       }
-      return fs3.createReadStream(content.path);
+      return fs4.createReadStream(content.path);
     }
     if (content && typeof content.href === "string") {
       if (this._accessDisabled("disableUrlAccess")) {
@@ -51596,7 +51601,7 @@ function relaxedHeaderLine(line) {
 
 // node_modules/nodemailer/dist/esm/dkim/index.js
 import { PassThrough as PassThrough3 } from "node:stream";
-import fs4 from "node:fs";
+import fs5 from "node:fs";
 import path3 from "node:path";
 import crypto5 from "node:crypto";
 var DKIM_ALGO = "sha256";
@@ -51647,10 +51652,10 @@ var DKIMSigner = class {
     const cache = this.cache;
     this.cache = false;
     cache.destroy();
-    fs4.unlink(this.cachePath, () => false);
+    fs5.unlink(this.cachePath, () => false);
   }
   createReadCache() {
-    this.cache = fs4.createReadStream(this.cachePath);
+    this.cache = fs5.createReadStream(this.cachePath);
     this.cache.once("error", (err) => this.fail(err));
     this.cache.once("close", () => {
       this.cleanup();
@@ -51713,7 +51718,7 @@ var DKIMSigner = class {
   }
   createWriteCache() {
     this.output.usingCache = true;
-    this.cache = fs4.createWriteStream(this.cachePath, { mode: 384 });
+    this.cache = fs5.createWriteStream(this.cachePath, { mode: 384 });
     this.cache.once("error", (err) => {
       this.relaxedBody.unpipe(this.cache);
       this.relaxedBody.on("readable", () => {
@@ -57737,13 +57742,13 @@ var authRoutes_default = router;
 var import_express2 = __toESM(require_express2(), 1);
 var import_multer = __toESM(require_multer(), 1);
 import path5 from "path";
-import fs6 from "fs";
+import fs7 from "fs";
 
 // server/services/processingQueue.ts
 import path4 from "path";
 
 // server/services/ai/gemini.ts
-import fs5 from "fs";
+import fs6 from "fs";
 
 // node_modules/@google/generative-ai/dist/index.mjs
 var SchemaType;
@@ -58933,7 +58938,7 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename) {
   if (genAI && apiKey) {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
-      const imageBytes = fs5.readFileSync(filePath);
+      const imageBytes = fs6.readFileSync(filePath);
       const base64Data = imageBytes.toString("base64");
       let resolvedMime = mimeType || "image/jpeg";
       if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
@@ -59187,8 +59192,21 @@ async function executeJob(job) {
       WHERE id = ? AND user_id = ?
     `);
     updateStatus.run((/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
-    const uploadsDir = path4.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
+    const isVercel4 = Boolean(process.env.VERCEL);
+    const uploadsDir = isVercel4 ? path4.resolve("/tmp", "recall-uploads") : path4.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
     const fullPath = path4.join(uploadsDir, job.storageKey);
+    if (!fs.existsSync(fullPath)) {
+      try {
+        const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
+        const imgRow = getImg.get(job.screenshotId);
+        if (imgRow?.image_data) {
+          fs.mkdirSync(path4.dirname(fullPath), { recursive: true });
+          fs.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
+        }
+      } catch (err) {
+        console.warn("Could not restore image file from DB backup:", err);
+      }
+    }
     const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename);
     const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
     const embedding = await generateTextEmbedding(textForEmbedding);
@@ -59302,18 +59320,27 @@ async function executeJob(job) {
 
 // server/routes/screenshotRoutes.ts
 var router2 = (0, import_express2.Router)();
-var UPLOADS_BASE = path5.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
-if (!fs6.existsSync(UPLOADS_BASE)) {
-  fs6.mkdirSync(UPLOADS_BASE, { recursive: true });
+var isVercel2 = Boolean(process.env.VERCEL);
+var UPLOADS_BASE = isVercel2 ? path5.resolve("/tmp", "recall-uploads") : path5.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
+try {
+  if (!fs7.existsSync(UPLOADS_BASE)) {
+    fs7.mkdirSync(UPLOADS_BASE, { recursive: true });
+  }
+} catch (e) {
+  console.warn("Could not initialize UPLOADS_BASE:", e);
 }
 var storage = import_multer.default.diskStorage({
   destination: (req, _file, cb) => {
-    const userId = req.user?.id || "anonymous";
-    const userDir = path5.join(UPLOADS_BASE, userId);
-    if (!fs6.existsSync(userDir)) {
-      fs6.mkdirSync(userDir, { recursive: true });
+    try {
+      const userId = req.user?.id || "anonymous";
+      const userDir = path5.join(UPLOADS_BASE, userId);
+      if (!fs7.existsSync(userDir)) {
+        fs7.mkdirSync(userDir, { recursive: true });
+      }
+      cb(null, userDir);
+    } catch (err) {
+      cb(err, UPLOADS_BASE);
     }
-    cb(null, userDir);
   },
   filename: (_req, file, cb) => {
     const ext = path5.extname(file.originalname) || ".png";
@@ -59350,12 +59377,20 @@ router2.post(
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const storageKey = path5.join(userId, file.filename).replace(/\\/g, "/");
         const now = (/* @__PURE__ */ new Date()).toISOString();
+        let base64Data = null;
+        try {
+          if (file.path && fs7.existsSync(file.path)) {
+            base64Data = fs7.readFileSync(file.path).toString("base64");
+          }
+        } catch (e) {
+          console.warn("Could not read image file for base64 storage:", e);
+        }
         const insertStmt = db.prepare(`
           INSERT INTO screenshots (
             id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
             captured_at, uploaded_at, category, processing_status, processing_error,
-            ocr_text, visual_description, text_embedding, tags, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ocr_text, visual_description, text_embedding, tags, image_data, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         insertStmt.run(
           screenshotId,
@@ -59378,6 +59413,7 @@ router2.post(
           "",
           null,
           "[]",
+          base64Data,
           now,
           now
         );
@@ -59471,20 +59507,26 @@ router2.get("/image/:id", authMiddleware, (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const getScreenshot = db.prepare("SELECT storage_key, mime_type FROM screenshots WHERE id = ? AND user_id = ?");
+    const getScreenshot = db.prepare("SELECT storage_key, mime_type, image_data FROM screenshots WHERE id = ? AND user_id = ?");
     const row = getScreenshot.get(id, userId);
     if (!row) {
       res.status(404).json({ error: "Image not found or access denied" });
       return;
     }
     const fullPath = path5.join(UPLOADS_BASE, row.storage_key);
-    if (!fs6.existsSync(fullPath)) {
-      res.status(404).json({ error: "Image file does not exist on disk" });
+    if (fs7.existsSync(fullPath)) {
+      res.setHeader("Content-Type", row.mime_type || "image/png");
+      res.setHeader("Cache-Control", "private, max-age=86400");
+      fs7.createReadStream(fullPath).pipe(res);
       return;
     }
-    res.setHeader("Content-Type", row.mime_type || "image/png");
-    res.setHeader("Cache-Control", "private, max-age=86400");
-    fs6.createReadStream(fullPath).pipe(res);
+    if (row.image_data) {
+      res.setHeader("Content-Type", row.mime_type || "image/png");
+      res.setHeader("Cache-Control", "private, max-age=86400");
+      res.send(Buffer.from(row.image_data, "base64"));
+      return;
+    }
+    res.status(404).json({ error: "Image file does not exist on disk" });
   } catch (err) {
     console.error("Image streaming error:", err);
     res.status(500).json({ error: "Failed to stream image" });
@@ -59535,9 +59577,9 @@ router2.delete("/:id", authMiddleware, (req, res) => {
       return;
     }
     const fullPath = path5.join(UPLOADS_BASE, row.storage_key);
-    if (fs6.existsSync(fullPath)) {
+    if (fs7.existsSync(fullPath)) {
       try {
-        fs6.unlinkSync(fullPath);
+        fs7.unlinkSync(fullPath);
       } catch (e) {
         console.warn("Could not delete physical file:", e);
       }
@@ -59837,12 +59879,13 @@ var searchRoutes_default = router3;
 // server/routes/testDataRoutes.ts
 var import_express4 = __toESM(require_express2(), 1);
 import path6 from "path";
-import fs7 from "fs";
+import fs8 from "fs";
 var router4 = (0, import_express4.Router)();
-var UPLOADS_BASE2 = path6.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
+var isVercel3 = Boolean(process.env.VERCEL);
+var UPLOADS_BASE2 = isVercel3 ? path6.resolve("/tmp", "recall-uploads") : path6.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
 function generateMockImageFile(filePath, type, title, subtitle, accentColor) {
   const dir = path6.dirname(filePath);
-  if (!fs7.existsSync(dir)) fs7.mkdirSync(dir, { recursive: true });
+  if (!fs8.existsSync(dir)) fs8.mkdirSync(dir, { recursive: true });
   let innerContent = "";
   if (type === "chat") {
     innerContent = `
@@ -59971,15 +60014,15 @@ function generateMockImageFile(filePath, type, title, subtitle, accentColor) {
 
     ${innerContent}
   </svg>`;
-  fs7.writeFileSync(filePath, svg, "utf8");
+  fs8.writeFileSync(filePath, svg, "utf8");
 }
 async function seedUserData(userId) {
   const userDir = path6.join(UPLOADS_BASE2, userId);
-  if (!fs7.existsSync(userDir)) fs7.mkdirSync(userDir, { recursive: true });
+  if (!fs8.existsSync(userDir)) fs8.mkdirSync(userDir, { recursive: true });
   const getOld = db.prepare("SELECT id, storage_key FROM screenshots WHERE user_id = ? AND original_filename LIKE 'TEST_%'").all(userId);
   for (const old of getOld) {
     try {
-      fs7.unlinkSync(path6.join(UPLOADS_BASE2, old.storage_key));
+      fs8.unlinkSync(path6.join(UPLOADS_BASE2, old.storage_key));
     } catch {
     }
     db.prepare("DELETE FROM screenshots WHERE id = ?").run(old.id);

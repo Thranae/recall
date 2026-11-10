@@ -42,8 +42,25 @@ async function executeJob(job: Job): Promise<void> {
     `);
     updateStatus.run(new Date().toISOString(), job.screenshotId, job.userId);
 
-    const uploadsDir = path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
+    const isVercel = Boolean(process.env.VERCEL);
+    const uploadsDir = isVercel
+      ? path.resolve('/tmp', 'recall-uploads')
+      : path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
     const fullPath = path.join(uploadsDir, job.storageKey);
+
+    // If file does not exist on disk in ephemeral container, restore from SQLite image_data backup
+    if (!fs.existsSync(fullPath)) {
+      try {
+        const getImg = db.prepare('SELECT image_data FROM screenshots WHERE id = ?');
+        const imgRow = getImg.get(job.screenshotId) as any;
+        if (imgRow?.image_data) {
+          fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+          fs.writeFileSync(fullPath, Buffer.from(imgRow.image_data, 'base64'));
+        }
+      } catch (err) {
+        console.warn('Could not restore image file from DB backup:', err);
+      }
+    }
 
     // 2. Perform OCR and multimodal analysis
     const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename);

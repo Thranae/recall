@@ -52,9 +52,9 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
         setSelectedFiles([]);
         setUploadSuccess(false);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
-      alert('Upload failed. Please ensure the files are valid images.');
+      alert(err.message || 'Upload failed. Please ensure the files are valid images.');
     } finally {
       setIsUploading(false);
     }

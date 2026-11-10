@@ -6,7 +6,10 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { generateTextEmbedding } from '../services/ai/embeddings';
 
 const router = Router();
-const UPLOADS_BASE = path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
+const isVercel = Boolean(process.env.VERCEL);
+const UPLOADS_BASE = isVercel
+  ? path.resolve('/tmp', 'recall-uploads')
+  : path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
 
 // Generate high-resolution realistic mobile screenshots
 export function generateMockImageFile(

@@ -85,11 +85,18 @@ export function initDatabase() {
       visual_description TEXT,
       text_embedding TEXT,
       tags TEXT,
+      image_data TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+
+  try {
+    db.exec('ALTER TABLE screenshots ADD COLUMN image_data TEXT;');
+  } catch (_) {
+    // Column already exists
+  }
 
   // Index on user_id, category, status for fast queries
   db.exec(`
