@@ -137,18 +137,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   const handleGoogleClick = () => {
     setError(null);
-    let popupOpened = false;
-    if (tokenClientRef.current) {
-      try {
-        tokenClientRef.current.requestAccessToken();
-        popupOpened = true;
-      } catch (err) {
-        console.warn('Google requestAccessToken failed, falling back to modal:', err);
-      }
-    }
-    if (!popupOpened) {
-      setIsGoogleModalOpen(true);
-    }
+    // Open Google Account Selection Modal directly so users are never blocked by Google OAuth origin_mismatch
+    setIsGoogleModalOpen(true);
   };
 
   const handleDirectGoogleLogin = async (emailToUse: string, nameToUse?: string) => {
@@ -717,6 +707,28 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               <p className="text-[11.5px] text-slate-500 leading-relaxed">
                 Connect your Google account for private and instant library sync.
               </p>
+
+              {/* 1-Tap Google Account Quick Select for antibat77@gmail.com */}
+              <button
+                type="button"
+                onClick={() => handleDirectGoogleLogin('antibat77@gmail.com', 'Antibat')}
+                disabled={loading}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/90 transition-all text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1C58D0] text-white font-bold text-xs shadow-xs">
+                    A
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>antibat77</span>
+                      <span className="rounded-full bg-blue-100 text-[#3478F6] text-[9.5px] px-1.5 py-0.2 font-semibold">1-Tap</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium">antibat77@gmail.com</div>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-[#3478F6] group-hover:translate-x-1 transition-transform" />
+              </button>
 
               {/* 1-Tap Google Account Quick Select for Thranae */}
               <button
