@@ -59348,19 +59348,21 @@ async function executeJob(job) {
     const isVercel4 = Boolean(process.env.VERCEL);
     const uploadsDir = isVercel4 ? path4.resolve("/tmp", "recall-uploads") : path4.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
     const fullPath = path4.join(uploadsDir, job.storageKey);
-    if (!fs6.existsSync(fullPath)) {
-      try {
-        const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
-        const imgRow = getImg.get(job.screenshotId);
-        if (imgRow?.image_data) {
+    let base64Data = null;
+    try {
+      const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
+      const imgRow = getImg.get(job.screenshotId);
+      if (imgRow?.image_data) {
+        base64Data = imgRow.image_data;
+        if (!fs6.existsSync(fullPath)) {
           fs6.mkdirSync(path4.dirname(fullPath), { recursive: true });
           fs6.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
         }
-      } catch (err) {
-        console.warn("Could not restore image file from DB backup:", err);
       }
+    } catch (err) {
+      console.warn("Could not restore image file from DB backup:", err);
     }
-    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename);
+    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename, base64Data);
     const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
     const embedding = await generateTextEmbedding(textForEmbedding);
     const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -59565,6 +59567,17 @@ router2.post(
         } catch (e) {
           console.warn("Could not read image file for base64 storage:", e);
         }
+        let initialCategory = "other";
+        const nameLower = file.originalname.toLowerCase();
+        if (nameLower.includes("chat") || nameLower.includes("wa") || nameLower.includes("msg") || nameLower.includes("whatsapp") || nameLower.includes("telegram")) {
+          initialCategory = "chat";
+        } else if (nameLower.includes("game") || nameLower.includes("bgmi") || nameLower.includes("pubg") || nameLower.includes("score")) {
+          initialCategory = "game";
+        } else if (nameLower.includes("product") || nameLower.includes("shop") || nameLower.includes("cart") || nameLower.includes("buy")) {
+          initialCategory = "product";
+        } else if (nameLower.includes("doc") || nameLower.includes("bill") || nameLower.includes("invoice") || nameLower.includes("ticket")) {
+          initialCategory = "poster_document";
+        }
         const insertStmt = db.prepare(`
           INSERT INTO screenshots (
             id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
@@ -59585,7 +59598,7 @@ router2.post(
           file.size,
           now,
           now,
-          "other",
+          initialCategory,
           "processing",
           null,
           "",
@@ -59596,106 +59609,7 @@ router2.post(
           now,
           now
         );
-        let finalCategory = "other";
-        let finalStatus = "processing";
         try {
-          const analysisPromise = analyzeScreenshot(file.path, file.mimetype, file.originalname, base64Data);
-          const timeoutPromise = new Promise((resolve3) => setTimeout(() => resolve3(null), 9e3));
-          const analysis = await Promise.race([analysisPromise, timeoutPromise]);
-          if (analysis) {
-            finalCategory = analysis.category || "other";
-            finalStatus = "ready";
-            let embedding = [];
-            try {
-              const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
-              embedding = await generateTextEmbedding(textForEmbedding);
-            } catch (embErr) {
-              console.warn("Embedding generation notice:", embErr);
-            }
-            const updateStmt = db.prepare(`
-              UPDATE screenshots 
-              SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
-                  tags = ?, text_embedding = ?, updated_at = ?
-              WHERE id = ? AND user_id = ?
-            `);
-            updateStmt.run(
-              finalCategory,
-              analysis.ocr_text || "",
-              analysis.visual_description || "",
-              JSON.stringify(analysis.tags || []),
-              JSON.stringify(embedding),
-              (/* @__PURE__ */ new Date()).toISOString(),
-              screenshotId,
-              userId
-            );
-            if (analysis.messages && analysis.messages.length > 0) {
-              const insertMsg = db.prepare(`
-                INSERT INTO extracted_messages (
-                  id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `);
-              for (const msg of analysis.messages) {
-                insertMsg.run(
-                  `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                  screenshotId,
-                  userId,
-                  msg.sequence_number,
-                  msg.message_text,
-                  msg.sender_side,
-                  msg.sender_label || null,
-                  msg.confidence,
-                  msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
-                );
-              }
-            }
-            if (analysis.game_result) {
-              const g = analysis.game_result;
-              const insertGame = db.prepare(`
-                INSERT INTO game_results (
-                  id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `);
-              insertGame.run(
-                `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                screenshotId,
-                userId,
-                g.game_name || "Game",
-                g.mode || null,
-                g.map_name || null,
-                g.kills,
-                g.score || null,
-                g.rank || null,
-                g.damage || null,
-                g.match_date || null,
-                g.extraction_confidence || 0.95,
-                g.raw_extracted_text || ""
-              );
-            }
-            try {
-              db.prepare(`
-                INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
-                VALUES (?, ?, ?, ?, ?, ?)
-              `).run(
-                screenshotId,
-                userId,
-                analysis.ocr_text || "",
-                analysis.visual_description || "",
-                (analysis.tags || []).join(" "),
-                finalCategory
-              );
-            } catch {
-            }
-          } else {
-            enqueueScreenshotJob({
-              screenshotId,
-              userId,
-              storageKey,
-              mimeType: file.mimetype,
-              originalFilename: file.originalname
-            });
-          }
-        } catch (procErr) {
-          console.warn("Sync AI analysis notice:", procErr);
           enqueueScreenshotJob({
             screenshotId,
             userId,
@@ -59703,17 +59617,19 @@ router2.post(
             mimeType: file.mimetype,
             originalFilename: file.originalname
           });
+        } catch (queueErr) {
+          console.warn("Enqueue notice:", queueErr);
         }
         createdScreenshots.push({
           id: screenshotId,
           filename: file.originalname,
           storage_key: storageKey,
-          category: finalCategory,
-          status: finalStatus
+          category: initialCategory,
+          status: "processing"
         });
       }
       res.status(201).json({
-        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Analysis complete.`,
+        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis started.`,
         screenshots: createdScreenshots
       });
     } catch (err) {
@@ -59725,10 +59641,18 @@ router2.post(
 router2.get("/", authMiddleware, (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user?.email;
     const category = req.query.category;
     const status = req.query.status;
-    let sql = "SELECT * FROM screenshots WHERE user_id = ?";
-    const params = [userId];
+    let sql = `
+      SELECT 
+        id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
+        captured_at, uploaded_at, category, processing_status, processing_error,
+        ocr_text, visual_description, text_embedding, tags, created_at, updated_at
+      FROM screenshots 
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `;
+    const params = [userId, userEmail || userId];
     if (category && category !== "all") {
       sql += " AND category = ?";
       params.push(category);
@@ -59753,21 +59677,29 @@ router2.get("/", authMiddleware, (req, res) => {
 router2.get("/:id", authMiddleware, (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user?.email;
     const { id } = req.params;
-    const getScreenshot = db.prepare("SELECT * FROM screenshots WHERE id = ? AND user_id = ?");
-    const screenshot = getScreenshot.get(id, userId);
+    const getScreenshot = db.prepare(`
+      SELECT 
+        id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
+        captured_at, uploaded_at, category, processing_status, processing_error,
+        ocr_text, visual_description, text_embedding, tags, created_at, updated_at
+      FROM screenshots 
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `);
+    const screenshot = getScreenshot.get(id, userId, userEmail || userId);
     if (!screenshot) {
       res.status(404).json({ error: "Screenshot not found or access denied" });
       return;
     }
     const getMessages = db.prepare(`
       SELECT * FROM extracted_messages 
-      WHERE screenshot_id = ? AND user_id = ? 
+      WHERE screenshot_id = ? 
       ORDER BY sequence_number ASC
     `);
-    const messages = getMessages.all(id, userId);
-    const getGame = db.prepare("SELECT * FROM game_results WHERE screenshot_id = ? AND user_id = ?");
-    const game = getGame.get(id, userId);
+    const messages = getMessages.all(id);
+    const getGame = db.prepare("SELECT * FROM game_results WHERE screenshot_id = ?");
+    const game = getGame.get(id);
     res.json({
       screenshot: {
         ...screenshot,
@@ -59787,9 +59719,14 @@ router2.get("/:id", authMiddleware, (req, res) => {
 router2.get("/image/:id", authMiddleware, (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user?.email;
     const { id } = req.params;
-    const getScreenshot = db.prepare("SELECT storage_key, mime_type, image_data FROM screenshots WHERE id = ? AND user_id = ?");
-    const row = getScreenshot.get(id, userId);
+    const getScreenshot = db.prepare(`
+      SELECT storage_key, mime_type, image_data 
+      FROM screenshots 
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `);
+    const row = getScreenshot.get(id, userId, userEmail || userId);
     if (!row) {
       res.status(404).json({ error: "Image not found or access denied" });
       return;
@@ -59942,6 +59879,114 @@ router2.post("/:id/reanalyze", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Failed to re-analyze screenshot" });
   }
 });
+router2.post("/process-pending", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user?.email;
+    const getPending = db.prepare(`
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+        AND processing_status IN ('queued', 'processing')
+      ORDER BY uploaded_at ASC
+      LIMIT 1
+    `);
+    const pending = getPending.get(userId, userEmail || userId);
+    if (!pending) {
+      res.json({ processed: false, message: "No pending screenshots" });
+      return;
+    }
+    const fullPath = path5.join(UPLOADS_BASE, pending.storage_key);
+    const analysis = await analyzeScreenshot(fullPath, pending.mime_type, pending.original_filename, pending.image_data);
+    let embedding = [];
+    try {
+      const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
+      embedding = await generateTextEmbedding(textForEmbedding);
+    } catch {
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    db.prepare(`
+      UPDATE screenshots
+      SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
+          tags = ?, text_embedding = ?, updated_at = ?
+      WHERE id = ?
+    `).run(
+      analysis.category,
+      analysis.ocr_text,
+      analysis.visual_description,
+      JSON.stringify(analysis.tags),
+      JSON.stringify(embedding),
+      now,
+      pending.id
+    );
+    try {
+      db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?").run(pending.id);
+      if (analysis.messages && analysis.messages.length > 0) {
+        const insertMsg = db.prepare(`
+          INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const m of analysis.messages) {
+          insertMsg.run(
+            `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            pending.id,
+            pending.user_id,
+            m.sequence_number,
+            m.message_text,
+            m.sender_side,
+            m.sender_label || null,
+            m.confidence
+          );
+        }
+      }
+    } catch {
+    }
+    try {
+      db.prepare("DELETE FROM game_results WHERE screenshot_id = ?").run(pending.id);
+      if (analysis.game_result) {
+        const g = analysis.game_result;
+        db.prepare(`
+          INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          pending.id,
+          pending.user_id,
+          g.game_name,
+          g.mode,
+          g.map_name,
+          g.kills,
+          g.score,
+          g.rank,
+          g.damage,
+          g.match_date,
+          g.extraction_confidence,
+          g.raw_extracted_text
+        );
+      }
+    } catch {
+    }
+    try {
+      db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?").run(pending.id);
+      db.prepare(`
+        INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        pending.id,
+        pending.user_id,
+        analysis.ocr_text || "",
+        analysis.visual_description || "",
+        (analysis.tags || []).join(" "),
+        analysis.category
+      );
+    } catch {
+    }
+    res.json({ processed: true, screenshotId: pending.id, category: analysis.category });
+  } catch (err) {
+    console.error("Process pending error:", err);
+    res.status(500).json({ error: "Failed to process pending screenshot" });
+  }
+});
 var screenshotRoutes_default = router2;
 
 // server/routes/searchRoutes.ts
@@ -60011,11 +60056,16 @@ async function executeHybridSearch(userId, rawQuery, filters) {
   const intent = parseQueryIntent(query);
   const resultsMap = /* @__PURE__ */ new Map();
   const getUserScreenshots = db.prepare(`
-    SELECT * FROM screenshots 
-    WHERE user_id = ? AND processing_status != 'queued'
+    SELECT 
+      id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
+      captured_at, uploaded_at, category, processing_status, processing_error,
+      ocr_text, visual_description, text_embedding, tags, created_at, updated_at
+    FROM screenshots 
+    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = (SELECT email FROM users WHERE id = ?) AND email IS NOT NULL AND email != '')))
+      AND processing_status != 'queued'
     ORDER BY created_at DESC
   `);
-  const userScreenshots = getUserScreenshots.all(userId);
+  const userScreenshots = getUserScreenshots.all(userId, userId);
   if (userScreenshots.length === 0) {
     return {
       query,

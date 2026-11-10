@@ -73,22 +73,40 @@ export const App: React.FC = () => {
     }
   }, [user, fetchScreenshots]);
 
-  // Periodic poll while items are actively processing
+  // Periodic poll & background AI indexing while items are actively processing
   useEffect(() => {
     const hasPending = screenshots.some(
       (s) => s.processing_status === 'queued' || s.processing_status === 'processing'
     );
     if (!hasPending || !user) return;
 
+    // Trigger processing of next item immediately without blocking UI
+    api.processPendingScreenshots()
+      .then((res) => {
+        if (res.processed) {
+          fetchScreenshots();
+        }
+      })
+      .catch(() => {});
+
     const interval = setInterval(() => {
-      api
-        .getScreenshots()
-        .then((res) => setScreenshots(res.screenshots))
-        .catch(() => {});
-    }, 3000);
+      api.processPendingScreenshots()
+        .then(() => {
+          api
+            .getScreenshots()
+            .then((res) => setScreenshots(res.screenshots))
+            .catch(() => {});
+        })
+        .catch(() => {
+          api
+            .getScreenshots()
+            .then((res) => setScreenshots(res.screenshots))
+            .catch(() => {});
+        });
+    }, 2500);
 
     return () => clearInterval(interval);
-  }, [screenshots, user]);
+  }, [screenshots, user, fetchScreenshots]);
 
   // Execute Search
   const handleSearch = async (e?: React.FormEvent) => {

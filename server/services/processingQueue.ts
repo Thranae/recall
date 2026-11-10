@@ -49,22 +49,24 @@ async function executeJob(job: Job): Promise<void> {
       : path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads');
     const fullPath = path.join(uploadsDir, job.storageKey);
 
+    let base64Data: string | null = null;
     // If file does not exist on disk in ephemeral container, restore from SQLite image_data backup
-    if (!fs.existsSync(fullPath)) {
-      try {
-        const getImg = db.prepare('SELECT image_data FROM screenshots WHERE id = ?');
-        const imgRow = getImg.get(job.screenshotId) as any;
-        if (imgRow?.image_data) {
+    try {
+      const getImg = db.prepare('SELECT image_data FROM screenshots WHERE id = ?');
+      const imgRow = getImg.get(job.screenshotId) as any;
+      if (imgRow?.image_data) {
+        base64Data = imgRow.image_data;
+        if (!fs.existsSync(fullPath)) {
           fs.mkdirSync(path.dirname(fullPath), { recursive: true });
           fs.writeFileSync(fullPath, Buffer.from(imgRow.image_data, 'base64'));
         }
-      } catch (err) {
-        console.warn('Could not restore image file from DB backup:', err);
       }
+    } catch (err) {
+      console.warn('Could not restore image file from DB backup:', err);
     }
 
     // 2. Perform OCR and multimodal analysis
-    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename);
+    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename, base64Data);
 
     // 3. Generate embedding for visual & semantic search
     const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(' ')} ${analysis.ocr_text.substring(0, 500)}`;

@@ -133,13 +133,18 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
   const intent = parseQueryIntent(query);
   const resultsMap = new Map<string, SearchResultItem>();
 
-  // Fetch all screenshots belonging to this user
+  // Fetch all screenshots belonging to this user (excluding image_data to prevent high memory usage)
   const getUserScreenshots = db.prepare(`
-    SELECT * FROM screenshots 
-    WHERE user_id = ? AND processing_status != 'queued'
+    SELECT 
+      id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
+      captured_at, uploaded_at, category, processing_status, processing_error,
+      ocr_text, visual_description, text_embedding, tags, created_at, updated_at
+    FROM screenshots 
+    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = (SELECT email FROM users WHERE id = ?) AND email IS NOT NULL AND email != '')))
+      AND processing_status != 'queued'
     ORDER BY created_at DESC
   `);
-  const userScreenshots = getUserScreenshots.all(userId) as any[];
+  const userScreenshots = getUserScreenshots.all(userId, userId) as any[];
 
   if (userScreenshots.length === 0) {
     return {

@@ -163,7 +163,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                 transition={{ delay: 0.24, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-1 text-xs text-slate-500 font-normal max-w-[240px]"
               >
-                Your screenshots are recognized, tagged, and indexed.
+                Screenshots saved. Recall is analyzing and indexing in the background.
               </motion.p>
             </motion.div>
           ) : (
@@ -264,7 +264,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                     {isUploading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Analyzing Screenshots...</span>
+                        <span>Uploading Screenshots...</span>
                       </>
                     ) : (
                       <>

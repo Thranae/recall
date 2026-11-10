@@ -136,25 +136,34 @@ export const api = {
     removeAuthToken();
   },
 
-  // Screenshots (Upload files individually so serverless 4.5MB request payload limit is never exceeded)
+  // Screenshots (Upload files concurrently in small chunks to avoid request size limits while maintaining high speed)
   async uploadScreenshots(files: File[]): Promise<{ message: string; screenshots: any[] }> {
     const allScreenshots: any[] = [];
     const errors: string[] = [];
-    for (const file of files) {
-      try {
-        const formData = new FormData();
-        formData.append('screenshots', file);
-        const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        if (res.screenshots) {
-          allScreenshots.push(...res.screenshots);
-        }
-      } catch (err: any) {
-        errors.push(`${file.name}: ${err.message || 'failed'}`);
-      }
+
+    // Parallel chunking (3 at a time) for fast instant upload
+    const CHUNK_SIZE = 3;
+    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+      const chunk = files.slice(i, i + CHUNK_SIZE);
+      await Promise.all(
+        chunk.map(async (file) => {
+          try {
+            const formData = new FormData();
+            formData.append('screenshots', file);
+            const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
+              method: 'POST',
+              body: formData,
+            });
+            if (res.screenshots) {
+              allScreenshots.push(...res.screenshots);
+            }
+          } catch (err: any) {
+            errors.push(`${file.name}: ${err.message || 'failed'}`);
+          }
+        })
+      );
     }
+
     if (allScreenshots.length === 0 && errors.length > 0) {
       throw new Error(errors[0]);
     }
@@ -162,6 +171,12 @@ export const api = {
       message: `Successfully uploaded ${allScreenshots.length} screenshots.${errors.length > 0 ? ` ${errors.length} failed.` : ''}`,
       screenshots: allScreenshots,
     };
+  },
+
+  async processPendingScreenshots(): Promise<{ processed: boolean; screenshotId?: string; category?: string }> {
+    return request<{ processed: boolean; screenshotId?: string; category?: string }>('/screenshots/process-pending', {
+      method: 'POST',
+    });
   },
 
   async getScreenshots(category?: string, status?: string): Promise<{ screenshots: Screenshot[]; total: number }> {
