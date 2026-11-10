@@ -98,10 +98,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               </svg>
             </div>
 
-            {/* Distinctive Recalls Wordmark */}
+            {/* Distinctive Recall Wordmark */}
             <div className="flex items-baseline">
               <h1 className="font-['Outfit'] text-[18.5px] font-extrabold tracking-[-0.03em] text-[#172B4D] leading-none select-none">
-                {title || 'Recalls'}
+                {title || 'Recall'}
                 <span className="text-[#3478F6] font-black ml-0.5 select-none">.</span>
               </h1>
             </div>
