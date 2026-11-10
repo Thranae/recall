@@ -22,6 +22,43 @@ export function enqueueScreenshotJob(job: Omit<Job, 'retryCount'>): void {
   pumpQueue();
 }
 
+/**
+ * Continuous autonomous background AI worker for persistent servers.
+ * Automatically sweeps the database on startup and continuously processes
+ * any pending screenshots without relying on browser activity.
+ */
+export function startPersistentBackgroundWorker(): void {
+  console.log('🤖 Starting autonomous background AI worker...');
+  const sweep = () => {
+    try {
+      const pendingRows = db.prepare(`
+        SELECT id, user_id, storage_key, mime_type, original_filename
+        FROM screenshots
+        WHERE processing_status IN ('queued', 'processing')
+        ORDER BY uploaded_at ASC
+        LIMIT 10
+      `).all() as any[];
+
+      for (const row of pendingRows) {
+        if (!jobQueue.some(j => j.screenshotId === row.id)) {
+          enqueueScreenshotJob({
+            screenshotId: row.id,
+            userId: row.user_id,
+            storageKey: row.storage_key,
+            mimeType: row.mime_type,
+            originalFilename: row.original_filename,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Background worker sweep notice:', err);
+    }
+  };
+
+  sweep();
+  setInterval(sweep, 12000);
+}
+
 function pumpQueue(): void {
   while (activeWorkers < MAX_CONCURRENT_JOBS && jobQueue.length > 0) {
     const job = jobQueue.shift()!;

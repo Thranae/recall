@@ -1,0 +1,12 @@
+node_modules
+dist
+api
+.git
+.github
+android
+ios
+.env
+.env.local
+*.log
+npm-debug.log*
+uploads

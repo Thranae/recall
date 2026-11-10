@@ -19163,7 +19163,7 @@ var require_view = __commonJS({
     "use strict";
     var debug = require_src()("express:view");
     var path8 = __require("node:path");
-    var fs9 = __require("node:fs");
+    var fs10 = __require("node:fs");
     var dirname = path8.dirname;
     var basename = path8.basename;
     var extname = path8.extname;
@@ -19243,7 +19243,7 @@ var require_view = __commonJS({
     function tryStat(path9) {
       debug('stat "%s"', path9);
       try {
-        return fs9.statSync(path9);
+        return fs10.statSync(path9);
       } catch (e) {
         return void 0;
       }
@@ -22961,7 +22961,7 @@ var require_send = __commonJS({
     var escapeHtml = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
-    var fs9 = __require("fs");
+    var fs10 = __require("fs");
     var mime = require_mime_types();
     var ms = require_ms();
     var onFinished = require_on_finished();
@@ -23243,7 +23243,7 @@ var require_send = __commonJS({
       var i = 0;
       var self = this;
       debug('stat "%s"', path9);
-      fs9.stat(path9, function onstat(err, stat) {
+      fs10.stat(path9, function onstat(err, stat) {
         var pathEndsWithSep = path9[path9.length - 1] === sep;
         if (err && err.code === "ENOENT" && !extname(path9) && !pathEndsWithSep) {
           return next(err);
@@ -23260,7 +23260,7 @@ var require_send = __commonJS({
         }
         var p = path9 + "." + self._extensions[i++];
         debug('stat "%s"', p);
-        fs9.stat(p, function(err2, stat) {
+        fs10.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23278,7 +23278,7 @@ var require_send = __commonJS({
         }
         var p = join(path9, self._index[i]);
         debug('stat "%s"', p);
-        fs9.stat(p, function(err2, stat) {
+        fs10.stat(p, function(err2, stat) {
           if (err2) return next(err2);
           if (stat.isDirectory()) return next();
           self.emit("file", p, stat);
@@ -23290,7 +23290,7 @@ var require_send = __commonJS({
     SendStream.prototype.stream = function stream(path9, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs9.createReadStream(path9, options);
+      var stream2 = fs10.createReadStream(path9, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -42050,7 +42050,7 @@ var require_make_middleware = __commonJS({
 // node_modules/multer/storage/disk.js
 var require_disk = __commonJS({
   "node_modules/multer/storage/disk.js"(exports, module) {
-    var fs9 = __require("fs");
+    var fs10 = __require("fs");
     var os4 = __require("os");
     var path8 = __require("path");
     var crypto10 = __require("crypto");
@@ -42077,7 +42077,7 @@ var require_disk = __commonJS({
       this.getFilename = opts.filename || getFilename;
       this.flush = opts.flush;
       if (typeof opts.destination === "string") {
-        fs9.mkdirSync(opts.destination, { recursive: true });
+        fs10.mkdirSync(opts.destination, { recursive: true });
         this.getDestination = function($0, $1, cb) {
           cb(null, opts.destination);
         };
@@ -42093,7 +42093,7 @@ var require_disk = __commonJS({
           if (err2) return cb(err2);
           var finalPath = path8.join(destination, filename);
           if (file.stream.destroyed) return cb(new MulterError("STREAM_DESTROYED"));
-          var outStream = fs9.createWriteStream(finalPath);
+          var outStream = fs10.createWriteStream(finalPath);
           file.path = finalPath;
           openStreams.set(file, outStream);
           outStream.once("close", function() {
@@ -42115,13 +42115,13 @@ var require_disk = __commonJS({
               });
             };
             if (!that.flush) return done();
-            fs9.open(finalPath, "r+", function(err4, fd) {
+            fs10.open(finalPath, "r+", function(err4, fd) {
               if (err4) {
                 endFlush(file);
                 return done(err4);
               }
-              fs9.fsync(fd, function(syncErr) {
-                fs9.close(fd, function(closeErr) {
+              fs10.fsync(fd, function(syncErr) {
+                fs10.close(fd, function(closeErr) {
                   endFlush(file);
                   done(syncErr || closeErr);
                 });
@@ -42138,9 +42138,9 @@ var require_disk = __commonJS({
       delete file.path;
       function unlink() {
         var flush = flushingFiles.get(file);
-        if (!flush) return fs9.unlink(path9, cb);
+        if (!flush) return fs10.unlink(path9, cb);
         flush.onClosed = function() {
-          fs9.unlink(path9, cb);
+          fs10.unlink(path9, cb);
         };
       }
       var outStream = openStreams.get(file);
@@ -42311,6 +42311,7 @@ var import_express5 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_dotenv = __toESM(require_dist4(), 1);
 import path7 from "path";
+import fs9 from "fs";
 
 // server/db/index.ts
 import { DatabaseSync } from "node:sqlite";
@@ -42463,6 +42464,1718 @@ function initDatabase() {
     console.warn("FTS5 table initialization notice:", err);
   }
   console.log("\u2705 SQLite database initialized at:", DB_PATH);
+}
+
+// server/services/processingQueue.ts
+import path2 from "path";
+import fs3 from "fs";
+
+// server/services/ai/gemini.ts
+import fs2 from "fs";
+
+// node_modules/@google/generative-ai/dist/index.mjs
+var SchemaType;
+(function(SchemaType2) {
+  SchemaType2["STRING"] = "string";
+  SchemaType2["NUMBER"] = "number";
+  SchemaType2["INTEGER"] = "integer";
+  SchemaType2["BOOLEAN"] = "boolean";
+  SchemaType2["ARRAY"] = "array";
+  SchemaType2["OBJECT"] = "object";
+})(SchemaType || (SchemaType = {}));
+var ExecutableCodeLanguage;
+(function(ExecutableCodeLanguage2) {
+  ExecutableCodeLanguage2["LANGUAGE_UNSPECIFIED"] = "language_unspecified";
+  ExecutableCodeLanguage2["PYTHON"] = "python";
+})(ExecutableCodeLanguage || (ExecutableCodeLanguage = {}));
+var Outcome;
+(function(Outcome2) {
+  Outcome2["OUTCOME_UNSPECIFIED"] = "outcome_unspecified";
+  Outcome2["OUTCOME_OK"] = "outcome_ok";
+  Outcome2["OUTCOME_FAILED"] = "outcome_failed";
+  Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "outcome_deadline_exceeded";
+})(Outcome || (Outcome = {}));
+var POSSIBLE_ROLES = ["user", "model", "function", "system"];
+var HarmCategory;
+(function(HarmCategory2) {
+  HarmCategory2["HARM_CATEGORY_UNSPECIFIED"] = "HARM_CATEGORY_UNSPECIFIED";
+  HarmCategory2["HARM_CATEGORY_HATE_SPEECH"] = "HARM_CATEGORY_HATE_SPEECH";
+  HarmCategory2["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT";
+  HarmCategory2["HARM_CATEGORY_HARASSMENT"] = "HARM_CATEGORY_HARASSMENT";
+  HarmCategory2["HARM_CATEGORY_DANGEROUS_CONTENT"] = "HARM_CATEGORY_DANGEROUS_CONTENT";
+  HarmCategory2["HARM_CATEGORY_CIVIC_INTEGRITY"] = "HARM_CATEGORY_CIVIC_INTEGRITY";
+})(HarmCategory || (HarmCategory = {}));
+var HarmBlockThreshold;
+(function(HarmBlockThreshold2) {
+  HarmBlockThreshold2["HARM_BLOCK_THRESHOLD_UNSPECIFIED"] = "HARM_BLOCK_THRESHOLD_UNSPECIFIED";
+  HarmBlockThreshold2["BLOCK_LOW_AND_ABOVE"] = "BLOCK_LOW_AND_ABOVE";
+  HarmBlockThreshold2["BLOCK_MEDIUM_AND_ABOVE"] = "BLOCK_MEDIUM_AND_ABOVE";
+  HarmBlockThreshold2["BLOCK_ONLY_HIGH"] = "BLOCK_ONLY_HIGH";
+  HarmBlockThreshold2["BLOCK_NONE"] = "BLOCK_NONE";
+})(HarmBlockThreshold || (HarmBlockThreshold = {}));
+var HarmProbability;
+(function(HarmProbability2) {
+  HarmProbability2["HARM_PROBABILITY_UNSPECIFIED"] = "HARM_PROBABILITY_UNSPECIFIED";
+  HarmProbability2["NEGLIGIBLE"] = "NEGLIGIBLE";
+  HarmProbability2["LOW"] = "LOW";
+  HarmProbability2["MEDIUM"] = "MEDIUM";
+  HarmProbability2["HIGH"] = "HIGH";
+})(HarmProbability || (HarmProbability = {}));
+var BlockReason;
+(function(BlockReason2) {
+  BlockReason2["BLOCKED_REASON_UNSPECIFIED"] = "BLOCKED_REASON_UNSPECIFIED";
+  BlockReason2["SAFETY"] = "SAFETY";
+  BlockReason2["OTHER"] = "OTHER";
+})(BlockReason || (BlockReason = {}));
+var FinishReason;
+(function(FinishReason2) {
+  FinishReason2["FINISH_REASON_UNSPECIFIED"] = "FINISH_REASON_UNSPECIFIED";
+  FinishReason2["STOP"] = "STOP";
+  FinishReason2["MAX_TOKENS"] = "MAX_TOKENS";
+  FinishReason2["SAFETY"] = "SAFETY";
+  FinishReason2["RECITATION"] = "RECITATION";
+  FinishReason2["LANGUAGE"] = "LANGUAGE";
+  FinishReason2["BLOCKLIST"] = "BLOCKLIST";
+  FinishReason2["PROHIBITED_CONTENT"] = "PROHIBITED_CONTENT";
+  FinishReason2["SPII"] = "SPII";
+  FinishReason2["MALFORMED_FUNCTION_CALL"] = "MALFORMED_FUNCTION_CALL";
+  FinishReason2["OTHER"] = "OTHER";
+})(FinishReason || (FinishReason = {}));
+var TaskType;
+(function(TaskType2) {
+  TaskType2["TASK_TYPE_UNSPECIFIED"] = "TASK_TYPE_UNSPECIFIED";
+  TaskType2["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY";
+  TaskType2["RETRIEVAL_DOCUMENT"] = "RETRIEVAL_DOCUMENT";
+  TaskType2["SEMANTIC_SIMILARITY"] = "SEMANTIC_SIMILARITY";
+  TaskType2["CLASSIFICATION"] = "CLASSIFICATION";
+  TaskType2["CLUSTERING"] = "CLUSTERING";
+})(TaskType || (TaskType = {}));
+var FunctionCallingMode;
+(function(FunctionCallingMode2) {
+  FunctionCallingMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+  FunctionCallingMode2["AUTO"] = "AUTO";
+  FunctionCallingMode2["ANY"] = "ANY";
+  FunctionCallingMode2["NONE"] = "NONE";
+})(FunctionCallingMode || (FunctionCallingMode = {}));
+var DynamicRetrievalMode;
+(function(DynamicRetrievalMode2) {
+  DynamicRetrievalMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+  DynamicRetrievalMode2["MODE_DYNAMIC"] = "MODE_DYNAMIC";
+})(DynamicRetrievalMode || (DynamicRetrievalMode = {}));
+var GoogleGenerativeAIError = class extends Error {
+  constructor(message) {
+    super(`[GoogleGenerativeAI Error]: ${message}`);
+  }
+};
+var GoogleGenerativeAIResponseError = class extends GoogleGenerativeAIError {
+  constructor(message, response) {
+    super(message);
+    this.response = response;
+  }
+};
+var GoogleGenerativeAIFetchError = class extends GoogleGenerativeAIError {
+  constructor(message, status, statusText, errorDetails) {
+    super(message);
+    this.status = status;
+    this.statusText = statusText;
+    this.errorDetails = errorDetails;
+  }
+};
+var GoogleGenerativeAIRequestInputError = class extends GoogleGenerativeAIError {
+};
+var GoogleGenerativeAIAbortError = class extends GoogleGenerativeAIError {
+};
+var DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com";
+var DEFAULT_API_VERSION = "v1beta";
+var PACKAGE_VERSION = "0.24.1";
+var PACKAGE_LOG_HEADER = "genai-js";
+var Task;
+(function(Task2) {
+  Task2["GENERATE_CONTENT"] = "generateContent";
+  Task2["STREAM_GENERATE_CONTENT"] = "streamGenerateContent";
+  Task2["COUNT_TOKENS"] = "countTokens";
+  Task2["EMBED_CONTENT"] = "embedContent";
+  Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
+})(Task || (Task = {}));
+var RequestUrl = class {
+  constructor(model, task, apiKey3, stream, requestOptions) {
+    this.model = model;
+    this.task = task;
+    this.apiKey = apiKey3;
+    this.stream = stream;
+    this.requestOptions = requestOptions;
+  }
+  toString() {
+    var _a, _b;
+    const apiVersion = ((_a = this.requestOptions) === null || _a === void 0 ? void 0 : _a.apiVersion) || DEFAULT_API_VERSION;
+    const baseUrl = ((_b = this.requestOptions) === null || _b === void 0 ? void 0 : _b.baseUrl) || DEFAULT_BASE_URL;
+    let url = `${baseUrl}/${apiVersion}/${this.model}:${this.task}`;
+    if (this.stream) {
+      url += "?alt=sse";
+    }
+    return url;
+  }
+};
+function getClientHeaders(requestOptions) {
+  const clientHeaders = [];
+  if (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.apiClient) {
+    clientHeaders.push(requestOptions.apiClient);
+  }
+  clientHeaders.push(`${PACKAGE_LOG_HEADER}/${PACKAGE_VERSION}`);
+  return clientHeaders.join(" ");
+}
+async function getHeaders(url) {
+  var _a;
+  const headers = new Headers();
+  headers.append("Content-Type", "application/json");
+  headers.append("x-goog-api-client", getClientHeaders(url.requestOptions));
+  headers.append("x-goog-api-key", url.apiKey);
+  let customHeaders = (_a = url.requestOptions) === null || _a === void 0 ? void 0 : _a.customHeaders;
+  if (customHeaders) {
+    if (!(customHeaders instanceof Headers)) {
+      try {
+        customHeaders = new Headers(customHeaders);
+      } catch (e) {
+        throw new GoogleGenerativeAIRequestInputError(`unable to convert customHeaders value ${JSON.stringify(customHeaders)} to Headers: ${e.message}`);
+      }
+    }
+    for (const [headerName, headerValue] of customHeaders.entries()) {
+      if (headerName === "x-goog-api-key") {
+        throw new GoogleGenerativeAIRequestInputError(`Cannot set reserved header name ${headerName}`);
+      } else if (headerName === "x-goog-api-client") {
+        throw new GoogleGenerativeAIRequestInputError(`Header name ${headerName} can only be set using the apiClient field`);
+      }
+      headers.append(headerName, headerValue);
+    }
+  }
+  return headers;
+}
+async function constructModelRequest(model, task, apiKey3, stream, body, requestOptions) {
+  const url = new RequestUrl(model, task, apiKey3, stream, requestOptions);
+  return {
+    url: url.toString(),
+    fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
+  };
+}
+async function makeModelRequest(model, task, apiKey3, stream, body, requestOptions = {}, fetchFn = fetch) {
+  const { url, fetchOptions } = await constructModelRequest(model, task, apiKey3, stream, body, requestOptions);
+  return makeRequest(url, fetchOptions, fetchFn);
+}
+async function makeRequest(url, fetchOptions, fetchFn = fetch) {
+  let response;
+  try {
+    response = await fetchFn(url, fetchOptions);
+  } catch (e) {
+    handleResponseError(e, url);
+  }
+  if (!response.ok) {
+    await handleResponseNotOk(response, url);
+  }
+  return response;
+}
+function handleResponseError(e, url) {
+  let err = e;
+  if (err.name === "AbortError") {
+    err = new GoogleGenerativeAIAbortError(`Request aborted when fetching ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  } else if (!(e instanceof GoogleGenerativeAIFetchError || e instanceof GoogleGenerativeAIRequestInputError)) {
+    err = new GoogleGenerativeAIError(`Error fetching from ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  }
+  throw err;
+}
+async function handleResponseNotOk(response, url) {
+  let message = "";
+  let errorDetails;
+  try {
+    const json = await response.json();
+    message = json.error.message;
+    if (json.error.details) {
+      message += ` ${JSON.stringify(json.error.details)}`;
+      errorDetails = json.error.details;
+    }
+  } catch (e) {
+  }
+  throw new GoogleGenerativeAIFetchError(`Error fetching from ${url.toString()}: [${response.status} ${response.statusText}] ${message}`, response.status, response.statusText, errorDetails);
+}
+function buildFetchOptions(requestOptions) {
+  const fetchOptions = {};
+  if ((requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.signal) !== void 0 || (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeout) >= 0) {
+    const controller = new AbortController();
+    if ((requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeout) >= 0) {
+      setTimeout(() => controller.abort(), requestOptions.timeout);
+    }
+    if (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.signal) {
+      requestOptions.signal.addEventListener("abort", () => {
+        controller.abort();
+      });
+    }
+    fetchOptions.signal = controller.signal;
+  }
+  return fetchOptions;
+}
+function addHelpers(response) {
+  response.text = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} candidates. Returning text from the first candidate only. Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getText(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Text not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return "";
+  };
+  response.functionCall = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} candidates. Returning function calls from the first candidate only. Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      console.warn(`response.functionCall() is deprecated. Use response.functionCalls() instead.`);
+      return getFunctionCalls(response)[0];
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return void 0;
+  };
+  response.functionCalls = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} candidates. Returning function calls from the first candidate only. Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getFunctionCalls(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return void 0;
+  };
+  return response;
+}
+function getText(response) {
+  var _a, _b, _c, _d;
+  const textStrings = [];
+  if ((_b = (_a = response.candidates) === null || _a === void 0 ? void 0 : _a[0].content) === null || _b === void 0 ? void 0 : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0].content) === null || _d === void 0 ? void 0 : _d.parts) {
+      if (part.text) {
+        textStrings.push(part.text);
+      }
+      if (part.executableCode) {
+        textStrings.push("\n```" + part.executableCode.language + "\n" + part.executableCode.code + "\n```\n");
+      }
+      if (part.codeExecutionResult) {
+        textStrings.push("\n```\n" + part.codeExecutionResult.output + "\n```\n");
+      }
+    }
+  }
+  if (textStrings.length > 0) {
+    return textStrings.join("");
+  } else {
+    return "";
+  }
+}
+function getFunctionCalls(response) {
+  var _a, _b, _c, _d;
+  const functionCalls = [];
+  if ((_b = (_a = response.candidates) === null || _a === void 0 ? void 0 : _a[0].content) === null || _b === void 0 ? void 0 : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0].content) === null || _d === void 0 ? void 0 : _d.parts) {
+      if (part.functionCall) {
+        functionCalls.push(part.functionCall);
+      }
+    }
+  }
+  if (functionCalls.length > 0) {
+    return functionCalls;
+  } else {
+    return void 0;
+  }
+}
+var badFinishReasons = [
+  FinishReason.RECITATION,
+  FinishReason.SAFETY,
+  FinishReason.LANGUAGE
+];
+function hadBadFinishReason(candidate) {
+  return !!candidate.finishReason && badFinishReasons.includes(candidate.finishReason);
+}
+function formatBlockErrorMessage(response) {
+  var _a, _b, _c;
+  let message = "";
+  if ((!response.candidates || response.candidates.length === 0) && response.promptFeedback) {
+    message += "Response was blocked";
+    if ((_a = response.promptFeedback) === null || _a === void 0 ? void 0 : _a.blockReason) {
+      message += ` due to ${response.promptFeedback.blockReason}`;
+    }
+    if ((_b = response.promptFeedback) === null || _b === void 0 ? void 0 : _b.blockReasonMessage) {
+      message += `: ${response.promptFeedback.blockReasonMessage}`;
+    }
+  } else if ((_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0]) {
+    const firstCandidate = response.candidates[0];
+    if (hadBadFinishReason(firstCandidate)) {
+      message += `Candidate was blocked due to ${firstCandidate.finishReason}`;
+      if (firstCandidate.finishMessage) {
+        message += `: ${firstCandidate.finishMessage}`;
+      }
+    }
+  }
+  return message;
+}
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i;
+  function verb(n) {
+    if (g[n]) i[n] = function(v) {
+      return new Promise(function(a, b) {
+        q.push([n, v, a, b]) > 1 || resume(n, v);
+      });
+    };
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e) {
+      settle(q[0][3], e);
+    }
+  }
+  function step(r) {
+    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f, v) {
+    if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
+  }
+}
+var responseLineRE = /^data\: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
+function processStream(response) {
+  const inputStream = response.body.pipeThrough(new TextDecoderStream("utf8", { fatal: true }));
+  const responseStream = getResponseStream(inputStream);
+  const [stream1, stream2] = responseStream.tee();
+  return {
+    stream: generateResponseSequence(stream1),
+    response: getResponsePromise(stream2)
+  };
+}
+async function getResponsePromise(stream) {
+  const allResponses = [];
+  const reader = stream.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      return addHelpers(aggregateResponses(allResponses));
+    }
+    allResponses.push(value);
+  }
+}
+function generateResponseSequence(stream) {
+  return __asyncGenerator(this, arguments, function* generateResponseSequence_1() {
+    const reader = stream.getReader();
+    while (true) {
+      const { value, done } = yield __await(reader.read());
+      if (done) {
+        break;
+      }
+      yield yield __await(addHelpers(value));
+    }
+  });
+}
+function getResponseStream(inputStream) {
+  const reader = inputStream.getReader();
+  const stream = new ReadableStream({
+    start(controller) {
+      let currentText = "";
+      return pump();
+      function pump() {
+        return reader.read().then(({ value, done }) => {
+          if (done) {
+            if (currentText.trim()) {
+              controller.error(new GoogleGenerativeAIError("Failed to parse stream"));
+              return;
+            }
+            controller.close();
+            return;
+          }
+          currentText += value;
+          let match = currentText.match(responseLineRE);
+          let parsedResponse;
+          while (match) {
+            try {
+              parsedResponse = JSON.parse(match[1]);
+            } catch (e) {
+              controller.error(new GoogleGenerativeAIError(`Error parsing JSON response: "${match[1]}"`));
+              return;
+            }
+            controller.enqueue(parsedResponse);
+            currentText = currentText.substring(match[0].length);
+            match = currentText.match(responseLineRE);
+          }
+          return pump();
+        }).catch((e) => {
+          let err = e;
+          err.stack = e.stack;
+          if (err.name === "AbortError") {
+            err = new GoogleGenerativeAIAbortError("Request aborted when reading from the stream");
+          } else {
+            err = new GoogleGenerativeAIError("Error reading from the stream");
+          }
+          throw err;
+        });
+      }
+    }
+  });
+  return stream;
+}
+function aggregateResponses(responses) {
+  const lastResponse = responses[responses.length - 1];
+  const aggregatedResponse = {
+    promptFeedback: lastResponse === null || lastResponse === void 0 ? void 0 : lastResponse.promptFeedback
+  };
+  for (const response of responses) {
+    if (response.candidates) {
+      let candidateIndex = 0;
+      for (const candidate of response.candidates) {
+        if (!aggregatedResponse.candidates) {
+          aggregatedResponse.candidates = [];
+        }
+        if (!aggregatedResponse.candidates[candidateIndex]) {
+          aggregatedResponse.candidates[candidateIndex] = {
+            index: candidateIndex
+          };
+        }
+        aggregatedResponse.candidates[candidateIndex].citationMetadata = candidate.citationMetadata;
+        aggregatedResponse.candidates[candidateIndex].groundingMetadata = candidate.groundingMetadata;
+        aggregatedResponse.candidates[candidateIndex].finishReason = candidate.finishReason;
+        aggregatedResponse.candidates[candidateIndex].finishMessage = candidate.finishMessage;
+        aggregatedResponse.candidates[candidateIndex].safetyRatings = candidate.safetyRatings;
+        if (candidate.content && candidate.content.parts) {
+          if (!aggregatedResponse.candidates[candidateIndex].content) {
+            aggregatedResponse.candidates[candidateIndex].content = {
+              role: candidate.content.role || "user",
+              parts: []
+            };
+          }
+          const newPart = {};
+          for (const part of candidate.content.parts) {
+            if (part.text) {
+              newPart.text = part.text;
+            }
+            if (part.functionCall) {
+              newPart.functionCall = part.functionCall;
+            }
+            if (part.executableCode) {
+              newPart.executableCode = part.executableCode;
+            }
+            if (part.codeExecutionResult) {
+              newPart.codeExecutionResult = part.codeExecutionResult;
+            }
+            if (Object.keys(newPart).length === 0) {
+              newPart.text = "";
+            }
+            aggregatedResponse.candidates[candidateIndex].content.parts.push(newPart);
+          }
+        }
+      }
+      candidateIndex++;
+    }
+    if (response.usageMetadata) {
+      aggregatedResponse.usageMetadata = response.usageMetadata;
+    }
+  }
+  return aggregatedResponse;
+}
+async function generateContentStream(apiKey3, model, params, requestOptions) {
+  const response = await makeModelRequest(
+    model,
+    Task.STREAM_GENERATE_CONTENT,
+    apiKey3,
+    /* stream */
+    true,
+    JSON.stringify(params),
+    requestOptions
+  );
+  return processStream(response);
+}
+async function generateContent(apiKey3, model, params, requestOptions) {
+  const response = await makeModelRequest(
+    model,
+    Task.GENERATE_CONTENT,
+    apiKey3,
+    /* stream */
+    false,
+    JSON.stringify(params),
+    requestOptions
+  );
+  const responseJson = await response.json();
+  const enhancedResponse = addHelpers(responseJson);
+  return {
+    response: enhancedResponse
+  };
+}
+function formatSystemInstruction(input) {
+  if (input == null) {
+    return void 0;
+  } else if (typeof input === "string") {
+    return { role: "system", parts: [{ text: input }] };
+  } else if (input.text) {
+    return { role: "system", parts: [input] };
+  } else if (input.parts) {
+    if (!input.role) {
+      return { role: "system", parts: input.parts };
+    } else {
+      return input;
+    }
+  }
+}
+function formatNewContent(request) {
+  let newParts = [];
+  if (typeof request === "string") {
+    newParts = [{ text: request }];
+  } else {
+    for (const partOrString of request) {
+      if (typeof partOrString === "string") {
+        newParts.push({ text: partOrString });
+      } else {
+        newParts.push(partOrString);
+      }
+    }
+  }
+  return assignRoleToPartsAndValidateSendMessageRequest(newParts);
+}
+function assignRoleToPartsAndValidateSendMessageRequest(parts) {
+  const userContent = { role: "user", parts: [] };
+  const functionContent = { role: "function", parts: [] };
+  let hasUserContent = false;
+  let hasFunctionContent = false;
+  for (const part of parts) {
+    if ("functionResponse" in part) {
+      functionContent.parts.push(part);
+      hasFunctionContent = true;
+    } else {
+      userContent.parts.push(part);
+      hasUserContent = true;
+    }
+  }
+  if (hasUserContent && hasFunctionContent) {
+    throw new GoogleGenerativeAIError("Within a single message, FunctionResponse cannot be mixed with other type of part in the request for sending chat message.");
+  }
+  if (!hasUserContent && !hasFunctionContent) {
+    throw new GoogleGenerativeAIError("No content is provided for sending chat message.");
+  }
+  if (hasUserContent) {
+    return userContent;
+  }
+  return functionContent;
+}
+function formatCountTokensInput(params, modelParams) {
+  var _a;
+  let formattedGenerateContentRequest = {
+    model: modelParams === null || modelParams === void 0 ? void 0 : modelParams.model,
+    generationConfig: modelParams === null || modelParams === void 0 ? void 0 : modelParams.generationConfig,
+    safetySettings: modelParams === null || modelParams === void 0 ? void 0 : modelParams.safetySettings,
+    tools: modelParams === null || modelParams === void 0 ? void 0 : modelParams.tools,
+    toolConfig: modelParams === null || modelParams === void 0 ? void 0 : modelParams.toolConfig,
+    systemInstruction: modelParams === null || modelParams === void 0 ? void 0 : modelParams.systemInstruction,
+    cachedContent: (_a = modelParams === null || modelParams === void 0 ? void 0 : modelParams.cachedContent) === null || _a === void 0 ? void 0 : _a.name,
+    contents: []
+  };
+  const containsGenerateContentRequest = params.generateContentRequest != null;
+  if (params.contents) {
+    if (containsGenerateContentRequest) {
+      throw new GoogleGenerativeAIRequestInputError("CountTokensRequest must have one of contents or generateContentRequest, not both.");
+    }
+    formattedGenerateContentRequest.contents = params.contents;
+  } else if (containsGenerateContentRequest) {
+    formattedGenerateContentRequest = Object.assign(Object.assign({}, formattedGenerateContentRequest), params.generateContentRequest);
+  } else {
+    const content = formatNewContent(params);
+    formattedGenerateContentRequest.contents = [content];
+  }
+  return { generateContentRequest: formattedGenerateContentRequest };
+}
+function formatGenerateContentInput(params) {
+  let formattedRequest;
+  if (params.contents) {
+    formattedRequest = params;
+  } else {
+    const content = formatNewContent(params);
+    formattedRequest = { contents: [content] };
+  }
+  if (params.systemInstruction) {
+    formattedRequest.systemInstruction = formatSystemInstruction(params.systemInstruction);
+  }
+  return formattedRequest;
+}
+function formatEmbedContentInput(params) {
+  if (typeof params === "string" || Array.isArray(params)) {
+    const content = formatNewContent(params);
+    return { content };
+  }
+  return params;
+}
+var VALID_PART_FIELDS = [
+  "text",
+  "inlineData",
+  "functionCall",
+  "functionResponse",
+  "executableCode",
+  "codeExecutionResult"
+];
+var VALID_PARTS_PER_ROLE = {
+  user: ["text", "inlineData"],
+  function: ["functionResponse"],
+  model: ["text", "functionCall", "executableCode", "codeExecutionResult"],
+  // System instructions shouldn't be in history anyway.
+  system: ["text"]
+};
+function validateChatHistory(history) {
+  let prevContent = false;
+  for (const currContent of history) {
+    const { role, parts } = currContent;
+    if (!prevContent && role !== "user") {
+      throw new GoogleGenerativeAIError(`First content should be with role 'user', got ${role}`);
+    }
+    if (!POSSIBLE_ROLES.includes(role)) {
+      throw new GoogleGenerativeAIError(`Each item should include role field. Got ${role} but valid roles are: ${JSON.stringify(POSSIBLE_ROLES)}`);
+    }
+    if (!Array.isArray(parts)) {
+      throw new GoogleGenerativeAIError("Content should have 'parts' property with an array of Parts");
+    }
+    if (parts.length === 0) {
+      throw new GoogleGenerativeAIError("Each Content should have at least one part");
+    }
+    const countFields = {
+      text: 0,
+      inlineData: 0,
+      functionCall: 0,
+      functionResponse: 0,
+      fileData: 0,
+      executableCode: 0,
+      codeExecutionResult: 0
+    };
+    for (const part of parts) {
+      for (const key of VALID_PART_FIELDS) {
+        if (key in part) {
+          countFields[key] += 1;
+        }
+      }
+    }
+    const validParts = VALID_PARTS_PER_ROLE[role];
+    for (const key of VALID_PART_FIELDS) {
+      if (!validParts.includes(key) && countFields[key] > 0) {
+        throw new GoogleGenerativeAIError(`Content with role '${role}' can't contain '${key}' part`);
+      }
+    }
+    prevContent = true;
+  }
+}
+function isValidResponse(response) {
+  var _a;
+  if (response.candidates === void 0 || response.candidates.length === 0) {
+    return false;
+  }
+  const content = (_a = response.candidates[0]) === null || _a === void 0 ? void 0 : _a.content;
+  if (content === void 0) {
+    return false;
+  }
+  if (content.parts === void 0 || content.parts.length === 0) {
+    return false;
+  }
+  for (const part of content.parts) {
+    if (part === void 0 || Object.keys(part).length === 0) {
+      return false;
+    }
+    if (part.text !== void 0 && part.text === "") {
+      return false;
+    }
+  }
+  return true;
+}
+var SILENT_ERROR = "SILENT_ERROR";
+var ChatSession = class {
+  constructor(apiKey3, model, params, _requestOptions = {}) {
+    this.model = model;
+    this.params = params;
+    this._requestOptions = _requestOptions;
+    this._history = [];
+    this._sendPromise = Promise.resolve();
+    this._apiKey = apiKey3;
+    if (params === null || params === void 0 ? void 0 : params.history) {
+      validateChatHistory(params.history);
+      this._history = params.history;
+    }
+  }
+  /**
+   * Gets the chat history so far. Blocked prompts are not added to history.
+   * Blocked candidates are not added to history, nor are the prompts that
+   * generated them.
+   */
+  async getHistory() {
+    await this._sendPromise;
+    return this._history;
+  }
+  /**
+   * Sends a chat message and receives a non-streaming
+   * {@link GenerateContentResult}.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async sendMessage(request, requestOptions = {}) {
+    var _a, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a = this.params) === null || _a === void 0 ? void 0 : _a.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === void 0 ? void 0 : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === void 0 ? void 0 : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === void 0 ? void 0 : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === void 0 ? void 0 : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === void 0 ? void 0 : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    let finalResult;
+    this._sendPromise = this._sendPromise.then(() => generateContent(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions)).then((result) => {
+      var _a2;
+      if (isValidResponse(result.response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({
+          parts: [],
+          // Response seems to come back without a role set.
+          role: "model"
+        }, (_a2 = result.response.candidates) === null || _a2 === void 0 ? void 0 : _a2[0].content);
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(result.response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessage() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+      finalResult = result;
+    }).catch((e) => {
+      this._sendPromise = Promise.resolve();
+      throw e;
+    });
+    await this._sendPromise;
+    return finalResult;
+  }
+  /**
+   * Sends a chat message and receives the response as a
+   * {@link GenerateContentStreamResult} containing an iterable stream
+   * and a response promise.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async sendMessageStream(request, requestOptions = {}) {
+    var _a, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a = this.params) === null || _a === void 0 ? void 0 : _a.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === void 0 ? void 0 : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === void 0 ? void 0 : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === void 0 ? void 0 : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === void 0 ? void 0 : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === void 0 ? void 0 : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    const streamPromise = generateContentStream(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions);
+    this._sendPromise = this._sendPromise.then(() => streamPromise).catch((_ignored) => {
+      throw new Error(SILENT_ERROR);
+    }).then((streamResult) => streamResult.response).then((response) => {
+      if (isValidResponse(response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({}, response.candidates[0].content);
+        if (!responseContent.role) {
+          responseContent.role = "model";
+        }
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessageStream() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+    }).catch((e) => {
+      if (e.message !== SILENT_ERROR) {
+        console.error(e);
+      }
+    });
+    return streamPromise;
+  }
+};
+async function countTokens(apiKey3, model, params, singleRequestOptions) {
+  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey3, false, JSON.stringify(params), singleRequestOptions);
+  return response.json();
+}
+async function embedContent(apiKey3, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey3, false, JSON.stringify(params), requestOptions);
+  return response.json();
+}
+async function batchEmbedContents(apiKey3, model, params, requestOptions) {
+  const requestsWithModel = params.requests.map((request) => {
+    return Object.assign(Object.assign({}, request), { model });
+  });
+  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey3, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
+  return response.json();
+}
+var GenerativeModel = class {
+  constructor(apiKey3, modelParams, _requestOptions = {}) {
+    this.apiKey = apiKey3;
+    this._requestOptions = _requestOptions;
+    if (modelParams.model.includes("/")) {
+      this.model = modelParams.model;
+    } else {
+      this.model = `models/${modelParams.model}`;
+    }
+    this.generationConfig = modelParams.generationConfig || {};
+    this.safetySettings = modelParams.safetySettings || [];
+    this.tools = modelParams.tools;
+    this.toolConfig = modelParams.toolConfig;
+    this.systemInstruction = formatSystemInstruction(modelParams.systemInstruction);
+    this.cachedContent = modelParams.cachedContent;
+  }
+  /**
+   * Makes a single non-streaming call to the model
+   * and returns an object containing a single {@link GenerateContentResponse}.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async generateContent(request, requestOptions = {}) {
+    var _a;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContent(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, formattedParams), generativeModelRequestOptions);
+  }
+  /**
+   * Makes a single streaming call to the model and returns an object
+   * containing an iterable stream that iterates over all chunks in the
+   * streaming response as well as a promise that returns the final
+   * aggregated response.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async generateContentStream(request, requestOptions = {}) {
+    var _a;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContentStream(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, formattedParams), generativeModelRequestOptions);
+  }
+  /**
+   * Gets a new {@link ChatSession} instance which can be used for
+   * multi-turn chats.
+   */
+  startChat(startChatParams) {
+    var _a;
+    return new ChatSession(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, startChatParams), this._requestOptions);
+  }
+  /**
+   * Counts the tokens in the provided request.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async countTokens(request, requestOptions = {}) {
+    const formattedParams = formatCountTokensInput(request, {
+      model: this.model,
+      generationConfig: this.generationConfig,
+      safetySettings: this.safetySettings,
+      tools: this.tools,
+      toolConfig: this.toolConfig,
+      systemInstruction: this.systemInstruction,
+      cachedContent: this.cachedContent
+    });
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return countTokens(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  /**
+   * Embeds the provided content.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async embedContent(request, requestOptions = {}) {
+    const formattedParams = formatEmbedContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return embedContent(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  /**
+   * Embeds an array of {@link EmbedContentRequest}s.
+   *
+   * Fields set in the optional {@link SingleRequestOptions} parameter will
+   * take precedence over the {@link RequestOptions} values provided to
+   * {@link GoogleGenerativeAI.getGenerativeModel }.
+   */
+  async batchEmbedContents(batchEmbedContentRequest, requestOptions = {}) {
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return batchEmbedContents(this.apiKey, this.model, batchEmbedContentRequest, generativeModelRequestOptions);
+  }
+};
+var GoogleGenerativeAI = class {
+  constructor(apiKey3) {
+    this.apiKey = apiKey3;
+  }
+  /**
+   * Gets a {@link GenerativeModel} instance for the provided model name.
+   */
+  getGenerativeModel(modelParams, requestOptions) {
+    if (!modelParams.model) {
+      throw new GoogleGenerativeAIError(`Must provide a model name. Example: genai.getGenerativeModel({ model: 'my-model-name' })`);
+    }
+    return new GenerativeModel(this.apiKey, modelParams, requestOptions);
+  }
+  /**
+   * Creates a {@link GenerativeModel} instance from provided content cache.
+   */
+  getGenerativeModelFromCachedContent(cachedContent, modelParams, requestOptions) {
+    if (!cachedContent.name) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `name` field.");
+    }
+    if (!cachedContent.model) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `model` field.");
+    }
+    const disallowedDuplicates = ["model", "systemInstruction"];
+    for (const key of disallowedDuplicates) {
+      if ((modelParams === null || modelParams === void 0 ? void 0 : modelParams[key]) && cachedContent[key] && (modelParams === null || modelParams === void 0 ? void 0 : modelParams[key]) !== cachedContent[key]) {
+        if (key === "model") {
+          const modelParamsComp = modelParams.model.startsWith("models/") ? modelParams.model.replace("models/", "") : modelParams.model;
+          const cachedContentComp = cachedContent.model.startsWith("models/") ? cachedContent.model.replace("models/", "") : cachedContent.model;
+          if (modelParamsComp === cachedContentComp) {
+            continue;
+          }
+        }
+        throw new GoogleGenerativeAIRequestInputError(`Different value for "${key}" specified in modelParams (${modelParams[key]}) and cachedContent (${cachedContent[key]})`);
+      }
+    }
+    const modelParamsFromCache = Object.assign(Object.assign({}, modelParams), { model: cachedContent.model, tools: cachedContent.tools, toolConfig: cachedContent.toolConfig, systemInstruction: cachedContent.systemInstruction, cachedContent });
+    return new GenerativeModel(this.apiKey, modelParamsFromCache, requestOptions);
+  }
+};
+
+// server/services/ocr/tesseract.ts
+import { createWorker } from "tesseract.js";
+var workerPromise = null;
+async function getWorker() {
+  if (!workerPromise) {
+    workerPromise = (async () => {
+      const worker = await createWorker("eng");
+      return worker;
+    })();
+  }
+  return workerPromise;
+}
+async function performLocalOCR(imagePath) {
+  try {
+    const worker = await getWorker();
+    const result = await worker.recognize(imagePath);
+    return result.data.text || "";
+  } catch (err) {
+    console.error("Local Tesseract OCR error:", err);
+    return "";
+  }
+}
+
+// server/services/ocr/heuristics.ts
+function parseChatMessagesFromText(rawText) {
+  const lines = rawText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  const messages = [];
+  let seq = 1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\d{1,2}:\d{2}\b/i.test(line) && line.length < 10) continue;
+    if (/^(LTE|5G|4G|WiFi|Battery|\d+%)$/i.test(line)) continue;
+    if (/^(Online|Typing\.\.\.|Last seen|Active now)$/i.test(line)) continue;
+    let sender_side = "unknown";
+    let sender_label = null;
+    let cleanText = line;
+    if (/^(Me|You|Myself):\s*(.*)/i.test(line)) {
+      const match = line.match(/^(Me|You|Myself):\s*(.*)/i);
+      sender_side = "right";
+      sender_label = "You";
+      cleanText = match ? match[2] : line;
+    } else if (/^([A-Za-z0-9_\s]+):\s*(.*)/.test(line)) {
+      const match = line.match(/^([A-Za-z0-9_\s]+):\s*(.*)/);
+      if (match && match[1].length < 25) {
+        sender_side = "left";
+        sender_label = match[1].trim();
+        cleanText = match[2];
+      }
+    }
+    if (cleanText.trim().length > 0) {
+      messages.push({
+        sequence_number: seq++,
+        message_text: cleanText.trim(),
+        sender_side,
+        sender_label,
+        confidence: sender_side !== "unknown" ? 0.88 : 0.65
+      });
+    }
+  }
+  return messages;
+}
+function parseGameStatsFromText(rawText) {
+  const lower = rawText.toLowerCase();
+  const isBgmiOrPubg = lower.includes("bgmi") || lower.includes("battlegrounds") || lower.includes("pubg") || lower.includes("winner winner") || lower.includes("chicken dinner") || lower.includes("eliminated") || lower.includes("total rating") || lower.includes("kills") && (lower.includes("damage") || lower.includes("rank") || lower.includes("erangel"));
+  if (!isBgmiOrPubg) {
+    return null;
+  }
+  let kills = null;
+  let score = null;
+  let rank = null;
+  let damage = null;
+  let map_name = null;
+  let mode = null;
+  const killsMatch = rawText.match(/(?:kills?|eliminations?)\s*[:\-]?\s*(\d+)/i) || rawText.match(/(\d+)\s*(?:kills?|eliminations?)/i);
+  if (killsMatch) {
+    kills = parseInt(killsMatch[1], 10);
+  }
+  if (/winner\s+winner\s+chicken\s+dinner/i.test(rawText) || /#1\s*\/\s*\d+/i.test(rawText) || /#1\s+Winner/i.test(rawText)) {
+    rank = "#1 Winner Winner Chicken Dinner";
+  } else {
+    const rankMatch = rawText.match(/#(\d+)(?:\s*\/\s*\d+)?/);
+    if (rankMatch) {
+      rank = `#${rankMatch[1]}`;
+    }
+  }
+  const damageMatch = rawText.match(/(?:damage|dmg)\s*[:\-]?\s*(\d+)/i);
+  if (damageMatch) {
+    damage = parseInt(damageMatch[1], 10);
+  }
+  const scoreMatch = rawText.match(/(?:score|rating|pts)\s*[:\-]?\s*(\d+)/i);
+  if (scoreMatch) {
+    score = parseInt(scoreMatch[1], 10);
+  }
+  if (/erangel/i.test(rawText)) map_name = "Erangel";
+  else if (/miramar/i.test(rawText)) map_name = "Miramar";
+  else if (/sanhok/i.test(rawText)) map_name = "Sanhok";
+  else if (/livik/i.test(rawText)) map_name = "Livik";
+  else if (/vikendi/i.test(rawText)) map_name = "Vikendi";
+  else if (/nusa/i.test(rawText)) map_name = "Nusa";
+  if (/classic/i.test(rawText)) mode = "Classic";
+  else if (/arena|tdm/i.test(rawText)) mode = "Arena / TDM";
+  else if (/ranked/i.test(rawText)) mode = "Ranked";
+  return {
+    game_name: "BGMI",
+    mode,
+    map_name,
+    kills,
+    score,
+    rank,
+    damage,
+    match_date: null,
+    extraction_confidence: kills !== null ? 0.92 : 0.7,
+    raw_extracted_text: rawText.substring(0, 500)
+  };
+}
+function analyzeScreenshotHeuristics(ocrText, filename) {
+  const lowerText = ocrText.toLowerCase();
+  const lowerName = filename.toLowerCase();
+  const gameStats = parseGameStatsFromText(ocrText);
+  if (gameStats) {
+    return {
+      category: "game",
+      confidence: 0.9,
+      visual_description: `BGMI match outcome screen showing ${gameStats.kills ?? "several"} kills on ${gameStats.map_name ?? "battlefield"} with rank ${gameStats.rank ?? "recorded"}.`,
+      tags: ["bgmi", "pubg", "gaming", "match result", gameStats.map_name?.toLowerCase() || "game"].filter(Boolean),
+      messages: [],
+      game_result: gameStats
+    };
+  }
+  const isChat = lowerText.includes("message") || lowerText.includes("whatsapp") || lowerText.includes("instagram") || lowerText.includes("chat") || lowerName.includes("chat") || lowerName.includes("wa_") || lowerName.includes("screenshot_") || /(?:i love you|reply|replied|said|miss you|meeting|see you|call me|where are you|hey|hello|good night)/i.test(ocrText);
+  const messages = parseChatMessagesFromText(ocrText);
+  if (isChat || messages.length >= 2) {
+    return {
+      category: "chat",
+      confidence: messages.length >= 2 ? 0.88 : 0.65,
+      visual_description: `Chat messaging interface thread with ${messages.length} visible messages exchange.`,
+      tags: ["chat", "conversation", "messaging", "text exchange"],
+      messages,
+      game_result: null
+    };
+  }
+  const isProduct = /(\$|₹|€|£|\bprice\b|\bbuy now\b|\badd to cart\b|\boutfit\b|\bshirt\b|\bsneakers\b|\bshoes\b|\bbackpack\b|\bdress\b)/i.test(ocrText) || lowerName.includes("product") || lowerName.includes("shirt");
+  if (isProduct) {
+    return {
+      category: "product",
+      confidence: 0.8,
+      visual_description: "E-commerce or shopping item screenshot displaying item features and price.",
+      tags: ["product", "shopping", "clothing", "item"],
+      messages: [],
+      game_result: null
+    };
+  }
+  const isPosterOrDoc = /(?:fest|symposium|conference|workshop|invitation|venue|date|registration|ticket|address|phone|bill|receipt|invoice)/i.test(ocrText);
+  if (isPosterOrDoc) {
+    return {
+      category: "poster_document",
+      confidence: 0.82,
+      visual_description: "Official informational poster, event announcement, or receipt document.",
+      tags: ["poster", "document", "event", "information"],
+      messages: [],
+      game_result: null
+    };
+  }
+  return {
+    category: "other",
+    confidence: 0.5,
+    visual_description: "Captured screen image containing visual and textual content.",
+    tags: ["screenshot", "general"],
+    messages: [],
+    game_result: null
+  };
+}
+
+// server/services/ai/gemini.ts
+var apiKey = process.env.GEMINI_API_KEY || "";
+var groqApiKey = process.env.GROQ_API_KEY || "";
+var genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
+  let base64Data = fallbackBase64 || null;
+  if (!base64Data && filePath && fs2.existsSync(filePath)) {
+    try {
+      base64Data = fs2.readFileSync(filePath).toString("base64");
+    } catch (readErr) {
+      console.warn("Failed to read image file from disk:", readErr);
+    }
+  }
+  let resolvedMime = mimeType || "image/jpeg";
+  if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
+    resolvedMime = "image/svg+xml";
+  } else if (originalFilename.endsWith(".png")) {
+    resolvedMime = "image/png";
+  } else if (originalFilename.endsWith(".webp")) {
+    resolvedMime = "image/webp";
+  }
+  if (genAI && apiKey && base64Data) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3.5-flash-lite",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.05,
+          responseSchema: {
+            type: SchemaType.OBJECT,
+            properties: {
+              category: {
+                type: SchemaType.STRING,
+                enum: ["chat", "game", "product", "poster_document", "other"],
+                description: "Screenshot category"
+              },
+              confidence: { type: SchemaType.NUMBER, description: "Classification confidence 0-1" },
+              ocr_text: { type: SchemaType.STRING, description: "Complete verbatim transcription of all visible text" },
+              visual_description: { type: SchemaType.STRING, description: "Detailed visual scene description" },
+              tags: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+                description: "Searchable semantic tags"
+              },
+              messages: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    sequence_number: { type: SchemaType.INTEGER },
+                    message_text: { type: SchemaType.STRING },
+                    sender_side: { type: SchemaType.STRING, enum: ["left", "right", "unknown"] },
+                    sender_label: { type: SchemaType.STRING },
+                    confidence: { type: SchemaType.NUMBER }
+                  },
+                  required: ["sequence_number", "message_text", "sender_side", "confidence"]
+                },
+                description: "Extracted chat messages if category is chat"
+              },
+              game_result: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  game_name: { type: SchemaType.STRING },
+                  mode: { type: SchemaType.STRING },
+                  map_name: { type: SchemaType.STRING },
+                  kills: { type: SchemaType.INTEGER },
+                  score: { type: SchemaType.INTEGER },
+                  rank: { type: SchemaType.STRING },
+                  damage: { type: SchemaType.INTEGER },
+                  match_date: { type: SchemaType.STRING },
+                  extraction_confidence: { type: SchemaType.NUMBER },
+                  raw_extracted_text: { type: SchemaType.STRING }
+                },
+                required: ["game_name"],
+                description: "Game stats if category is game"
+              }
+            },
+            required: ["category", "confidence", "ocr_text", "visual_description", "tags"]
+          }
+        }
+      });
+      const prompt = `You are RECALL's high-precision AI multimodal vision engine.
+Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
+
+Return a VALID JSON object matching this structure:
+{
+  "category": "chat" | "game" | "product" | "poster_document" | "other",
+  "confidence": 0.95,
+  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, and label visible in the image without summarization or omitting anything.",
+  "visual_description": "Detailed visual description of the visual scene, layout, colors, UI elements, objects, clothing, and structure.",
+  "tags": ["array", "of", "10-15", "searchable", "semantic", "tags", "including", "app_names", "topics", "keywords"],
+  "messages": [
+    // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
+    {
+      "sequence_number": 1,
+      "message_text": "exact text inside this message bubble",
+      "sender_side": "left" | "right" | "unknown",
+      "sender_label": "Name of contact or 'You'",
+      "confidence": 0.95
+    }
+  ],
+  "game_result": {
+    // ONLY IF category is "game" (BGMI, PUBG, Call of Duty, Free Fire, Valorant, Clash, etc.):
+    "game_name": "BGMI" or game title,
+    "mode": "Classic" | "Ranked" | "TDM" or null,
+    "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
+    "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
+    "score": integer score or null,
+    "rank": "#1 Winner Winner Chicken Dinner" or rank text,
+    "damage": integer total damage or null,
+    "match_date": string date or null,
+    "extraction_confidence": 0.95
+  }
+}
+
+CATEGORIZATION RULES:
+1. "chat": Any conversation or messaging interface (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Facebook Messenger). Look for chat bubbles, typing bars, sender names, read receipts, or conversational replies.
+2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
+3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/\u20B9/\u20AC/\xA3), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
+4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
+5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings).
+
+PRECISION REQUIREMENT:
+- If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
+- If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
+- Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: resolvedMime
+          }
+        }
+      ]);
+      const responseText = result.response.text().trim();
+      const parsed = JSON.parse(responseText);
+      if (parsed) {
+        let category = parsed.category || "other";
+        const ocrLower = (parsed.ocr_text || "").toLowerCase();
+        if (category === "other") {
+          if (parsed.messages?.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
+            category = "chat";
+          } else if (parsed.game_result?.kills != null || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
+            category = "game";
+          } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
+            category = "product";
+          } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
+            category = "poster_document";
+          }
+        }
+        return {
+          category,
+          confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.95,
+          ocr_text: parsed.ocr_text || "",
+          visual_description: parsed.visual_description || "",
+          tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+          messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+          game_result: parsed.game_result ? {
+            game_name: parsed.game_result.game_name || "Game",
+            mode: parsed.game_result.mode || null,
+            map_name: parsed.game_result.map_name || null,
+            kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
+            score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
+            rank: parsed.game_result.rank || null,
+            damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
+            match_date: parsed.game_result.match_date || null,
+            extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
+            raw_extracted_text: (parsed.ocr_text || "").substring(0, 500)
+          } : null
+        };
+      }
+    } catch (apiError) {
+      console.warn("Gemini 3.5 Flash Lite call failed, proceeding to secondary Groq AI pipeline:", apiError);
+    }
+  }
+  let localOcrText = "";
+  try {
+    if (filePath && fs2.existsSync(filePath)) {
+      localOcrText = await performLocalOCR(filePath);
+    }
+  } catch (ocrErr) {
+    console.warn("Local OCR execution notice:", ocrErr);
+  }
+  const effectiveGroqKey = process.env.GROQ_API_KEY || groqApiKey;
+  if (effectiveGroqKey && (localOcrText.trim().length > 0 || originalFilename.length > 0)) {
+    try {
+      const groqPrompt = `You are RECALL's secondary AI structuring engine.
+Analyze this text extracted from screenshot filename "${originalFilename}":
+"""
+${localOcrText.substring(0, 3e3) || originalFilename}
+"""
+
+Return a VALID JSON object matching this structure:
+{
+  "category": "chat" | "game" | "product" | "poster_document" | "other",
+  "confidence": 0.90,
+  "visual_description": "Clear visual description of content and layout",
+  "tags": ["array", "of", "searchable", "tags"],
+  "messages": [
+    // IF chat:
+    {"sequence_number": 1, "message_text": "text", "sender_side": "left" | "right" | "unknown", "sender_label": "Name", "confidence": 0.9}
+  ],
+  "game_result": {
+    // IF game:
+    "game_name": "BGMI",
+    "kills": 18,
+    "rank": "#1 Winner Winner Chicken Dinner",
+    "mode": "Classic",
+    "map_name": "Erangel",
+    "score": null,
+    "damage": null,
+    "match_date": null,
+    "extraction_confidence": 0.95
+  }
+}`;
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${effectiveGroqKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [{ role: "user", content: groqPrompt }],
+          response_format: { type: "json_object" },
+          temperature: 0.1
+        })
+      });
+      if (groqRes.ok) {
+        const groqData = await groqRes.json();
+        const content = groqData.choices?.[0]?.message?.content?.trim() || "";
+        if (content) {
+          const parsed = JSON.parse(content);
+          return {
+            category: parsed.category || "other",
+            confidence: parsed.confidence || 0.9,
+            ocr_text: localOcrText || originalFilename,
+            visual_description: parsed.visual_description || "",
+            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+            game_result: parsed.game_result ? {
+              game_name: parsed.game_result.game_name || "BGMI",
+              mode: parsed.game_result.mode || null,
+              map_name: parsed.game_result.map_name || null,
+              kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
+              score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
+              rank: parsed.game_result.rank || null,
+              damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
+              match_date: parsed.game_result.match_date || null,
+              extraction_confidence: parsed.game_result.extraction_confidence || 0.9,
+              raw_extracted_text: localOcrText.substring(0, 500)
+            } : null
+          };
+        }
+      }
+    } catch (groqErr) {
+      console.warn("Groq structuring failed, falling back to heuristics:", groqErr);
+    }
+  }
+  const heuristic = analyzeScreenshotHeuristics(localOcrText, originalFilename);
+  return {
+    category: heuristic.category,
+    confidence: heuristic.confidence,
+    ocr_text: localOcrText || originalFilename,
+    visual_description: heuristic.visual_description,
+    tags: heuristic.tags,
+    messages: heuristic.messages,
+    game_result: heuristic.game_result
+  };
+}
+
+// server/services/ai/embeddings.ts
+var apiKey2 = process.env.GEMINI_API_KEY || "";
+var genAI2 = apiKey2 ? new GoogleGenerativeAI(apiKey2) : null;
+async function generateTextEmbedding(text) {
+  if (!text || text.trim().length === 0) {
+    return [];
+  }
+  if (genAI2 && apiKey2) {
+    try {
+      const model = genAI2.getGenerativeModel({ model: "text-embedding-004" });
+      const timeoutPromise = new Promise(
+        (_, reject) => setTimeout(() => reject(new Error("Timeout")), 1500)
+      );
+      const result = await Promise.race([
+        model.embedContent(text.substring(0, 1e3)),
+        timeoutPromise
+      ]);
+      return result.embedding.values;
+    } catch {
+    }
+  }
+  return generateLocalSemanticVector(text);
+}
+function generateLocalSemanticVector(text) {
+  const DIMENSIONS = 64;
+  const vector = new Array(DIMENSIONS).fill(0);
+  const words = text.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
+  if (words.length === 0) return vector;
+  for (const word of words) {
+    let hash2 = 0;
+    for (let i = 0; i < word.length; i++) {
+      hash2 = hash2 * 31 + word.charCodeAt(i) & 4294967295;
+    }
+    const idx = Math.abs(hash2) % DIMENSIONS;
+    vector[idx] += 1;
+    for (let i = 0; i < word.length - 1; i++) {
+      const bigramHash = word.charCodeAt(i) * 31 + word.charCodeAt(i + 1) & 4294967295;
+      const bIdx = Math.abs(bigramHash) % DIMENSIONS;
+      vector[bIdx] += 0.35;
+    }
+  }
+  let norm = 0;
+  for (let i = 0; i < DIMENSIONS; i++) {
+    norm += vector[i] * vector[i];
+  }
+  norm = Math.sqrt(norm);
+  if (norm > 0) {
+    for (let i = 0; i < DIMENSIONS; i++) {
+      vector[i] /= norm;
+    }
+  }
+  return vector;
+}
+function cosineSimilarity(vecA, vecB) {
+  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
+  if (vecA.length !== vecB.length) return 0;
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denominator === 0) return 0;
+  return dotProduct / denominator;
+}
+var computeCosineSimilarity = cosineSimilarity;
+
+// server/services/processingQueue.ts
+var jobQueue = [];
+var MAX_CONCURRENT_JOBS = 5;
+var activeWorkers = 0;
+function enqueueScreenshotJob(job) {
+  jobQueue.push({ ...job, retryCount: 0 });
+  pumpQueue();
+}
+function startPersistentBackgroundWorker() {
+  console.log("\u{1F916} Starting autonomous background AI worker...");
+  const sweep = () => {
+    try {
+      const pendingRows = db.prepare(`
+        SELECT id, user_id, storage_key, mime_type, original_filename
+        FROM screenshots
+        WHERE processing_status IN ('queued', 'processing')
+        ORDER BY uploaded_at ASC
+        LIMIT 10
+      `).all();
+      for (const row of pendingRows) {
+        if (!jobQueue.some((j) => j.screenshotId === row.id)) {
+          enqueueScreenshotJob({
+            screenshotId: row.id,
+            userId: row.user_id,
+            storageKey: row.storage_key,
+            mimeType: row.mime_type,
+            originalFilename: row.original_filename
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Background worker sweep notice:", err);
+    }
+  };
+  sweep();
+  setInterval(sweep, 12e3);
+}
+function pumpQueue() {
+  while (activeWorkers < MAX_CONCURRENT_JOBS && jobQueue.length > 0) {
+    const job = jobQueue.shift();
+    activeWorkers++;
+    executeJob(job).finally(() => {
+      activeWorkers--;
+      pumpQueue();
+    });
+  }
+}
+async function executeJob(job) {
+  try {
+    const updateStatus = db.prepare(`
+      UPDATE screenshots 
+      SET processing_status = 'processing', updated_at = ? 
+      WHERE id = ? AND user_id = ?
+    `);
+    updateStatus.run((/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
+    const isVercel4 = Boolean(process.env.VERCEL);
+    const uploadsDir = isVercel4 ? path2.resolve("/tmp", "recall-uploads") : path2.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
+    const fullPath = path2.join(uploadsDir, job.storageKey);
+    let base64Data = null;
+    try {
+      const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
+      const imgRow = getImg.get(job.screenshotId);
+      if (imgRow?.image_data) {
+        base64Data = imgRow.image_data;
+        if (!fs3.existsSync(fullPath)) {
+          fs3.mkdirSync(path2.dirname(fullPath), { recursive: true });
+          fs3.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
+        }
+      }
+    } catch (err) {
+      console.warn("Could not restore image file from DB backup:", err);
+    }
+    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename, base64Data);
+    const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
+    const embedding = await generateTextEmbedding(textForEmbedding);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const deleteOldMsgs = db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?");
+    deleteOldMsgs.run(job.screenshotId);
+    const deleteOldGame = db.prepare("DELETE FROM game_results WHERE screenshot_id = ?");
+    deleteOldGame.run(job.screenshotId);
+    const deleteOldFts = db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?");
+    try {
+      deleteOldFts.run(job.screenshotId);
+    } catch {
+    }
+    const updateScreenshot = db.prepare(`
+      UPDATE screenshots 
+      SET 
+        category = ?,
+        processing_status = 'ready',
+        processing_error = NULL,
+        ocr_text = ?,
+        visual_description = ?,
+        text_embedding = ?,
+        tags = ?,
+        updated_at = ?
+      WHERE id = ? AND user_id = ?
+    `);
+    updateScreenshot.run(
+      analysis.category,
+      analysis.ocr_text,
+      analysis.visual_description,
+      JSON.stringify(embedding),
+      JSON.stringify(analysis.tags),
+      now,
+      job.screenshotId,
+      job.userId
+    );
+    if (analysis.messages && analysis.messages.length > 0) {
+      const insertMsg = db.prepare(`
+        INSERT INTO extracted_messages (
+          id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const msg of analysis.messages) {
+        insertMsg.run(
+          `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          job.screenshotId,
+          job.userId,
+          msg.sequence_number,
+          msg.message_text,
+          msg.sender_side,
+          msg.sender_label || null,
+          msg.confidence,
+          msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
+        );
+      }
+    }
+    if (analysis.game_result) {
+      const insertGame = db.prepare(`
+        INSERT INTO game_results (
+          id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertGame.run(
+        `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        job.screenshotId,
+        job.userId,
+        analysis.game_result.game_name,
+        analysis.game_result.mode || null,
+        analysis.game_result.map_name || null,
+        analysis.game_result.kills ?? null,
+        analysis.game_result.score ?? null,
+        analysis.game_result.rank || null,
+        analysis.game_result.damage ?? null,
+        analysis.game_result.match_date || null,
+        analysis.game_result.extraction_confidence,
+        analysis.game_result.raw_extracted_text || ""
+      );
+    }
+    try {
+      const insertFts = db.prepare(`
+        INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      insertFts.run(
+        job.screenshotId,
+        job.userId,
+        analysis.ocr_text,
+        analysis.visual_description,
+        analysis.tags.join(" "),
+        analysis.category
+      );
+    } catch (ftsErr) {
+      console.warn("FTS5 index insert warning:", ftsErr);
+    }
+    console.log(`\u2705 Processed screenshot ${job.screenshotId} [${analysis.category}]`);
+  } catch (err) {
+    console.error(`\u274C Error processing screenshot ${job.screenshotId}:`, err);
+    if (job.retryCount < 2) {
+      console.log(`Retrying job ${job.screenshotId} (attempt ${job.retryCount + 1})...`);
+      jobQueue.push({ ...job, retryCount: job.retryCount + 1 });
+    } else {
+      const markFailed = db.prepare(`
+        UPDATE screenshots 
+        SET processing_status = 'failed', processing_error = ?, updated_at = ? 
+        WHERE id = ? AND user_id = ?
+      `);
+      markFailed.run(err.message || "Processing failed", (/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
+    }
+  }
 }
 
 // server/routes/authRoutes.ts
@@ -44616,7 +46329,7 @@ var resolve = (from, to) => {
 
 // node_modules/nodemailer/dist/esm/shared/index.js
 import util from "node:util";
-import fs2 from "node:fs";
+import fs4 from "node:fs";
 
 // node_modules/nodemailer/dist/esm/fetch/index.js
 import http from "node:http";
@@ -45618,7 +47331,7 @@ function resolveContentValue(data, key, options, callback) {
         });
         return;
       }
-      return resolveStream(fs2.createReadStream(content.path), callback);
+      return resolveStream(fs4.createReadStream(content.path), callback);
     }
   }
   if (typeof data[key].content === "string" && !["utf8", "usascii", "ascii"].includes(encoding)) {
@@ -45759,7 +47472,7 @@ function createDefaultLogger(levels) {
 }
 
 // node_modules/nodemailer/dist/esm/mime-funcs/mime-types.js
-import path2 from "node:path";
+import path3 from "node:path";
 var defaultMimeType = "application/octet-stream";
 var defaultExtension = "bin";
 var mimeTypes = /* @__PURE__ */ new Map([
@@ -47816,7 +49529,7 @@ function detectMimeType(filename) {
   if (!filename) {
     return defaultMimeType;
   }
-  const parsed = path2.parse(filename);
+  const parsed = path3.parse(filename);
   const extension = (parsed.ext.substr(1) || parsed.name || "").split("?").shift().trim().toLowerCase();
   const value = extensions.has(extension) ? extensions.get(extension) : defaultMimeType;
   if (Array.isArray(value)) {
@@ -47848,7 +49561,7 @@ function detectExtension(mimeType) {
 
 // node_modules/nodemailer/dist/esm/mime-node/index.js
 import crypto2 from "node:crypto";
-import fs3 from "node:fs";
+import fs5 from "node:fs";
 import { PassThrough as PassThrough2, finished as finished2, pipeline } from "node:stream";
 import urlModule from "node:url";
 
@@ -50355,7 +52068,7 @@ var MimeNode = class _MimeNode {
         });
         return contentStream;
       }
-      return fs3.createReadStream(content.path);
+      return fs5.createReadStream(content.path);
     }
     if (content && typeof content.href === "string") {
       if (this._accessDisabled("disableUrlAccess")) {
@@ -51647,8 +53360,8 @@ function relaxedHeaderLine(line) {
 
 // node_modules/nodemailer/dist/esm/dkim/index.js
 import { PassThrough as PassThrough3 } from "node:stream";
-import fs4 from "node:fs";
-import path3 from "node:path";
+import fs6 from "node:fs";
+import path4 from "node:path";
 import crypto5 from "node:crypto";
 var DKIM_ALGO = "sha256";
 var MAX_MESSAGE_SIZE = 10 * 1024 * 1024;
@@ -51662,7 +53375,7 @@ var DKIMSigner = class {
     this.chunks = [];
     this.chunklen = 0;
     this.readPos = 0;
-    this.cachePath = this.cacheDir ? path3.join(this.cacheDir, "message." + Date.now() + "-" + crypto5.randomBytes(14).toString("hex")) : false;
+    this.cachePath = this.cacheDir ? path4.join(this.cacheDir, "message." + Date.now() + "-" + crypto5.randomBytes(14).toString("hex")) : false;
     this.cache = false;
     this.headers = false;
     this.bodyHash = false;
@@ -51698,10 +53411,10 @@ var DKIMSigner = class {
     const cache = this.cache;
     this.cache = false;
     cache.destroy();
-    fs4.unlink(this.cachePath, () => false);
+    fs6.unlink(this.cachePath, () => false);
   }
   createReadCache() {
-    this.cache = fs4.createReadStream(this.cachePath);
+    this.cache = fs6.createReadStream(this.cachePath);
     this.cache.once("error", (err) => this.fail(err));
     this.cache.once("close", () => {
       this.cleanup();
@@ -51764,7 +53477,7 @@ var DKIMSigner = class {
   }
   createWriteCache() {
     this.output.usingCache = true;
-    this.cache = fs4.createWriteStream(this.cachePath, { mode: 384 });
+    this.cache = fs6.createWriteStream(this.cachePath, { mode: 384 });
     this.cache.once("error", (err) => {
       this.relaxedBody.unpipe(this.cache);
       this.relaxedBody.on("readable", () => {
@@ -57789,1691 +59502,6 @@ var import_express2 = __toESM(require_express2(), 1);
 var import_multer = __toESM(require_multer(), 1);
 import path5 from "path";
 import fs7 from "fs";
-
-// server/services/processingQueue.ts
-import path4 from "path";
-import fs6 from "fs";
-
-// server/services/ai/gemini.ts
-import fs5 from "fs";
-
-// node_modules/@google/generative-ai/dist/index.mjs
-var SchemaType;
-(function(SchemaType2) {
-  SchemaType2["STRING"] = "string";
-  SchemaType2["NUMBER"] = "number";
-  SchemaType2["INTEGER"] = "integer";
-  SchemaType2["BOOLEAN"] = "boolean";
-  SchemaType2["ARRAY"] = "array";
-  SchemaType2["OBJECT"] = "object";
-})(SchemaType || (SchemaType = {}));
-var ExecutableCodeLanguage;
-(function(ExecutableCodeLanguage2) {
-  ExecutableCodeLanguage2["LANGUAGE_UNSPECIFIED"] = "language_unspecified";
-  ExecutableCodeLanguage2["PYTHON"] = "python";
-})(ExecutableCodeLanguage || (ExecutableCodeLanguage = {}));
-var Outcome;
-(function(Outcome2) {
-  Outcome2["OUTCOME_UNSPECIFIED"] = "outcome_unspecified";
-  Outcome2["OUTCOME_OK"] = "outcome_ok";
-  Outcome2["OUTCOME_FAILED"] = "outcome_failed";
-  Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "outcome_deadline_exceeded";
-})(Outcome || (Outcome = {}));
-var POSSIBLE_ROLES = ["user", "model", "function", "system"];
-var HarmCategory;
-(function(HarmCategory2) {
-  HarmCategory2["HARM_CATEGORY_UNSPECIFIED"] = "HARM_CATEGORY_UNSPECIFIED";
-  HarmCategory2["HARM_CATEGORY_HATE_SPEECH"] = "HARM_CATEGORY_HATE_SPEECH";
-  HarmCategory2["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT";
-  HarmCategory2["HARM_CATEGORY_HARASSMENT"] = "HARM_CATEGORY_HARASSMENT";
-  HarmCategory2["HARM_CATEGORY_DANGEROUS_CONTENT"] = "HARM_CATEGORY_DANGEROUS_CONTENT";
-  HarmCategory2["HARM_CATEGORY_CIVIC_INTEGRITY"] = "HARM_CATEGORY_CIVIC_INTEGRITY";
-})(HarmCategory || (HarmCategory = {}));
-var HarmBlockThreshold;
-(function(HarmBlockThreshold2) {
-  HarmBlockThreshold2["HARM_BLOCK_THRESHOLD_UNSPECIFIED"] = "HARM_BLOCK_THRESHOLD_UNSPECIFIED";
-  HarmBlockThreshold2["BLOCK_LOW_AND_ABOVE"] = "BLOCK_LOW_AND_ABOVE";
-  HarmBlockThreshold2["BLOCK_MEDIUM_AND_ABOVE"] = "BLOCK_MEDIUM_AND_ABOVE";
-  HarmBlockThreshold2["BLOCK_ONLY_HIGH"] = "BLOCK_ONLY_HIGH";
-  HarmBlockThreshold2["BLOCK_NONE"] = "BLOCK_NONE";
-})(HarmBlockThreshold || (HarmBlockThreshold = {}));
-var HarmProbability;
-(function(HarmProbability2) {
-  HarmProbability2["HARM_PROBABILITY_UNSPECIFIED"] = "HARM_PROBABILITY_UNSPECIFIED";
-  HarmProbability2["NEGLIGIBLE"] = "NEGLIGIBLE";
-  HarmProbability2["LOW"] = "LOW";
-  HarmProbability2["MEDIUM"] = "MEDIUM";
-  HarmProbability2["HIGH"] = "HIGH";
-})(HarmProbability || (HarmProbability = {}));
-var BlockReason;
-(function(BlockReason2) {
-  BlockReason2["BLOCKED_REASON_UNSPECIFIED"] = "BLOCKED_REASON_UNSPECIFIED";
-  BlockReason2["SAFETY"] = "SAFETY";
-  BlockReason2["OTHER"] = "OTHER";
-})(BlockReason || (BlockReason = {}));
-var FinishReason;
-(function(FinishReason2) {
-  FinishReason2["FINISH_REASON_UNSPECIFIED"] = "FINISH_REASON_UNSPECIFIED";
-  FinishReason2["STOP"] = "STOP";
-  FinishReason2["MAX_TOKENS"] = "MAX_TOKENS";
-  FinishReason2["SAFETY"] = "SAFETY";
-  FinishReason2["RECITATION"] = "RECITATION";
-  FinishReason2["LANGUAGE"] = "LANGUAGE";
-  FinishReason2["BLOCKLIST"] = "BLOCKLIST";
-  FinishReason2["PROHIBITED_CONTENT"] = "PROHIBITED_CONTENT";
-  FinishReason2["SPII"] = "SPII";
-  FinishReason2["MALFORMED_FUNCTION_CALL"] = "MALFORMED_FUNCTION_CALL";
-  FinishReason2["OTHER"] = "OTHER";
-})(FinishReason || (FinishReason = {}));
-var TaskType;
-(function(TaskType2) {
-  TaskType2["TASK_TYPE_UNSPECIFIED"] = "TASK_TYPE_UNSPECIFIED";
-  TaskType2["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY";
-  TaskType2["RETRIEVAL_DOCUMENT"] = "RETRIEVAL_DOCUMENT";
-  TaskType2["SEMANTIC_SIMILARITY"] = "SEMANTIC_SIMILARITY";
-  TaskType2["CLASSIFICATION"] = "CLASSIFICATION";
-  TaskType2["CLUSTERING"] = "CLUSTERING";
-})(TaskType || (TaskType = {}));
-var FunctionCallingMode;
-(function(FunctionCallingMode2) {
-  FunctionCallingMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
-  FunctionCallingMode2["AUTO"] = "AUTO";
-  FunctionCallingMode2["ANY"] = "ANY";
-  FunctionCallingMode2["NONE"] = "NONE";
-})(FunctionCallingMode || (FunctionCallingMode = {}));
-var DynamicRetrievalMode;
-(function(DynamicRetrievalMode2) {
-  DynamicRetrievalMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
-  DynamicRetrievalMode2["MODE_DYNAMIC"] = "MODE_DYNAMIC";
-})(DynamicRetrievalMode || (DynamicRetrievalMode = {}));
-var GoogleGenerativeAIError = class extends Error {
-  constructor(message) {
-    super(`[GoogleGenerativeAI Error]: ${message}`);
-  }
-};
-var GoogleGenerativeAIResponseError = class extends GoogleGenerativeAIError {
-  constructor(message, response) {
-    super(message);
-    this.response = response;
-  }
-};
-var GoogleGenerativeAIFetchError = class extends GoogleGenerativeAIError {
-  constructor(message, status, statusText, errorDetails) {
-    super(message);
-    this.status = status;
-    this.statusText = statusText;
-    this.errorDetails = errorDetails;
-  }
-};
-var GoogleGenerativeAIRequestInputError = class extends GoogleGenerativeAIError {
-};
-var GoogleGenerativeAIAbortError = class extends GoogleGenerativeAIError {
-};
-var DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com";
-var DEFAULT_API_VERSION = "v1beta";
-var PACKAGE_VERSION = "0.24.1";
-var PACKAGE_LOG_HEADER = "genai-js";
-var Task;
-(function(Task2) {
-  Task2["GENERATE_CONTENT"] = "generateContent";
-  Task2["STREAM_GENERATE_CONTENT"] = "streamGenerateContent";
-  Task2["COUNT_TOKENS"] = "countTokens";
-  Task2["EMBED_CONTENT"] = "embedContent";
-  Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
-})(Task || (Task = {}));
-var RequestUrl = class {
-  constructor(model, task, apiKey3, stream, requestOptions) {
-    this.model = model;
-    this.task = task;
-    this.apiKey = apiKey3;
-    this.stream = stream;
-    this.requestOptions = requestOptions;
-  }
-  toString() {
-    var _a, _b;
-    const apiVersion = ((_a = this.requestOptions) === null || _a === void 0 ? void 0 : _a.apiVersion) || DEFAULT_API_VERSION;
-    const baseUrl = ((_b = this.requestOptions) === null || _b === void 0 ? void 0 : _b.baseUrl) || DEFAULT_BASE_URL;
-    let url = `${baseUrl}/${apiVersion}/${this.model}:${this.task}`;
-    if (this.stream) {
-      url += "?alt=sse";
-    }
-    return url;
-  }
-};
-function getClientHeaders(requestOptions) {
-  const clientHeaders = [];
-  if (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.apiClient) {
-    clientHeaders.push(requestOptions.apiClient);
-  }
-  clientHeaders.push(`${PACKAGE_LOG_HEADER}/${PACKAGE_VERSION}`);
-  return clientHeaders.join(" ");
-}
-async function getHeaders(url) {
-  var _a;
-  const headers = new Headers();
-  headers.append("Content-Type", "application/json");
-  headers.append("x-goog-api-client", getClientHeaders(url.requestOptions));
-  headers.append("x-goog-api-key", url.apiKey);
-  let customHeaders = (_a = url.requestOptions) === null || _a === void 0 ? void 0 : _a.customHeaders;
-  if (customHeaders) {
-    if (!(customHeaders instanceof Headers)) {
-      try {
-        customHeaders = new Headers(customHeaders);
-      } catch (e) {
-        throw new GoogleGenerativeAIRequestInputError(`unable to convert customHeaders value ${JSON.stringify(customHeaders)} to Headers: ${e.message}`);
-      }
-    }
-    for (const [headerName, headerValue] of customHeaders.entries()) {
-      if (headerName === "x-goog-api-key") {
-        throw new GoogleGenerativeAIRequestInputError(`Cannot set reserved header name ${headerName}`);
-      } else if (headerName === "x-goog-api-client") {
-        throw new GoogleGenerativeAIRequestInputError(`Header name ${headerName} can only be set using the apiClient field`);
-      }
-      headers.append(headerName, headerValue);
-    }
-  }
-  return headers;
-}
-async function constructModelRequest(model, task, apiKey3, stream, body, requestOptions) {
-  const url = new RequestUrl(model, task, apiKey3, stream, requestOptions);
-  return {
-    url: url.toString(),
-    fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
-  };
-}
-async function makeModelRequest(model, task, apiKey3, stream, body, requestOptions = {}, fetchFn = fetch) {
-  const { url, fetchOptions } = await constructModelRequest(model, task, apiKey3, stream, body, requestOptions);
-  return makeRequest(url, fetchOptions, fetchFn);
-}
-async function makeRequest(url, fetchOptions, fetchFn = fetch) {
-  let response;
-  try {
-    response = await fetchFn(url, fetchOptions);
-  } catch (e) {
-    handleResponseError(e, url);
-  }
-  if (!response.ok) {
-    await handleResponseNotOk(response, url);
-  }
-  return response;
-}
-function handleResponseError(e, url) {
-  let err = e;
-  if (err.name === "AbortError") {
-    err = new GoogleGenerativeAIAbortError(`Request aborted when fetching ${url.toString()}: ${e.message}`);
-    err.stack = e.stack;
-  } else if (!(e instanceof GoogleGenerativeAIFetchError || e instanceof GoogleGenerativeAIRequestInputError)) {
-    err = new GoogleGenerativeAIError(`Error fetching from ${url.toString()}: ${e.message}`);
-    err.stack = e.stack;
-  }
-  throw err;
-}
-async function handleResponseNotOk(response, url) {
-  let message = "";
-  let errorDetails;
-  try {
-    const json = await response.json();
-    message = json.error.message;
-    if (json.error.details) {
-      message += ` ${JSON.stringify(json.error.details)}`;
-      errorDetails = json.error.details;
-    }
-  } catch (e) {
-  }
-  throw new GoogleGenerativeAIFetchError(`Error fetching from ${url.toString()}: [${response.status} ${response.statusText}] ${message}`, response.status, response.statusText, errorDetails);
-}
-function buildFetchOptions(requestOptions) {
-  const fetchOptions = {};
-  if ((requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.signal) !== void 0 || (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeout) >= 0) {
-    const controller = new AbortController();
-    if ((requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeout) >= 0) {
-      setTimeout(() => controller.abort(), requestOptions.timeout);
-    }
-    if (requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.signal) {
-      requestOptions.signal.addEventListener("abort", () => {
-        controller.abort();
-      });
-    }
-    fetchOptions.signal = controller.signal;
-  }
-  return fetchOptions;
-}
-function addHelpers(response) {
-  response.text = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} candidates. Returning text from the first candidate only. Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      return getText(response);
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Text not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return "";
-  };
-  response.functionCall = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} candidates. Returning function calls from the first candidate only. Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      console.warn(`response.functionCall() is deprecated. Use response.functionCalls() instead.`);
-      return getFunctionCalls(response)[0];
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return void 0;
-  };
-  response.functionCalls = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} candidates. Returning function calls from the first candidate only. Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      return getFunctionCalls(response);
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return void 0;
-  };
-  return response;
-}
-function getText(response) {
-  var _a, _b, _c, _d;
-  const textStrings = [];
-  if ((_b = (_a = response.candidates) === null || _a === void 0 ? void 0 : _a[0].content) === null || _b === void 0 ? void 0 : _b.parts) {
-    for (const part of (_d = (_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0].content) === null || _d === void 0 ? void 0 : _d.parts) {
-      if (part.text) {
-        textStrings.push(part.text);
-      }
-      if (part.executableCode) {
-        textStrings.push("\n```" + part.executableCode.language + "\n" + part.executableCode.code + "\n```\n");
-      }
-      if (part.codeExecutionResult) {
-        textStrings.push("\n```\n" + part.codeExecutionResult.output + "\n```\n");
-      }
-    }
-  }
-  if (textStrings.length > 0) {
-    return textStrings.join("");
-  } else {
-    return "";
-  }
-}
-function getFunctionCalls(response) {
-  var _a, _b, _c, _d;
-  const functionCalls = [];
-  if ((_b = (_a = response.candidates) === null || _a === void 0 ? void 0 : _a[0].content) === null || _b === void 0 ? void 0 : _b.parts) {
-    for (const part of (_d = (_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0].content) === null || _d === void 0 ? void 0 : _d.parts) {
-      if (part.functionCall) {
-        functionCalls.push(part.functionCall);
-      }
-    }
-  }
-  if (functionCalls.length > 0) {
-    return functionCalls;
-  } else {
-    return void 0;
-  }
-}
-var badFinishReasons = [
-  FinishReason.RECITATION,
-  FinishReason.SAFETY,
-  FinishReason.LANGUAGE
-];
-function hadBadFinishReason(candidate) {
-  return !!candidate.finishReason && badFinishReasons.includes(candidate.finishReason);
-}
-function formatBlockErrorMessage(response) {
-  var _a, _b, _c;
-  let message = "";
-  if ((!response.candidates || response.candidates.length === 0) && response.promptFeedback) {
-    message += "Response was blocked";
-    if ((_a = response.promptFeedback) === null || _a === void 0 ? void 0 : _a.blockReason) {
-      message += ` due to ${response.promptFeedback.blockReason}`;
-    }
-    if ((_b = response.promptFeedback) === null || _b === void 0 ? void 0 : _b.blockReasonMessage) {
-      message += `: ${response.promptFeedback.blockReasonMessage}`;
-    }
-  } else if ((_c = response.candidates) === null || _c === void 0 ? void 0 : _c[0]) {
-    const firstCandidate = response.candidates[0];
-    if (hadBadFinishReason(firstCandidate)) {
-      message += `Candidate was blocked due to ${firstCandidate.finishReason}`;
-      if (firstCandidate.finishMessage) {
-        message += `: ${firstCandidate.finishMessage}`;
-      }
-    }
-  }
-  return message;
-}
-function __await(v) {
-  return this instanceof __await ? (this.v = v, this) : new __await(v);
-}
-function __asyncGenerator(thisArg, _arguments, generator) {
-  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-  var g = generator.apply(thisArg, _arguments || []), i, q = [];
-  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
-    return this;
-  }, i;
-  function verb(n) {
-    if (g[n]) i[n] = function(v) {
-      return new Promise(function(a, b) {
-        q.push([n, v, a, b]) > 1 || resume(n, v);
-      });
-    };
-  }
-  function resume(n, v) {
-    try {
-      step(g[n](v));
-    } catch (e) {
-      settle(q[0][3], e);
-    }
-  }
-  function step(r) {
-    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
-  }
-  function fulfill(value) {
-    resume("next", value);
-  }
-  function reject(value) {
-    resume("throw", value);
-  }
-  function settle(f, v) {
-    if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
-  }
-}
-var responseLineRE = /^data\: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
-function processStream(response) {
-  const inputStream = response.body.pipeThrough(new TextDecoderStream("utf8", { fatal: true }));
-  const responseStream = getResponseStream(inputStream);
-  const [stream1, stream2] = responseStream.tee();
-  return {
-    stream: generateResponseSequence(stream1),
-    response: getResponsePromise(stream2)
-  };
-}
-async function getResponsePromise(stream) {
-  const allResponses = [];
-  const reader = stream.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      return addHelpers(aggregateResponses(allResponses));
-    }
-    allResponses.push(value);
-  }
-}
-function generateResponseSequence(stream) {
-  return __asyncGenerator(this, arguments, function* generateResponseSequence_1() {
-    const reader = stream.getReader();
-    while (true) {
-      const { value, done } = yield __await(reader.read());
-      if (done) {
-        break;
-      }
-      yield yield __await(addHelpers(value));
-    }
-  });
-}
-function getResponseStream(inputStream) {
-  const reader = inputStream.getReader();
-  const stream = new ReadableStream({
-    start(controller) {
-      let currentText = "";
-      return pump();
-      function pump() {
-        return reader.read().then(({ value, done }) => {
-          if (done) {
-            if (currentText.trim()) {
-              controller.error(new GoogleGenerativeAIError("Failed to parse stream"));
-              return;
-            }
-            controller.close();
-            return;
-          }
-          currentText += value;
-          let match = currentText.match(responseLineRE);
-          let parsedResponse;
-          while (match) {
-            try {
-              parsedResponse = JSON.parse(match[1]);
-            } catch (e) {
-              controller.error(new GoogleGenerativeAIError(`Error parsing JSON response: "${match[1]}"`));
-              return;
-            }
-            controller.enqueue(parsedResponse);
-            currentText = currentText.substring(match[0].length);
-            match = currentText.match(responseLineRE);
-          }
-          return pump();
-        }).catch((e) => {
-          let err = e;
-          err.stack = e.stack;
-          if (err.name === "AbortError") {
-            err = new GoogleGenerativeAIAbortError("Request aborted when reading from the stream");
-          } else {
-            err = new GoogleGenerativeAIError("Error reading from the stream");
-          }
-          throw err;
-        });
-      }
-    }
-  });
-  return stream;
-}
-function aggregateResponses(responses) {
-  const lastResponse = responses[responses.length - 1];
-  const aggregatedResponse = {
-    promptFeedback: lastResponse === null || lastResponse === void 0 ? void 0 : lastResponse.promptFeedback
-  };
-  for (const response of responses) {
-    if (response.candidates) {
-      let candidateIndex = 0;
-      for (const candidate of response.candidates) {
-        if (!aggregatedResponse.candidates) {
-          aggregatedResponse.candidates = [];
-        }
-        if (!aggregatedResponse.candidates[candidateIndex]) {
-          aggregatedResponse.candidates[candidateIndex] = {
-            index: candidateIndex
-          };
-        }
-        aggregatedResponse.candidates[candidateIndex].citationMetadata = candidate.citationMetadata;
-        aggregatedResponse.candidates[candidateIndex].groundingMetadata = candidate.groundingMetadata;
-        aggregatedResponse.candidates[candidateIndex].finishReason = candidate.finishReason;
-        aggregatedResponse.candidates[candidateIndex].finishMessage = candidate.finishMessage;
-        aggregatedResponse.candidates[candidateIndex].safetyRatings = candidate.safetyRatings;
-        if (candidate.content && candidate.content.parts) {
-          if (!aggregatedResponse.candidates[candidateIndex].content) {
-            aggregatedResponse.candidates[candidateIndex].content = {
-              role: candidate.content.role || "user",
-              parts: []
-            };
-          }
-          const newPart = {};
-          for (const part of candidate.content.parts) {
-            if (part.text) {
-              newPart.text = part.text;
-            }
-            if (part.functionCall) {
-              newPart.functionCall = part.functionCall;
-            }
-            if (part.executableCode) {
-              newPart.executableCode = part.executableCode;
-            }
-            if (part.codeExecutionResult) {
-              newPart.codeExecutionResult = part.codeExecutionResult;
-            }
-            if (Object.keys(newPart).length === 0) {
-              newPart.text = "";
-            }
-            aggregatedResponse.candidates[candidateIndex].content.parts.push(newPart);
-          }
-        }
-      }
-      candidateIndex++;
-    }
-    if (response.usageMetadata) {
-      aggregatedResponse.usageMetadata = response.usageMetadata;
-    }
-  }
-  return aggregatedResponse;
-}
-async function generateContentStream(apiKey3, model, params, requestOptions) {
-  const response = await makeModelRequest(
-    model,
-    Task.STREAM_GENERATE_CONTENT,
-    apiKey3,
-    /* stream */
-    true,
-    JSON.stringify(params),
-    requestOptions
-  );
-  return processStream(response);
-}
-async function generateContent(apiKey3, model, params, requestOptions) {
-  const response = await makeModelRequest(
-    model,
-    Task.GENERATE_CONTENT,
-    apiKey3,
-    /* stream */
-    false,
-    JSON.stringify(params),
-    requestOptions
-  );
-  const responseJson = await response.json();
-  const enhancedResponse = addHelpers(responseJson);
-  return {
-    response: enhancedResponse
-  };
-}
-function formatSystemInstruction(input) {
-  if (input == null) {
-    return void 0;
-  } else if (typeof input === "string") {
-    return { role: "system", parts: [{ text: input }] };
-  } else if (input.text) {
-    return { role: "system", parts: [input] };
-  } else if (input.parts) {
-    if (!input.role) {
-      return { role: "system", parts: input.parts };
-    } else {
-      return input;
-    }
-  }
-}
-function formatNewContent(request) {
-  let newParts = [];
-  if (typeof request === "string") {
-    newParts = [{ text: request }];
-  } else {
-    for (const partOrString of request) {
-      if (typeof partOrString === "string") {
-        newParts.push({ text: partOrString });
-      } else {
-        newParts.push(partOrString);
-      }
-    }
-  }
-  return assignRoleToPartsAndValidateSendMessageRequest(newParts);
-}
-function assignRoleToPartsAndValidateSendMessageRequest(parts) {
-  const userContent = { role: "user", parts: [] };
-  const functionContent = { role: "function", parts: [] };
-  let hasUserContent = false;
-  let hasFunctionContent = false;
-  for (const part of parts) {
-    if ("functionResponse" in part) {
-      functionContent.parts.push(part);
-      hasFunctionContent = true;
-    } else {
-      userContent.parts.push(part);
-      hasUserContent = true;
-    }
-  }
-  if (hasUserContent && hasFunctionContent) {
-    throw new GoogleGenerativeAIError("Within a single message, FunctionResponse cannot be mixed with other type of part in the request for sending chat message.");
-  }
-  if (!hasUserContent && !hasFunctionContent) {
-    throw new GoogleGenerativeAIError("No content is provided for sending chat message.");
-  }
-  if (hasUserContent) {
-    return userContent;
-  }
-  return functionContent;
-}
-function formatCountTokensInput(params, modelParams) {
-  var _a;
-  let formattedGenerateContentRequest = {
-    model: modelParams === null || modelParams === void 0 ? void 0 : modelParams.model,
-    generationConfig: modelParams === null || modelParams === void 0 ? void 0 : modelParams.generationConfig,
-    safetySettings: modelParams === null || modelParams === void 0 ? void 0 : modelParams.safetySettings,
-    tools: modelParams === null || modelParams === void 0 ? void 0 : modelParams.tools,
-    toolConfig: modelParams === null || modelParams === void 0 ? void 0 : modelParams.toolConfig,
-    systemInstruction: modelParams === null || modelParams === void 0 ? void 0 : modelParams.systemInstruction,
-    cachedContent: (_a = modelParams === null || modelParams === void 0 ? void 0 : modelParams.cachedContent) === null || _a === void 0 ? void 0 : _a.name,
-    contents: []
-  };
-  const containsGenerateContentRequest = params.generateContentRequest != null;
-  if (params.contents) {
-    if (containsGenerateContentRequest) {
-      throw new GoogleGenerativeAIRequestInputError("CountTokensRequest must have one of contents or generateContentRequest, not both.");
-    }
-    formattedGenerateContentRequest.contents = params.contents;
-  } else if (containsGenerateContentRequest) {
-    formattedGenerateContentRequest = Object.assign(Object.assign({}, formattedGenerateContentRequest), params.generateContentRequest);
-  } else {
-    const content = formatNewContent(params);
-    formattedGenerateContentRequest.contents = [content];
-  }
-  return { generateContentRequest: formattedGenerateContentRequest };
-}
-function formatGenerateContentInput(params) {
-  let formattedRequest;
-  if (params.contents) {
-    formattedRequest = params;
-  } else {
-    const content = formatNewContent(params);
-    formattedRequest = { contents: [content] };
-  }
-  if (params.systemInstruction) {
-    formattedRequest.systemInstruction = formatSystemInstruction(params.systemInstruction);
-  }
-  return formattedRequest;
-}
-function formatEmbedContentInput(params) {
-  if (typeof params === "string" || Array.isArray(params)) {
-    const content = formatNewContent(params);
-    return { content };
-  }
-  return params;
-}
-var VALID_PART_FIELDS = [
-  "text",
-  "inlineData",
-  "functionCall",
-  "functionResponse",
-  "executableCode",
-  "codeExecutionResult"
-];
-var VALID_PARTS_PER_ROLE = {
-  user: ["text", "inlineData"],
-  function: ["functionResponse"],
-  model: ["text", "functionCall", "executableCode", "codeExecutionResult"],
-  // System instructions shouldn't be in history anyway.
-  system: ["text"]
-};
-function validateChatHistory(history) {
-  let prevContent = false;
-  for (const currContent of history) {
-    const { role, parts } = currContent;
-    if (!prevContent && role !== "user") {
-      throw new GoogleGenerativeAIError(`First content should be with role 'user', got ${role}`);
-    }
-    if (!POSSIBLE_ROLES.includes(role)) {
-      throw new GoogleGenerativeAIError(`Each item should include role field. Got ${role} but valid roles are: ${JSON.stringify(POSSIBLE_ROLES)}`);
-    }
-    if (!Array.isArray(parts)) {
-      throw new GoogleGenerativeAIError("Content should have 'parts' property with an array of Parts");
-    }
-    if (parts.length === 0) {
-      throw new GoogleGenerativeAIError("Each Content should have at least one part");
-    }
-    const countFields = {
-      text: 0,
-      inlineData: 0,
-      functionCall: 0,
-      functionResponse: 0,
-      fileData: 0,
-      executableCode: 0,
-      codeExecutionResult: 0
-    };
-    for (const part of parts) {
-      for (const key of VALID_PART_FIELDS) {
-        if (key in part) {
-          countFields[key] += 1;
-        }
-      }
-    }
-    const validParts = VALID_PARTS_PER_ROLE[role];
-    for (const key of VALID_PART_FIELDS) {
-      if (!validParts.includes(key) && countFields[key] > 0) {
-        throw new GoogleGenerativeAIError(`Content with role '${role}' can't contain '${key}' part`);
-      }
-    }
-    prevContent = true;
-  }
-}
-function isValidResponse(response) {
-  var _a;
-  if (response.candidates === void 0 || response.candidates.length === 0) {
-    return false;
-  }
-  const content = (_a = response.candidates[0]) === null || _a === void 0 ? void 0 : _a.content;
-  if (content === void 0) {
-    return false;
-  }
-  if (content.parts === void 0 || content.parts.length === 0) {
-    return false;
-  }
-  for (const part of content.parts) {
-    if (part === void 0 || Object.keys(part).length === 0) {
-      return false;
-    }
-    if (part.text !== void 0 && part.text === "") {
-      return false;
-    }
-  }
-  return true;
-}
-var SILENT_ERROR = "SILENT_ERROR";
-var ChatSession = class {
-  constructor(apiKey3, model, params, _requestOptions = {}) {
-    this.model = model;
-    this.params = params;
-    this._requestOptions = _requestOptions;
-    this._history = [];
-    this._sendPromise = Promise.resolve();
-    this._apiKey = apiKey3;
-    if (params === null || params === void 0 ? void 0 : params.history) {
-      validateChatHistory(params.history);
-      this._history = params.history;
-    }
-  }
-  /**
-   * Gets the chat history so far. Blocked prompts are not added to history.
-   * Blocked candidates are not added to history, nor are the prompts that
-   * generated them.
-   */
-  async getHistory() {
-    await this._sendPromise;
-    return this._history;
-  }
-  /**
-   * Sends a chat message and receives a non-streaming
-   * {@link GenerateContentResult}.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async sendMessage(request, requestOptions = {}) {
-    var _a, _b, _c, _d, _e, _f;
-    await this._sendPromise;
-    const newContent = formatNewContent(request);
-    const generateContentRequest = {
-      safetySettings: (_a = this.params) === null || _a === void 0 ? void 0 : _a.safetySettings,
-      generationConfig: (_b = this.params) === null || _b === void 0 ? void 0 : _b.generationConfig,
-      tools: (_c = this.params) === null || _c === void 0 ? void 0 : _c.tools,
-      toolConfig: (_d = this.params) === null || _d === void 0 ? void 0 : _d.toolConfig,
-      systemInstruction: (_e = this.params) === null || _e === void 0 ? void 0 : _e.systemInstruction,
-      cachedContent: (_f = this.params) === null || _f === void 0 ? void 0 : _f.cachedContent,
-      contents: [...this._history, newContent]
-    };
-    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    let finalResult;
-    this._sendPromise = this._sendPromise.then(() => generateContent(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions)).then((result) => {
-      var _a2;
-      if (isValidResponse(result.response)) {
-        this._history.push(newContent);
-        const responseContent = Object.assign({
-          parts: [],
-          // Response seems to come back without a role set.
-          role: "model"
-        }, (_a2 = result.response.candidates) === null || _a2 === void 0 ? void 0 : _a2[0].content);
-        this._history.push(responseContent);
-      } else {
-        const blockErrorMessage = formatBlockErrorMessage(result.response);
-        if (blockErrorMessage) {
-          console.warn(`sendMessage() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
-        }
-      }
-      finalResult = result;
-    }).catch((e) => {
-      this._sendPromise = Promise.resolve();
-      throw e;
-    });
-    await this._sendPromise;
-    return finalResult;
-  }
-  /**
-   * Sends a chat message and receives the response as a
-   * {@link GenerateContentStreamResult} containing an iterable stream
-   * and a response promise.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async sendMessageStream(request, requestOptions = {}) {
-    var _a, _b, _c, _d, _e, _f;
-    await this._sendPromise;
-    const newContent = formatNewContent(request);
-    const generateContentRequest = {
-      safetySettings: (_a = this.params) === null || _a === void 0 ? void 0 : _a.safetySettings,
-      generationConfig: (_b = this.params) === null || _b === void 0 ? void 0 : _b.generationConfig,
-      tools: (_c = this.params) === null || _c === void 0 ? void 0 : _c.tools,
-      toolConfig: (_d = this.params) === null || _d === void 0 ? void 0 : _d.toolConfig,
-      systemInstruction: (_e = this.params) === null || _e === void 0 ? void 0 : _e.systemInstruction,
-      cachedContent: (_f = this.params) === null || _f === void 0 ? void 0 : _f.cachedContent,
-      contents: [...this._history, newContent]
-    };
-    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    const streamPromise = generateContentStream(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions);
-    this._sendPromise = this._sendPromise.then(() => streamPromise).catch((_ignored) => {
-      throw new Error(SILENT_ERROR);
-    }).then((streamResult) => streamResult.response).then((response) => {
-      if (isValidResponse(response)) {
-        this._history.push(newContent);
-        const responseContent = Object.assign({}, response.candidates[0].content);
-        if (!responseContent.role) {
-          responseContent.role = "model";
-        }
-        this._history.push(responseContent);
-      } else {
-        const blockErrorMessage = formatBlockErrorMessage(response);
-        if (blockErrorMessage) {
-          console.warn(`sendMessageStream() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
-        }
-      }
-    }).catch((e) => {
-      if (e.message !== SILENT_ERROR) {
-        console.error(e);
-      }
-    });
-    return streamPromise;
-  }
-};
-async function countTokens(apiKey3, model, params, singleRequestOptions) {
-  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey3, false, JSON.stringify(params), singleRequestOptions);
-  return response.json();
-}
-async function embedContent(apiKey3, model, params, requestOptions) {
-  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey3, false, JSON.stringify(params), requestOptions);
-  return response.json();
-}
-async function batchEmbedContents(apiKey3, model, params, requestOptions) {
-  const requestsWithModel = params.requests.map((request) => {
-    return Object.assign(Object.assign({}, request), { model });
-  });
-  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey3, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
-  return response.json();
-}
-var GenerativeModel = class {
-  constructor(apiKey3, modelParams, _requestOptions = {}) {
-    this.apiKey = apiKey3;
-    this._requestOptions = _requestOptions;
-    if (modelParams.model.includes("/")) {
-      this.model = modelParams.model;
-    } else {
-      this.model = `models/${modelParams.model}`;
-    }
-    this.generationConfig = modelParams.generationConfig || {};
-    this.safetySettings = modelParams.safetySettings || [];
-    this.tools = modelParams.tools;
-    this.toolConfig = modelParams.toolConfig;
-    this.systemInstruction = formatSystemInstruction(modelParams.systemInstruction);
-    this.cachedContent = modelParams.cachedContent;
-  }
-  /**
-   * Makes a single non-streaming call to the model
-   * and returns an object containing a single {@link GenerateContentResponse}.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async generateContent(request, requestOptions = {}) {
-    var _a;
-    const formattedParams = formatGenerateContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return generateContent(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, formattedParams), generativeModelRequestOptions);
-  }
-  /**
-   * Makes a single streaming call to the model and returns an object
-   * containing an iterable stream that iterates over all chunks in the
-   * streaming response as well as a promise that returns the final
-   * aggregated response.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async generateContentStream(request, requestOptions = {}) {
-    var _a;
-    const formattedParams = formatGenerateContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return generateContentStream(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, formattedParams), generativeModelRequestOptions);
-  }
-  /**
-   * Gets a new {@link ChatSession} instance which can be used for
-   * multi-turn chats.
-   */
-  startChat(startChatParams) {
-    var _a;
-    return new ChatSession(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a = this.cachedContent) === null || _a === void 0 ? void 0 : _a.name }, startChatParams), this._requestOptions);
-  }
-  /**
-   * Counts the tokens in the provided request.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async countTokens(request, requestOptions = {}) {
-    const formattedParams = formatCountTokensInput(request, {
-      model: this.model,
-      generationConfig: this.generationConfig,
-      safetySettings: this.safetySettings,
-      tools: this.tools,
-      toolConfig: this.toolConfig,
-      systemInstruction: this.systemInstruction,
-      cachedContent: this.cachedContent
-    });
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return countTokens(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
-  }
-  /**
-   * Embeds the provided content.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async embedContent(request, requestOptions = {}) {
-    const formattedParams = formatEmbedContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return embedContent(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
-  }
-  /**
-   * Embeds an array of {@link EmbedContentRequest}s.
-   *
-   * Fields set in the optional {@link SingleRequestOptions} parameter will
-   * take precedence over the {@link RequestOptions} values provided to
-   * {@link GoogleGenerativeAI.getGenerativeModel }.
-   */
-  async batchEmbedContents(batchEmbedContentRequest, requestOptions = {}) {
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return batchEmbedContents(this.apiKey, this.model, batchEmbedContentRequest, generativeModelRequestOptions);
-  }
-};
-var GoogleGenerativeAI = class {
-  constructor(apiKey3) {
-    this.apiKey = apiKey3;
-  }
-  /**
-   * Gets a {@link GenerativeModel} instance for the provided model name.
-   */
-  getGenerativeModel(modelParams, requestOptions) {
-    if (!modelParams.model) {
-      throw new GoogleGenerativeAIError(`Must provide a model name. Example: genai.getGenerativeModel({ model: 'my-model-name' })`);
-    }
-    return new GenerativeModel(this.apiKey, modelParams, requestOptions);
-  }
-  /**
-   * Creates a {@link GenerativeModel} instance from provided content cache.
-   */
-  getGenerativeModelFromCachedContent(cachedContent, modelParams, requestOptions) {
-    if (!cachedContent.name) {
-      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `name` field.");
-    }
-    if (!cachedContent.model) {
-      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `model` field.");
-    }
-    const disallowedDuplicates = ["model", "systemInstruction"];
-    for (const key of disallowedDuplicates) {
-      if ((modelParams === null || modelParams === void 0 ? void 0 : modelParams[key]) && cachedContent[key] && (modelParams === null || modelParams === void 0 ? void 0 : modelParams[key]) !== cachedContent[key]) {
-        if (key === "model") {
-          const modelParamsComp = modelParams.model.startsWith("models/") ? modelParams.model.replace("models/", "") : modelParams.model;
-          const cachedContentComp = cachedContent.model.startsWith("models/") ? cachedContent.model.replace("models/", "") : cachedContent.model;
-          if (modelParamsComp === cachedContentComp) {
-            continue;
-          }
-        }
-        throw new GoogleGenerativeAIRequestInputError(`Different value for "${key}" specified in modelParams (${modelParams[key]}) and cachedContent (${cachedContent[key]})`);
-      }
-    }
-    const modelParamsFromCache = Object.assign(Object.assign({}, modelParams), { model: cachedContent.model, tools: cachedContent.tools, toolConfig: cachedContent.toolConfig, systemInstruction: cachedContent.systemInstruction, cachedContent });
-    return new GenerativeModel(this.apiKey, modelParamsFromCache, requestOptions);
-  }
-};
-
-// server/services/ocr/tesseract.ts
-import { createWorker } from "tesseract.js";
-var workerPromise = null;
-async function getWorker() {
-  if (!workerPromise) {
-    workerPromise = (async () => {
-      const worker = await createWorker("eng");
-      return worker;
-    })();
-  }
-  return workerPromise;
-}
-async function performLocalOCR(imagePath) {
-  try {
-    const worker = await getWorker();
-    const result = await worker.recognize(imagePath);
-    return result.data.text || "";
-  } catch (err) {
-    console.error("Local Tesseract OCR error:", err);
-    return "";
-  }
-}
-
-// server/services/ocr/heuristics.ts
-function parseChatMessagesFromText(rawText) {
-  const lines = rawText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
-  const messages = [];
-  let seq = 1;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^\d{1,2}:\d{2}\b/i.test(line) && line.length < 10) continue;
-    if (/^(LTE|5G|4G|WiFi|Battery|\d+%)$/i.test(line)) continue;
-    if (/^(Online|Typing\.\.\.|Last seen|Active now)$/i.test(line)) continue;
-    let sender_side = "unknown";
-    let sender_label = null;
-    let cleanText = line;
-    if (/^(Me|You|Myself):\s*(.*)/i.test(line)) {
-      const match = line.match(/^(Me|You|Myself):\s*(.*)/i);
-      sender_side = "right";
-      sender_label = "You";
-      cleanText = match ? match[2] : line;
-    } else if (/^([A-Za-z0-9_\s]+):\s*(.*)/.test(line)) {
-      const match = line.match(/^([A-Za-z0-9_\s]+):\s*(.*)/);
-      if (match && match[1].length < 25) {
-        sender_side = "left";
-        sender_label = match[1].trim();
-        cleanText = match[2];
-      }
-    }
-    if (cleanText.trim().length > 0) {
-      messages.push({
-        sequence_number: seq++,
-        message_text: cleanText.trim(),
-        sender_side,
-        sender_label,
-        confidence: sender_side !== "unknown" ? 0.88 : 0.65
-      });
-    }
-  }
-  return messages;
-}
-function parseGameStatsFromText(rawText) {
-  const lower = rawText.toLowerCase();
-  const isBgmiOrPubg = lower.includes("bgmi") || lower.includes("battlegrounds") || lower.includes("pubg") || lower.includes("winner winner") || lower.includes("chicken dinner") || lower.includes("eliminated") || lower.includes("total rating") || lower.includes("kills") && (lower.includes("damage") || lower.includes("rank") || lower.includes("erangel"));
-  if (!isBgmiOrPubg) {
-    return null;
-  }
-  let kills = null;
-  let score = null;
-  let rank = null;
-  let damage = null;
-  let map_name = null;
-  let mode = null;
-  const killsMatch = rawText.match(/(?:kills?|eliminations?)\s*[:\-]?\s*(\d+)/i) || rawText.match(/(\d+)\s*(?:kills?|eliminations?)/i);
-  if (killsMatch) {
-    kills = parseInt(killsMatch[1], 10);
-  }
-  if (/winner\s+winner\s+chicken\s+dinner/i.test(rawText) || /#1\s*\/\s*\d+/i.test(rawText) || /#1\s+Winner/i.test(rawText)) {
-    rank = "#1 Winner Winner Chicken Dinner";
-  } else {
-    const rankMatch = rawText.match(/#(\d+)(?:\s*\/\s*\d+)?/);
-    if (rankMatch) {
-      rank = `#${rankMatch[1]}`;
-    }
-  }
-  const damageMatch = rawText.match(/(?:damage|dmg)\s*[:\-]?\s*(\d+)/i);
-  if (damageMatch) {
-    damage = parseInt(damageMatch[1], 10);
-  }
-  const scoreMatch = rawText.match(/(?:score|rating|pts)\s*[:\-]?\s*(\d+)/i);
-  if (scoreMatch) {
-    score = parseInt(scoreMatch[1], 10);
-  }
-  if (/erangel/i.test(rawText)) map_name = "Erangel";
-  else if (/miramar/i.test(rawText)) map_name = "Miramar";
-  else if (/sanhok/i.test(rawText)) map_name = "Sanhok";
-  else if (/livik/i.test(rawText)) map_name = "Livik";
-  else if (/vikendi/i.test(rawText)) map_name = "Vikendi";
-  else if (/nusa/i.test(rawText)) map_name = "Nusa";
-  if (/classic/i.test(rawText)) mode = "Classic";
-  else if (/arena|tdm/i.test(rawText)) mode = "Arena / TDM";
-  else if (/ranked/i.test(rawText)) mode = "Ranked";
-  return {
-    game_name: "BGMI",
-    mode,
-    map_name,
-    kills,
-    score,
-    rank,
-    damage,
-    match_date: null,
-    extraction_confidence: kills !== null ? 0.92 : 0.7,
-    raw_extracted_text: rawText.substring(0, 500)
-  };
-}
-function analyzeScreenshotHeuristics(ocrText, filename) {
-  const lowerText = ocrText.toLowerCase();
-  const lowerName = filename.toLowerCase();
-  const gameStats = parseGameStatsFromText(ocrText);
-  if (gameStats) {
-    return {
-      category: "game",
-      confidence: 0.9,
-      visual_description: `BGMI match outcome screen showing ${gameStats.kills ?? "several"} kills on ${gameStats.map_name ?? "battlefield"} with rank ${gameStats.rank ?? "recorded"}.`,
-      tags: ["bgmi", "pubg", "gaming", "match result", gameStats.map_name?.toLowerCase() || "game"].filter(Boolean),
-      messages: [],
-      game_result: gameStats
-    };
-  }
-  const isChat = lowerText.includes("message") || lowerText.includes("whatsapp") || lowerText.includes("instagram") || lowerText.includes("chat") || lowerName.includes("chat") || lowerName.includes("wa_") || lowerName.includes("screenshot_") || /(?:i love you|reply|replied|said|miss you|meeting|see you|call me|where are you|hey|hello|good night)/i.test(ocrText);
-  const messages = parseChatMessagesFromText(ocrText);
-  if (isChat || messages.length >= 2) {
-    return {
-      category: "chat",
-      confidence: messages.length >= 2 ? 0.88 : 0.65,
-      visual_description: `Chat messaging interface thread with ${messages.length} visible messages exchange.`,
-      tags: ["chat", "conversation", "messaging", "text exchange"],
-      messages,
-      game_result: null
-    };
-  }
-  const isProduct = /(\$|₹|€|£|\bprice\b|\bbuy now\b|\badd to cart\b|\boutfit\b|\bshirt\b|\bsneakers\b|\bshoes\b|\bbackpack\b|\bdress\b)/i.test(ocrText) || lowerName.includes("product") || lowerName.includes("shirt");
-  if (isProduct) {
-    return {
-      category: "product",
-      confidence: 0.8,
-      visual_description: "E-commerce or shopping item screenshot displaying item features and price.",
-      tags: ["product", "shopping", "clothing", "item"],
-      messages: [],
-      game_result: null
-    };
-  }
-  const isPosterOrDoc = /(?:fest|symposium|conference|workshop|invitation|venue|date|registration|ticket|address|phone|bill|receipt|invoice)/i.test(ocrText);
-  if (isPosterOrDoc) {
-    return {
-      category: "poster_document",
-      confidence: 0.82,
-      visual_description: "Official informational poster, event announcement, or receipt document.",
-      tags: ["poster", "document", "event", "information"],
-      messages: [],
-      game_result: null
-    };
-  }
-  return {
-    category: "other",
-    confidence: 0.5,
-    visual_description: "Captured screen image containing visual and textual content.",
-    tags: ["screenshot", "general"],
-    messages: [],
-    game_result: null
-  };
-}
-
-// server/services/ai/gemini.ts
-var apiKey = process.env.GEMINI_API_KEY || "";
-var groqApiKey = process.env.GROQ_API_KEY || "";
-var genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
-  let base64Data = fallbackBase64 || null;
-  if (!base64Data && filePath && fs5.existsSync(filePath)) {
-    try {
-      base64Data = fs5.readFileSync(filePath).toString("base64");
-    } catch (readErr) {
-      console.warn("Failed to read image file from disk:", readErr);
-    }
-  }
-  let resolvedMime = mimeType || "image/jpeg";
-  if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
-    resolvedMime = "image/svg+xml";
-  } else if (originalFilename.endsWith(".png")) {
-    resolvedMime = "image/png";
-  } else if (originalFilename.endsWith(".webp")) {
-    resolvedMime = "image/webp";
-  }
-  if (genAI && apiKey && base64Data) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.05,
-          responseSchema: {
-            type: SchemaType.OBJECT,
-            properties: {
-              category: {
-                type: SchemaType.STRING,
-                enum: ["chat", "game", "product", "poster_document", "other"],
-                description: "Screenshot category"
-              },
-              confidence: { type: SchemaType.NUMBER, description: "Classification confidence 0-1" },
-              ocr_text: { type: SchemaType.STRING, description: "Complete verbatim transcription of all visible text" },
-              visual_description: { type: SchemaType.STRING, description: "Detailed visual scene description" },
-              tags: {
-                type: SchemaType.ARRAY,
-                items: { type: SchemaType.STRING },
-                description: "Searchable semantic tags"
-              },
-              messages: {
-                type: SchemaType.ARRAY,
-                items: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    sequence_number: { type: SchemaType.INTEGER },
-                    message_text: { type: SchemaType.STRING },
-                    sender_side: { type: SchemaType.STRING, enum: ["left", "right", "unknown"] },
-                    sender_label: { type: SchemaType.STRING },
-                    confidence: { type: SchemaType.NUMBER }
-                  },
-                  required: ["sequence_number", "message_text", "sender_side", "confidence"]
-                },
-                description: "Extracted chat messages if category is chat"
-              },
-              game_result: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  game_name: { type: SchemaType.STRING },
-                  mode: { type: SchemaType.STRING },
-                  map_name: { type: SchemaType.STRING },
-                  kills: { type: SchemaType.INTEGER },
-                  score: { type: SchemaType.INTEGER },
-                  rank: { type: SchemaType.STRING },
-                  damage: { type: SchemaType.INTEGER },
-                  match_date: { type: SchemaType.STRING },
-                  extraction_confidence: { type: SchemaType.NUMBER },
-                  raw_extracted_text: { type: SchemaType.STRING }
-                },
-                required: ["game_name"],
-                description: "Game stats if category is game"
-              }
-            },
-            required: ["category", "confidence", "ocr_text", "visual_description", "tags"]
-          }
-        }
-      });
-      const prompt = `You are RECALL's high-precision AI multimodal vision engine.
-Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
-
-Return a VALID JSON object matching this structure:
-{
-  "category": "chat" | "game" | "product" | "poster_document" | "other",
-  "confidence": 0.95,
-  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, and label visible in the image without summarization or omitting anything.",
-  "visual_description": "Detailed visual description of the visual scene, layout, colors, UI elements, objects, clothing, and structure.",
-  "tags": ["array", "of", "10-15", "searchable", "semantic", "tags", "including", "app_names", "topics", "keywords"],
-  "messages": [
-    // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
-    {
-      "sequence_number": 1,
-      "message_text": "exact text inside this message bubble",
-      "sender_side": "left" | "right" | "unknown",
-      "sender_label": "Name of contact or 'You'",
-      "confidence": 0.95
-    }
-  ],
-  "game_result": {
-    // ONLY IF category is "game" (BGMI, PUBG, Call of Duty, Free Fire, Valorant, Clash, etc.):
-    "game_name": "BGMI" or game title,
-    "mode": "Classic" | "Ranked" | "TDM" or null,
-    "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
-    "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
-    "score": integer score or null,
-    "rank": "#1 Winner Winner Chicken Dinner" or rank text,
-    "damage": integer total damage or null,
-    "match_date": string date or null,
-    "extraction_confidence": 0.95
-  }
-}
-
-CATEGORIZATION RULES:
-1. "chat": Any conversation or messaging interface (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Facebook Messenger). Look for chat bubbles, typing bars, sender names, read receipts, or conversational replies.
-2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
-3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/\u20B9/\u20AC/\xA3), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
-4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
-5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings).
-
-PRECISION REQUIREMENT:
-- If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
-- If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
-- Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: resolvedMime
-          }
-        }
-      ]);
-      const responseText = result.response.text().trim();
-      const parsed = JSON.parse(responseText);
-      if (parsed) {
-        let category = parsed.category || "other";
-        const ocrLower = (parsed.ocr_text || "").toLowerCase();
-        if (category === "other") {
-          if (parsed.messages?.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
-            category = "chat";
-          } else if (parsed.game_result?.kills != null || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
-            category = "game";
-          } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
-            category = "product";
-          } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
-            category = "poster_document";
-          }
-        }
-        return {
-          category,
-          confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.95,
-          ocr_text: parsed.ocr_text || "",
-          visual_description: parsed.visual_description || "",
-          tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-          messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-          game_result: parsed.game_result ? {
-            game_name: parsed.game_result.game_name || "Game",
-            mode: parsed.game_result.mode || null,
-            map_name: parsed.game_result.map_name || null,
-            kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
-            score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
-            rank: parsed.game_result.rank || null,
-            damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
-            match_date: parsed.game_result.match_date || null,
-            extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
-            raw_extracted_text: (parsed.ocr_text || "").substring(0, 500)
-          } : null
-        };
-      }
-    } catch (apiError) {
-      console.warn("Gemini 3.5 Flash Lite call failed, proceeding to secondary Groq AI pipeline:", apiError);
-    }
-  }
-  let localOcrText = "";
-  try {
-    if (filePath && fs5.existsSync(filePath)) {
-      localOcrText = await performLocalOCR(filePath);
-    }
-  } catch (ocrErr) {
-    console.warn("Local OCR execution notice:", ocrErr);
-  }
-  const effectiveGroqKey = process.env.GROQ_API_KEY || groqApiKey;
-  if (effectiveGroqKey && (localOcrText.trim().length > 0 || originalFilename.length > 0)) {
-    try {
-      const groqPrompt = `You are RECALL's secondary AI structuring engine.
-Analyze this text extracted from screenshot filename "${originalFilename}":
-"""
-${localOcrText.substring(0, 3e3) || originalFilename}
-"""
-
-Return a VALID JSON object matching this structure:
-{
-  "category": "chat" | "game" | "product" | "poster_document" | "other",
-  "confidence": 0.90,
-  "visual_description": "Clear visual description of content and layout",
-  "tags": ["array", "of", "searchable", "tags"],
-  "messages": [
-    // IF chat:
-    {"sequence_number": 1, "message_text": "text", "sender_side": "left" | "right" | "unknown", "sender_label": "Name", "confidence": 0.9}
-  ],
-  "game_result": {
-    // IF game:
-    "game_name": "BGMI",
-    "kills": 18,
-    "rank": "#1 Winner Winner Chicken Dinner",
-    "mode": "Classic",
-    "map_name": "Erangel",
-    "score": null,
-    "damage": null,
-    "match_date": null,
-    "extraction_confidence": 0.95
-  }
-}`;
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${effectiveGroqKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: groqPrompt }],
-          response_format: { type: "json_object" },
-          temperature: 0.1
-        })
-      });
-      if (groqRes.ok) {
-        const groqData = await groqRes.json();
-        const content = groqData.choices?.[0]?.message?.content?.trim() || "";
-        if (content) {
-          const parsed = JSON.parse(content);
-          return {
-            category: parsed.category || "other",
-            confidence: parsed.confidence || 0.9,
-            ocr_text: localOcrText || originalFilename,
-            visual_description: parsed.visual_description || "",
-            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-            game_result: parsed.game_result ? {
-              game_name: parsed.game_result.game_name || "BGMI",
-              mode: parsed.game_result.mode || null,
-              map_name: parsed.game_result.map_name || null,
-              kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
-              score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
-              rank: parsed.game_result.rank || null,
-              damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
-              match_date: parsed.game_result.match_date || null,
-              extraction_confidence: parsed.game_result.extraction_confidence || 0.9,
-              raw_extracted_text: localOcrText.substring(0, 500)
-            } : null
-          };
-        }
-      }
-    } catch (groqErr) {
-      console.warn("Groq structuring failed, falling back to heuristics:", groqErr);
-    }
-  }
-  const heuristic = analyzeScreenshotHeuristics(localOcrText, originalFilename);
-  return {
-    category: heuristic.category,
-    confidence: heuristic.confidence,
-    ocr_text: localOcrText || originalFilename,
-    visual_description: heuristic.visual_description,
-    tags: heuristic.tags,
-    messages: heuristic.messages,
-    game_result: heuristic.game_result
-  };
-}
-
-// server/services/ai/embeddings.ts
-var apiKey2 = process.env.GEMINI_API_KEY || "";
-var genAI2 = apiKey2 ? new GoogleGenerativeAI(apiKey2) : null;
-async function generateTextEmbedding(text) {
-  if (!text || text.trim().length === 0) {
-    return [];
-  }
-  if (genAI2 && apiKey2) {
-    try {
-      const model = genAI2.getGenerativeModel({ model: "text-embedding-004" });
-      const timeoutPromise = new Promise(
-        (_, reject) => setTimeout(() => reject(new Error("Timeout")), 1500)
-      );
-      const result = await Promise.race([
-        model.embedContent(text.substring(0, 1e3)),
-        timeoutPromise
-      ]);
-      return result.embedding.values;
-    } catch {
-    }
-  }
-  return generateLocalSemanticVector(text);
-}
-function generateLocalSemanticVector(text) {
-  const DIMENSIONS = 64;
-  const vector = new Array(DIMENSIONS).fill(0);
-  const words = text.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
-  if (words.length === 0) return vector;
-  for (const word of words) {
-    let hash2 = 0;
-    for (let i = 0; i < word.length; i++) {
-      hash2 = hash2 * 31 + word.charCodeAt(i) & 4294967295;
-    }
-    const idx = Math.abs(hash2) % DIMENSIONS;
-    vector[idx] += 1;
-    for (let i = 0; i < word.length - 1; i++) {
-      const bigramHash = word.charCodeAt(i) * 31 + word.charCodeAt(i + 1) & 4294967295;
-      const bIdx = Math.abs(bigramHash) % DIMENSIONS;
-      vector[bIdx] += 0.35;
-    }
-  }
-  let norm = 0;
-  for (let i = 0; i < DIMENSIONS; i++) {
-    norm += vector[i] * vector[i];
-  }
-  norm = Math.sqrt(norm);
-  if (norm > 0) {
-    for (let i = 0; i < DIMENSIONS; i++) {
-      vector[i] /= norm;
-    }
-  }
-  return vector;
-}
-function cosineSimilarity(vecA, vecB) {
-  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) return 0;
-  if (vecA.length !== vecB.length) return 0;
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-  if (denominator === 0) return 0;
-  return dotProduct / denominator;
-}
-var computeCosineSimilarity = cosineSimilarity;
-
-// server/services/processingQueue.ts
-var jobQueue = [];
-var MAX_CONCURRENT_JOBS = 5;
-var activeWorkers = 0;
-function enqueueScreenshotJob(job) {
-  jobQueue.push({ ...job, retryCount: 0 });
-  pumpQueue();
-}
-function pumpQueue() {
-  while (activeWorkers < MAX_CONCURRENT_JOBS && jobQueue.length > 0) {
-    const job = jobQueue.shift();
-    activeWorkers++;
-    executeJob(job).finally(() => {
-      activeWorkers--;
-      pumpQueue();
-    });
-  }
-}
-async function executeJob(job) {
-  try {
-    const updateStatus = db.prepare(`
-      UPDATE screenshots 
-      SET processing_status = 'processing', updated_at = ? 
-      WHERE id = ? AND user_id = ?
-    `);
-    updateStatus.run((/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
-    const isVercel4 = Boolean(process.env.VERCEL);
-    const uploadsDir = isVercel4 ? path4.resolve("/tmp", "recall-uploads") : path4.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
-    const fullPath = path4.join(uploadsDir, job.storageKey);
-    let base64Data = null;
-    try {
-      const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
-      const imgRow = getImg.get(job.screenshotId);
-      if (imgRow?.image_data) {
-        base64Data = imgRow.image_data;
-        if (!fs6.existsSync(fullPath)) {
-          fs6.mkdirSync(path4.dirname(fullPath), { recursive: true });
-          fs6.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
-        }
-      }
-    } catch (err) {
-      console.warn("Could not restore image file from DB backup:", err);
-    }
-    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename, base64Data);
-    const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
-    const embedding = await generateTextEmbedding(textForEmbedding);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const deleteOldMsgs = db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?");
-    deleteOldMsgs.run(job.screenshotId);
-    const deleteOldGame = db.prepare("DELETE FROM game_results WHERE screenshot_id = ?");
-    deleteOldGame.run(job.screenshotId);
-    const deleteOldFts = db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?");
-    try {
-      deleteOldFts.run(job.screenshotId);
-    } catch {
-    }
-    const updateScreenshot = db.prepare(`
-      UPDATE screenshots 
-      SET 
-        category = ?,
-        processing_status = 'ready',
-        processing_error = NULL,
-        ocr_text = ?,
-        visual_description = ?,
-        text_embedding = ?,
-        tags = ?,
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-    updateScreenshot.run(
-      analysis.category,
-      analysis.ocr_text,
-      analysis.visual_description,
-      JSON.stringify(embedding),
-      JSON.stringify(analysis.tags),
-      now,
-      job.screenshotId,
-      job.userId
-    );
-    if (analysis.messages && analysis.messages.length > 0) {
-      const insertMsg = db.prepare(`
-        INSERT INTO extracted_messages (
-          id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      for (const msg of analysis.messages) {
-        insertMsg.run(
-          `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          job.screenshotId,
-          job.userId,
-          msg.sequence_number,
-          msg.message_text,
-          msg.sender_side,
-          msg.sender_label || null,
-          msg.confidence,
-          msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
-        );
-      }
-    }
-    if (analysis.game_result) {
-      const insertGame = db.prepare(`
-        INSERT INTO game_results (
-          id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      insertGame.run(
-        `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        job.screenshotId,
-        job.userId,
-        analysis.game_result.game_name,
-        analysis.game_result.mode || null,
-        analysis.game_result.map_name || null,
-        analysis.game_result.kills ?? null,
-        analysis.game_result.score ?? null,
-        analysis.game_result.rank || null,
-        analysis.game_result.damage ?? null,
-        analysis.game_result.match_date || null,
-        analysis.game_result.extraction_confidence,
-        analysis.game_result.raw_extracted_text || ""
-      );
-    }
-    try {
-      const insertFts = db.prepare(`
-        INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      insertFts.run(
-        job.screenshotId,
-        job.userId,
-        analysis.ocr_text,
-        analysis.visual_description,
-        analysis.tags.join(" "),
-        analysis.category
-      );
-    } catch (ftsErr) {
-      console.warn("FTS5 index insert warning:", ftsErr);
-    }
-    console.log(`\u2705 Processed screenshot ${job.screenshotId} [${analysis.category}]`);
-  } catch (err) {
-    console.error(`\u274C Error processing screenshot ${job.screenshotId}:`, err);
-    if (job.retryCount < 2) {
-      console.log(`Retrying job ${job.screenshotId} (attempt ${job.retryCount + 1})...`);
-      jobQueue.push({ ...job, retryCount: job.retryCount + 1 });
-    } else {
-      const markFailed = db.prepare(`
-        UPDATE screenshots 
-        SET processing_status = 'failed', processing_error = ?, updated_at = ? 
-        WHERE id = ? AND user_id = ?
-      `);
-      markFailed.run(err.message || "Processing failed", (/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
-    }
-  }
-}
-
-// server/routes/screenshotRoutes.ts
 var router2 = (0, import_express2.Router)();
 var isVercel2 = Boolean(process.env.VERCEL);
 var UPLOADS_BASE = isVercel2 ? path5.resolve("/tmp", "recall-uploads") : path5.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
@@ -60557,13 +60585,22 @@ app.get("/api/health", (_req, res) => {
     app: "RECALL API",
     version: "1.0.0",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    ai_vision_active: Boolean(process.env.GEMINI_API_KEY)
+    ai_vision_active: Boolean(process.env.GEMINI_API_KEY),
+    mode: process.env.VERCEL ? "serverless" : "persistent-server"
   });
 });
 app.use("/api/auth", authRoutes_default);
 app.use("/api/screenshots", screenshotRoutes_default);
 app.use("/api/search", searchRoutes_default);
 app.use("/api/test-data", testDataRoutes_default);
+var distPath = path7.resolve(process.cwd(), "dist");
+if (fs9.existsSync(distPath) && !process.env.VERCEL) {
+  app.use(import_express5.default.static(distPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path7.join(distPath, "index.html"));
+  });
+}
 app.use((err, _req, res, _next) => {
   console.error("Unhandled Server Error:", err);
   res.status(err.status || 500).json({
@@ -60574,6 +60611,7 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`\u{1F680} RECALL Server running on http://localhost:${PORT}`);
     console.log(`\u{1F4E1} Storage Path: ${path7.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads")}`);
+    startPersistentBackgroundWorker();
   });
 }
 var index_default = app;

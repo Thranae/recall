@@ -6,7 +6,9 @@ import path from 'path';
 // Load environment variables before initializing db
 dotenv.config();
 
+import fs from 'fs';
 import { initDatabase } from './db';
+import { startPersistentBackgroundWorker } from './services/processingQueue';
 import authRoutes from './routes/authRoutes';
 import screenshotRoutes from './routes/screenshotRoutes';
 import searchRoutes from './routes/searchRoutes';
@@ -34,6 +36,7 @@ app.get('/api/health', (_req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     ai_vision_active: Boolean(process.env.GEMINI_API_KEY),
+    mode: process.env.VERCEL ? 'serverless' : 'persistent-server',
   });
 });
 
@@ -42,6 +45,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/screenshots', screenshotRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/test-data', testDataRoutes);
+
+// Static frontend serving for persistent server production mode
+const distPath = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(distPath) && !process.env.VERCEL) {
+  app.use(express.static(distPath));
+  app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -56,6 +69,8 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🚀 RECALL Server running on http://localhost:${PORT}`);
     console.log(`📡 Storage Path: ${path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads')}`);
+    // Start continuous autonomous background AI worker on persistent server
+    startPersistentBackgroundWorker();
   });
 }
 

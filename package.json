@@ -9,6 +9,7 @@
     "server": "tsx watch server/index.ts",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=api/index.js --external:node:sqlite --external:tesseract.js",
     "build": "npm run build:server && tsc -b && vite build",
+    "start": "node api/index.js",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "tsx server/tests/search.test.ts",
