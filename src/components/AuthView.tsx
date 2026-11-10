@@ -28,7 +28,7 @@ declare global {
 
 const GOOGLE_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-  '600516818739-gjb0v49sblaakj41t1au37tkcsknhand.apps.googleusercontent.com';
+  '600516818739-fso5raspscqlsmcmt7r27o6l6kltjoov.apps.googleusercontent.com';
 
 interface AuthViewProps {
   onAuthSuccess: (user: User) => void;
