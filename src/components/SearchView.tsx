@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   FileText,
   SlidersHorizontal,
+  Layers,
   SearchX,
   Loader2,
   Sparkles,
@@ -29,7 +30,7 @@ interface SearchViewProps {
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: SlidersHorizontal },
   { id: 'chat', label: 'Chats', icon: MessageSquare },
-  { id: 'game', label: 'Gaming', icon: Trophy },
+  { id: 'other', label: 'Other', icon: Layers },
 ];
 
 const SUGGESTED_QUERIES = [
@@ -116,7 +117,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </form>
 
-      {/* 2. Symmetrical Liquid Glass Filter Chips (Aligned Full Width, No Box Wrappers) */}
+      {/* 2. Symmetrical Liquid Glass Filter Chips (3 Chips, Generous Width, Full Text Visibility) */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
@@ -127,12 +128,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-2 ${
+              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
               <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
-              <span className="truncate">{cat.label}</span>
+              <span className="whitespace-nowrap text-[12px] font-semibold">{cat.label}</span>
             </button>
           );
         })}

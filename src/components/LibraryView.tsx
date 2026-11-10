@@ -2,7 +2,6 @@ import React from 'react';
 import {
   SlidersHorizontal,
   MessageSquare,
-  Trophy,
   Layers,
   Plus,
   Sparkles,
@@ -21,7 +20,6 @@ interface LibraryViewProps {
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: SlidersHorizontal },
   { id: 'chat', label: 'Chats', icon: MessageSquare },
-  { id: 'game', label: 'Gaming', icon: Trophy },
   { id: 'other', label: 'Other', icon: Layers },
 ];
 
@@ -33,21 +31,19 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onOpenUpload,
 }) => {
   const chatCount = screenshots.filter((s) => s.category === 'chat').length;
-  const gameCount = screenshots.filter((s) => s.category === 'game').length;
-  const otherCount = screenshots.filter((s) => s.category !== 'chat' && s.category !== 'game').length;
+  const otherCount = screenshots.filter((s) => s.category !== 'chat').length;
 
   const filteredScreenshots = screenshots.filter((s) => {
     if (selectedCategory === 'all') return true;
     if (selectedCategory === 'chat') return s.category === 'chat';
-    if (selectedCategory === 'game') return s.category === 'game';
-    if (selectedCategory === 'other') return s.category !== 'chat' && s.category !== 'game';
+    if (selectedCategory === 'other') return s.category !== 'chat';
     return true;
   });
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
-      {/* 1. Symmetrical Liquid Glass Filter Chips (Aligned Full Width, No Box Wrappers) */}
-      <div className="grid grid-cols-4 gap-2 w-full">
+      {/* 1. Symmetrical Liquid Glass Filter Chips (3 Chips, Generous Width, Full Text Visibility) */}
+      <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -56,22 +52,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               ? screenshots.length
               : cat.id === 'chat'
                 ? chatCount
-                : cat.id === 'game'
-                  ? gameCount
-                  : otherCount;
+                : otherCount;
 
           return (
             <button
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`liquid-filter-chip w-full flex items-center justify-center gap-1 px-1.5 py-2 ${
+              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-3 w-3 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
-              <span className="truncate text-[11.5px] font-semibold">{cat.label}</span>
-              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-[#B9D9FF]/40 text-[#3478F6] font-bold' : 'bg-slate-200/60 text-slate-500 font-semibold'}`}>
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
+              <span className="whitespace-nowrap text-[12px] font-semibold">{cat.label}</span>
+              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-[#B9D9FF]/40 text-[#3478F6] font-bold' : 'bg-slate-200/60 text-slate-500 font-semibold'}`}>
                 {count}
               </span>
             </button>
@@ -86,9 +80,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             ? 'All Screenshots'
             : selectedCategory === 'chat'
               ? 'Conversations'
-              : selectedCategory === 'game'
-                ? 'Match Summaries'
-                : 'Other Captures'}
+              : 'Other Screenshots'}
         </h2>
         <span className="text-xs text-slate-500 font-medium font-mono">
           {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
