@@ -7,11 +7,13 @@ import { SearchView } from './components/SearchView';
 import { SettingsView } from './components/SettingsView';
 import { ScreenshotDetailSheet } from './components/ScreenshotDetailSheet';
 import { UploadSheet } from './components/UploadSheet';
+import { SplashScreen } from './components/SplashScreen';
 import { api } from './services/api';
 import type { User, Screenshot, SearchResponse, SearchResultItem } from './types';
 import { Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -159,26 +161,24 @@ export const App: React.FC = () => {
     setSearchResults(null);
   };
 
-  // Splash loading during token verification
-  if (isInitializing) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#F3F7FC] text-[#172B4D]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#3478F6]" />
-      </div>
-    );
-  }
-
-  // If unauthenticated, show mobile iOS Light Liquid Glass sign-in screen
-  if (!user) {
-    return <AuthView onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)} />;
-  }
-
   const processingCount = screenshots.filter(
     (s) => s.processing_status === 'queued' || s.processing_status === 'processing'
   ).length;
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
+    <>
+      {showSplash && (
+        <SplashScreen onComplete={() => setShowSplash(false)} durationMs={7000} />
+      )}
+
+      {isInitializing ? (
+        <div className="flex min-h-[100dvh] items-center justify-center bg-[#F3F7FC] text-[#172B4D]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#3478F6]" />
+        </div>
+      ) : !user ? (
+        <AuthView onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)} />
+      ) : (
+        <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
       {/* Ambient Aurora Light for Liquid Glass Refraction (Arctic Blue palette) */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
@@ -312,7 +312,9 @@ export const App: React.FC = () => {
           fetchScreenshots();
         }}
       />
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 

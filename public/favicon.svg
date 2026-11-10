@@ -1,27 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
   <defs>
-    <linearGradient id="recall-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="recall-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4F93FF"/>
       <stop offset="50%" stop-color="#3478F6"/>
-      <stop offset="100%" stop-color="#1C58D0"/>
+      <stop offset="100%" stop-color="#1856CB"/>
     </linearGradient>
-    <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.32"/>
+    <linearGradient id="glass-spec" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <!-- Squircle Base -->
-  <rect width="48" height="48" rx="13" fill="url(#recall-bg)"/>
+
+  <!-- Squircle Base (The Screen) -->
+  <rect width="48" height="48" rx="13" fill="url(#recall-grad)"/>
+
   <!-- Top Glass Highlight -->
-  <path d="M0 13C0 5.82 5.82 0 13 0h22c7.18 0 13 5.82 13 13v9H0v-9z" fill="url(#gloss)"/>
-  <!-- Specular Rim -->
-  <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="12.25" stroke="white" stroke-opacity="0.3" stroke-width="1.5" fill="none"/>
-  
-  <!-- Relatable Screenshot Images Emblem -->
-  <g transform="translate(9, 9) scale(1.25)" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M18 22H4a2 2 0 0 1-2-2V6"/>
-    <path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/>
-    <circle cx="12" cy="8" r="2" fill="#ffffff" stroke="none"/>
-    <rect width="16" height="16" x="6" y="2" rx="2.5"/>
-  </g>
+  <path d="M0 13C0 5.82 5.82 0 13 0h22c7.18 0 13 5.82 13 13v8H0v-8z" fill="url(#glass-spec)"/>
+
+  <!-- Outer Specular Rim -->
+  <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="12.25" stroke="white" stroke-opacity="0.32" stroke-width="1.5" fill="none"/>
+
+  <!-- Phone Screen Top Indicator / Dynamic Notch -->
+  <rect x="18" y="5" width="12" height="2.2" rx="1.1" fill="white" fill-opacity="0.8"/>
+
+  <!-- Neat & Simple Screenshot Search Magnifying Glass (Crisp 16px-48px legibility) -->
+  <circle cx="22" cy="24" r="9" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M19 19a5.5 5.5 0 0 1 6 0" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M28.5 30.5L37 39" stroke="white" stroke-width="3.4" stroke-linecap="round"/>
 </svg>

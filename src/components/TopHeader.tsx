@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { RefreshCw, Loader2, Images } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
+import { RecallEmblem } from './RecallEmblem';
 
 interface TopHeaderProps {
   title?: string;
@@ -62,28 +63,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
           {/* Brand / Distinctive Title & Branded Screenshot Emblem */}
           <div className="flex items-center gap-2.5">
-            {/* Branded Jewel Aperture Pod */}
-            <div
-              className="relative flex h-9 w-9 items-center justify-center rounded-[13px] overflow-hidden select-none"
-              style={{
-                background: 'linear-gradient(135deg, #4F93FF 0%, #3478F6 52%, #1C58D0 100%)',
-                boxShadow:
-                  '0 3.5px 12px -1px rgba(52, 120, 246, 0.38), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.70), inset 0 -1.5px 2px rgba(15, 45, 115, 0.35)',
-              }}
-            >
-              {/* Top gloss curve reflection */}
-              <div
-                className="absolute top-0 inset-x-0 h-[45%] pointer-events-none"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%)',
-                  borderTopLeftRadius: 'inherit',
-                  borderTopRightRadius: 'inherit',
-                }}
-              />
-
-              {/* Relatable Screenshot Emblem */}
-              <Images className="h-4.5 w-4.5 text-white relative z-10 stroke-[2.2]" />
-            </div>
+            <RecallEmblem className="h-9 w-9" />
 
             {/* Distinctive Recall Wordmark */}
             <div className="flex items-baseline">
