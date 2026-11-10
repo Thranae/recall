@@ -52184,11 +52184,10 @@ function _createClient4(config) {
 }
 
 // server/db/index.ts
-import { createRequire } from "module";
+import nodeModule from "module";
 import path from "path";
 import fs from "fs";
 import_dotenv.default.config();
-var require2 = createRequire(import.meta.url);
 var tursoClient = null;
 function getTursoClient() {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
@@ -52209,7 +52208,8 @@ var localDb = null;
 function getLocalDb() {
   if (localDb) return localDb;
   try {
-    const { DatabaseSync } = require2("node:sqlite");
+    const nodeRequire = typeof __require !== "undefined" ? __require : nodeModule.createRequire(import.meta.url);
+    const { DatabaseSync } = nodeRequire("node:sqlite");
     const isVercel3 = Boolean(process.env.VERCEL);
     const DB_DIR = isVercel3 ? path.resolve("/tmp", "recall-data") : path.resolve(process.cwd(), "data");
     if (!fs.existsSync(DB_DIR)) {

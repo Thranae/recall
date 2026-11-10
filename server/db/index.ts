@@ -2,11 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { createClient, Client } from '@libsql/client';
-import { createRequire } from 'module';
+import nodeModule from 'module';
 import path from 'path';
 import fs from 'fs';
-
-const require = createRequire(import.meta.url);
 
 let tursoClient: Client | null = null;
 export function getTursoClient(): Client | null {
@@ -30,7 +28,8 @@ let localDb: any = null;
 function getLocalDb() {
   if (localDb) return localDb;
   try {
-    const { DatabaseSync } = require('node:sqlite');
+    const nodeRequire = typeof require !== 'undefined' ? require : nodeModule.createRequire(import.meta.url);
+    const { DatabaseSync } = nodeRequire('node:sqlite');
     const isVercel = Boolean(process.env.VERCEL);
     const DB_DIR = isVercel
       ? path.resolve('/tmp', 'recall-data')
