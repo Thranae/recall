@@ -10,6 +10,15 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 const groqApiKey = process.env.GROQ_API_KEY || '';
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
+// Multi-model resilience cascade: try fastest/most capable first, fall back on demand spikes (503)
+const CANDIDATE_GEMINI_MODELS = [
+  'gemini-flash-lite-latest',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-latest',
+  'gemini-pro-latest',
+];
+
 export interface ScreenshotAnalysisPayload {
   category: 'chat' | 'game' | 'product' | 'poster_document' | 'other';
   confidence: number;
@@ -44,15 +53,20 @@ export async function analyzeScreenshot(
   originalFilename: string,
   fallbackBase64?: string | null
 ): Promise<ScreenshotAnalysisPayload> {
-  // Read image bytes safely
-  let base64Data: string | null = fallbackBase64 || null;
-  if (!base64Data && filePath && fs.existsSync(filePath)) {
+  // Read and sanitize image bytes safely
+  let rawBase64: string | null = fallbackBase64 || null;
+  if (!rawBase64 && filePath && fs.existsSync(filePath)) {
     try {
-      base64Data = fs.readFileSync(filePath).toString('base64');
+      rawBase64 = fs.readFileSync(filePath).toString('base64');
     } catch (readErr) {
       console.warn('Failed to read image file from disk:', readErr);
     }
   }
+
+  // Strip any data URI prefix to ensure clean base64 data
+  const base64Data = rawBase64
+    ? rawBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, '').trim()
+    : null;
 
   let resolvedMime = mimeType || 'image/jpeg';
   if (originalFilename.endsWith('.svg') || resolvedMime.includes('svg')) {
@@ -63,78 +77,18 @@ export async function analyzeScreenshot(
     resolvedMime = 'image/webp';
   }
 
-  // Tier 1: Gemini 3.5 Flash Lite Multimodal AI Vision with Native JSON Mode
+  // Tier 1: Gemini Multimodal Vision with Multi-Model Fallback Cascade
   if (genAI && apiKey && base64Data) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-3.5-flash-lite',
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.05,
-          responseSchema: {
-            type: SchemaType.OBJECT,
-            properties: {
-              category: {
-                type: SchemaType.STRING,
-                enum: ['chat', 'game', 'product', 'poster_document', 'other'],
-                description: 'Screenshot category',
-              },
-              confidence: { type: SchemaType.NUMBER, description: 'Classification confidence 0-1' },
-              ocr_text: { type: SchemaType.STRING, description: 'Complete verbatim transcription of all visible text' },
-              visual_description: { type: SchemaType.STRING, description: 'Detailed visual scene description' },
-              tags: {
-                type: SchemaType.ARRAY,
-                items: { type: SchemaType.STRING },
-                description: 'Searchable semantic tags',
-              },
-              messages: {
-                type: SchemaType.ARRAY,
-                items: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    sequence_number: { type: SchemaType.INTEGER },
-                    message_text: { type: SchemaType.STRING },
-                    sender_side: { type: SchemaType.STRING, enum: ['left', 'right', 'unknown'] },
-                    sender_label: { type: SchemaType.STRING },
-                    confidence: { type: SchemaType.NUMBER },
-                  },
-                  required: ['sequence_number', 'message_text', 'sender_side', 'confidence'],
-                },
-                description: 'Extracted chat messages if category is chat',
-              },
-              game_result: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  game_name: { type: SchemaType.STRING },
-                  mode: { type: SchemaType.STRING },
-                  map_name: { type: SchemaType.STRING },
-                  kills: { type: SchemaType.INTEGER },
-                  score: { type: SchemaType.INTEGER },
-                  rank: { type: SchemaType.STRING },
-                  damage: { type: SchemaType.INTEGER },
-                  match_date: { type: SchemaType.STRING },
-                  extraction_confidence: { type: SchemaType.NUMBER },
-                  raw_extracted_text: { type: SchemaType.STRING },
-                },
-                required: ['game_name'],
-                description: 'Game stats if category is game',
-              },
-            },
-            required: ['category', 'confidence', 'ocr_text', 'visual_description', 'tags'],
-          },
-        },
-      });
-
-      const prompt = `You are RECALL's high-precision AI multimodal vision engine.
+    const prompt = `You are RECALL's high-precision AI multimodal vision engine.
 Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
 
 Return a VALID JSON object matching this structure:
 {
   "category": "chat" | "game" | "product" | "poster_document" | "other",
-  "confidence": 0.95,
-  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, and label visible in the image without summarization or omitting anything.",
-  "visual_description": "Detailed visual description of the visual scene, layout, colors, UI elements, objects, clothing, and structure.",
-  "tags": ["array", "of", "10-15", "searchable", "semantic", "tags", "including", "app_names", "topics", "keywords"],
+  "confidence": 0.98,
+  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, and label visible in the image without summarization or omitting anything.",
+  "visual_description": "Comprehensive 3-5 sentence description detailing the specific application (e.g. WhatsApp, Instagram, Amazon, BGMI, Google Chrome, Settings), UI layout, dialogs, buttons, colors, subjects, and the context of what is happening in this screenshot.",
+  "tags": ["15-25", "searchable", "semantic", "tags", "including", "app_names", "brands", "topics", "keywords"],
   "messages": [
     // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
     {
@@ -151,10 +105,10 @@ Return a VALID JSON object matching this structure:
     "mode": "Classic" | "Ranked" | "TDM" or null,
     "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
     "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
-    "score": integer score or null,
+    "score": 100, // integer score or null
     "rank": "#1 Winner Winner Chicken Dinner" or rank text,
-    "damage": integer total damage or null,
-    "match_date": string date or null,
+    "damage": 2450, // integer total damage or null
+    "match_date": null,
     "extraction_confidence": 0.95
   }
 }
@@ -164,135 +118,146 @@ CATEGORIZATION RULES:
 2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
 3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/₹/€/£), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
 4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
-5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings).
+5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings, web browser UI).
 
 PRECISION REQUIREMENT:
 - If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
 - If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
 - Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
 
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: resolvedMime,
+    for (const modelName of CANDIDATE_GEMINI_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
           },
-        },
-      ]);
+        });
 
-      const responseText = result.response.text().trim();
-      const parsed = JSON.parse(responseText);
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: resolvedMime,
+            },
+          },
+        ]);
 
-      if (parsed) {
-        let category = parsed.category || 'other';
-        const ocrLower = (parsed.ocr_text || '').toLowerCase();
+        const responseText = result.response.text().trim();
+        const parsed = JSON.parse(responseText);
 
-        // Secondary intelligent category validation to guarantee zero false "other" badges
-        if (category === 'other') {
-          if (
-            parsed.messages?.length > 0 ||
-            ocrLower.includes('online •') ||
-            ocrLower.includes('type a message') ||
-            ocrLower.includes('imessage') ||
-            ocrLower.includes('whatsapp') ||
-            ocrLower.includes('message...') ||
-            ocrLower.includes('last seen') ||
-            ocrLower.includes('telegram') ||
-            ocrLower.includes('signal') ||
-            ocrLower.includes('snapchat') ||
-            ocrLower.includes('double tick') ||
-            ocrLower.includes('blue tick') ||
-            ocrLower.includes('✓✓') ||
-            ocrLower.includes('facebook messenger') ||
-            ocrLower.includes('slack') ||
-            ocrLower.includes('discord') ||
-            /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)
-          ) {
-            category = 'chat';
-          } else if (
-            parsed.game_result?.kills != null ||
-            ocrLower.includes('winner winner') ||
-            ocrLower.includes('chicken dinner') ||
-            ocrLower.includes('bgmi') ||
-            ocrLower.includes('pubg') ||
-            ocrLower.includes('eliminated') ||
-            ocrLower.includes('victory royale') ||
-            ocrLower.includes('booyah') ||
-            ocrLower.includes('defeat') ||
-            ocrLower.includes('game over') ||
-            ocrLower.includes('match result') ||
-            ocrLower.includes('mvp') ||
-            ocrLower.includes('headshot') ||
-            ocrLower.includes('free fire') ||
-            ocrLower.includes('valorant') ||
-            ocrLower.includes('clash') ||
-            ocrLower.includes('cod mobile') ||
-            /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)
-          ) {
-            category = 'game';
-          } else if (
-            ocrLower.includes('add to cart') ||
-            ocrLower.includes('buy now') ||
-            ocrLower.includes('in stock') ||
-            ocrLower.includes('wishlist') ||
-            ocrLower.includes('save for later') ||
-            ocrLower.includes('ratings') ||
-            ocrLower.includes('reviews') ||
-            ocrLower.includes('shipping') ||
-            ocrLower.includes('delivery') ||
-            ocrLower.includes('flipkart') ||
-            ocrLower.includes('amazon') ||
-            ocrLower.includes('myntra') ||
-            ocrLower.includes('meesho') ||
-            ocrLower.includes('mrp') ||
-            ocrLower.includes('discount') ||
-            /[\$₹€£]\s*\d+/.test(ocrLower) ||
-            /\d+%\s*off\b/.test(ocrLower)
-          ) {
-            category = 'product';
-          } else if (
-            ocrLower.includes('invoice') ||
-            ocrLower.includes('receipt') ||
-            ocrLower.includes('boarding pass') ||
-            ocrLower.includes('total amount') ||
-            ocrLower.includes('certificate') ||
-            ocrLower.includes('memo') ||
-            ocrLower.includes('notice') ||
-            ocrLower.includes('bill') ||
-            ocrLower.includes('statement') ||
-            ocrLower.includes('page ') ||
-            ocrLower.includes('.pdf')
-          ) {
-            category = 'poster_document';
+        if (parsed) {
+          let category = parsed.category || 'other';
+          const ocrLower = ((parsed.ocr_text || '') + ' ' + (parsed.visual_description || '')).toLowerCase();
+
+          // Secondary intelligent category validation to guarantee zero false "other" badges
+          if (category === 'other') {
+            if (
+              parsed.messages?.length > 0 ||
+              ocrLower.includes('online •') ||
+              ocrLower.includes('type a message') ||
+              ocrLower.includes('imessage') ||
+              ocrLower.includes('whatsapp') ||
+              ocrLower.includes('message...') ||
+              ocrLower.includes('last seen') ||
+              ocrLower.includes('telegram') ||
+              ocrLower.includes('signal') ||
+              ocrLower.includes('snapchat') ||
+              ocrLower.includes('double tick') ||
+              ocrLower.includes('blue tick') ||
+              ocrLower.includes('✓✓') ||
+              ocrLower.includes('facebook messenger') ||
+              ocrLower.includes('slack') ||
+              ocrLower.includes('discord') ||
+              /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)
+            ) {
+              category = 'chat';
+            } else if (
+              parsed.game_result?.kills != null ||
+              ocrLower.includes('winner winner') ||
+              ocrLower.includes('chicken dinner') ||
+              ocrLower.includes('bgmi') ||
+              ocrLower.includes('pubg') ||
+              ocrLower.includes('eliminated') ||
+              ocrLower.includes('victory royale') ||
+              ocrLower.includes('booyah') ||
+              ocrLower.includes('defeat') ||
+              ocrLower.includes('game over') ||
+              ocrLower.includes('match result') ||
+              ocrLower.includes('mvp') ||
+              ocrLower.includes('headshot') ||
+              ocrLower.includes('free fire') ||
+              ocrLower.includes('valorant') ||
+              ocrLower.includes('clash') ||
+              ocrLower.includes('cod mobile') ||
+              /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)
+            ) {
+              category = 'game';
+            } else if (
+              ocrLower.includes('add to cart') ||
+              ocrLower.includes('buy now') ||
+              ocrLower.includes('in stock') ||
+              ocrLower.includes('wishlist') ||
+              ocrLower.includes('save for later') ||
+              ocrLower.includes('ratings') ||
+              ocrLower.includes('reviews') ||
+              ocrLower.includes('shipping') ||
+              ocrLower.includes('delivery') ||
+              ocrLower.includes('flipkart') ||
+              ocrLower.includes('amazon') ||
+              ocrLower.includes('myntra') ||
+              ocrLower.includes('meesho') ||
+              ocrLower.includes('mrp') ||
+              ocrLower.includes('discount') ||
+              /[\$₹€£]\s*\d+/.test(ocrLower) ||
+              /\d+%\s*off\b/.test(ocrLower)
+            ) {
+              category = 'product';
+            } else if (
+              ocrLower.includes('invoice') ||
+              ocrLower.includes('receipt') ||
+              ocrLower.includes('boarding pass') ||
+              ocrLower.includes('total amount') ||
+              ocrLower.includes('certificate') ||
+              ocrLower.includes('memo') ||
+              ocrLower.includes('notice') ||
+              ocrLower.includes('bill') ||
+              ocrLower.includes('statement') ||
+              ocrLower.includes('page ') ||
+              ocrLower.includes('.pdf')
+            ) {
+              category = 'poster_document';
+            }
           }
-        }
 
-        return {
-          category,
-          confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.95,
-          ocr_text: parsed.ocr_text || '',
-          visual_description: parsed.visual_description || '',
-          tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-          messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-          game_result: parsed.game_result
-            ? {
-                game_name: parsed.game_result.game_name || 'Game',
-                mode: parsed.game_result.mode || null,
-                map_name: parsed.game_result.map_name || null,
-                kills: typeof parsed.game_result.kills === 'number' ? parsed.game_result.kills : null,
-                score: typeof parsed.game_result.score === 'number' ? parsed.game_result.score : null,
-                rank: parsed.game_result.rank || null,
-                damage: typeof parsed.game_result.damage === 'number' ? parsed.game_result.damage : null,
-                match_date: parsed.game_result.match_date || null,
-                extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
-                raw_extracted_text: (parsed.ocr_text || '').substring(0, 500),
-              }
-            : null,
-        };
+          return {
+            category,
+            confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.98,
+            ocr_text: parsed.ocr_text || '',
+            visual_description: parsed.visual_description || '',
+            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+            game_result: parsed.game_result
+              ? {
+                  game_name: parsed.game_result.game_name || 'Game',
+                  mode: parsed.game_result.mode || null,
+                  map_name: parsed.game_result.map_name || null,
+                  kills: typeof parsed.game_result.kills === 'number' ? parsed.game_result.kills : null,
+                  score: typeof parsed.game_result.score === 'number' ? parsed.game_result.score : null,
+                  rank: parsed.game_result.rank || null,
+                  damage: typeof parsed.game_result.damage === 'number' ? parsed.game_result.damage : null,
+                  match_date: parsed.game_result.match_date || null,
+                  extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
+                  raw_extracted_text: (parsed.ocr_text || '').substring(0, 500),
+                }
+              : null,
+          };
+        }
+      } catch (modelError: any) {
+        console.warn(`Gemini model ${modelName} returned notice (${modelError.status || modelError.message?.substring(0, 80)}), trying next candidate...`);
       }
-    } catch (apiError) {
-      console.warn('Gemini 3.5 Flash Lite call failed, proceeding to secondary Groq AI pipeline:', apiError);
     }
   }
 
@@ -386,6 +351,8 @@ Return a VALID JSON object matching this structure:
       console.warn('Groq structuring failed, falling back to heuristics:', groqErr);
     }
   }
+
+
 
   // Tier 3: Deterministic Rule-Based Heuristic Parser
   const heuristic: HeuristicAnalysisResult = analyzeScreenshotHeuristics(localOcrText, originalFilename);

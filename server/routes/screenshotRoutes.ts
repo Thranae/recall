@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { enqueueScreenshotJob } from '../services/processingQueue';
+import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
 import { analyzeScreenshot } from '../services/ai/gemini';
 import { generateTextEmbedding } from '../services/ai/embeddings';
 
@@ -158,19 +158,6 @@ router.post(
           now
         );
 
-        // Enqueue background processing for local/persistent environments
-        try {
-          enqueueScreenshotJob({
-            screenshotId,
-            userId,
-            storageKey,
-            mimeType: file.mimetype,
-            originalFilename: file.originalname,
-          });
-        } catch (queueErr) {
-          console.warn('Enqueue notice:', queueErr);
-        }
-
         createdScreenshots.push({
           id: screenshotId,
           filename: file.originalname,
@@ -180,8 +167,41 @@ router.post(
         });
       }
 
+      // Execute multimodal vision analysis immediately so results are ready without serverless freeze delay
+      for (const item of createdScreenshots) {
+        try {
+          const matchFile = files.find(f => path.join(userId, f.filename).replace(/\\/g, '/') === item.storage_key);
+          let base64 = null;
+          if (matchFile?.path && fs.existsSync(matchFile.path)) {
+            base64 = fs.readFileSync(matchFile.path).toString('base64');
+          }
+          await processScreenshotDirectly(
+            item.id,
+            userId,
+            item.storage_key,
+            matchFile?.mimetype || 'image/jpeg',
+            item.filename,
+            base64
+          );
+          item.status = 'ready';
+        } catch (procErr) {
+          console.warn(`Immediate processing notice for ${item.id}:`, procErr);
+          // Fall back to queuing for persistent worker
+          try {
+            const matchFile = files.find(f => path.join(userId, f.filename).replace(/\\/g, '/') === item.storage_key);
+            enqueueScreenshotJob({
+              screenshotId: item.id,
+              userId,
+              storageKey: item.storage_key,
+              mimeType: matchFile?.mimetype || 'image/jpeg',
+              originalFilename: item.filename,
+            });
+          } catch {}
+        }
+      }
+
       res.status(201).json({
-        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis started.`,
+        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis completed.`,
         screenshots: createdScreenshots,
       });
     } catch (err: any) {
@@ -252,11 +272,27 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response): Prom
       FROM screenshots 
       WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
     `);
-    const screenshot = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
+    let screenshot = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
 
     if (!screenshot) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
       return;
+    }
+
+    // Auto-analyze on-demand if status is still processing or visual description is missing
+    if (screenshot.processing_status === 'processing' || !screenshot.visual_description) {
+      try {
+        await processScreenshotDirectly(
+          screenshot.id,
+          screenshot.user_id,
+          screenshot.storage_key,
+          screenshot.mime_type,
+          screenshot.original_filename
+        );
+        screenshot = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
+      } catch (autoErr) {
+        console.warn('Auto-processing on detail retrieval notice:', autoErr);
+      }
     }
 
     const getMessages = db.prepare(`
@@ -422,62 +458,37 @@ router.post('/:id/reanalyze', authMiddleware, async (req: AuthRequest, res: Resp
       return;
     }
 
-    const fullPath = path.join(UPLOADS_BASE, row.storage_key);
-    const analysis = await analyzeScreenshot(fullPath, row.mime_type, row.original_filename, row.image_data);
-
-    let embedding: number[] = [];
-    try {
-      const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(' ')} ${analysis.ocr_text.substring(0, 500)}`;
-      embedding = await generateTextEmbedding(textForEmbedding);
-    } catch {}
-
-    const now = new Date().toISOString();
-    await db.prepare(`
-      UPDATE screenshots
-      SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
-          tags = ?, text_embedding = ?, updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `).run(
-      analysis.category,
-      analysis.ocr_text,
-      analysis.visual_description,
-      JSON.stringify(analysis.tags),
-      JSON.stringify(embedding),
-      now,
+    await processScreenshotDirectly(
       id,
-      userId
+      userId,
+      row.storage_key,
+      row.mime_type,
+      row.original_filename,
+      row.image_data
     );
 
-    // Refresh messages
-    try {
-      await db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(id);
-      if (analysis.messages && analysis.messages.length > 0) {
-        const insertMsg = db.prepare(`
-          INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const m of analysis.messages) {
-          await insertMsg.run(`msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, m.sequence_number, m.message_text, m.sender_side, m.sender_label || null, m.confidence);
-        }
-      }
-    } catch {}
+    const updated = (await getScreenshot.get(id, userId)) as any;
+    const getMessages = db.prepare('SELECT * FROM extracted_messages WHERE screenshot_id = ? ORDER BY sequence_number ASC');
+    const messages = (await getMessages.all(id)) as any[];
 
-    // Refresh game results
-    try {
-      await db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(id);
-      if (analysis.game_result) {
-        const g = analysis.game_result;
-        await db.prepare(`
-          INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(`game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, g.game_name, g.mode, g.map_name, g.kills, g.score, g.rank, g.damage, g.match_date, g.extraction_confidence, g.raw_extracted_text);
-      }
-    } catch {}
+    const getGame = db.prepare('SELECT * FROM game_results WHERE screenshot_id = ?');
+    const game = (await getGame.get(id)) as any;
 
-    res.json({ message: 'Screenshot re-analyzed successfully', category: analysis.category, analysis });
+    res.json({
+      message: 'Screenshot re-analyzed successfully',
+      screenshot: {
+        ...updated,
+        tags: updated.tags ? JSON.parse(updated.tags) : [],
+      },
+      messages: messages.map(m => ({
+        ...m,
+        bounding_box: m.bounding_box ? JSON.parse(m.bounding_box) : null,
+      })),
+      game_result: game || null,
+    });
   } catch (err: any) {
     console.error('Re-analyze error:', err);
-    res.status(500).json({ error: 'Failed to re-analyze screenshot' });
+    res.status(500).json({ error: err.message || 'Failed to re-analyze screenshot' });
   }
 });
 

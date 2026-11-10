@@ -51013,13 +51013,13 @@ import fs2 from "fs";
 
 // node_modules/@google/generative-ai/dist/index.mjs
 var SchemaType;
-(function(SchemaType2) {
-  SchemaType2["STRING"] = "string";
-  SchemaType2["NUMBER"] = "number";
-  SchemaType2["INTEGER"] = "integer";
-  SchemaType2["BOOLEAN"] = "boolean";
-  SchemaType2["ARRAY"] = "array";
-  SchemaType2["OBJECT"] = "object";
+(function(SchemaType3) {
+  SchemaType3["STRING"] = "string";
+  SchemaType3["NUMBER"] = "number";
+  SchemaType3["INTEGER"] = "integer";
+  SchemaType3["BOOLEAN"] = "boolean";
+  SchemaType3["ARRAY"] = "array";
+  SchemaType3["OBJECT"] = "object";
 })(SchemaType || (SchemaType = {}));
 var ExecutableCodeLanguage;
 (function(ExecutableCodeLanguage2) {
@@ -52195,15 +52195,23 @@ function analyzeScreenshotHeuristics(ocrText, filename) {
 var apiKey = process.env.GEMINI_API_KEY || "";
 var groqApiKey = process.env.GROQ_API_KEY || "";
 var genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+var CANDIDATE_GEMINI_MODELS = [
+  "gemini-flash-lite-latest",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-flash-latest",
+  "gemini-pro-latest"
+];
 async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
-  let base64Data = fallbackBase64 || null;
-  if (!base64Data && filePath && fs2.existsSync(filePath)) {
+  let rawBase64 = fallbackBase64 || null;
+  if (!rawBase64 && filePath && fs2.existsSync(filePath)) {
     try {
-      base64Data = fs2.readFileSync(filePath).toString("base64");
+      rawBase64 = fs2.readFileSync(filePath).toString("base64");
     } catch (readErr) {
       console.warn("Failed to read image file from disk:", readErr);
     }
   }
+  const base64Data = rawBase64 ? rawBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "").trim() : null;
   let resolvedMime = mimeType || "image/jpeg";
   if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
     resolvedMime = "image/svg+xml";
@@ -52213,75 +52221,16 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackB
     resolvedMime = "image/webp";
   }
   if (genAI && apiKey && base64Data) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.05,
-          responseSchema: {
-            type: SchemaType.OBJECT,
-            properties: {
-              category: {
-                type: SchemaType.STRING,
-                enum: ["chat", "game", "product", "poster_document", "other"],
-                description: "Screenshot category"
-              },
-              confidence: { type: SchemaType.NUMBER, description: "Classification confidence 0-1" },
-              ocr_text: { type: SchemaType.STRING, description: "Complete verbatim transcription of all visible text" },
-              visual_description: { type: SchemaType.STRING, description: "Detailed visual scene description" },
-              tags: {
-                type: SchemaType.ARRAY,
-                items: { type: SchemaType.STRING },
-                description: "Searchable semantic tags"
-              },
-              messages: {
-                type: SchemaType.ARRAY,
-                items: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    sequence_number: { type: SchemaType.INTEGER },
-                    message_text: { type: SchemaType.STRING },
-                    sender_side: { type: SchemaType.STRING, enum: ["left", "right", "unknown"] },
-                    sender_label: { type: SchemaType.STRING },
-                    confidence: { type: SchemaType.NUMBER }
-                  },
-                  required: ["sequence_number", "message_text", "sender_side", "confidence"]
-                },
-                description: "Extracted chat messages if category is chat"
-              },
-              game_result: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  game_name: { type: SchemaType.STRING },
-                  mode: { type: SchemaType.STRING },
-                  map_name: { type: SchemaType.STRING },
-                  kills: { type: SchemaType.INTEGER },
-                  score: { type: SchemaType.INTEGER },
-                  rank: { type: SchemaType.STRING },
-                  damage: { type: SchemaType.INTEGER },
-                  match_date: { type: SchemaType.STRING },
-                  extraction_confidence: { type: SchemaType.NUMBER },
-                  raw_extracted_text: { type: SchemaType.STRING }
-                },
-                required: ["game_name"],
-                description: "Game stats if category is game"
-              }
-            },
-            required: ["category", "confidence", "ocr_text", "visual_description", "tags"]
-          }
-        }
-      });
-      const prompt = `You are RECALL's high-precision AI multimodal vision engine.
+    const prompt = `You are RECALL's high-precision AI multimodal vision engine.
 Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
 
 Return a VALID JSON object matching this structure:
 {
   "category": "chat" | "game" | "product" | "poster_document" | "other",
-  "confidence": 0.95,
-  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, and label visible in the image without summarization or omitting anything.",
-  "visual_description": "Detailed visual description of the visual scene, layout, colors, UI elements, objects, clothing, and structure.",
-  "tags": ["array", "of", "10-15", "searchable", "semantic", "tags", "including", "app_names", "topics", "keywords"],
+  "confidence": 0.98,
+  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, and label visible in the image without summarization or omitting anything.",
+  "visual_description": "Comprehensive 3-5 sentence description detailing the specific application (e.g. WhatsApp, Instagram, Amazon, BGMI, Google Chrome, Settings), UI layout, dialogs, buttons, colors, subjects, and the context of what is happening in this screenshot.",
+  "tags": ["15-25", "searchable", "semantic", "tags", "including", "app_names", "brands", "topics", "keywords"],
   "messages": [
     // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
     {
@@ -52298,10 +52247,10 @@ Return a VALID JSON object matching this structure:
     "mode": "Classic" | "Ranked" | "TDM" or null,
     "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
     "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
-    "score": integer score or null,
+    "score": 100, // integer score or null
     "rank": "#1 Winner Winner Chicken Dinner" or rank text,
-    "damage": integer total damage or null,
-    "match_date": string date or null,
+    "damage": 2450, // integer total damage or null
+    "match_date": null,
     "extraction_confidence": 0.95
   }
 }
@@ -52311,60 +52260,70 @@ CATEGORIZATION RULES:
 2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
 3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/\u20B9/\u20AC/\xA3), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
 4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
-5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings).
+5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings, web browser UI).
 
 PRECISION REQUIREMENT:
 - If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
 - If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
 - Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: resolvedMime
+    for (const modelName of CANDIDATE_GEMINI_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.1
           }
-        }
-      ]);
-      const responseText = result.response.text().trim();
-      const parsed = JSON.parse(responseText);
-      if (parsed) {
-        let category = parsed.category || "other";
-        const ocrLower = (parsed.ocr_text || "").toLowerCase();
-        if (category === "other") {
-          if (parsed.messages?.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
-            category = "chat";
-          } else if (parsed.game_result?.kills != null || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
-            category = "game";
-          } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
-            category = "product";
-          } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
-            category = "poster_document";
+        });
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: resolvedMime
+            }
           }
+        ]);
+        const responseText = result.response.text().trim();
+        const parsed = JSON.parse(responseText);
+        if (parsed) {
+          let category = parsed.category || "other";
+          const ocrLower = ((parsed.ocr_text || "") + " " + (parsed.visual_description || "")).toLowerCase();
+          if (category === "other") {
+            if (parsed.messages?.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
+              category = "chat";
+            } else if (parsed.game_result?.kills != null || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
+              category = "game";
+            } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
+              category = "product";
+            } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
+              category = "poster_document";
+            }
+          }
+          return {
+            category,
+            confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.98,
+            ocr_text: parsed.ocr_text || "",
+            visual_description: parsed.visual_description || "",
+            tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+            game_result: parsed.game_result ? {
+              game_name: parsed.game_result.game_name || "Game",
+              mode: parsed.game_result.mode || null,
+              map_name: parsed.game_result.map_name || null,
+              kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
+              score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
+              rank: parsed.game_result.rank || null,
+              damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
+              match_date: parsed.game_result.match_date || null,
+              extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
+              raw_extracted_text: (parsed.ocr_text || "").substring(0, 500)
+            } : null
+          };
         }
-        return {
-          category,
-          confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.95,
-          ocr_text: parsed.ocr_text || "",
-          visual_description: parsed.visual_description || "",
-          tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-          messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-          game_result: parsed.game_result ? {
-            game_name: parsed.game_result.game_name || "Game",
-            mode: parsed.game_result.mode || null,
-            map_name: parsed.game_result.map_name || null,
-            kills: typeof parsed.game_result.kills === "number" ? parsed.game_result.kills : null,
-            score: typeof parsed.game_result.score === "number" ? parsed.game_result.score : null,
-            rank: parsed.game_result.rank || null,
-            damage: typeof parsed.game_result.damage === "number" ? parsed.game_result.damage : null,
-            match_date: parsed.game_result.match_date || null,
-            extraction_confidence: parsed.game_result.extraction_confidence || 0.95,
-            raw_extracted_text: (parsed.ocr_text || "").substring(0, 500)
-          } : null
-        };
+      } catch (modelError) {
+        console.warn(`Gemini model ${modelName} returned notice (${modelError.status || modelError.message?.substring(0, 80)}), trying next candidate...`);
       }
-    } catch (apiError) {
-      console.warn("Gemini 3.5 Flash Lite call failed, proceeding to secondary Groq AI pipeline:", apiError);
     }
   }
   let localOcrText = "";
@@ -52541,6 +52500,130 @@ function enqueueScreenshotJob(job) {
   jobQueue.push({ ...job, retryCount: 0 });
   pumpQueue();
 }
+async function processScreenshotDirectly(screenshotId, userId, storageKey, mimeType, originalFilename, providedBase64) {
+  const updateStatus = db.prepare(`
+    UPDATE screenshots 
+    SET processing_status = 'processing', updated_at = ? 
+    WHERE id = ? AND user_id = ?
+  `);
+  await updateStatus.run((/* @__PURE__ */ new Date()).toISOString(), screenshotId, userId);
+  const isVercel3 = Boolean(process.env.VERCEL);
+  const uploadsDir = isVercel3 ? path2.resolve("/tmp", "recall-uploads") : path2.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
+  const fullPath = path2.join(uploadsDir, storageKey);
+  let base64Data = providedBase64 || null;
+  if (!base64Data) {
+    try {
+      const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
+      const imgRow = await getImg.get(screenshotId);
+      if (imgRow?.image_data) {
+        base64Data = imgRow.image_data;
+        if (!fs3.existsSync(fullPath)) {
+          fs3.mkdirSync(path2.dirname(fullPath), { recursive: true });
+          fs3.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
+        }
+      }
+    } catch (err) {
+      console.warn("Could not restore image file from DB backup:", err);
+    }
+  }
+  const analysis = await analyzeScreenshot(fullPath, mimeType, originalFilename, base64Data);
+  let embedding = [];
+  try {
+    const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
+    embedding = await generateTextEmbedding(textForEmbedding);
+  } catch {
+  }
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  try {
+    await db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?").run(screenshotId);
+    await db.prepare("DELETE FROM game_results WHERE screenshot_id = ?").run(screenshotId);
+    await db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?").run(screenshotId);
+  } catch {
+  }
+  const updateScreenshot = db.prepare(`
+    UPDATE screenshots 
+    SET 
+      category = ?,
+      processing_status = 'ready',
+      processing_error = NULL,
+      ocr_text = ?,
+      visual_description = ?,
+      text_embedding = ?,
+      tags = ?,
+      updated_at = ?
+    WHERE id = ? AND user_id = ?
+  `);
+  await updateScreenshot.run(
+    analysis.category,
+    analysis.ocr_text,
+    analysis.visual_description,
+    JSON.stringify(embedding),
+    JSON.stringify(analysis.tags),
+    now,
+    screenshotId,
+    userId
+  );
+  if (analysis.messages && analysis.messages.length > 0) {
+    const insertMsg = db.prepare(`
+      INSERT INTO extracted_messages (
+        id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const msg of analysis.messages) {
+      await insertMsg.run(
+        `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        screenshotId,
+        userId,
+        msg.sequence_number,
+        msg.message_text,
+        msg.sender_side,
+        msg.sender_label || null,
+        msg.confidence,
+        msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
+      );
+    }
+  }
+  if (analysis.game_result) {
+    const insertGame = db.prepare(`
+      INSERT INTO game_results (
+        id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    await insertGame.run(
+      `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      screenshotId,
+      userId,
+      analysis.game_result.game_name,
+      analysis.game_result.mode || null,
+      analysis.game_result.map_name || null,
+      analysis.game_result.kills ?? null,
+      analysis.game_result.score ?? null,
+      analysis.game_result.rank || null,
+      analysis.game_result.damage ?? null,
+      analysis.game_result.match_date || null,
+      analysis.game_result.extraction_confidence,
+      analysis.game_result.raw_extracted_text || ""
+    );
+  }
+  try {
+    const insertFts = db.prepare(`
+      INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    await insertFts.run(
+      screenshotId,
+      userId,
+      analysis.ocr_text,
+      analysis.visual_description,
+      analysis.tags.join(" "),
+      analysis.category
+    );
+  } catch (ftsErr) {
+    console.warn("FTS5 index insert warning:", ftsErr);
+  }
+  console.log(`\u2705 Synchronously processed screenshot ${screenshotId} [${analysis.category}]`);
+  return analysis;
+}
 function startPersistentBackgroundWorker() {
   console.log("\u{1F916} Starting autonomous background AI worker...");
   const sweep = async () => {
@@ -52582,124 +52665,13 @@ function pumpQueue() {
 }
 async function executeJob(job) {
   try {
-    const updateStatus = db.prepare(`
-      UPDATE screenshots 
-      SET processing_status = 'processing', updated_at = ? 
-      WHERE id = ? AND user_id = ?
-    `);
-    await updateStatus.run((/* @__PURE__ */ new Date()).toISOString(), job.screenshotId, job.userId);
-    const isVercel3 = Boolean(process.env.VERCEL);
-    const uploadsDir = isVercel3 ? path2.resolve("/tmp", "recall-uploads") : path2.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
-    const fullPath = path2.join(uploadsDir, job.storageKey);
-    let base64Data = null;
-    try {
-      const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
-      const imgRow = await getImg.get(job.screenshotId);
-      if (imgRow?.image_data) {
-        base64Data = imgRow.image_data;
-        if (!fs3.existsSync(fullPath)) {
-          fs3.mkdirSync(path2.dirname(fullPath), { recursive: true });
-          fs3.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
-        }
-      }
-    } catch (err) {
-      console.warn("Could not restore image file from DB backup:", err);
-    }
-    const analysis = await analyzeScreenshot(fullPath, job.mimeType, job.originalFilename, base64Data);
-    const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
-    const embedding = await generateTextEmbedding(textForEmbedding);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const deleteOldMsgs = db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?");
-    await deleteOldMsgs.run(job.screenshotId);
-    const deleteOldGame = db.prepare("DELETE FROM game_results WHERE screenshot_id = ?");
-    await deleteOldGame.run(job.screenshotId);
-    const deleteOldFts = db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?");
-    try {
-      await deleteOldFts.run(job.screenshotId);
-    } catch {
-    }
-    const updateScreenshot = db.prepare(`
-      UPDATE screenshots 
-      SET 
-        category = ?,
-        processing_status = 'ready',
-        processing_error = NULL,
-        ocr_text = ?,
-        visual_description = ?,
-        text_embedding = ?,
-        tags = ?,
-        updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `);
-    await updateScreenshot.run(
-      analysis.category,
-      analysis.ocr_text,
-      analysis.visual_description,
-      JSON.stringify(embedding),
-      JSON.stringify(analysis.tags),
-      now,
+    await processScreenshotDirectly(
       job.screenshotId,
-      job.userId
+      job.userId,
+      job.storageKey,
+      job.mimeType,
+      job.originalFilename
     );
-    if (analysis.messages && analysis.messages.length > 0) {
-      const insertMsg = db.prepare(`
-        INSERT INTO extracted_messages (
-          id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      for (const msg of analysis.messages) {
-        await insertMsg.run(
-          `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          job.screenshotId,
-          job.userId,
-          msg.sequence_number,
-          msg.message_text,
-          msg.sender_side,
-          msg.sender_label || null,
-          msg.confidence,
-          msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
-        );
-      }
-    }
-    if (analysis.game_result) {
-      const insertGame = db.prepare(`
-        INSERT INTO game_results (
-          id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      await insertGame.run(
-        `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        job.screenshotId,
-        job.userId,
-        analysis.game_result.game_name,
-        analysis.game_result.mode || null,
-        analysis.game_result.map_name || null,
-        analysis.game_result.kills ?? null,
-        analysis.game_result.score ?? null,
-        analysis.game_result.rank || null,
-        analysis.game_result.damage ?? null,
-        analysis.game_result.match_date || null,
-        analysis.game_result.extraction_confidence,
-        analysis.game_result.raw_extracted_text || ""
-      );
-    }
-    try {
-      const insertFts = db.prepare(`
-        INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      await insertFts.run(
-        job.screenshotId,
-        job.userId,
-        analysis.ocr_text,
-        analysis.visual_description,
-        analysis.tags.join(" "),
-        analysis.category
-      );
-    } catch (ftsErr) {
-      console.warn("FTS5 index insert warning:", ftsErr);
-    }
-    console.log(`\u2705 Processed screenshot ${job.screenshotId} [${analysis.category}]`);
   } catch (err) {
     console.error(`\u274C Error processing screenshot ${job.screenshotId}:`, err);
     if (job.retryCount < 2) {
@@ -68176,17 +68148,6 @@ router2.post(
           now,
           now
         );
-        try {
-          enqueueScreenshotJob({
-            screenshotId,
-            userId,
-            storageKey,
-            mimeType: file.mimetype,
-            originalFilename: file.originalname
-          });
-        } catch (queueErr) {
-          console.warn("Enqueue notice:", queueErr);
-        }
         createdScreenshots.push({
           id: screenshotId,
           filename: file.originalname,
@@ -68195,8 +68156,39 @@ router2.post(
           status: "processing"
         });
       }
+      for (const item of createdScreenshots) {
+        try {
+          const matchFile = files.find((f) => path5.join(userId, f.filename).replace(/\\/g, "/") === item.storage_key);
+          let base64 = null;
+          if (matchFile?.path && fs7.existsSync(matchFile.path)) {
+            base64 = fs7.readFileSync(matchFile.path).toString("base64");
+          }
+          await processScreenshotDirectly(
+            item.id,
+            userId,
+            item.storage_key,
+            matchFile?.mimetype || "image/jpeg",
+            item.filename,
+            base64
+          );
+          item.status = "ready";
+        } catch (procErr) {
+          console.warn(`Immediate processing notice for ${item.id}:`, procErr);
+          try {
+            const matchFile = files.find((f) => path5.join(userId, f.filename).replace(/\\/g, "/") === item.storage_key);
+            enqueueScreenshotJob({
+              screenshotId: item.id,
+              userId,
+              storageKey: item.storage_key,
+              mimeType: matchFile?.mimetype || "image/jpeg",
+              originalFilename: item.filename
+            });
+          } catch {
+          }
+        }
+      }
       res.status(201).json({
-        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis started.`,
+        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis completed.`,
         screenshots: createdScreenshots
       });
     } catch (err) {
@@ -68254,10 +68246,24 @@ router2.get("/:id", authMiddleware, async (req, res) => {
       FROM screenshots 
       WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
     `);
-    const screenshot = await getScreenshot.get(id, userId, userEmail || userId);
+    let screenshot = await getScreenshot.get(id, userId, userEmail || userId);
     if (!screenshot) {
       res.status(404).json({ error: "Screenshot not found or access denied" });
       return;
+    }
+    if (screenshot.processing_status === "processing" || !screenshot.visual_description) {
+      try {
+        await processScreenshotDirectly(
+          screenshot.id,
+          screenshot.user_id,
+          screenshot.storage_key,
+          screenshot.mime_type,
+          screenshot.original_filename
+        );
+        screenshot = await getScreenshot.get(id, userId, userEmail || userId);
+      } catch (autoErr) {
+        console.warn("Auto-processing on detail retrieval notice:", autoErr);
+      }
     }
     const getMessages = db.prepare(`
       SELECT * FROM extracted_messages 
@@ -68392,58 +68398,34 @@ router2.post("/:id/reanalyze", authMiddleware, async (req, res) => {
       res.status(404).json({ error: "Screenshot not found" });
       return;
     }
-    const fullPath = path5.join(UPLOADS_BASE, row.storage_key);
-    const analysis = await analyzeScreenshot(fullPath, row.mime_type, row.original_filename, row.image_data);
-    let embedding = [];
-    try {
-      const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(" ")} ${analysis.ocr_text.substring(0, 500)}`;
-      embedding = await generateTextEmbedding(textForEmbedding);
-    } catch {
-    }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    await db.prepare(`
-      UPDATE screenshots
-      SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
-          tags = ?, text_embedding = ?, updated_at = ?
-      WHERE id = ? AND user_id = ?
-    `).run(
-      analysis.category,
-      analysis.ocr_text,
-      analysis.visual_description,
-      JSON.stringify(analysis.tags),
-      JSON.stringify(embedding),
-      now,
+    await processScreenshotDirectly(
       id,
-      userId
+      userId,
+      row.storage_key,
+      row.mime_type,
+      row.original_filename,
+      row.image_data
     );
-    try {
-      await db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?").run(id);
-      if (analysis.messages && analysis.messages.length > 0) {
-        const insertMsg = db.prepare(`
-          INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const m of analysis.messages) {
-          await insertMsg.run(`msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, m.sequence_number, m.message_text, m.sender_side, m.sender_label || null, m.confidence);
-        }
-      }
-    } catch {
-    }
-    try {
-      await db.prepare("DELETE FROM game_results WHERE screenshot_id = ?").run(id);
-      if (analysis.game_result) {
-        const g = analysis.game_result;
-        await db.prepare(`
-          INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(`game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, g.game_name, g.mode, g.map_name, g.kills, g.score, g.rank, g.damage, g.match_date, g.extraction_confidence, g.raw_extracted_text);
-      }
-    } catch {
-    }
-    res.json({ message: "Screenshot re-analyzed successfully", category: analysis.category, analysis });
+    const updated = await getScreenshot.get(id, userId);
+    const getMessages = db.prepare("SELECT * FROM extracted_messages WHERE screenshot_id = ? ORDER BY sequence_number ASC");
+    const messages = await getMessages.all(id);
+    const getGame = db.prepare("SELECT * FROM game_results WHERE screenshot_id = ?");
+    const game = await getGame.get(id);
+    res.json({
+      message: "Screenshot re-analyzed successfully",
+      screenshot: {
+        ...updated,
+        tags: updated.tags ? JSON.parse(updated.tags) : []
+      },
+      messages: messages.map((m) => ({
+        ...m,
+        bounding_box: m.bounding_box ? JSON.parse(m.bounding_box) : null
+      })),
+      game_result: game || null
+    });
   } catch (err) {
     console.error("Re-analyze error:", err);
-    res.status(500).json({ error: "Failed to re-analyze screenshot" });
+    res.status(500).json({ error: err.message || "Failed to re-analyze screenshot" });
   }
 });
 router2.post("/process-pending", authMiddleware, async (req, res) => {

@@ -217,6 +217,22 @@ export const api = {
     });
   },
 
+  async reanalyze(id: string): Promise<{
+    message: string;
+    screenshot: Screenshot;
+    messages: ExtractedMessage[];
+    game_result: GameResult | null;
+  }> {
+    return request<{
+      message: string;
+      screenshot: Screenshot;
+      messages: ExtractedMessage[];
+      game_result: GameResult | null;
+    }>(`/screenshots/${id}/reanalyze`, {
+      method: 'POST',
+    });
+  },
+
   // Search
   async search(query: string, category?: string): Promise<SearchResponse> {
     return request<SearchResponse>('/search', {
