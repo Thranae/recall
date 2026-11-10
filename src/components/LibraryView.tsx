@@ -4,7 +4,7 @@ import {
   MessageSquare,
   Layers,
   Plus,
-  Sparkles,
+  Images,
 } from 'lucide-react';
 import type { Screenshot } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
@@ -91,7 +91,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {filteredScreenshots.length === 0 ? (
         <div className="liquid-glass-card rounded-[26px] p-6 text-center my-4 space-y-4">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] liquid-icon-pod text-[#3478F6]">
-            <Sparkles className="h-6 w-6 stroke-[2]" />
+            <Images className="h-6 w-6 stroke-[2]" />
           </div>
           <div>
             <h3 className="text-base font-bold text-[#172B4D] tracking-tight">Your Personal Knowledge Base</h3>

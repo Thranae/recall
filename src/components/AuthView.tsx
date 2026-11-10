@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Camera,
+  Images,
   Lock,
   Mail,
   User as UserIcon,
@@ -268,7 +268,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       {/* Brand & Hero */}
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-[20px] liquid-btn-primary text-white shadow-sm">
-          <Camera className="h-7 w-7 stroke-[2.2]" />
+          <Images className="h-7 w-7 stroke-[2.2]" />
         </div>
 
         <h1 className="text-2xl font-bold tracking-tight text-[#172B4D]">RECALL</h1>

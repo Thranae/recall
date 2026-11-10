@@ -10,7 +10,8 @@ import {
   MessageSquare,
   Trophy,
   Maximize2,
-  Sparkles,
+  RefreshCw,
+  Eye,
   HardDrive,
   CheckCircle2,
 } from 'lucide-react';
@@ -230,7 +231,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               aria-label="Re-analyze image with Gemini Vision AI"
               className="flex h-8 items-center gap-1.5 rounded-full liquid-glass-pill px-2.5 text-[11px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
             >
-              <Sparkles className={`h-3.5 w-3.5 text-[#3478F6] ${isReanalyzing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 text-[#3478F6] ${isReanalyzing ? 'animate-spin' : ''}`} />
               <span className="hidden xs:inline">{isReanalyzing ? 'Analyzing...' : 'Re-Analyze'}</span>
             </button>
 
@@ -295,7 +296,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           {/* AI Processing Status Indicator Banner */}
           {data?.screenshot.processing_status === 'processing' && (
             <div className="rounded-[18px] border border-blue-200/80 bg-blue-50/70 backdrop-blur-md p-3 flex items-center gap-2.5 text-xs text-blue-900 animate-pulse shadow-2xs">
-              <Sparkles className="h-4 w-4 text-[#3478F6] animate-spin shrink-0" />
+              <Loader2 className="h-4 w-4 text-[#3478F6] animate-spin shrink-0" />
               <div className="flex-1">
                 <span className="font-bold block">AI Multimodal Vision is analyzing this image...</span>
                 <span className="text-[11px] text-blue-700">Extracting visual scene, text, and entities in real time.</span>
@@ -351,7 +352,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   <div className="rounded-[20px] liquid-glass-card p-4 space-y-2.5 shadow-xs border border-white/90">
                     <div className="flex items-center justify-between text-xs text-slate-800 font-bold px-0.5">
                       <div className="flex items-center gap-1.5">
-                        <Sparkles className="h-4 w-4 text-[#3478F6] stroke-[2]" />
+                        <Eye className="h-4 w-4 text-[#3478F6] stroke-[2]" />
                         <span>AI Visual Description</span>
                       </div>
                       <span className="liquid-category-badge px-2 py-0.5 text-[9px] font-bold text-[#3478F6]">

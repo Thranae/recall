@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, Images } from 'lucide-react';
 
 interface TopHeaderProps {
   title?: string;
@@ -60,7 +60,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }}
           />
 
-          {/* Brand / Distinctive Title & Branded Camera Icon Emblem */}
+          {/* Brand / Distinctive Title & Branded Screenshot Emblem */}
           <div className="flex items-center gap-2.5">
             {/* Branded Jewel Aperture Pod */}
             <div
@@ -81,21 +81,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 }}
               />
 
-              {/* Bespoke Optics Emblem */}
-              <svg viewBox="0 0 24 24" className="h-5 w-5 relative z-10" fill="none">
-                <path
-                  d="M4.75 8.25C4.75 7.14543 5.64543 6.25 6.75 6.25H8.2C8.7 6.25 9.15 5.95 9.4 5.5L9.9 4.6C10.2 4.1 10.7 3.75 11.3 3.75H12.7C13.3 3.75 13.8 4.1 14.1 4.6L14.6 5.5C14.85 5.95 15.3 6.25 15.8 6.25H17.25C18.3546 6.25 19.25 7.14543 19.25 8.25V16.75C19.25 17.8546 18.3546 18.75 17.25 18.75H6.75C5.64543 18.75 4.75 17.8546 4.75 16.75V8.25Z"
-                  stroke="white"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12.5" r="3.6" stroke="white" strokeWidth="1.7" />
-                <circle cx="12" cy="12.5" r="2.1" fill="#B9D9FF" />
-                <circle cx="12" cy="12.5" r="1.1" fill="#1C58D0" />
-                <circle cx="11.2" cy="11.7" r="0.55" fill="white" />
-                <circle cx="16.4" cy="8.75" r="0.75" fill="#B9D9FF" />
-              </svg>
+              {/* Relatable Screenshot Emblem */}
+              <Images className="h-4.5 w-4.5 text-white relative z-10 stroke-[2.2]" />
             </div>
 
             {/* Distinctive Recall Wordmark */}

@@ -10,7 +10,8 @@ import {
   Layers,
   SearchX,
   Loader2,
-  Sparkles,
+  Compass,
+  Target,
 } from 'lucide-react';
 import type { SearchResponse, SearchResultItem } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
@@ -144,7 +145,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-[#172B4D] flex items-center gap-1.5 tracking-tight">
-              <Sparkles className="h-4 w-4 text-[#3478F6]" />
+              <Compass className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
               <span>Suggested Explorations</span>
             </span>
             <span className="text-[11px] font-mono text-slate-400">Tap to search</span>
@@ -222,7 +223,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             >
               <div className="flex items-center justify-between gap-1 mb-1.5">
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-[#3478F6]" />
+                  <Target className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
                   <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
                     Direct Answer
                   </span>
