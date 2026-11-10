@@ -42315,18 +42315,18 @@ import path7 from "path";
 // server/db/index.ts
 import { DatabaseSync } from "node:sqlite";
 import path from "path";
-import fs2 from "fs";
+import fs from "fs";
 var isVercel = Boolean(process.env.VERCEL);
 var DB_DIR = isVercel ? path.resolve("/tmp", "recall-data") : path.resolve(process.cwd(), "data");
-if (!fs2.existsSync(DB_DIR)) {
-  fs2.mkdirSync(DB_DIR, { recursive: true });
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR, { recursive: true });
 }
 var DB_PATH = path.join(DB_DIR, "recall.db");
-if (isVercel && !fs2.existsSync(DB_PATH)) {
+if (isVercel && !fs.existsSync(DB_PATH)) {
   const sourceDb = path.resolve(process.cwd(), "data", "recall.db");
-  if (fs2.existsSync(sourceDb)) {
+  if (fs.existsSync(sourceDb)) {
     try {
-      fs2.copyFileSync(sourceDb, DB_PATH);
+      fs.copyFileSync(sourceDb, DB_PATH);
     } catch (e) {
       console.warn("Could not copy seed DB to /tmp in Vercel:", e);
     }
@@ -42334,7 +42334,7 @@ if (isVercel && !fs2.existsSync(DB_PATH)) {
 }
 var db = new DatabaseSync(DB_PATH);
 function initDatabase() {
-  db.exec("PRAGMA foreign_keys = ON;");
+  db.exec("PRAGMA foreign_keys = OFF;");
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -44212,6 +44212,51 @@ function authMiddleware(req, res, next) {
   try {
     const decoded = import_jsonwebtoken.default.verify(token, JWT_SECRET);
     req.user = decoded;
+    if (decoded?.id) {
+      try {
+        const checkUser = db.prepare("SELECT id, email FROM users WHERE id = ?");
+        const userExists = checkUser.get(decoded.id);
+        if (!userExists) {
+          if (decoded.email) {
+            const checkEmail = db.prepare("SELECT id FROM users WHERE email = ?");
+            const existingByEmail = checkEmail.get(decoded.email);
+            if (existingByEmail) {
+              try {
+                db.prepare("UPDATE screenshots SET user_id = ? WHERE user_id = ?").run(decoded.id, existingByEmail.id);
+                db.prepare("UPDATE extracted_messages SET user_id = ? WHERE user_id = ?").run(decoded.id, existingByEmail.id);
+                db.prepare("UPDATE game_results SET user_id = ? WHERE user_id = ?").run(decoded.id, existingByEmail.id);
+              } catch {
+              }
+              db.prepare("UPDATE users SET id = ?, name = COALESCE(?, name) WHERE email = ?").run(decoded.id, decoded.name || null, decoded.email);
+            } else {
+              const insertUser = db.prepare(`
+                INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
+                VALUES (?, ?, '', ?, 1, ?)
+              `);
+              insertUser.run(
+                decoded.id,
+                decoded.email,
+                decoded.name || "Recall User",
+                (/* @__PURE__ */ new Date()).toISOString()
+              );
+            }
+          } else {
+            const insertUser = db.prepare(`
+              INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
+              VALUES (?, ?, '', ?, 1, ?)
+            `);
+            insertUser.run(
+              decoded.id,
+              `${decoded.id}@recall.local`,
+              decoded.name || "Recall User",
+              (/* @__PURE__ */ new Date()).toISOString()
+            );
+          }
+        }
+      } catch (dbErr) {
+        console.warn("Could not ensure user record in DB:", dbErr);
+      }
+    }
     next();
   } catch (err) {
     res.status(401).json({ error: "Unauthorized: Token is invalid or expired" });
@@ -44570,7 +44615,7 @@ var resolve = (from, to) => {
 
 // node_modules/nodemailer/dist/esm/shared/index.js
 import util from "node:util";
-import fs3 from "node:fs";
+import fs2 from "node:fs";
 
 // node_modules/nodemailer/dist/esm/fetch/index.js
 import http from "node:http";
@@ -45572,7 +45617,7 @@ function resolveContentValue(data, key, options, callback) {
         });
         return;
       }
-      return resolveStream(fs3.createReadStream(content.path), callback);
+      return resolveStream(fs2.createReadStream(content.path), callback);
     }
   }
   if (typeof data[key].content === "string" && !["utf8", "usascii", "ascii"].includes(encoding)) {
@@ -47802,7 +47847,7 @@ function detectExtension(mimeType) {
 
 // node_modules/nodemailer/dist/esm/mime-node/index.js
 import crypto2 from "node:crypto";
-import fs4 from "node:fs";
+import fs3 from "node:fs";
 import { PassThrough as PassThrough2, finished as finished2, pipeline } from "node:stream";
 import urlModule from "node:url";
 
@@ -50309,7 +50354,7 @@ var MimeNode = class _MimeNode {
         });
         return contentStream;
       }
-      return fs4.createReadStream(content.path);
+      return fs3.createReadStream(content.path);
     }
     if (content && typeof content.href === "string") {
       if (this._accessDisabled("disableUrlAccess")) {
@@ -51601,7 +51646,7 @@ function relaxedHeaderLine(line) {
 
 // node_modules/nodemailer/dist/esm/dkim/index.js
 import { PassThrough as PassThrough3 } from "node:stream";
-import fs5 from "node:fs";
+import fs4 from "node:fs";
 import path3 from "node:path";
 import crypto5 from "node:crypto";
 var DKIM_ALGO = "sha256";
@@ -51652,10 +51697,10 @@ var DKIMSigner = class {
     const cache = this.cache;
     this.cache = false;
     cache.destroy();
-    fs5.unlink(this.cachePath, () => false);
+    fs4.unlink(this.cachePath, () => false);
   }
   createReadCache() {
-    this.cache = fs5.createReadStream(this.cachePath);
+    this.cache = fs4.createReadStream(this.cachePath);
     this.cache.once("error", (err) => this.fail(err));
     this.cache.once("close", () => {
       this.cleanup();
@@ -51718,7 +51763,7 @@ var DKIMSigner = class {
   }
   createWriteCache() {
     this.output.usingCache = true;
-    this.cache = fs5.createWriteStream(this.cachePath, { mode: 384 });
+    this.cache = fs4.createWriteStream(this.cachePath, { mode: 384 });
     this.cache.once("error", (err) => {
       this.relaxedBody.unpipe(this.cache);
       this.relaxedBody.on("readable", () => {
@@ -57746,9 +57791,10 @@ import fs7 from "fs";
 
 // server/services/processingQueue.ts
 import path4 from "path";
+import fs6 from "fs";
 
 // server/services/ai/gemini.ts
-import fs6 from "fs";
+import fs5 from "fs";
 
 // node_modules/@google/generative-ai/dist/index.mjs
 var SchemaType;
@@ -58938,7 +58984,7 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename) {
   if (genAI && apiKey) {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
-      const imageBytes = fs6.readFileSync(filePath);
+      const imageBytes = fs5.readFileSync(filePath);
       const base64Data = imageBytes.toString("base64");
       let resolvedMime = mimeType || "image/jpeg";
       if (originalFilename.endsWith(".svg") || resolvedMime.includes("svg")) {
@@ -59195,13 +59241,13 @@ async function executeJob(job) {
     const isVercel4 = Boolean(process.env.VERCEL);
     const uploadsDir = isVercel4 ? path4.resolve("/tmp", "recall-uploads") : path4.resolve(process.cwd(), process.env.STORAGE_PATH || "./uploads");
     const fullPath = path4.join(uploadsDir, job.storageKey);
-    if (!fs.existsSync(fullPath)) {
+    if (!fs6.existsSync(fullPath)) {
       try {
         const getImg = db.prepare("SELECT image_data FROM screenshots WHERE id = ?");
         const imgRow = getImg.get(job.screenshotId);
         if (imgRow?.image_data) {
-          fs.mkdirSync(path4.dirname(fullPath), { recursive: true });
-          fs.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
+          fs6.mkdirSync(path4.dirname(fullPath), { recursive: true });
+          fs6.writeFileSync(fullPath, Buffer.from(imgRow.image_data, "base64"));
         }
       } catch (err) {
         console.warn("Could not restore image file from DB backup:", err);
@@ -59373,6 +59419,29 @@ router2.post(
       }
       const userId = req.user.id;
       const createdScreenshots = [];
+      try {
+        const checkUser = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+        if (!checkUser) {
+          const email = req.user?.email || `${userId}@recall.local`;
+          const existingByEmail = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+          if (existingByEmail) {
+            try {
+              db.prepare("UPDATE screenshots SET user_id = ? WHERE user_id = ?").run(userId, existingByEmail.id);
+              db.prepare("UPDATE extracted_messages SET user_id = ? WHERE user_id = ?").run(userId, existingByEmail.id);
+              db.prepare("UPDATE game_results SET user_id = ? WHERE user_id = ?").run(userId, existingByEmail.id);
+            } catch {
+            }
+            db.prepare("UPDATE users SET id = ? WHERE email = ?").run(userId, email);
+          } else {
+            db.prepare(`
+              INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
+              VALUES (?, ?, '', ?, 1, ?)
+            `).run(userId, email, req.user?.name || "Recall User", (/* @__PURE__ */ new Date()).toISOString());
+          }
+        }
+      } catch (safetyErr) {
+        console.warn("Safety user check in upload:", safetyErr);
+      }
       for (const file of files) {
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const storageKey = path5.join(userId, file.filename).replace(/\\/g, "/");

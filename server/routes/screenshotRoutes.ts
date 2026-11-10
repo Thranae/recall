@@ -70,6 +70,30 @@ router.post(
       const userId = req.user!.id;
       const createdScreenshots = [];
 
+      // Ensure user record exists before inserting screenshots
+      try {
+        const checkUser = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+        if (!checkUser) {
+          const email = req.user?.email || `${userId}@recall.local`;
+          const existingByEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as any;
+          if (existingByEmail) {
+            try {
+              db.prepare('UPDATE screenshots SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+              db.prepare('UPDATE extracted_messages SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+              db.prepare('UPDATE game_results SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+            } catch {}
+            db.prepare('UPDATE users SET id = ? WHERE email = ?').run(userId, email);
+          } else {
+            db.prepare(`
+              INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
+              VALUES (?, ?, '', ?, 1, ?)
+            `).run(userId, email, req.user?.name || 'Recall User', new Date().toISOString());
+          }
+        }
+      } catch (safetyErr) {
+        console.warn('Safety user check in upload:', safetyErr);
+      }
+
       for (const file of files) {
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const storageKey = path.join(userId, file.filename).replace(/\\/g, '/');

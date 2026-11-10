@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { db } from '../db';
 import { analyzeScreenshot } from './ai/gemini';
 import { generateTextEmbedding } from './ai/embeddings';

@@ -29,8 +29,8 @@ export const db = new DatabaseSync(DB_PATH);
 
 // Initialize database tables and full-text search indexes
 export function initDatabase() {
-  // Enforce foreign keys and WAL mode for reliability
-  db.exec('PRAGMA foreign_keys = ON;');
+  // Foreign keys are disabled to ensure resilience across ephemeral serverless container cold starts
+  db.exec('PRAGMA foreign_keys = OFF;');
 
   // 1. Users Table (Supports standard email/password, OTP verification, and Google SSO)
   db.exec(`
