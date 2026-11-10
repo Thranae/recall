@@ -60596,8 +60596,9 @@ app.use("/api/test-data", testDataRoutes_default);
 var distPath = path7.resolve(process.cwd(), "dist");
 if (fs9.existsSync(distPath) && !process.env.VERCEL) {
   app.use(import_express5.default.static(distPath));
-  app.get("*", (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api")) return next();
+    if (req.method !== "GET") return next();
     res.sendFile(path7.join(distPath, "index.html"));
   });
 }

@@ -46,12 +46,13 @@ app.use('/api/screenshots', screenshotRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/test-data', testDataRoutes);
 
-// Static frontend serving for persistent server production mode
+// Static frontend serving for persistent server production mode (Express 5 compatible wildcard fallback)
 const distPath = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(distPath) && !process.env.VERCEL) {
   app.use(express.static(distPath));
-  app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.path.startsWith('/api')) return next();
+    if (req.method !== 'GET') return next();
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
