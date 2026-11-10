@@ -24,6 +24,7 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
     "@google/generative-ai": "^0.24.1",
+    "@libsql/client": "^0.18.0",
     "@tailwindcss/vite": "^4.3.5",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",

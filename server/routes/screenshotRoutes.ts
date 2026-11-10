@@ -77,19 +77,20 @@ router.post(
 
       // Ensure user record exists before inserting screenshots
       try {
-        const checkUser = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
-        if (!checkUser) {
+        const checkUser = db.prepare('SELECT id FROM users WHERE id = ?');
+        const userExists = await checkUser.get(userId);
+        if (!userExists) {
           const email = req.user?.email || `${userId}@recall.local`;
-          const existingByEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as any;
+          const existingByEmail = (await db.prepare('SELECT id FROM users WHERE email = ?').get(email)) as any;
           if (existingByEmail) {
             try {
-              db.prepare('UPDATE screenshots SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
-              db.prepare('UPDATE extracted_messages SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
-              db.prepare('UPDATE game_results SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+              await db.prepare('UPDATE screenshots SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+              await db.prepare('UPDATE extracted_messages SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
+              await db.prepare('UPDATE game_results SET user_id = ? WHERE user_id = ?').run(userId, existingByEmail.id);
             } catch {}
-            db.prepare('UPDATE users SET id = ? WHERE email = ?').run(userId, email);
+            await db.prepare('UPDATE users SET id = ? WHERE email = ?').run(userId, email);
           } else {
-            db.prepare(`
+            await db.prepare(`
               INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
               VALUES (?, ?, '', ?, 1, ?)
             `).run(userId, email, req.user?.name || 'Recall User', new Date().toISOString());
@@ -134,7 +135,7 @@ router.post(
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
-        insertStmt.run(
+        await insertStmt.run(
           screenshotId,
           userId,
           storageKey,
@@ -191,7 +192,7 @@ router.post(
 );
 
 // 2. List Screenshots for Authenticated User (Excludes heavy image_data for fast <10ms response & avoids Vercel 4.5MB payload limit)
-router.get('/', authMiddleware, (req: AuthRequest, res: Response): void => {
+router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
     const userEmail = req.user?.email;
@@ -221,7 +222,7 @@ router.get('/', authMiddleware, (req: AuthRequest, res: Response): void => {
     sql += ' ORDER BY uploaded_at DESC';
 
     const stmt = db.prepare(sql);
-    const rows = stmt.all(...params) as any[];
+    const rows = (await stmt.all(...params)) as any[];
 
     // Parse JSON tags
     const screenshots = rows.map(r => ({
@@ -237,7 +238,7 @@ router.get('/', authMiddleware, (req: AuthRequest, res: Response): void => {
 });
 
 // 3. Get Single Screenshot with Extracted Messages & Game Stats
-router.get('/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
+router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
     const userEmail = req.user?.email;
@@ -251,7 +252,7 @@ router.get('/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
       FROM screenshots 
       WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
     `);
-    const screenshot = getScreenshot.get(id, userId, userEmail || userId) as any;
+    const screenshot = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
 
     if (!screenshot) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
@@ -263,10 +264,10 @@ router.get('/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
       WHERE screenshot_id = ? 
       ORDER BY sequence_number ASC
     `);
-    const messages = getMessages.all(id) as any[];
+    const messages = (await getMessages.all(id)) as any[];
 
     const getGame = db.prepare('SELECT * FROM game_results WHERE screenshot_id = ?');
-    const game = getGame.get(id) as any;
+    const game = (await getGame.get(id)) as any;
 
     res.json({
       screenshot: {
@@ -286,7 +287,7 @@ router.get('/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
 });
 
 // 4. Secure Private Image Streaming (Token Authenticated)
-router.get('/image/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
+router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
     const userEmail = req.user?.email;
@@ -297,7 +298,7 @@ router.get('/image/:id', authMiddleware, (req: AuthRequest, res: Response): void
       FROM screenshots 
       WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
     `);
-    const row = getScreenshot.get(id, userId, userEmail || userId) as any;
+    const row = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
 
     if (!row) {
       res.status(404).json({ error: 'Image not found or access denied' });
@@ -327,14 +328,14 @@ router.get('/image/:id', authMiddleware, (req: AuthRequest, res: Response): void
 });
 
 // 5. Update Editable Metadata (User Corrections)
-router.patch('/:id/metadata', authMiddleware, (req: AuthRequest, res: Response): void => {
+router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
     const { category, visual_description, tags } = req.body;
 
     const getScreenshot = db.prepare('SELECT id FROM screenshots WHERE id = ? AND user_id = ?');
-    const existing = getScreenshot.get(id, userId);
+    const existing = await getScreenshot.get(id, userId);
 
     if (!existing) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
@@ -351,7 +352,7 @@ router.patch('/:id/metadata', authMiddleware, (req: AuthRequest, res: Response):
       WHERE id = ? AND user_id = ?
     `);
 
-    updateStmt.run(
+    await updateStmt.run(
       category || null,
       visual_description || null,
       tags ? JSON.stringify(tags) : null,
@@ -368,13 +369,13 @@ router.patch('/:id/metadata', authMiddleware, (req: AuthRequest, res: Response):
 });
 
 // 6. Delete Screenshot & All Derived Records (Strict Cascade)
-router.delete('/:id', authMiddleware, (req: AuthRequest, res: Response): void => {
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
 
     const getScreenshot = db.prepare('SELECT storage_key FROM screenshots WHERE id = ? AND user_id = ?');
-    const row = getScreenshot.get(id, userId) as any;
+    const row = (await getScreenshot.get(id, userId)) as any;
 
     if (!row) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
@@ -393,11 +394,11 @@ router.delete('/:id', authMiddleware, (req: AuthRequest, res: Response): void =>
 
     // Delete from DB (foreign keys cascade will remove messages, games, and fts)
     const deleteScreenshot = db.prepare('DELETE FROM screenshots WHERE id = ? AND user_id = ?');
-    deleteScreenshot.run(id, userId);
+    await deleteScreenshot.run(id, userId);
 
     try {
       const deleteFts = db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ? AND user_id = ?');
-      deleteFts.run(id, userId);
+      await deleteFts.run(id, userId);
     } catch {}
 
     res.json({ message: 'Screenshot and derived records deleted successfully' });
@@ -414,7 +415,7 @@ router.post('/:id/reanalyze', authMiddleware, async (req: AuthRequest, res: Resp
     const { id } = req.params;
 
     const getScreenshot = db.prepare('SELECT * FROM screenshots WHERE id = ? AND user_id = ?');
-    const row = getScreenshot.get(id, userId) as any;
+    const row = (await getScreenshot.get(id, userId)) as any;
 
     if (!row) {
       res.status(404).json({ error: 'Screenshot not found' });
@@ -431,7 +432,7 @@ router.post('/:id/reanalyze', authMiddleware, async (req: AuthRequest, res: Resp
     } catch {}
 
     const now = new Date().toISOString();
-    db.prepare(`
+    await db.prepare(`
       UPDATE screenshots
       SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
           tags = ?, text_embedding = ?, updated_at = ?
@@ -449,24 +450,24 @@ router.post('/:id/reanalyze', authMiddleware, async (req: AuthRequest, res: Resp
 
     // Refresh messages
     try {
-      db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(id);
+      await db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(id);
       if (analysis.messages && analysis.messages.length > 0) {
         const insertMsg = db.prepare(`
           INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
         for (const m of analysis.messages) {
-          insertMsg.run(`msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, m.sequence_number, m.message_text, m.sender_side, m.sender_label || null, m.confidence);
+          await insertMsg.run(`msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, m.sequence_number, m.message_text, m.sender_side, m.sender_label || null, m.confidence);
         }
       }
     } catch {}
 
     // Refresh game results
     try {
-      db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(id);
+      await db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(id);
       if (analysis.game_result) {
         const g = analysis.game_result;
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(`game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, g.game_name, g.mode, g.map_name, g.kills, g.score, g.rank, g.damage, g.match_date, g.extraction_confidence, g.raw_extracted_text);
@@ -494,7 +495,7 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
       ORDER BY uploaded_at ASC
       LIMIT 1
     `);
-    const pending = getPending.get(userId, userEmail || userId) as any;
+    const pending = (await getPending.get(userId, userEmail || userId)) as any;
 
     if (!pending) {
       res.json({ processed: false, message: 'No pending screenshots' });
@@ -511,7 +512,7 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
     } catch {}
 
     const now = new Date().toISOString();
-    db.prepare(`
+    await db.prepare(`
       UPDATE screenshots
       SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
           tags = ?, text_embedding = ?, updated_at = ?
@@ -528,14 +529,14 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
 
     // Refresh messages
     try {
-      db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(pending.id);
+      await db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(pending.id);
       if (analysis.messages && analysis.messages.length > 0) {
         const insertMsg = db.prepare(`
           INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
         for (const m of analysis.messages) {
-          insertMsg.run(
+          await insertMsg.run(
             `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
             pending.id,
             pending.user_id,
@@ -551,10 +552,10 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
 
     // Refresh game results
     try {
-      db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(pending.id);
+      await db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(pending.id);
       if (analysis.game_result) {
         const g = analysis.game_result;
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
@@ -577,8 +578,8 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
 
     // Refresh FTS
     try {
-      db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?').run(pending.id);
-      db.prepare(`
+      await db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?').run(pending.id);
+      await db.prepare(`
         INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(

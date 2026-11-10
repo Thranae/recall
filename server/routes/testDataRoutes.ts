@@ -162,12 +162,12 @@ export async function seedUserData(userId: string): Promise<string[]> {
   if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
 
   // Clean old seeded screenshots for this user
-  const getOld = db.prepare("SELECT id, storage_key FROM screenshots WHERE user_id = ? AND original_filename LIKE 'TEST_%'").all(userId) as any[];
+  const getOld = (await db.prepare("SELECT id, storage_key FROM screenshots WHERE user_id = ? AND original_filename LIKE 'TEST_%'").all(userId)) as any[];
   for (const old of getOld) {
     try {
       fs.unlinkSync(path.join(UPLOADS_BASE, old.storage_key));
     } catch {}
-    db.prepare('DELETE FROM screenshots WHERE id = ?').run(old.id);
+    await db.prepare('DELETE FROM screenshots WHERE id = ?').run(old.id);
   }
 
   const seededItems: string[] = [];
@@ -186,17 +186,17 @@ export async function seedUserData(userId: string): Promise<string[]> {
     const tags = ['chat', 'conversation', 'elena', 'love', 'whatsapp'];
     const emb = await generateTextEmbedding(`${desc} ${ocr}`);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO screenshots (id, user_id, storage_key, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, storageKey, filename, 'image/svg+xml', 3600, new Date().toISOString(), 'chat', 'ready', ocr, desc, JSON.stringify(emb), JSON.stringify(tags), new Date().toISOString(), new Date().toISOString());
 
-    db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_1`, id, userId, 1, 'I was thinking about you today', 'right', 'You', 0.95);
-    db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_2`, id, userId, 2, 'I love you', 'right', 'You', 0.98);
-    db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_3`, id, userId, 3, 'I love you too', 'left', 'Elena', 0.98);
-    db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_4`, id, userId, 4, 'See you tomorrow at 7!', 'left', 'Elena', 0.94);
+    await db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_1`, id, userId, 1, 'I was thinking about you today', 'right', 'You', 0.95);
+    await db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_2`, id, userId, 2, 'I love you', 'right', 'You', 0.98);
+    await db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_3`, id, userId, 3, 'I love you too', 'left', 'Elena', 0.98);
+    await db.prepare('INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(`msg_${id}_4`, id, userId, 4, 'See you tomorrow at 7!', 'left', 'Elena', 0.94);
 
-    db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'chat');
+    await db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'chat');
     seededItems.push(filename);
   }
 
@@ -214,17 +214,17 @@ export async function seedUserData(userId: string): Promise<string[]> {
     const tags = ['gaming', 'bgmi', 'pubg', 'chicken dinner', 'erangel', '18 kills'];
     const emb = await generateTextEmbedding(`${desc} ${ocr}`);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO screenshots (id, user_id, storage_key, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, storageKey, filename, 'image/svg+xml', 4200, new Date().toISOString(), 'game', 'ready', ocr, desc, JSON.stringify(emb), JSON.stringify(tags), new Date().toISOString(), new Date().toISOString());
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO game_results (id, screenshot_id, user_id, game_name, kills, score, rank, damage, map_name, mode, match_date, extraction_confidence, raw_extracted_text)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(`gm_${id}`, id, userId, 'BGMI', 18, 2450, '1', 2450, 'Erangel', 'Classic Squad', new Date().toISOString(), 0.99, ocr);
 
-    db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'game');
+    await db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'game');
     seededItems.push(filename);
   }
 
@@ -242,12 +242,12 @@ export async function seedUserData(userId: string): Promise<string[]> {
     const tags = ['product', 'shopping', 'black shirt', 'apparel', 'fashion'];
     const emb = await generateTextEmbedding(`${desc} ${ocr}`);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO screenshots (id, user_id, storage_key, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, storageKey, filename, 'image/svg+xml', 3800, new Date().toISOString(), 'product', 'ready', ocr, desc, JSON.stringify(emb), JSON.stringify(tags), new Date().toISOString(), new Date().toISOString());
 
-    db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'product');
+    await db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'product');
     seededItems.push(filename);
   }
 
@@ -265,12 +265,12 @@ export async function seedUserData(userId: string): Promise<string[]> {
     const tags = ['poster', 'document', 'coimbatore', 'fest address', 'college fest', 'event'];
     const emb = await generateTextEmbedding(`${desc} ${ocr}`);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO screenshots (id, user_id, storage_key, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, userId, storageKey, filename, 'image/svg+xml', 4100, new Date().toISOString(), 'poster_document', 'ready', ocr, desc, JSON.stringify(emb), JSON.stringify(tags), new Date().toISOString(), new Date().toISOString());
 
-    db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'poster_document');
+    await db.prepare('INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, ocr, desc, tags.join(' '), 'poster_document');
     seededItems.push(filename);
   }
 

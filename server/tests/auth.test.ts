@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 
 async function runAuthTests() {
   console.log('🧪 Starting RECALL Authentication & Packwise OTP Verification Test Suite...\n');
-  initDatabase();
+  await initDatabase();
 
   const JWT_SECRET = process.env.JWT_SECRET || 'recall_super_secret_jwt_key_2026_dev';
   const testEmail = `test_packwise_${Date.now()}@example.com`;
@@ -23,10 +23,10 @@ async function runAuthTests() {
     INSERT INTO users (id, email, password_hash, name, is_verified, otp_code, otp_expires, created_at)
     VALUES (?, ?, ?, ?, 0, ?, ?, ?)
   `);
-  insertUser.run(userId, testEmail, password_hash, testName, otp, otpExpires, new Date().toISOString());
+  await insertUser.run(userId, testEmail, password_hash, testName, otp, otpExpires, new Date().toISOString());
 
   const checkUser = db.prepare('SELECT * FROM users WHERE email = ?');
-  let user = checkUser.get(testEmail) as any;
+  let user = (await checkUser.get(testEmail)) as any;
   if (!user || user.is_verified !== 0 || user.otp_code !== otp) {
     throw new Error('❌ Signup user creation failed: user not saved as unverified with OTP');
   }
@@ -47,9 +47,9 @@ async function runAuthTests() {
     SET is_verified = 1, otp_code = NULL, otp_expires = NULL 
     WHERE id = ?
   `);
-  verifyUser.run(user.id);
+  await verifyUser.run(user.id);
 
-  user = checkUser.get(testEmail) as any;
+  user = (await checkUser.get(testEmail)) as any;
   if (user.is_verified !== 1 || user.otp_code !== null) {
     throw new Error('❌ User was not verified properly');
   }
@@ -73,9 +73,9 @@ async function runAuthTests() {
     VALUES (?, ?, ?, ?, ?, ?, 1, ?)
   `);
   const gUserId = `user_g_${Date.now()}`;
-  insertGoogle.run(gUserId, googleEmail, '', googleName, googleAvatar, googleId, new Date().toISOString());
+  await insertGoogle.run(gUserId, googleEmail, '', googleName, googleAvatar, googleId, new Date().toISOString());
 
-  const gUser = checkUser.get(googleEmail) as any;
+  const gUser = (await checkUser.get(googleEmail)) as any;
   if (!gUser || gUser.is_verified !== 1 || gUser.google_id !== googleId) {
     throw new Error('❌ Google user was not created with is_verified = 1');
   }

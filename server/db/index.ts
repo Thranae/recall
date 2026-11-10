@@ -1,179 +1,242 @@
-import { DatabaseSync } from 'node:sqlite';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { createClient, Client } from '@libsql/client';
+import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
-const isVercel = Boolean(process.env.VERCEL);
-const DB_DIR = isVercel
-  ? path.resolve('/tmp', 'recall-data')
-  : path.resolve(process.cwd(), 'data');
+const require = createRequire(import.meta.url);
 
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+let tursoClient: Client | null = null;
+export function getTursoClient(): Client | null {
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
+  if (!tursoUrl) return null;
+  if (!tursoClient) {
+    tursoClient = createClient({
+      url: tursoUrl,
+      authToken: tursoAuthToken,
+    });
+  }
+  return tursoClient;
 }
 
-const DB_PATH = path.join(DB_DIR, 'recall.db');
+export function isUsingTurso(): boolean {
+  return Boolean(process.env.TURSO_DATABASE_URL);
+}
 
-// If in serverless Vercel environment and seed DB exists, copy into /tmp on cold start
-if (isVercel && !fs.existsSync(DB_PATH)) {
-  const sourceDb = path.resolve(process.cwd(), 'data', 'recall.db');
-  if (fs.existsSync(sourceDb)) {
+let localDb: any = null;
+function getLocalDb() {
+  if (localDb) return localDb;
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    const isVercel = Boolean(process.env.VERCEL);
+    const DB_DIR = isVercel
+      ? path.resolve('/tmp', 'recall-data')
+      : path.resolve(process.cwd(), 'data');
+
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+
+    const DB_PATH = path.join(DB_DIR, 'recall.db');
+    localDb = new DatabaseSync(DB_PATH);
+    localDb.exec('PRAGMA foreign_keys = OFF;');
+    return localDb;
+  } catch (err) {
+    console.warn('Local SQLite unavailable or failed to initialize:', err);
+    return null;
+  }
+}
+
+export const db = {
+  get isTurso() {
+    return isUsingTurso();
+  },
+
+  async all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+    const client = getTursoClient();
+    if (client) {
+      const res = await client.execute({ sql, args: params });
+      return res.rows as unknown as T[];
+    }
+    const local = getLocalDb();
+    if (local) {
+      return local.prepare(sql).all(...params) as T[];
+    }
+    return [];
+  },
+
+  async get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
+    const client = getTursoClient();
+    if (client) {
+      const res = await client.execute({ sql, args: params });
+      return (res.rows[0] as unknown as T) || undefined;
+    }
+    const local = getLocalDb();
+    if (local) {
+      return (local.prepare(sql).get(...params) as T) || undefined;
+    }
+    return undefined;
+  },
+
+  async run(sql: string, params: any[] = []): Promise<{ changes: number; rowsAffected: number; lastInsertRowid: any }> {
+    const client = getTursoClient();
+    if (client) {
+      const res = await client.execute({ sql, args: params });
+      return {
+        changes: res.rowsAffected,
+        rowsAffected: res.rowsAffected,
+        lastInsertRowid: res.lastInsertRowid ? Number(res.lastInsertRowid) : 0,
+      };
+    }
+    const local = getLocalDb();
+    if (local) {
+      const res = local.prepare(sql).run(...params);
+      return {
+        changes: res.changes,
+        rowsAffected: res.changes,
+        lastInsertRowid: res.lastInsertRowid,
+      };
+    }
+    return { changes: 0, rowsAffected: 0, lastInsertRowid: 0 };
+  },
+
+  async exec(sql: string): Promise<void> {
+    const client = getTursoClient();
+    if (client) {
+      await client.executeMultiple(sql);
+    } else {
+      const local = getLocalDb();
+      if (local) local.exec(sql);
+    }
+  },
+
+  prepare(sql: string) {
+    return {
+      all: async (...args: any[]): Promise<any[]> => {
+        const flat = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+        return db.all(sql, flat);
+      },
+      get: async (...args: any[]): Promise<any> => {
+        const flat = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+        return db.get(sql, flat);
+      },
+      run: async (...args: any[]): Promise<any> => {
+        const flat = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+        return db.run(sql, flat);
+      },
+    };
+  },
+};
+
+const SCHEMA_DDL = `
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT,
+    name TEXT NOT NULL,
+    avatar_url TEXT,
+    google_id TEXT,
+    is_verified INTEGER DEFAULT 1,
+    otp_code TEXT,
+    otp_expires TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS screenshots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    storage_key TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    file_size INTEGER NOT NULL,
+    captured_at TEXT,
+    uploaded_at TEXT NOT NULL,
+    category TEXT NOT NULL,
+    processing_status TEXT NOT NULL,
+    processing_error TEXT,
+    ocr_text TEXT,
+    visual_description TEXT,
+    text_embedding TEXT,
+    tags TEXT,
+    image_data TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
+  CREATE INDEX IF NOT EXISTS idx_screenshots_category ON screenshots(category);
+  CREATE INDEX IF NOT EXISTS idx_screenshots_status ON screenshots(processing_status);
+
+  CREATE TABLE IF NOT EXISTS extracted_messages (
+    id TEXT PRIMARY KEY,
+    screenshot_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    sequence_number INTEGER NOT NULL,
+    message_text TEXT NOT NULL,
+    sender_side TEXT NOT NULL,
+    sender_label TEXT,
+    confidence REAL NOT NULL,
+    bounding_box TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_messages_screenshot ON extracted_messages(screenshot_id);
+  CREATE INDEX IF NOT EXISTS idx_messages_user ON extracted_messages(user_id);
+  CREATE INDEX IF NOT EXISTS idx_messages_seq ON extracted_messages(screenshot_id, sequence_number);
+
+  CREATE TABLE IF NOT EXISTS game_results (
+    id TEXT PRIMARY KEY,
+    screenshot_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    game_name TEXT NOT NULL,
+    mode TEXT,
+    map_name TEXT,
+    kills INTEGER,
+    score INTEGER,
+    rank TEXT,
+    damage INTEGER,
+    match_date TEXT,
+    extraction_confidence REAL NOT NULL,
+    raw_extracted_text TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_game_screenshot ON game_results(screenshot_id);
+  CREATE INDEX IF NOT EXISTS idx_game_user ON game_results(user_id);
+  CREATE INDEX IF NOT EXISTS idx_game_kills ON game_results(kills);
+
+  CREATE VIRTUAL TABLE IF NOT EXISTS screenshots_fts USING fts5(
+    screenshot_id UNINDEXED,
+    user_id UNINDEXED,
+    ocr_text,
+    visual_description,
+    tags,
+    category UNINDEXED
+  );
+`;
+
+export async function initDatabase(): Promise<void> {
+  const client = getTursoClient();
+  if (client) {
     try {
-      fs.copyFileSync(sourceDb, DB_PATH);
-    } catch (e) {
-      console.warn('Could not copy seed DB to /tmp in Vercel:', e);
+      await client.executeMultiple(SCHEMA_DDL);
+      console.log('⚡ Turso Cloud SQLite Database connected and verified at:', process.env.TURSO_DATABASE_URL);
+    } catch (err) {
+      console.error('Failed to initialize Turso database:', err);
+    }
+  } else {
+    try {
+      const local = getLocalDb();
+      if (local) {
+        local.exec('PRAGMA foreign_keys = OFF;');
+        local.exec(SCHEMA_DDL);
+        console.log('✅ Local SQLite database initialized');
+      }
+    } catch (err) {
+      console.warn('Local SQLite initialization notice:', err);
     }
   }
 }
-
-export const db = new DatabaseSync(DB_PATH);
-
-// Disable foreign keys immediately on connection — critical for serverless cold starts
-db.exec('PRAGMA foreign_keys = OFF;');
-
-// Initialize database tables and full-text search indexes
-export function initDatabase() {
-  // Re-enforce: foreign keys OFF for resilience across ephemeral serverless containers
-  db.exec('PRAGMA foreign_keys = OFF;');
-
-  // 1. Users Table (Supports standard email/password, OTP verification, and Google SSO)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT,
-      name TEXT NOT NULL,
-      avatar_url TEXT,
-      google_id TEXT,
-      is_verified INTEGER DEFAULT 1,
-      otp_code TEXT,
-      otp_expires TEXT,
-      created_at TEXT NOT NULL
-    );
-  `);
-
-  // Migrate schema safely if columns do not exist yet
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT;');
-  } catch {}
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN google_id TEXT;');
-  } catch {}
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 1;');
-  } catch {}
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN otp_code TEXT;');
-  } catch {}
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN otp_expires TEXT;');
-  } catch {}
-
-  // 2. Screenshots Table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS screenshots (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      storage_key TEXT NOT NULL,
-      original_filename TEXT NOT NULL,
-      mime_type TEXT NOT NULL,
-      width INTEGER,
-      height INTEGER,
-      file_size INTEGER NOT NULL,
-      captured_at TEXT,
-      uploaded_at TEXT NOT NULL,
-      category TEXT NOT NULL,
-      processing_status TEXT NOT NULL,
-      processing_error TEXT,
-      ocr_text TEXT,
-      visual_description TEXT,
-      text_embedding TEXT,
-      tags TEXT,
-      image_data TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-  `);
-
-  try {
-    db.exec('ALTER TABLE screenshots ADD COLUMN image_data TEXT;');
-  } catch (_) {
-    // Column already exists
-  }
-
-  // Index on user_id, category, status for fast queries
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_screenshots_user_id ON screenshots(user_id);
-    CREATE INDEX IF NOT EXISTS idx_screenshots_category ON screenshots(category);
-    CREATE INDEX IF NOT EXISTS idx_screenshots_status ON screenshots(processing_status);
-  `);
-
-  // 3. Extracted Messages Table (For conversation-aware search)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS extracted_messages (
-      id TEXT PRIMARY KEY,
-      screenshot_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      sequence_number INTEGER NOT NULL,
-      message_text TEXT NOT NULL,
-      sender_side TEXT NOT NULL,
-      sender_label TEXT,
-      confidence REAL NOT NULL,
-      bounding_box TEXT,
-      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-  `);
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_messages_screenshot ON extracted_messages(screenshot_id);
-    CREATE INDEX IF NOT EXISTS idx_messages_user ON extracted_messages(user_id);
-    CREATE INDEX IF NOT EXISTS idx_messages_seq ON extracted_messages(screenshot_id, sequence_number);
-  `);
-
-  // 4. Game Results Table (For structured game-stat search, e.g. BGMI)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS game_results (
-      id TEXT PRIMARY KEY,
-      screenshot_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      game_name TEXT NOT NULL,
-      mode TEXT,
-      map_name TEXT,
-      kills INTEGER,
-      score INTEGER,
-      rank TEXT,
-      damage INTEGER,
-      match_date TEXT,
-      extraction_confidence REAL NOT NULL,
-      raw_extracted_text TEXT,
-      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-  `);
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_game_screenshot ON game_results(screenshot_id);
-    CREATE INDEX IF NOT EXISTS idx_game_user ON game_results(user_id);
-    CREATE INDEX IF NOT EXISTS idx_game_kills ON game_results(kills);
-  `);
-
-  // 5. FTS5 Virtual Table for full-text search across OCR & visual description
-  try {
-    db.exec(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS screenshots_fts USING fts5(
-        screenshot_id UNINDEXED,
-        user_id UNINDEXED,
-        ocr_text,
-        visual_description,
-        tags,
-        category UNINDEXED
-      );
-    `);
-  } catch (err) {
-    console.warn('FTS5 table initialization notice:', err);
-  }
-
-  console.log('✅ SQLite database initialized at:', DB_PATH);
-}
-

@@ -29,15 +29,15 @@ export function enqueueScreenshotJob(job: Omit<Job, 'retryCount'>): void {
  */
 export function startPersistentBackgroundWorker(): void {
   console.log('🤖 Starting autonomous background AI worker...');
-  const sweep = () => {
+  const sweep = async () => {
     try {
-      const pendingRows = db.prepare(`
+      const pendingRows = (await db.prepare(`
         SELECT id, user_id, storage_key, mime_type, original_filename
         FROM screenshots
         WHERE processing_status IN ('queued', 'processing')
         ORDER BY uploaded_at ASC
         LIMIT 10
-      `).all() as any[];
+      `).all()) as any[];
 
       for (const row of pendingRows) {
         if (!jobQueue.some(j => j.screenshotId === row.id)) {
@@ -78,7 +78,7 @@ async function executeJob(job: Job): Promise<void> {
       SET processing_status = 'processing', updated_at = ? 
       WHERE id = ? AND user_id = ?
     `);
-    updateStatus.run(new Date().toISOString(), job.screenshotId, job.userId);
+    await updateStatus.run(new Date().toISOString(), job.screenshotId, job.userId);
 
     const isVercel = Boolean(process.env.VERCEL);
     const uploadsDir = isVercel
@@ -90,7 +90,7 @@ async function executeJob(job: Job): Promise<void> {
     // If file does not exist on disk in ephemeral container, restore from SQLite image_data backup
     try {
       const getImg = db.prepare('SELECT image_data FROM screenshots WHERE id = ?');
-      const imgRow = getImg.get(job.screenshotId) as any;
+      const imgRow = (await getImg.get(job.screenshotId)) as any;
       if (imgRow?.image_data) {
         base64Data = imgRow.image_data;
         if (!fs.existsSync(fullPath)) {
@@ -114,14 +114,14 @@ async function executeJob(job: Job): Promise<void> {
 
     // Clean up any previous extracted records to ensure idempotency on retries
     const deleteOldMsgs = db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?');
-    deleteOldMsgs.run(job.screenshotId);
+    await deleteOldMsgs.run(job.screenshotId);
 
     const deleteOldGame = db.prepare('DELETE FROM game_results WHERE screenshot_id = ?');
-    deleteOldGame.run(job.screenshotId);
+    await deleteOldGame.run(job.screenshotId);
 
     const deleteOldFts = db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?');
     try {
-      deleteOldFts.run(job.screenshotId);
+      await deleteOldFts.run(job.screenshotId);
     } catch {}
 
     // Update screenshot record
@@ -139,7 +139,7 @@ async function executeJob(job: Job): Promise<void> {
       WHERE id = ? AND user_id = ?
     `);
 
-    updateScreenshot.run(
+    await updateScreenshot.run(
       analysis.category,
       analysis.ocr_text,
       analysis.visual_description,
@@ -159,7 +159,7 @@ async function executeJob(job: Job): Promise<void> {
       `);
 
       for (const msg of analysis.messages) {
-        insertMsg.run(
+        await insertMsg.run(
           `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
           job.screenshotId,
           job.userId,
@@ -181,7 +181,7 @@ async function executeJob(job: Job): Promise<void> {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
-      insertGame.run(
+      await insertGame.run(
         `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         job.screenshotId,
         job.userId,
@@ -204,7 +204,7 @@ async function executeJob(job: Job): Promise<void> {
         INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
-      insertFts.run(
+      await insertFts.run(
         job.screenshotId,
         job.userId,
         analysis.ocr_text,
@@ -229,7 +229,7 @@ async function executeJob(job: Job): Promise<void> {
         SET processing_status = 'failed', processing_error = ?, updated_at = ? 
         WHERE id = ? AND user_id = ?
       `);
-      markFailed.run(err.message || 'Processing failed', new Date().toISOString(), job.screenshotId, job.userId);
+      await markFailed.run(err.message || 'Processing failed', new Date().toISOString(), job.screenshotId, job.userId);
     }
   }
 }

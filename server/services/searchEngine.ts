@@ -144,7 +144,7 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
       AND processing_status != 'queued'
     ORDER BY created_at DESC
   `);
-  const userScreenshots = getUserScreenshots.all(userId, userId) as any[];
+  const userScreenshots = (await getUserScreenshots.all(userId, userId)) as any[];
 
   if (userScreenshots.length === 0) {
     return {
@@ -168,7 +168,7 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
       WHERE user_id = ? 
       ORDER BY screenshot_id, sequence_number ASC
     `);
-    const allMessages = getMessages.all(userId) as any[];
+    const allMessages = (await getMessages.all(userId)) as any[];
 
     // Group messages by screenshot_id
     const messagesByScreenshot = new Map<string, any[]>();
@@ -234,7 +234,7 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
       WHERE user_id = ? AND kills IS NOT NULL AND kills ${sqlOp} ?
       ORDER BY kills DESC
     `);
-    const matchingGames = getMatchingGames.all(userId, value) as any[];
+    const matchingGames = (await getMatchingGames.all(userId, value)) as any[];
 
     for (const g of matchingGames) {
       const sc = userScreenshots.find(s => s.id === g.screenshot_id);
@@ -258,11 +258,11 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
   if (cleanFtsQuery.length > 0) {
     try {
       // Use FTS5 match query
-      const ftsMatches = db.prepare(`
+      const ftsMatches = (await db.prepare(`
         SELECT screenshot_id, ocr_text, visual_description, category
         FROM screenshots_fts 
         WHERE user_id = ? AND screenshots_fts MATCH ?
-      `).all(userId, cleanFtsQuery) as any[];
+      `).all(userId, cleanFtsQuery)) as any[];
 
       for (const m of ftsMatches) {
         if (!resultsMap.has(m.screenshot_id)) {

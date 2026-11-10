@@ -14,7 +14,7 @@ export interface AuthRequest extends Request {
   user?: AuthUser;
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   // Allow token via Authorization header OR query param for image streams
   let token: string | undefined;
 
@@ -38,26 +38,26 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     if (decoded?.id) {
       try {
         const checkUser = db.prepare('SELECT id, email FROM users WHERE id = ?');
-        const userExists = checkUser.get(decoded.id) as any;
+        const userExists = (await checkUser.get(decoded.id)) as any;
         if (!userExists) {
           if (decoded.email) {
             const checkEmail = db.prepare('SELECT id FROM users WHERE email = ?');
-            const existingByEmail = checkEmail.get(decoded.email) as any;
+            const existingByEmail = (await checkEmail.get(decoded.email)) as any;
             if (existingByEmail) {
               // Reconcile user ID across instances so user's existing screenshots remain accessible
               try {
-                db.prepare('UPDATE screenshots SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
-                db.prepare('UPDATE extracted_messages SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
-                db.prepare('UPDATE game_results SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
+                await db.prepare('UPDATE screenshots SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
+                await db.prepare('UPDATE extracted_messages SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
+                await db.prepare('UPDATE game_results SET user_id = ? WHERE user_id = ?').run(decoded.id, existingByEmail.id);
               } catch {}
-              db.prepare('UPDATE users SET id = ?, name = COALESCE(?, name) WHERE email = ?')
+              await db.prepare('UPDATE users SET id = ?, name = COALESCE(?, name) WHERE email = ?')
                 .run(decoded.id, decoded.name || null, decoded.email);
             } else {
               const insertUser = db.prepare(`
                 INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
                 VALUES (?, ?, '', ?, 1, ?)
               `);
-              insertUser.run(
+              await insertUser.run(
                 decoded.id,
                 decoded.email,
                 decoded.name || 'Recall User',
@@ -69,7 +69,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
               INSERT OR REPLACE INTO users (id, email, password_hash, name, is_verified, created_at)
               VALUES (?, ?, '', ?, 1, ?)
             `);
-            insertUser.run(
+            await insertUser.run(
               decoded.id,
               `${decoded.id}@recall.local`,
               decoded.name || 'Recall User',

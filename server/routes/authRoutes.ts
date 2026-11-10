@@ -25,7 +25,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const checkUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const existing = checkUser.get(normalizedEmail) as any;
+    const existing = (await checkUser.get(normalizedEmail)) as any;
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
@@ -41,7 +41,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
         SET name = ?, password_hash = ?, otp_code = ?, otp_expires = ?
         WHERE id = ?
       `);
-      updateUser.run(name.trim(), password_hash, otp, otpExpires, userId);
+      await updateUser.run(name.trim(), password_hash, otp, otpExpires, userId);
     } else {
       userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const created_at = new Date().toISOString();
@@ -49,7 +49,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
         INSERT INTO users (id, email, password_hash, name, is_verified, otp_code, otp_expires, created_at)
         VALUES (?, ?, ?, ?, 0, ?, ?, ?)
       `);
-      insertUser.run(userId, normalizedEmail, password_hash, name.trim(), otp, otpExpires, created_at);
+      await insertUser.run(userId, normalizedEmail, password_hash, name.trim(), otp, otpExpires, created_at);
     }
 
     // Send real verification email and await before responding (critical for serverless execution)
@@ -90,7 +90,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         INSERT INTO users (id, email, password_hash, name, is_verified, created_at)
         VALUES (?, ?, ?, ?, 1, ?)
       `);
-      insertUser.run(id, normalizedEmail, password_hash, name.trim(), created_at);
+      await insertUser.run(id, normalizedEmail, password_hash, name.trim(), created_at);
 
       const token = jwt.sign({ id, email: normalizedEmail, name: name.trim() }, JWT_SECRET, {
         expiresIn: '30d',
@@ -123,7 +123,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       INSERT INTO users (id, email, password_hash, name, is_verified, otp_code, otp_expires, created_at)
       VALUES (?, ?, ?, ?, 0, ?, ?, ?)
     `);
-    insertUser.run(id, normalizedEmail, password_hash, name.trim(), otp, otpExpires, created_at);
+    await insertUser.run(id, normalizedEmail, password_hash, name.trim(), otp, otpExpires, created_at);
     let emailSent = false;
     try {
       emailSent = await sendOtpEmail(normalizedEmail, otp, 'signup');
@@ -156,7 +156,7 @@ router.post('/verify-signup', async (req: Request, res: Response): Promise<void>
     const cleanOtp = String(otp).trim();
 
     const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = getUser.get(normalizedEmail) as any;
+    const user = (await getUser.get(normalizedEmail)) as any;
 
     if (!user) {
       res.status(404).json({ error: 'Account does not exist. Please sign up first.' });
@@ -185,7 +185,7 @@ router.post('/verify-signup', async (req: Request, res: Response): Promise<void>
       SET is_verified = 1, otp_code = NULL, otp_expires = NULL 
       WHERE id = ?
     `);
-    verifyUser.run(user.id);
+    await verifyUser.run(user.id);
 
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
@@ -230,7 +230,7 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
 
     const normalizedEmail = email.toLowerCase().trim();
     const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = getUser.get(normalizedEmail) as any;
+    const user = (await getUser.get(normalizedEmail)) as any;
 
     if (!user) {
       res.status(404).json({ error: 'Account not found with this email' });
@@ -241,7 +241,7 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     const updateOtp = db.prepare('UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?');
-    updateOtp.run(otp, otpExpires, user.id);
+    await updateOtp.run(otp, otpExpires, user.id);
 
     let emailSent = false;
     try {
@@ -272,7 +272,7 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
 
     const normalizedEmail = email.toLowerCase().trim();
     const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = getUser.get(normalizedEmail) as any;
+    const user = (await getUser.get(normalizedEmail)) as any;
 
     if (!user) {
       res.status(404).json({ error: 'No account registered with this email address.' });
@@ -283,7 +283,7 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     const updateOtp = db.prepare('UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?');
-    updateOtp.run(otp, otpExpires, user.id);
+    await updateOtp.run(otp, otpExpires, user.id);
 
     let emailSent = false;
     try {
@@ -316,7 +316,7 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
     const cleanOtp = String(otp).trim();
 
     const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = getUser.get(normalizedEmail) as any;
+    const user = (await getUser.get(normalizedEmail)) as any;
 
     if (!user) {
       res.status(404).json({ error: 'Account not found' });
@@ -340,7 +340,7 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
 
     // Verified: clear OTP and set is_verified to 1
     const updateUser = db.prepare('UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires = NULL WHERE id = ?');
-    updateUser.run(user.id);
+    await updateUser.run(user.id);
 
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
@@ -376,7 +376,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const getUser = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = getUser.get(normalizedEmail) as any;
+    const user = (await getUser.get(normalizedEmail)) as any;
 
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' });
@@ -394,7 +394,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       const otp = generateSixDigitOtp();
       const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const updateOtp = db.prepare('UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?');
-      updateOtp.run(otp, otpExpires, user.id);
+      await updateOtp.run(otp, otpExpires, user.id);
       let emailSent = false;
       try {
         emailSent = await sendOtpEmail(normalizedEmail, otp, 'signup');
@@ -492,7 +492,7 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
 
     // Check if user already exists
     const getUser = db.prepare('SELECT * FROM users WHERE email = ? OR (google_id IS NOT NULL AND google_id = ?)');
-    let user = getUser.get(userEmail, googleId || 'none') as any;
+    let user = (await getUser.get(userEmail, googleId || 'none')) as any;
 
     if (!user) {
       const id = `user_g_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -501,7 +501,7 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
         INSERT INTO users (id, email, password_hash, name, avatar_url, google_id, is_verified, created_at)
         VALUES (?, ?, ?, ?, ?, ?, 1, ?)
       `);
-      insertUser.run(id, userEmail, '', userName, userAvatar, googleId, created_at);
+      await insertUser.run(id, userEmail, '', userName, userAvatar, googleId, created_at);
       user = { id, email: userEmail, name: userName, avatar_url: userAvatar, google_id: googleId, is_verified: 1 };
     } else {
       const updateStmt = db.prepare(`
@@ -511,7 +511,7 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
             is_verified = 1
         WHERE id = ?
       `);
-      updateStmt.run(userAvatar || user.avatar_url, googleId || user.google_id, user.id);
+      await updateStmt.run(userAvatar || user.avatar_url, googleId || user.google_id, user.id);
       if (userAvatar) user.avatar_url = userAvatar;
       if (googleId) user.google_id = googleId;
       user.is_verified = 1;
