@@ -47,14 +47,14 @@ export const App: React.FC = () => {
       });
   }, []);
 
-  // Fetch screenshots
+  // Fetch screenshots (Always fetch full library so category chip counts and tabs remain 100% accurate)
   const fetchScreenshots = useCallback(async () => {
     if (!user) return;
     setIsRefreshing(true);
     const minDelay = new Promise((resolve) => setTimeout(resolve, 650));
     try {
       const [res] = await Promise.all([
-        api.getScreenshots(selectedCategory),
+        api.getScreenshots(),
         minDelay,
       ]);
       setScreenshots(res.screenshots);
@@ -63,7 +63,7 @@ export const App: React.FC = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [user, selectedCategory]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -82,13 +82,13 @@ export const App: React.FC = () => {
 
     const interval = setInterval(() => {
       api
-        .getScreenshots(selectedCategory)
+        .getScreenshots()
         .then((res) => setScreenshots(res.screenshots))
         .catch(() => {});
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [screenshots, selectedCategory, user]);
+  }, [screenshots, user]);
 
   // Execute Search
   const handleSearch = async (e?: React.FormEvent) => {

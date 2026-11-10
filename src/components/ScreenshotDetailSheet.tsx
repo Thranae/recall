@@ -70,6 +70,25 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       });
   }, [screenshotId]);
 
+  // Prevent background page from scrolling when detail sheet is open
+  useEffect(() => {
+    if (!screenshotId) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalOverscroll = document.body.style.overscrollBehavior;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.overscrollBehavior = originalOverscroll;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [screenshotId]);
+
   if (!screenshotId) return null;
 
   const imageUrl = api.getImageUrl(screenshotId);
@@ -111,12 +130,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
       {/* Dismiss backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Sheet Modal with Plump Liquid Glass */}
-      <div className="liquid-glass-container relative z-10 flex max-h-[90dvh] w-full flex-col rounded-t-[32px] pb-safe sm:max-h-[85vh] sm:max-w-lg sm:rounded-[32px] shadow-xl">
+      <div className="liquid-glass-container relative z-10 flex max-h-[90dvh] w-full flex-col rounded-t-[32px] pb-safe sm:max-h-[85vh] sm:max-w-lg sm:rounded-[32px] shadow-xl touch-auto overscroll-contain">
         {/* Drag Handle */}
         <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
           <div className="h-1.5 w-10 rounded-full bg-slate-300" />
@@ -158,7 +177,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {/* Image Preview with Plump Liquid Glass Frame */}
           <div className="relative overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
             <img

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, Camera, Image as ImageIcon, Loader2, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -18,6 +18,25 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Prevent background page from scrolling when upload sheet is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalOverscroll = document.body.style.overscrollBehavior;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.overscrollBehavior = originalOverscroll;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -61,12 +80,12 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/35 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/35 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
       {/* Dismiss backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Sheet Modal */}
-      <div className="liquid-glass-container relative z-10 w-full rounded-t-[32px] p-6 pb-safe sm:max-w-md sm:rounded-[32px] sm:p-6 shadow-xl">
+      <div className="liquid-glass-container relative z-10 w-full rounded-t-[32px] p-6 pb-safe sm:max-w-md sm:rounded-[32px] sm:p-6 shadow-xl touch-auto overscroll-contain">
         {/* Drag Handle */}
         <div className="flex w-full justify-center pb-3 sm:hidden">
           <div className="h-1.5 w-10 rounded-full bg-slate-300" />
