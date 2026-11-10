@@ -14,7 +14,6 @@ import {
   RotateCcw,
   ChevronLeft,
   CheckCircle2,
-  Sparkles,
   HelpCircle,
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -49,7 +48,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   // OTP Verification States (Packwise Standard)
   const [otpCode, setOtpCode] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(40);
   const [isResending, setIsResending] = useState(false);
   const [otpPurpose, setOtpPurpose] = useState<'signup' | 'forgot_password'>('signup');
@@ -199,7 +197,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         const res = await api.signup(email.trim(), password, name.trim());
         setOtpPurpose('signup');
         setOtpCode('');
-        setDevOtp(res.dev_otp || null);
         setResendTimer(40);
         setMode('otp_verify');
         setSuccessMessage(res.message || 'Verification code sent to your email.');
@@ -213,7 +210,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           if (loginErr.message?.toLowerCase().includes('not verified')) {
             setOtpPurpose('signup');
             setOtpCode('');
-            if (loginErr.dev_otp) setDevOtp(loginErr.dev_otp);
             setResendTimer(40);
             setMode('otp_verify');
             setSuccessMessage('Please enter the 6-digit verification code sent to your email.');
@@ -226,7 +222,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         const res = await api.forgotPassword(email.trim());
         setOtpPurpose('forgot_password');
         setOtpCode('');
-        setDevOtp(res.dev_otp || null);
         setResendTimer(40);
         setMode('otp_verify');
         setSuccessMessage(res.message || 'Password reset code sent to your email.');
@@ -280,14 +275,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     setIsResending(true);
     setError(null);
     try {
-      let res: { success: boolean; message: string; dev_otp?: string };
       if (otpPurpose === 'signup') {
-        res = await api.resendOtp(email.trim());
+        await api.resendOtp(email.trim());
       } else {
-        res = await api.forgotPassword(email.trim());
+        await api.forgotPassword(email.trim());
       }
       setResendTimer(40);
-      if (res.dev_otp) setDevOtp(res.dev_otp);
       setSuccessMessage('A fresh verification code has been dispatched to your email.');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -381,21 +374,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{successMessage}</span>
                 </div>
-              )}
-
-              {/* Dev / Preview Fast-fill Helper */}
-              {devOtp && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOtpCode(devOtp);
-                    verifyOtpCode(devOtp);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50/90 hover:bg-blue-100 border border-blue-200 text-xs font-semibold text-[#208AEF] transition-all cursor-pointer shadow-2xs"
-                >
-                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                  <span>Your Code: <strong className="font-mono tracking-widest text-slate-900 ml-1">{devOtp}</strong> (Tap to verify)</span>
-                </button>
               )}
 
               <form onSubmit={handleVerifyOtp} className="space-y-4">

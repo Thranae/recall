@@ -67,7 +67,6 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
         : 'Verification code generated. Please check your inbox or use the instant code below.',
       email: normalizedEmail,
       email_sent: emailSent,
-      dev_otp: otp,
     });
   } catch (err: any) {
     console.error('Signup error:', err);
@@ -137,7 +136,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       message: 'Verification code sent to your email.',
       email: normalizedEmail,
       email_sent: emailSent,
-      dev_otp: otp,
     });
   } catch (err: any) {
     res.status(400).json({ error: 'User already exists or registration failed' });
@@ -256,7 +254,6 @@ router.post('/resend-otp', async (req: Request, res: Response): Promise<void> =>
       success: true,
       message: 'A new 6-digit verification code has been dispatched to your email.',
       email_sent: emailSent,
-      dev_otp: otp,
     });
   } catch (err: any) {
     console.error('Resend OTP error:', err);
@@ -299,7 +296,6 @@ router.post('/forgot-password', async (req: Request, res: Response): Promise<voi
       success: true,
       message: 'Password reset code has been sent to your email.',
       email_sent: emailSent,
-      dev_otp: otp,
     });
   } catch (err: any) {
     console.error('Forgot password error:', err);
@@ -411,7 +407,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         requires_verification: true,
         email: normalizedEmail,
         email_sent: emailSent,
-        dev_otp: otp,
       });
       return;
     }
