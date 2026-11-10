@@ -1,30 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
   <defs>
-    <linearGradient id="recall-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F93FF"/>
-      <stop offset="50%" stop-color="#3478F6"/>
-      <stop offset="100%" stop-color="#1856CB"/>
+    <linearGradient id="recall-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
     </linearGradient>
-    <linearGradient id="glass-spec" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+    <linearGradient id="gloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
   </defs>
 
-  <!-- Squircle Base (The Screen) -->
-  <rect width="48" height="48" rx="13" fill="url(#recall-grad)"/>
+  <!-- Squircle Base -->
+  <rect width="48" height="48" rx="12" fill="url(#recall-bg)"/>
 
   <!-- Top Glass Highlight -->
-  <path d="M0 13C0 5.82 5.82 0 13 0h22c7.18 0 13 5.82 13 13v8H0v-8z" fill="url(#glass-spec)"/>
+  <path d="M0 12C0 5.373 5.373 0 12 0h24c6.627 0 12 5.373 12 12v6H0v-6z" fill="url(#gloss)"/>
 
   <!-- Outer Specular Rim -->
-  <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="12.25" stroke="white" stroke-opacity="0.32" stroke-width="1.5" fill="none"/>
+  <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="11.25" stroke="white" stroke-opacity="0.25" stroke-width="1.5" fill="none"/>
 
-  <!-- Phone Screen Top Indicator / Dynamic Notch -->
-  <rect x="18" y="5" width="12" height="2.2" rx="1.1" fill="white" fill-opacity="0.8"/>
-
-  <!-- Neat & Simple Screenshot Search Magnifying Glass (Crisp 16px-48px legibility) -->
-  <circle cx="22" cy="24" r="9" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M19 19a5.5 5.5 0 0 1 6 0" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.85"/>
-  <path d="M28.5 30.5L37 39" stroke="white" stroke-width="3.4" stroke-linecap="round"/>
+  <!-- Pure, Bold, Iconic "R" Monogram (Super legible at 16px) -->
+  <path d="M14 12h11c5 0 9 3.5 9 8 0 3.8-2.9 6.9-7 7.7L34 36h-6.5l-6.2-7.5H20v7.5h-6V12zm6 11.5h5c2.2 0 4-1.5 4-3.5s-1.8-3.5-4-3.5h-5v7z" fill="#ffffff"/>
 </svg>
