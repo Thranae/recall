@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, UploadCloud, Camera, Image as ImageIcon, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, UploadCloud, Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 
 interface UploadSheetProps {
@@ -70,7 +71,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
         onClose();
         setSelectedFiles([]);
         setUploadSuccess(false);
-      }, 1000);
+      }, 1500);
     } catch (err: any) {
       console.error('Upload failed:', err);
       alert(err.message || 'Upload failed. Please ensure the files are valid images.');
@@ -103,125 +104,180 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
           </button>
         </div>
 
-        {uploadSuccess ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <CheckCircle2 className="h-12 w-12 text-emerald-600 mb-2 animate-bounce stroke-[2.2]" />
-            <h4 className="text-sm font-bold text-slate-800">Upload Complete</h4>
-            <p className="mt-1 text-xs text-slate-500 font-normal">
-              Your screenshots are being analyzed and indexed.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {/* Capture Source Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="liquid-glass-card flex flex-col items-center justify-center gap-2 rounded-[20px] p-4 text-center cursor-pointer active:scale-95 transition-all"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-[16px] liquid-icon-pod text-slate-700">
-                  <Camera className="h-5 w-5 stroke-[2]" />
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-slate-800">Camera</span>
-                  <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Take a photo</span>
-                </div>
-              </button>
+        <AnimatePresence mode="wait">
+          {uploadSuccess ? (
+            <motion.div
+              key="success-container"
+              initial={{ opacity: 0, scale: 0.94, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center justify-center py-8 text-center"
+            >
+              <div className="relative mb-3 flex items-center justify-center">
+                {/* Subtle soft ambient aura */}
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: [0.8, 1.3, 1.2], opacity: [0, 0.35, 0.15] }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute h-20 w-20 rounded-full bg-emerald-400/25 blur-md pointer-events-none"
+                />
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="liquid-glass-card flex flex-col items-center justify-center gap-2 rounded-[20px] p-4 text-center cursor-pointer active:scale-95 transition-all"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-[16px] liquid-icon-pod text-slate-700">
-                  <ImageIcon className="h-5 w-5 stroke-[2]" />
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-slate-800">Photos</span>
-                  <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Batch up to 50 files</span>
-                </div>
-              </button>
-            </div>
-
-            {/* Batch capacity indicator */}
-            <div className="flex items-center justify-between px-1 text-[11px] text-[#4A5D78]">
-              <span>Batch capacity: 50 screenshots / upload</span>
-              <span className="font-mono font-bold text-[#3478F6]">{selectedFiles.length}/50</span>
-            </div>
-
-            {/* Hidden native file pickers */}
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => handleFilesAdded(e.target.files)}
-              className="hidden"
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handleFilesAdded(e.target.files)}
-              className="hidden"
-            />
-
-            {/* Selected Files List & Upload Action */}
-            {selectedFiles.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs px-1">
-                  <span className="font-bold text-slate-700">Selected ({selectedFiles.length})</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFiles([])}
-                    className="text-rose-600 font-semibold active:opacity-70 cursor-pointer"
+                {/* Tactile Tick Button with subtle spring settling */}
+                <motion.div
+                  initial={{ scale: 0.82, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 280, mass: 0.7 }}
+                  className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25 border border-white/40 ring-4 ring-emerald-500/10"
+                >
+                  <svg
+                    className="h-7 w-7 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.6}
                   >
-                    Clear all
-                  </button>
-                </div>
+                    <motion.path
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ delay: 0.12, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </motion.div>
+              </div>
 
-                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-                  {selectedFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between rounded-[14px] bg-white/70 border border-white/90 backdrop-blur-md px-3 py-2 text-xs"
-                    >
-                      <span className="truncate max-w-[80%] text-slate-800 font-medium">{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="text-slate-400 active:text-rose-600 active:scale-90 p-0.5 cursor-pointer"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <motion.h4
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="text-sm font-bold text-slate-800 tracking-tight"
+              >
+                Upload Complete
+              </motion.h4>
+              <motion.p
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.24, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-1 text-xs text-slate-500 font-normal max-w-[240px]"
+              >
+                Your screenshots are recognized, tagged, and indexed.
+              </motion.p>
+            </motion.div>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {/* Capture Source Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="liquid-glass-card flex flex-col items-center justify-center gap-2 rounded-[20px] p-4 text-center cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] liquid-icon-pod text-slate-700">
+                    <Camera className="h-5 w-5 stroke-[2]" />
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800">Camera</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Take a photo</span>
+                  </div>
+                </button>
 
                 <button
                   type="button"
-                  onClick={handleUpload}
-                  disabled={isUploading}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-btn-primary font-bold text-white active:scale-[0.98] transition-all disabled:opacity-50 text-xs shadow-sm cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="liquid-glass-card flex flex-col items-center justify-center gap-2 rounded-[20px] p-4 text-center cursor-pointer active:scale-95 transition-all"
                 >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Analyzing Screenshots...</span>
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="h-4 w-4 stroke-[2.2]" />
-                      <span>Upload {selectedFiles.length} Screenshot{selectedFiles.length > 1 ? 's' : ''}</span>
-                    </>
-                  )}
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] liquid-icon-pod text-slate-700">
+                    <ImageIcon className="h-5 w-5 stroke-[2]" />
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800">Photos</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5 font-normal">Batch up to 50 files</span>
+                  </div>
                 </button>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Batch capacity indicator */}
+              <div className="flex items-center justify-between px-1 text-[11px] text-[#4A5D78]">
+                <span>Batch capacity: 50 screenshots / upload</span>
+                <span className="font-mono font-bold text-[#3478F6]">{selectedFiles.length}/50</span>
+              </div>
+
+              {/* Hidden native file pickers */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => handleFilesAdded(e.target.files)}
+                className="hidden"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleFilesAdded(e.target.files)}
+                className="hidden"
+              />
+
+              {/* Selected Files List & Upload Action */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs px-1">
+                    <span className="font-bold text-slate-700">Selected ({selectedFiles.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFiles([])}
+                      className="text-rose-600 font-semibold active:opacity-70 cursor-pointer"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-[14px] bg-white/70 border border-white/90 backdrop-blur-md px-3 py-2 text-xs"
+                      >
+                        <span className="truncate max-w-[80%] text-slate-800 font-medium">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-slate-400 active:text-rose-600 active:scale-90 p-0.5 cursor-pointer"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full liquid-btn-primary font-bold text-white active:scale-[0.98] transition-all disabled:opacity-50 text-xs shadow-sm cursor-pointer"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Analyzing Screenshots...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="h-4 w-4 stroke-[2.2]" />
+                        <span>Upload {selectedFiles.length} Screenshot{selectedFiles.length > 1 ? 's' : ''}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

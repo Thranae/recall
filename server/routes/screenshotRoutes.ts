@@ -5,6 +5,8 @@ import fs from 'fs';
 import { db } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob } from '../services/processingQueue';
+import { analyzeScreenshot } from '../services/ai/gemini';
+import { generateTextEmbedding } from '../services/ai/embeddings';
 
 const router = Router();
 
@@ -127,8 +129,8 @@ router.post(
           file.size,
           now,
           now,
-          'other', // temporary until analysis completes
-          'queued',
+          'other',
+          'processing',
           null,
           '',
           '',
@@ -139,25 +141,136 @@ router.post(
           now
         );
 
-        // Enqueue background processing job
-        enqueueScreenshotJob({
-          screenshotId,
-          userId,
-          storageKey,
-          mimeType: file.mimetype,
-          originalFilename: file.originalname,
-        });
+        let finalCategory = 'other';
+        let finalStatus = 'processing';
+
+        // Synchronous AI vision classification (ensures instant category badge & OCR on Vercel)
+        try {
+          const analysisPromise = analyzeScreenshot(file.path, file.mimetype, file.originalname, base64Data);
+          const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6500));
+          const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+
+          if (analysis) {
+            finalCategory = analysis.category || 'other';
+            finalStatus = 'ready';
+
+            let embedding: number[] = [];
+            try {
+              const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(' ')} ${analysis.ocr_text.substring(0, 500)}`;
+              embedding = await generateTextEmbedding(textForEmbedding);
+            } catch (embErr) {
+              console.warn('Embedding generation notice:', embErr);
+            }
+
+            const updateStmt = db.prepare(`
+              UPDATE screenshots 
+              SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
+                  tags = ?, text_embedding = ?, updated_at = ?
+              WHERE id = ? AND user_id = ?
+            `);
+            updateStmt.run(
+              finalCategory,
+              analysis.ocr_text || '',
+              analysis.visual_description || '',
+              JSON.stringify(analysis.tags || []),
+              JSON.stringify(embedding),
+              new Date().toISOString(),
+              screenshotId,
+              userId
+            );
+
+            // Insert messages if chat
+            if (analysis.messages && analysis.messages.length > 0) {
+              const insertMsg = db.prepare(`
+                INSERT INTO extracted_messages (
+                  id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence, bounding_box
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `);
+              for (const msg of analysis.messages) {
+                insertMsg.run(
+                  `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                  screenshotId,
+                  userId,
+                  msg.sequence_number,
+                  msg.message_text,
+                  msg.sender_side,
+                  msg.sender_label || null,
+                  msg.confidence,
+                  msg.bounding_box ? JSON.stringify(msg.bounding_box) : null
+                );
+              }
+            }
+
+            // Insert game stats if game
+            if (analysis.game_result) {
+              const g = analysis.game_result;
+              const insertGame = db.prepare(`
+                INSERT INTO game_results (
+                  id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `);
+              insertGame.run(
+                `game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                screenshotId,
+                userId,
+                g.game_name || 'Game',
+                g.mode || null,
+                g.map_name || null,
+                g.kills,
+                g.score || null,
+                g.rank || null,
+                g.damage || null,
+                g.match_date || null,
+                g.extraction_confidence || 0.95,
+                g.raw_extracted_text || ''
+              );
+            }
+
+            try {
+              db.prepare(`
+                INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
+                VALUES (?, ?, ?, ?, ?, ?)
+              `).run(
+                screenshotId,
+                userId,
+                analysis.ocr_text || '',
+                analysis.visual_description || '',
+                (analysis.tags || []).join(' '),
+                finalCategory
+              );
+            } catch {}
+          } else {
+            // If timed out, fallback to asynchronous queue
+            enqueueScreenshotJob({
+              screenshotId,
+              userId,
+              storageKey,
+              mimeType: file.mimetype,
+              originalFilename: file.originalname,
+            });
+          }
+        } catch (procErr) {
+          console.warn('Sync AI analysis notice:', procErr);
+          enqueueScreenshotJob({
+            screenshotId,
+            userId,
+            storageKey,
+            mimeType: file.mimetype,
+            originalFilename: file.originalname,
+          });
+        }
 
         createdScreenshots.push({
           id: screenshotId,
           filename: file.originalname,
           storage_key: storageKey,
-          status: 'queued',
+          category: finalCategory,
+          status: finalStatus,
         });
       }
 
       res.status(201).json({
-        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Processing queued.`,
+        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Analysis complete.`,
         screenshots: createdScreenshots,
       });
     } catch (err: any) {
@@ -360,6 +473,79 @@ router.delete('/:id', authMiddleware, (req: AuthRequest, res: Response): void =>
   } catch (err: any) {
     console.error('Delete screenshot error:', err);
     res.status(500).json({ error: 'Failed to delete screenshot' });
+  }
+});
+
+// 7. Re-analyze Screenshot with upgraded Gemini 3.5 & Groq AI
+router.post('/:id/reanalyze', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    const getScreenshot = db.prepare('SELECT * FROM screenshots WHERE id = ? AND user_id = ?');
+    const row = getScreenshot.get(id, userId) as any;
+
+    if (!row) {
+      res.status(404).json({ error: 'Screenshot not found' });
+      return;
+    }
+
+    const fullPath = path.join(UPLOADS_BASE, row.storage_key);
+    const analysis = await analyzeScreenshot(fullPath, row.mime_type, row.original_filename, row.image_data);
+
+    let embedding: number[] = [];
+    try {
+      const textForEmbedding = `${analysis.visual_description} ${analysis.tags.join(' ')} ${analysis.ocr_text.substring(0, 500)}`;
+      embedding = await generateTextEmbedding(textForEmbedding);
+    } catch {}
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE screenshots
+      SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
+          tags = ?, text_embedding = ?, updated_at = ?
+      WHERE id = ? AND user_id = ?
+    `).run(
+      analysis.category,
+      analysis.ocr_text,
+      analysis.visual_description,
+      JSON.stringify(analysis.tags),
+      JSON.stringify(embedding),
+      now,
+      id,
+      userId
+    );
+
+    // Refresh messages
+    try {
+      db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(id);
+      if (analysis.messages && analysis.messages.length > 0) {
+        const insertMsg = db.prepare(`
+          INSERT INTO extracted_messages (id, screenshot_id, user_id, sequence_number, message_text, sender_side, sender_label, confidence)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const m of analysis.messages) {
+          insertMsg.run(`msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, m.sequence_number, m.message_text, m.sender_side, m.sender_label || null, m.confidence);
+        }
+      }
+    } catch {}
+
+    // Refresh game results
+    try {
+      db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(id);
+      if (analysis.game_result) {
+        const g = analysis.game_result;
+        db.prepare(`
+          INSERT INTO game_results (id, screenshot_id, user_id, game_name, mode, map_name, kills, score, rank, damage, match_date, extraction_confidence, raw_extracted_text)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(`game_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, id, userId, g.game_name, g.mode, g.map_name, g.kills, g.score, g.rank, g.damage, g.match_date, g.extraction_confidence, g.raw_extracted_text);
+      }
+    } catch {}
+
+    res.json({ message: 'Screenshot re-analyzed successfully', category: analysis.category, analysis });
+  } catch (err: any) {
+    console.error('Re-analyze error:', err);
+    res.status(500).json({ error: 'Failed to re-analyze screenshot' });
   }
 });
 
