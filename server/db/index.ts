@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { createClient, Client } from '@libsql/client';
+import { createClient, Client } from '@libsql/client/web';
 import nodeModule from 'module';
 import path from 'path';
 import fs from 'fs';

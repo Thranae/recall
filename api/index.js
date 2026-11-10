@@ -1630,7 +1630,7 @@ var require_safer = __commonJS({
   "node_modules/safer-buffer/safer.js"(exports, module) {
     "use strict";
     var buffer = __require("buffer");
-    var Buffer3 = buffer.Buffer;
+    var Buffer2 = buffer.Buffer;
     var safer = {};
     var key;
     for (key in buffer) {
@@ -1639,12 +1639,12 @@ var require_safer = __commonJS({
       safer[key] = buffer[key];
     }
     var Safer = safer.Buffer = {};
-    for (key in Buffer3) {
-      if (!Buffer3.hasOwnProperty(key)) continue;
+    for (key in Buffer2) {
+      if (!Buffer2.hasOwnProperty(key)) continue;
       if (key === "allocUnsafe" || key === "allocUnsafeSlow") continue;
-      Safer[key] = Buffer3[key];
+      Safer[key] = Buffer2[key];
     }
-    safer.Buffer.prototype = Buffer3.prototype;
+    safer.Buffer.prototype = Buffer2.prototype;
     if (!Safer.from || Safer.from === Uint8Array.from) {
       Safer.from = function(value, encodingOrOffset, length) {
         if (typeof value === "number") {
@@ -1653,7 +1653,7 @@ var require_safer = __commonJS({
         if (value && typeof value.length === "undefined") {
           throw new TypeError("The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object. Received type " + typeof value);
         }
-        return Buffer3(value, encodingOrOffset, length);
+        return Buffer2(value, encodingOrOffset, length);
       };
     }
     if (!Safer.alloc) {
@@ -1664,7 +1664,7 @@ var require_safer = __commonJS({
         if (size < 0 || size >= 2 * (1 << 30)) {
           throw new RangeError('The value "' + size + '" is invalid for option "size"');
         }
-        var buf = Buffer3(size);
+        var buf = Buffer2(size);
         if (!fill || fill.length === 0) {
           buf.fill(0);
         } else if (typeof encoding === "string") {
@@ -1759,7 +1759,7 @@ var require_merge_exports = __commonJS({
 var require_internal = __commonJS({
   "node_modules/iconv-lite/encodings/internal.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     module.exports = {
       // Encodings
       utf8: { type: "_internal", bomAware: true },
@@ -1783,7 +1783,7 @@ var require_internal = __commonJS({
       } else if (this.enc === "cesu8") {
         this.enc = "utf8";
         this.encoder = InternalEncoderCesu8;
-        if (Buffer3.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
+        if (Buffer2.from("eda0bdedb2a9", "hex").toString() !== "\u{1F4A9}") {
           this.decoder = InternalDecoderCesu8;
           this.defaultCharUnicode = iconv.defaultCharUnicode;
         }
@@ -1796,8 +1796,8 @@ var require_internal = __commonJS({
       this.decoder = new StringDecoder(codec.enc);
     }
     InternalDecoder.prototype.write = function(buf) {
-      if (!Buffer3.isBuffer(buf)) {
-        buf = Buffer3.from(buf);
+      if (!Buffer2.isBuffer(buf)) {
+        buf = Buffer2.from(buf);
       }
       return this.decoder.write(buf);
     };
@@ -1808,7 +1808,7 @@ var require_internal = __commonJS({
       this.enc = codec.enc;
     }
     InternalEncoder.prototype.write = function(str) {
-      return Buffer3.from(str, this.enc);
+      return Buffer2.from(str, this.enc);
     };
     InternalEncoder.prototype.end = function() {
     };
@@ -1820,15 +1820,15 @@ var require_internal = __commonJS({
       var completeQuads = str.length - str.length % 4;
       this.prevStr = str.slice(completeQuads);
       str = str.slice(0, completeQuads);
-      return Buffer3.from(str, "base64");
+      return Buffer2.from(str, "base64");
     };
     InternalEncoderBase64.prototype.end = function() {
-      return Buffer3.from(this.prevStr, "base64");
+      return Buffer2.from(this.prevStr, "base64");
     };
     function InternalEncoderCesu8(options, codec) {
     }
     InternalEncoderCesu8.prototype.write = function(str) {
-      var buf = Buffer3.alloc(str.length * 3);
+      var buf = Buffer2.alloc(str.length * 3);
       var bufIdx = 0;
       for (var i = 0; i < str.length; i++) {
         var charCode = str.charCodeAt(i);
@@ -1924,13 +1924,13 @@ var require_internal = __commonJS({
           str = str.slice(0, str.length - 1);
         }
       }
-      return Buffer3.from(str, this.enc);
+      return Buffer2.from(str, this.enc);
     };
     InternalEncoderUtf8.prototype.end = function() {
       if (this.highSurrogate) {
         var str = this.highSurrogate;
         this.highSurrogate = "";
-        return Buffer3.from(str, this.enc);
+        return Buffer2.from(str, this.enc);
       }
     };
   }
@@ -1940,7 +1940,7 @@ var require_internal = __commonJS({
 var require_utf32 = __commonJS({
   "node_modules/iconv-lite/encodings/utf32.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     exports._utf32 = Utf32Codec;
     function Utf32Codec(codecOptions, iconv) {
       this.iconv = iconv;
@@ -1958,8 +1958,8 @@ var require_utf32 = __commonJS({
       this.highSurrogate = 0;
     }
     Utf32Encoder.prototype.write = function(str) {
-      var src = Buffer3.from(str, "ucs2");
-      var dst = Buffer3.alloc(src.length * 2 + 4);
+      var src = Buffer2.from(str, "ucs2");
+      var dst = Buffer2.alloc(src.length * 2 + 4);
       var write32 = this.isLE ? dst.writeUInt32LE : dst.writeUInt32BE;
       var offset = 0;
       for (var i = 0; i < src.length; i += 2) {
@@ -1995,7 +1995,7 @@ var require_utf32 = __commonJS({
       if (!this.highSurrogate) {
         return;
       }
-      var buf = Buffer3.alloc(4);
+      var buf = Buffer2.alloc(4);
       if (this.isLE) {
         buf.writeUInt32LE(this.highSurrogate, 0);
       } else {
@@ -2015,7 +2015,7 @@ var require_utf32 = __commonJS({
       }
       var i = 0;
       var codepoint = 0;
-      var dst = Buffer3.alloc(src.length + 4);
+      var dst = Buffer2.alloc(src.length + 4);
       var offset = 0;
       var isLE = this.isLE;
       var overflow = this.overflow;
@@ -2175,7 +2175,7 @@ var require_utf32 = __commonJS({
 var require_utf16 = __commonJS({
   "node_modules/iconv-lite/encodings/utf16.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     exports.utf16be = Utf16BECodec;
     function Utf16BECodec() {
     }
@@ -2185,7 +2185,7 @@ var require_utf16 = __commonJS({
     function Utf16BEEncoder() {
     }
     Utf16BEEncoder.prototype.write = function(str) {
-      var buf = Buffer3.from(str, "ucs2");
+      var buf = Buffer2.from(str, "ucs2");
       for (var i = 0; i < buf.length; i += 2) {
         var tmp = buf[i];
         buf[i] = buf[i + 1];
@@ -2202,7 +2202,7 @@ var require_utf16 = __commonJS({
       if (buf.length == 0) {
         return "";
       }
-      var buf2 = Buffer3.alloc(buf.length + 1);
+      var buf2 = Buffer2.alloc(buf.length + 1);
       var i = 0;
       var j = 0;
       if (this.overflowByte !== -1) {
@@ -2318,7 +2318,7 @@ var require_utf16 = __commonJS({
 var require_utf7 = __commonJS({
   "node_modules/iconv-lite/encodings/utf7.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     exports.utf7 = Utf7Codec;
     exports.unicode11utf7 = "utf7";
     function Utf7Codec(codecOptions, iconv) {
@@ -2332,7 +2332,7 @@ var require_utf7 = __commonJS({
       this.iconv = codec.iconv;
     }
     Utf7Encoder.prototype.write = function(str) {
-      return Buffer3.from(str.replace(nonDirectChars, function(chunk) {
+      return Buffer2.from(str.replace(nonDirectChars, function(chunk) {
         return "+" + (chunk === "+" ? "" : this.iconv.encode(chunk, "utf16-be").toString("base64").replace(/=+$/, "")) + "-";
       }.bind(this)));
     };
@@ -2370,7 +2370,7 @@ var require_utf7 = __commonJS({
               res += "+";
             } else {
               var b64str = base64Accum + this.iconv.decode(buf.slice(lastI, i2), "ascii");
-              res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+              res += this.iconv.decode(Buffer2.from(b64str, "base64"), "utf16-be");
             }
             if (buf[i2] != minusChar) {
               i2--;
@@ -2388,7 +2388,7 @@ var require_utf7 = __commonJS({
         var canBeDecoded = b64str.length - b64str.length % 8;
         base64Accum = b64str.slice(canBeDecoded);
         b64str = b64str.slice(0, canBeDecoded);
-        res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+        res += this.iconv.decode(Buffer2.from(b64str, "base64"), "utf16-be");
       }
       this.inBase64 = inBase64;
       this.base64Accum = base64Accum;
@@ -2397,7 +2397,7 @@ var require_utf7 = __commonJS({
     Utf7Decoder.prototype.end = function() {
       var res = "";
       if (this.inBase64 && this.base64Accum.length > 0) {
-        res = this.iconv.decode(Buffer3.from(this.base64Accum, "base64"), "utf16-be");
+        res = this.iconv.decode(Buffer2.from(this.base64Accum, "base64"), "utf16-be");
       }
       this.inBase64 = false;
       this.base64Accum = "";
@@ -2413,14 +2413,14 @@ var require_utf7 = __commonJS({
     function Utf7IMAPEncoder(options, codec) {
       this.iconv = codec.iconv;
       this.inBase64 = false;
-      this.base64Accum = Buffer3.alloc(6);
+      this.base64Accum = Buffer2.alloc(6);
       this.base64AccumIdx = 0;
     }
     Utf7IMAPEncoder.prototype.write = function(str) {
       var inBase64 = this.inBase64;
       var base64Accum = this.base64Accum;
       var base64AccumIdx = this.base64AccumIdx;
-      var buf = Buffer3.alloc(str.length * 5 + 10);
+      var buf = Buffer2.alloc(str.length * 5 + 10);
       var bufIdx = 0;
       for (var i2 = 0; i2 < str.length; i2++) {
         var uChar = str.charCodeAt(i2);
@@ -2459,7 +2459,7 @@ var require_utf7 = __commonJS({
       return buf.slice(0, bufIdx);
     };
     Utf7IMAPEncoder.prototype.end = function() {
-      var buf = Buffer3.alloc(10);
+      var buf = Buffer2.alloc(10);
       var bufIdx = 0;
       if (this.inBase64) {
         if (this.base64AccumIdx > 0) {
@@ -2496,7 +2496,7 @@ var require_utf7 = __commonJS({
               res += "&";
             } else {
               var b64str = base64Accum + this.iconv.decode(buf.slice(lastI, i2), "ascii").replace(/,/g, "/");
-              res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+              res += this.iconv.decode(Buffer2.from(b64str, "base64"), "utf16-be");
             }
             if (buf[i2] != minusChar) {
               i2--;
@@ -2514,7 +2514,7 @@ var require_utf7 = __commonJS({
         var canBeDecoded = b64str.length - b64str.length % 8;
         base64Accum = b64str.slice(canBeDecoded);
         b64str = b64str.slice(0, canBeDecoded);
-        res += this.iconv.decode(Buffer3.from(b64str, "base64"), "utf16-be");
+        res += this.iconv.decode(Buffer2.from(b64str, "base64"), "utf16-be");
       }
       this.inBase64 = inBase64;
       this.base64Accum = base64Accum;
@@ -2523,7 +2523,7 @@ var require_utf7 = __commonJS({
     Utf7IMAPDecoder.prototype.end = function() {
       var res = "";
       if (this.inBase64 && this.base64Accum.length > 0) {
-        res = this.iconv.decode(Buffer3.from(this.base64Accum, "base64"), "utf16-be");
+        res = this.iconv.decode(Buffer2.from(this.base64Accum, "base64"), "utf16-be");
       }
       this.inBase64 = false;
       this.base64Accum = "";
@@ -2536,7 +2536,7 @@ var require_utf7 = __commonJS({
 var require_sbcs_codec = __commonJS({
   "node_modules/iconv-lite/encodings/sbcs-codec.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     exports._sbcs = SBCSCodec;
     function SBCSCodec(codecOptions, iconv) {
       if (!codecOptions) {
@@ -2552,8 +2552,8 @@ var require_sbcs_codec = __commonJS({
         }
         codecOptions.chars = asciiString + codecOptions.chars;
       }
-      this.decodeBuf = Buffer3.from(codecOptions.chars, "ucs2");
-      var encodeBuf = Buffer3.alloc(65536, iconv.defaultCharSingleByte.charCodeAt(0));
+      this.decodeBuf = Buffer2.from(codecOptions.chars, "ucs2");
+      var encodeBuf = Buffer2.alloc(65536, iconv.defaultCharSingleByte.charCodeAt(0));
       for (var i = 0; i < codecOptions.chars.length; i++) {
         encodeBuf[codecOptions.chars.charCodeAt(i)] = i;
       }
@@ -2565,7 +2565,7 @@ var require_sbcs_codec = __commonJS({
       this.encodeBuf = codec.encodeBuf;
     }
     SBCSEncoder.prototype.write = function(str) {
-      var buf = Buffer3.alloc(str.length);
+      var buf = Buffer2.alloc(str.length);
       for (var i = 0; i < str.length; i++) {
         buf[i] = this.encodeBuf[str.charCodeAt(i)];
       }
@@ -2578,7 +2578,7 @@ var require_sbcs_codec = __commonJS({
     }
     SBCSDecoder.prototype.write = function(buf) {
       var decodeBuf = this.decodeBuf;
-      var newBuf = Buffer3.alloc(buf.length * 2);
+      var newBuf = Buffer2.alloc(buf.length * 2);
       var idx1 = 0;
       var idx2 = 0;
       for (var i = 0; i < buf.length; i++) {
@@ -3208,7 +3208,7 @@ var require_sbcs_data_generated = __commonJS({
 var require_dbcs_codec = __commonJS({
   "node_modules/iconv-lite/encodings/dbcs-codec.js"(exports) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     exports._dbcs = DBCSCodec;
     var UNASSIGNED = -1;
     var GB18030_CODE = -2;
@@ -3444,7 +3444,7 @@ var require_dbcs_codec = __commonJS({
       this.gb18030 = codec.gb18030;
     }
     DBCSEncoder.prototype.write = function(str) {
-      var newBuf = Buffer3.alloc(str.length * (this.gb18030 ? 4 : 3));
+      var newBuf = Buffer2.alloc(str.length * (this.gb18030 ? 4 : 3));
       var leadSurrogate = this.leadSurrogate;
       var seqObj = this.seqObj;
       var nextChar = -1;
@@ -3548,7 +3548,7 @@ var require_dbcs_codec = __commonJS({
       if (this.leadSurrogate === -1 && this.seqObj === void 0) {
         return;
       }
-      var newBuf = Buffer3.alloc(10);
+      var newBuf = Buffer2.alloc(10);
       var j = 0;
       if (this.seqObj) {
         var dbcsCode = this.seqObj[DEF_CHAR];
@@ -3579,7 +3579,7 @@ var require_dbcs_codec = __commonJS({
       this.gb18030 = codec.gb18030;
     }
     DBCSDecoder.prototype.write = function(buf) {
-      var newBuf = Buffer3.alloc(buf.length * 2);
+      var newBuf = Buffer2.alloc(buf.length * 2);
       var nodeIdx = this.nodeIdx;
       var prevBytes = this.prevBytes;
       var prevOffset = this.prevBytes.length;
@@ -5188,7 +5188,7 @@ var require_encodings = __commonJS({
 var require_streams = __commonJS({
   "node_modules/iconv-lite/lib/streams.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     module.exports = function(streamModule) {
       var Transform9 = streamModule.Transform;
       function IconvLiteEncoderStream(conv, options) {
@@ -5228,7 +5228,7 @@ var require_streams = __commonJS({
           chunks.push(chunk);
         });
         this.on("end", function() {
-          cb(null, Buffer3.concat(chunks));
+          cb(null, Buffer2.concat(chunks));
         });
         return this;
       };
@@ -5242,7 +5242,7 @@ var require_streams = __commonJS({
         constructor: { value: IconvLiteDecoderStream }
       });
       IconvLiteDecoderStream.prototype._transform = function(chunk, encoding, done) {
-        if (!Buffer3.isBuffer(chunk) && !(chunk instanceof Uint8Array)) {
+        if (!Buffer2.isBuffer(chunk) && !(chunk instanceof Uint8Array)) {
           return done(new Error("Iconv decoding stream needs buffers as its input."));
         }
         try {
@@ -5285,7 +5285,7 @@ var require_streams = __commonJS({
 var require_lib = __commonJS({
   "node_modules/iconv-lite/lib/index.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safer().Buffer;
+    var Buffer2 = require_safer().Buffer;
     var bomHandling = require_bom_handling();
     var mergeModules = require_merge_exports();
     module.exports.encodings = null;
@@ -5296,7 +5296,7 @@ var require_lib = __commonJS({
       var encoder = module.exports.getEncoder(encoding, options);
       var res = encoder.write(str);
       var trail = encoder.end();
-      return trail && trail.length > 0 ? Buffer3.concat([res, trail]) : res;
+      return trail && trail.length > 0 ? Buffer2.concat([res, trail]) : res;
     };
     module.exports.decode = function decode3(buf, encoding, options) {
       if (typeof buf === "string") {
@@ -5304,7 +5304,7 @@ var require_lib = __commonJS({
           console.error("Iconv-lite warning: decode()-ing strings is deprecated. Refer to https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding");
           module.exports.skipDecodeWarning = true;
         }
-        buf = Buffer3.from("" + (buf || ""), "binary");
+        buf = Buffer2.from("" + (buf || ""), "binary");
       }
       var decoder = module.exports.getDecoder(encoding, options);
       var res = decoder.write(buf);
@@ -20148,7 +20148,7 @@ var require_utils3 = __commonJS({
     var proxyaddr = require_proxy_addr();
     var qs = require_lib2();
     var querystring = __require("node:querystring");
-    var { Buffer: Buffer3 } = __require("node:buffer");
+    var { Buffer: Buffer2 } = __require("node:buffer");
     exports.methods = METHODS.map((method) => method.toLowerCase());
     exports.etag = createETagGenerator({ weak: false });
     exports.wetag = createETagGenerator({ weak: true });
@@ -20252,7 +20252,7 @@ var require_utils3 = __commonJS({
     };
     function createETagGenerator(options) {
       return function generateETag(body, encoding) {
-        var buf = !Buffer3.isBuffer(body) ? Buffer3.from(body, encoding) : body;
+        var buf = !Buffer2.isBuffer(body) ? Buffer2.from(body, encoding) : body;
         return etag(buf, options);
       };
     }
@@ -23532,7 +23532,7 @@ var require_response = __commonJS({
     var resolve3 = path8.resolve;
     var basename = path8.basename;
     var vary = require_vary();
-    var { Buffer: Buffer3 } = __require("node:buffer");
+    var { Buffer: Buffer2 } = __require("node:buffer");
     var res = Object.create(http2.ServerResponse.prototype);
     module.exports = res;
     res.status = function status(code) {
@@ -23592,12 +23592,12 @@ var require_response = __commonJS({
       var generateETag = !this.get("ETag") && typeof etagFn === "function";
       var len;
       if (chunk !== void 0) {
-        if (Buffer3.isBuffer(chunk)) {
+        if (Buffer2.isBuffer(chunk)) {
           len = chunk.length;
         } else if (!generateETag && chunk.length < 1e3) {
-          len = Buffer3.byteLength(chunk, encoding);
+          len = Buffer2.byteLength(chunk, encoding);
         } else {
-          chunk = Buffer3.from(chunk, encoding);
+          chunk = Buffer2.from(chunk, encoding);
           encoding = void 0;
           len = chunk.length;
         }
@@ -23862,7 +23862,7 @@ var require_response = __commonJS({
         }
       });
       this.status(status);
-      this.set("Content-Length", Buffer3.byteLength(body));
+      this.set("Content-Length", Buffer2.byteLength(body));
       if (this.req.method === "HEAD") {
         this.end();
       } else {
@@ -24796,801 +24796,6 @@ var require_dist4 = __commonJS({
     module.exports.parse = S.parse;
     module.exports.populate = S.populate;
     __require.main === module && qe(process.argv.slice(2));
-  }
-});
-
-// node_modules/@neon-rs/load/dist/index.js
-var require_dist5 = __commonJS({
-  "node_modules/@neon-rs/load/dist/index.js"(exports) {
-    "use strict";
-    var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    }) : (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    }));
-    var __setModuleDefault = exports && exports.__setModuleDefault || (Object.create ? (function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    }) : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports && exports.__importStar || function(mod) {
-      if (mod && mod.__esModule) return mod;
-      var result = {};
-      if (mod != null) {
-        for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-      }
-      __setModuleDefault(result, mod);
-      return result;
-    };
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.load = exports.currentTarget = void 0;
-    var path8 = __importStar(__require("path"));
-    var fs10 = __importStar(__require("fs"));
-    function currentTarget() {
-      let os4 = null;
-      switch (process.platform) {
-        case "android":
-          switch (process.arch) {
-            case "arm":
-              return "android-arm-eabi";
-            case "arm64":
-              return "android-arm64";
-          }
-          os4 = "Android";
-          break;
-        case "win32":
-          switch (process.arch) {
-            case "x64":
-              return "win32-x64-msvc";
-            case "arm64":
-              return "win32-arm64-msvc";
-            case "ia32":
-              return "win32-ia32-msvc";
-          }
-          os4 = "Windows";
-          break;
-        case "darwin":
-          switch (process.arch) {
-            case "x64":
-              return "darwin-x64";
-            case "arm64":
-              return "darwin-arm64";
-          }
-          os4 = "macOS";
-          break;
-        case "linux":
-          switch (process.arch) {
-            case "x64":
-            case "arm64":
-              return isGlibc() ? `linux-${process.arch}-gnu` : `linux-${process.arch}-musl`;
-            case "arm":
-              return "linux-arm-gnueabihf";
-          }
-          os4 = "Linux";
-          break;
-        case "freebsd":
-          if (process.arch === "x64") {
-            return "freebsd-x64";
-          }
-          os4 = "FreeBSD";
-          break;
-      }
-      if (os4) {
-        throw new Error(`Neon: unsupported ${os4} architecture: ${process.arch}`);
-      }
-      throw new Error(`Neon: unsupported system: ${process.platform}`);
-    }
-    exports.currentTarget = currentTarget;
-    function isGlibc() {
-      const report = process.report?.getReport();
-      if (typeof report !== "object" || !report || !("header" in report)) {
-        return false;
-      }
-      const header = report.header;
-      return typeof header === "object" && !!header && "glibcVersionRuntime" in header;
-    }
-    function load(dirname) {
-      const m = path8.join(dirname, "index.node");
-      return fs10.existsSync(m) ? __require(m) : null;
-    }
-    exports.load = load;
-  }
-});
-
-// node_modules/libsql/node_modules/detect-libc/lib/process.js
-var require_process = __commonJS({
-  "node_modules/libsql/node_modules/detect-libc/lib/process.js"(exports, module) {
-    "use strict";
-    var isLinux = () => process.platform === "linux";
-    var report = null;
-    var getReport = () => {
-      if (!report) {
-        report = isLinux() && process.report ? process.report.getReport() : {};
-      }
-      return report;
-    };
-    module.exports = { isLinux, getReport };
-  }
-});
-
-// node_modules/libsql/node_modules/detect-libc/lib/filesystem.js
-var require_filesystem = __commonJS({
-  "node_modules/libsql/node_modules/detect-libc/lib/filesystem.js"(exports, module) {
-    "use strict";
-    var fs10 = __require("fs");
-    var LDD_PATH = "/usr/bin/ldd";
-    var readFileSync = (path8) => fs10.readFileSync(path8, "utf-8");
-    var readFile = (path8) => new Promise((resolve3, reject) => {
-      fs10.readFile(path8, "utf-8", (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve3(data);
-        }
-      });
-    });
-    module.exports = {
-      LDD_PATH,
-      readFileSync,
-      readFile
-    };
-  }
-});
-
-// node_modules/libsql/node_modules/detect-libc/lib/detect-libc.js
-var require_detect_libc = __commonJS({
-  "node_modules/libsql/node_modules/detect-libc/lib/detect-libc.js"(exports, module) {
-    "use strict";
-    var childProcess = __require("child_process");
-    var { isLinux, getReport } = require_process();
-    var { LDD_PATH, readFile, readFileSync } = require_filesystem();
-    var cachedFamilyFilesystem;
-    var cachedVersionFilesystem;
-    var command = "getconf GNU_LIBC_VERSION 2>&1 || true; ldd --version 2>&1 || true";
-    var commandOut = "";
-    var safeCommand = () => {
-      if (!commandOut) {
-        return new Promise((resolve3) => {
-          childProcess.exec(command, (err, out) => {
-            commandOut = err ? " " : out;
-            resolve3(commandOut);
-          });
-        });
-      }
-      return commandOut;
-    };
-    var safeCommandSync = () => {
-      if (!commandOut) {
-        try {
-          commandOut = childProcess.execSync(command, { encoding: "utf8" });
-        } catch (_err) {
-          commandOut = " ";
-        }
-      }
-      return commandOut;
-    };
-    var GLIBC = "glibc";
-    var RE_GLIBC_VERSION = /GLIBC\s(\d+\.\d+)/;
-    var MUSL = "musl";
-    var GLIBC_ON_LDD = GLIBC.toUpperCase();
-    var MUSL_ON_LDD = MUSL.toLowerCase();
-    var isFileMusl = (f) => f.includes("libc.musl-") || f.includes("ld-musl-");
-    var familyFromReport = () => {
-      const report = getReport();
-      if (report.header && report.header.glibcVersionRuntime) {
-        return GLIBC;
-      }
-      if (Array.isArray(report.sharedObjects)) {
-        if (report.sharedObjects.some(isFileMusl)) {
-          return MUSL;
-        }
-      }
-      return null;
-    };
-    var familyFromCommand = (out) => {
-      const [getconf, ldd1] = out.split(/[\r\n]+/);
-      if (getconf && getconf.includes(GLIBC)) {
-        return GLIBC;
-      }
-      if (ldd1 && ldd1.includes(MUSL)) {
-        return MUSL;
-      }
-      return null;
-    };
-    var getFamilyFromLddContent = (content) => {
-      if (content.includes(MUSL_ON_LDD)) {
-        return MUSL;
-      }
-      if (content.includes(GLIBC_ON_LDD)) {
-        return GLIBC;
-      }
-      return null;
-    };
-    var familyFromFilesystem = async () => {
-      if (cachedFamilyFilesystem !== void 0) {
-        return cachedFamilyFilesystem;
-      }
-      cachedFamilyFilesystem = null;
-      try {
-        const lddContent = await readFile(LDD_PATH);
-        cachedFamilyFilesystem = getFamilyFromLddContent(lddContent);
-      } catch (e) {
-      }
-      return cachedFamilyFilesystem;
-    };
-    var familyFromFilesystemSync = () => {
-      if (cachedFamilyFilesystem !== void 0) {
-        return cachedFamilyFilesystem;
-      }
-      cachedFamilyFilesystem = null;
-      try {
-        const lddContent = readFileSync(LDD_PATH);
-        cachedFamilyFilesystem = getFamilyFromLddContent(lddContent);
-      } catch (e) {
-      }
-      return cachedFamilyFilesystem;
-    };
-    var family = async () => {
-      let family2 = null;
-      if (isLinux()) {
-        family2 = await familyFromFilesystem();
-        if (!family2) {
-          family2 = familyFromReport();
-        }
-        if (!family2) {
-          const out = await safeCommand();
-          family2 = familyFromCommand(out);
-        }
-      }
-      return family2;
-    };
-    var familySync = () => {
-      let family2 = null;
-      if (isLinux()) {
-        family2 = familyFromFilesystemSync();
-        if (!family2) {
-          family2 = familyFromReport();
-        }
-        if (!family2) {
-          const out = safeCommandSync();
-          family2 = familyFromCommand(out);
-        }
-      }
-      return family2;
-    };
-    var isNonGlibcLinux = async () => isLinux() && await family() !== GLIBC;
-    var isNonGlibcLinuxSync = () => isLinux() && familySync() !== GLIBC;
-    var versionFromFilesystem = async () => {
-      if (cachedVersionFilesystem !== void 0) {
-        return cachedVersionFilesystem;
-      }
-      cachedVersionFilesystem = null;
-      try {
-        const lddContent = await readFile(LDD_PATH);
-        const versionMatch = lddContent.match(RE_GLIBC_VERSION);
-        if (versionMatch) {
-          cachedVersionFilesystem = versionMatch[1];
-        }
-      } catch (e) {
-      }
-      return cachedVersionFilesystem;
-    };
-    var versionFromFilesystemSync = () => {
-      if (cachedVersionFilesystem !== void 0) {
-        return cachedVersionFilesystem;
-      }
-      cachedVersionFilesystem = null;
-      try {
-        const lddContent = readFileSync(LDD_PATH);
-        const versionMatch = lddContent.match(RE_GLIBC_VERSION);
-        if (versionMatch) {
-          cachedVersionFilesystem = versionMatch[1];
-        }
-      } catch (e) {
-      }
-      return cachedVersionFilesystem;
-    };
-    var versionFromReport = () => {
-      const report = getReport();
-      if (report.header && report.header.glibcVersionRuntime) {
-        return report.header.glibcVersionRuntime;
-      }
-      return null;
-    };
-    var versionSuffix = (s) => s.trim().split(/\s+/)[1];
-    var versionFromCommand = (out) => {
-      const [getconf, ldd1, ldd2] = out.split(/[\r\n]+/);
-      if (getconf && getconf.includes(GLIBC)) {
-        return versionSuffix(getconf);
-      }
-      if (ldd1 && ldd2 && ldd1.includes(MUSL)) {
-        return versionSuffix(ldd2);
-      }
-      return null;
-    };
-    var version3 = async () => {
-      let version4 = null;
-      if (isLinux()) {
-        version4 = await versionFromFilesystem();
-        if (!version4) {
-          version4 = versionFromReport();
-        }
-        if (!version4) {
-          const out = await safeCommand();
-          version4 = versionFromCommand(out);
-        }
-      }
-      return version4;
-    };
-    var versionSync = () => {
-      let version4 = null;
-      if (isLinux()) {
-        version4 = versionFromFilesystemSync();
-        if (!version4) {
-          version4 = versionFromReport();
-        }
-        if (!version4) {
-          const out = safeCommandSync();
-          version4 = versionFromCommand(out);
-        }
-      }
-      return version4;
-    };
-    module.exports = {
-      GLIBC,
-      MUSL,
-      family,
-      familySync,
-      isNonGlibcLinux,
-      isNonGlibcLinuxSync,
-      version: version3,
-      versionSync
-    };
-  }
-});
-
-// node_modules/libsql/auth.js
-var require_auth = __commonJS({
-  "node_modules/libsql/auth.js"(exports, module) {
-    var Authorization = {
-      /**
-       * Allow access to a resource.
-       * @type {number}
-       */
-      ALLOW: 0,
-      /**
-       * Deny access to a resource and throw an error in `prepare()`.
-       * @type {number}
-       */
-      DENY: 1
-    };
-    module.exports = Authorization;
-  }
-});
-
-// node_modules/libsql/sqlite-error.js
-var require_sqlite_error = __commonJS({
-  "node_modules/libsql/sqlite-error.js"(exports, module) {
-    "use strict";
-    var descriptor = { value: "SqliteError", writable: true, enumerable: false, configurable: true };
-    function SqliteError(message, code, rawCode) {
-      if (new.target !== SqliteError) {
-        return new SqliteError(message, code);
-      }
-      if (typeof code !== "string") {
-        throw new TypeError("Expected second argument to be a string");
-      }
-      Error.call(this, message);
-      descriptor.value = "" + message;
-      Object.defineProperty(this, "message", descriptor);
-      Error.captureStackTrace(this, SqliteError);
-      this.code = code;
-      this.rawCode = rawCode;
-    }
-    Object.setPrototypeOf(SqliteError, Error);
-    Object.setPrototypeOf(SqliteError.prototype, Error.prototype);
-    Object.defineProperty(SqliteError.prototype, "name", descriptor);
-    module.exports = SqliteError;
-  }
-});
-
-// node_modules/libsql/index.js
-var require_libsql = __commonJS({
-  "node_modules/libsql/index.js"(exports, module) {
-    "use strict";
-    var { load, currentTarget } = require_dist5();
-    var { familySync, GLIBC, MUSL } = require_detect_libc();
-    function requireNative() {
-      if (process.env.LIBSQL_JS_DEV) {
-        return load(__dirname);
-      }
-      let target = currentTarget();
-      if (familySync() == GLIBC) {
-        switch (target) {
-          case "linux-x64-musl":
-            target = "linux-x64-gnu";
-            break;
-          case "linux-arm64-musl":
-            target = "linux-arm64-gnu";
-            break;
-        }
-      }
-      if (target === "linux-arm-gnueabihf" && familySync() == MUSL) {
-        target = "linux-arm-musleabihf";
-      }
-      return __require(`@libsql/${target}`);
-    }
-    var {
-      databaseOpen,
-      databaseOpenWithSync,
-      databaseInTransaction,
-      databaseInterrupt,
-      databaseClose,
-      databaseSyncSync,
-      databaseSyncUntilSync,
-      databaseExecSync,
-      databasePrepareSync,
-      databaseDefaultSafeIntegers,
-      databaseAuthorizer,
-      databaseLoadExtension,
-      databaseMaxWriteReplicationIndex,
-      statementRaw,
-      statementIsReader,
-      statementGet,
-      statementRun,
-      statementInterrupt,
-      statementRowsSync,
-      statementColumns,
-      statementSafeIntegers,
-      rowsNext
-    } = requireNative();
-    var Authorization = require_auth();
-    var SqliteError = require_sqlite_error();
-    function convertError(err) {
-      if (err.libsqlError) {
-        return new SqliteError(err.message, err.code, err.rawCode);
-      }
-      return err;
-    }
-    var Database2 = class {
-      /**
-       * Creates a new database connection. If the database file pointed to by `path` does not exists, it will be created.
-       *
-       * @constructor
-       * @param {string} path - Path to the database file.
-       */
-      constructor(path8, opts) {
-        const encryptionCipher = opts?.encryptionCipher ?? "aes256cbc";
-        if (opts && opts.syncUrl) {
-          var authToken = "";
-          if (opts.syncAuth) {
-            console.warn("Warning: The `syncAuth` option is deprecated, please use `authToken` option instead.");
-            authToken = opts.syncAuth;
-          } else if (opts.authToken) {
-            authToken = opts.authToken;
-          }
-          const encryptionKey = opts?.encryptionKey ?? "";
-          const syncPeriod = opts?.syncPeriod ?? 0;
-          const readYourWrites = opts?.readYourWrites ?? true;
-          const offline = opts?.offline ?? false;
-          const remoteEncryptionKey = opts?.remoteEncryptionKey ?? "";
-          this.db = databaseOpenWithSync(path8, opts.syncUrl, authToken, encryptionCipher, encryptionKey, syncPeriod, readYourWrites, offline, remoteEncryptionKey);
-        } else {
-          const authToken2 = opts?.authToken ?? "";
-          const encryptionKey = opts?.encryptionKey ?? "";
-          const timeout = opts?.timeout ?? 0;
-          const remoteEncryptionKey = opts?.remoteEncryptionKey ?? "";
-          this.db = databaseOpen(path8, authToken2, encryptionCipher, encryptionKey, timeout, remoteEncryptionKey);
-        }
-        this.memory = path8 === ":memory:";
-        this.readonly = false;
-        this.name = "";
-        this.open = true;
-        const db2 = this.db;
-        Object.defineProperties(this, {
-          inTransaction: {
-            get() {
-              return databaseInTransaction(db2);
-            }
-          }
-        });
-      }
-      sync() {
-        return databaseSyncSync.call(this.db);
-      }
-      syncUntil(replicationIndex) {
-        return databaseSyncUntilSync.call(this.db, replicationIndex);
-      }
-      /**
-       * Prepares a SQL statement for execution.
-       *
-       * @param {string} sql - The SQL statement string to prepare.
-       */
-      prepare(sql) {
-        try {
-          const stmt = databasePrepareSync.call(this.db, sql);
-          return new Statement(stmt);
-        } catch (err) {
-          throw convertError(err);
-        }
-      }
-      /**
-       * Returns a function that executes the given function in a transaction.
-       *
-       * @param {function} fn - The function to wrap in a transaction.
-       */
-      transaction(fn) {
-        if (typeof fn !== "function")
-          throw new TypeError("Expected first argument to be a function");
-        const db2 = this;
-        const wrapTxn = (mode) => {
-          return (...bindParameters) => {
-            db2.exec("BEGIN " + mode);
-            try {
-              const result = fn(...bindParameters);
-              db2.exec("COMMIT");
-              return result;
-            } catch (err) {
-              db2.exec("ROLLBACK");
-              throw err;
-            }
-          };
-        };
-        const properties = {
-          default: { value: wrapTxn("") },
-          deferred: { value: wrapTxn("DEFERRED") },
-          immediate: { value: wrapTxn("IMMEDIATE") },
-          exclusive: { value: wrapTxn("EXCLUSIVE") },
-          database: { value: this, enumerable: true }
-        };
-        Object.defineProperties(properties.default.value, properties);
-        Object.defineProperties(properties.deferred.value, properties);
-        Object.defineProperties(properties.immediate.value, properties);
-        Object.defineProperties(properties.exclusive.value, properties);
-        return properties.default.value;
-      }
-      pragma(source, options) {
-        if (options == null) options = {};
-        if (typeof source !== "string") throw new TypeError("Expected first argument to be a string");
-        if (typeof options !== "object") throw new TypeError("Expected second argument to be an options object");
-        const simple = options["simple"];
-        const stmt = this.prepare(`PRAGMA ${source}`, this, true);
-        return simple ? stmt.pluck().get() : stmt.all();
-      }
-      backup(filename, options) {
-        throw new Error("not implemented");
-      }
-      serialize(options) {
-        throw new Error("not implemented");
-      }
-      function(name2, options, fn) {
-        if (options == null) options = {};
-        if (typeof options === "function") {
-          fn = options;
-          options = {};
-        }
-        if (typeof name2 !== "string")
-          throw new TypeError("Expected first argument to be a string");
-        if (typeof fn !== "function")
-          throw new TypeError("Expected last argument to be a function");
-        if (typeof options !== "object")
-          throw new TypeError("Expected second argument to be an options object");
-        if (!name2)
-          throw new TypeError(
-            "User-defined function name cannot be an empty string"
-          );
-        throw new Error("not implemented");
-      }
-      aggregate(name2, options) {
-        if (typeof name2 !== "string")
-          throw new TypeError("Expected first argument to be a string");
-        if (typeof options !== "object" || options === null)
-          throw new TypeError("Expected second argument to be an options object");
-        if (!name2)
-          throw new TypeError(
-            "User-defined function name cannot be an empty string"
-          );
-        throw new Error("not implemented");
-      }
-      table(name2, factory) {
-        if (typeof name2 !== "string")
-          throw new TypeError("Expected first argument to be a string");
-        if (!name2)
-          throw new TypeError(
-            "Virtual table module name cannot be an empty string"
-          );
-        throw new Error("not implemented");
-      }
-      authorizer(rules) {
-        databaseAuthorizer.call(this.db, rules);
-      }
-      loadExtension(...args) {
-        databaseLoadExtension.call(this.db, ...args);
-      }
-      maxWriteReplicationIndex() {
-        return databaseMaxWriteReplicationIndex.call(this.db);
-      }
-      /**
-       * Executes a SQL statement.
-       *
-       * @param {string} sql - The SQL statement string to execute.
-       */
-      exec(sql) {
-        try {
-          databaseExecSync.call(this.db, sql);
-        } catch (err) {
-          throw convertError(err);
-        }
-      }
-      /**
-       * Interrupts the database connection.
-       */
-      interrupt() {
-        databaseInterrupt.call(this.db);
-      }
-      /**
-       * Closes the database connection.
-       */
-      close() {
-        databaseClose.call(this.db);
-        this.open = false;
-      }
-      /**
-       * Toggle 64-bit integer support.
-       */
-      defaultSafeIntegers(toggle) {
-        databaseDefaultSafeIntegers.call(this.db, toggle ?? true);
-        return this;
-      }
-      unsafeMode(...args) {
-        throw new Error("not implemented");
-      }
-    };
-    var Statement = class {
-      constructor(stmt) {
-        this.stmt = stmt;
-        this.pluckMode = false;
-      }
-      /**
-       * Toggle raw mode.
-       *
-       * @param raw Enable or disable raw mode. If you don't pass the parameter, raw mode is enabled.
-       */
-      raw(raw) {
-        statementRaw.call(this.stmt, raw ?? true);
-        return this;
-      }
-      /**
-       * Toggle pluck mode.
-       *
-       * @param pluckMode Enable or disable pluck mode. If you don't pass the parameter, pluck mode is enabled.
-       */
-      pluck(pluckMode) {
-        this.pluckMode = pluckMode ?? true;
-        return this;
-      }
-      get reader() {
-        return statementIsReader.call(this.stmt);
-      }
-      /**
-       * Executes the SQL statement and returns an info object.
-       */
-      run(...bindParameters) {
-        try {
-          if (bindParameters.length == 1 && typeof bindParameters[0] === "object") {
-            return statementRun.call(this.stmt, bindParameters[0]);
-          } else {
-            return statementRun.call(this.stmt, bindParameters.flat());
-          }
-        } catch (err) {
-          throw convertError(err);
-        }
-      }
-      /**
-       * Executes the SQL statement and returns the first row.
-       *
-       * @param bindParameters - The bind parameters for executing the statement.
-       */
-      get(...bindParameters) {
-        try {
-          if (bindParameters.length == 1 && typeof bindParameters[0] === "object") {
-            return statementGet.call(this.stmt, bindParameters[0]);
-          } else {
-            return statementGet.call(this.stmt, bindParameters.flat());
-          }
-        } catch (err) {
-          throw convertError(err);
-        }
-      }
-      /**
-       * Executes the SQL statement and returns an iterator to the resulting rows.
-       *
-       * @param bindParameters - The bind parameters for executing the statement.
-       */
-      iterate(...bindParameters) {
-        var rows = void 0;
-        if (bindParameters.length == 1 && typeof bindParameters[0] === "object") {
-          rows = statementRowsSync.call(this.stmt, bindParameters[0]);
-        } else {
-          rows = statementRowsSync.call(this.stmt, bindParameters.flat());
-        }
-        const iter = {
-          nextRows: Array(100),
-          nextRowIndex: 100,
-          next() {
-            try {
-              if (this.nextRowIndex === 100) {
-                rowsNext.call(rows, this.nextRows);
-                this.nextRowIndex = 0;
-              }
-              const row = this.nextRows[this.nextRowIndex];
-              this.nextRows[this.nextRowIndex] = void 0;
-              if (!row) {
-                return { done: true };
-              }
-              this.nextRowIndex++;
-              return { value: row, done: false };
-            } catch (err) {
-              throw convertError(err);
-            }
-          },
-          [Symbol.iterator]() {
-            return this;
-          }
-        };
-        return iter;
-      }
-      /**
-       * Executes the SQL statement and returns an array of the resulting rows.
-       *
-       * @param bindParameters - The bind parameters for executing the statement.
-       */
-      all(...bindParameters) {
-        try {
-          const result = [];
-          for (const row of this.iterate(...bindParameters)) {
-            if (this.pluckMode) {
-              result.push(row[Object.keys(row)[0]]);
-            } else {
-              result.push(row);
-            }
-          }
-          return result;
-        } catch (err) {
-          throw convertError(err);
-        }
-      }
-      /**
-       * Interrupts the statement.
-       */
-      interrupt() {
-        statementInterrupt.call(this.stmt);
-      }
-      /**
-       * Returns the columns in the result set returned by this prepared statement.
-       */
-      columns() {
-        return statementColumns.call(this.stmt);
-      }
-      /**
-       * Toggle 64-bit integer support.
-       */
-      safeIntegers(toggle) {
-        statementSafeIntegers.call(this.stmt, toggle ?? true);
-        return this;
-      }
-    };
-    module.exports = Database2;
-    module.exports.Authorization = Authorization;
-    module.exports.SqliteError = SqliteError;
   }
 });
 
@@ -29388,34 +28593,34 @@ var require_promise_limit = __commonJS({
 var require_safe_buffer = __commonJS({
   "node_modules/safe-buffer/index.js"(exports, module) {
     var buffer = __require("buffer");
-    var Buffer3 = buffer.Buffer;
+    var Buffer2 = buffer.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
         dst[key] = src[key];
       }
     }
-    if (Buffer3.from && Buffer3.alloc && Buffer3.allocUnsafe && Buffer3.allocUnsafeSlow) {
+    if (Buffer2.from && Buffer2.alloc && Buffer2.allocUnsafe && Buffer2.allocUnsafeSlow) {
       module.exports = buffer;
     } else {
       copyProps(buffer, exports);
       exports.Buffer = SafeBuffer;
     }
     function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer3(arg, encodingOrOffset, length);
+      return Buffer2(arg, encodingOrOffset, length);
     }
-    SafeBuffer.prototype = Object.create(Buffer3.prototype);
-    copyProps(Buffer3, SafeBuffer);
+    SafeBuffer.prototype = Object.create(Buffer2.prototype);
+    copyProps(Buffer2, SafeBuffer);
     SafeBuffer.from = function(arg, encodingOrOffset, length) {
       if (typeof arg === "number") {
         throw new TypeError("Argument must not be a number");
       }
-      return Buffer3(arg, encodingOrOffset, length);
+      return Buffer2(arg, encodingOrOffset, length);
     };
     SafeBuffer.alloc = function(size, fill, encoding) {
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      var buf = Buffer3(size);
+      var buf = Buffer2(size);
       if (fill !== void 0) {
         if (typeof encoding === "string") {
           buf.fill(fill, encoding);
@@ -29431,7 +28636,7 @@ var require_safe_buffer = __commonJS({
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      return Buffer3(size);
+      return Buffer2(size);
     };
     SafeBuffer.allocUnsafeSlow = function(size) {
       if (typeof size !== "number") {
@@ -29445,7 +28650,7 @@ var require_safe_buffer = __commonJS({
 // node_modules/jws/lib/data-stream.js
 var require_data_stream = __commonJS({
   "node_modules/jws/lib/data-stream.js"(exports, module) {
-    var Buffer3 = require_safe_buffer().Buffer;
+    var Buffer2 = require_safe_buffer().Buffer;
     var Stream3 = __require("stream");
     var util3 = __require("util");
     function DataStream2(data) {
@@ -29453,11 +28658,11 @@ var require_data_stream = __commonJS({
       this.writable = true;
       this.readable = true;
       if (!data) {
-        this.buffer = Buffer3.alloc(0);
+        this.buffer = Buffer2.alloc(0);
         return this;
       }
       if (typeof data.pipe === "function") {
-        this.buffer = Buffer3.alloc(0);
+        this.buffer = Buffer2.alloc(0);
         data.pipe(this);
         return this;
       }
@@ -29475,7 +28680,7 @@ var require_data_stream = __commonJS({
     }
     util3.inherits(DataStream2, Stream3);
     DataStream2.prototype.write = function write(data) {
-      this.buffer = Buffer3.concat([this.buffer, Buffer3.from(data)]);
+      this.buffer = Buffer2.concat([this.buffer, Buffer2.from(data)]);
       this.emit("data", data);
     };
     DataStream2.prototype.end = function end(data) {
@@ -29518,7 +28723,7 @@ var require_param_bytes_for_alg = __commonJS({
 var require_ecdsa_sig_formatter = __commonJS({
   "node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports, module) {
     "use strict";
-    var Buffer3 = require_safe_buffer().Buffer;
+    var Buffer2 = require_safe_buffer().Buffer;
     var getParamBytesForAlg = require_param_bytes_for_alg();
     var MAX_OCTET = 128;
     var CLASS_UNIVERSAL = 0;
@@ -29531,10 +28736,10 @@ var require_ecdsa_sig_formatter = __commonJS({
       return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
     }
     function signatureAsBuffer(signature) {
-      if (Buffer3.isBuffer(signature)) {
+      if (Buffer2.isBuffer(signature)) {
         return signature;
       } else if ("string" === typeof signature) {
-        return Buffer3.from(signature, "base64");
+        return Buffer2.from(signature, "base64");
       }
       throw new TypeError("ECDSA signature must be a Base64 string or a Buffer");
     }
@@ -29582,7 +28787,7 @@ var require_ecdsa_sig_formatter = __commonJS({
         throw new Error('Expected to consume entire buffer, but "' + (inputLength - offset) + '" bytes remain');
       }
       var rPadding = paramBytes - rLength, sPadding = paramBytes - sLength;
-      var dst = Buffer3.allocUnsafe(rPadding + rLength + sPadding + sLength);
+      var dst = Buffer2.allocUnsafe(rPadding + rLength + sPadding + sLength);
       for (offset = 0; offset < rPadding; ++offset) {
         dst[offset] = 0;
       }
@@ -29620,7 +28825,7 @@ var require_ecdsa_sig_formatter = __commonJS({
       var sLength = paramBytes - sPadding;
       var rsBytes = 1 + 1 + rLength + 1 + 1 + sLength;
       var shortLength = rsBytes < MAX_OCTET;
-      var dst = Buffer3.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
+      var dst = Buffer2.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
       var offset = 0;
       dst[offset++] = ENCODED_TAG_SEQ;
       if (shortLength) {
@@ -29658,11 +28863,11 @@ var require_ecdsa_sig_formatter = __commonJS({
 var require_buffer_equal_constant_time = __commonJS({
   "node_modules/buffer-equal-constant-time/index.js"(exports, module) {
     "use strict";
-    var Buffer3 = __require("buffer").Buffer;
+    var Buffer2 = __require("buffer").Buffer;
     var SlowBuffer = __require("buffer").SlowBuffer;
     module.exports = bufferEq;
     function bufferEq(a, b) {
-      if (!Buffer3.isBuffer(a) || !Buffer3.isBuffer(b)) {
+      if (!Buffer2.isBuffer(a) || !Buffer2.isBuffer(b)) {
         return false;
       }
       if (a.length !== b.length) {
@@ -29675,14 +28880,14 @@ var require_buffer_equal_constant_time = __commonJS({
       return c === 0;
     }
     bufferEq.install = function() {
-      Buffer3.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
+      Buffer2.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
         return bufferEq(this, that);
       };
     };
-    var origBufEqual = Buffer3.prototype.equal;
+    var origBufEqual = Buffer2.prototype.equal;
     var origSlowBufEqual = SlowBuffer.prototype.equal;
     bufferEq.restore = function() {
-      Buffer3.prototype.equal = origBufEqual;
+      Buffer2.prototype.equal = origBufEqual;
       SlowBuffer.prototype.equal = origSlowBufEqual;
     };
   }
@@ -29691,7 +28896,7 @@ var require_buffer_equal_constant_time = __commonJS({
 // node_modules/jwa/index.js
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports, module) {
-    var Buffer3 = require_safe_buffer().Buffer;
+    var Buffer2 = require_safe_buffer().Buffer;
     var crypto10 = __require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util3 = __require("util");
@@ -29705,7 +28910,7 @@ var require_jwa = __commonJS({
       MSG_INVALID_SECRET += "or a KeyObject";
     }
     function checkIsPublicKey(key) {
-      if (Buffer3.isBuffer(key)) {
+      if (Buffer2.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -29728,7 +28933,7 @@ var require_jwa = __commonJS({
       }
     }
     function checkIsPrivateKey(key) {
-      if (Buffer3.isBuffer(key)) {
+      if (Buffer2.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -29740,7 +28945,7 @@ var require_jwa = __commonJS({
       throw typeError2(MSG_INVALID_SIGNER_KEY);
     }
     function checkIsSecretKey(key) {
-      if (Buffer3.isBuffer(key)) {
+      if (Buffer2.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -29778,7 +28983,7 @@ var require_jwa = __commonJS({
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
-      return Buffer3.isBuffer(obj) || typeof obj === "string";
+      return Buffer2.isBuffer(obj) || typeof obj === "string";
     }
     function normalizeInput(thing) {
       if (!bufferOrString(thing))
@@ -29809,7 +29014,7 @@ var require_jwa = __commonJS({
     function createHmacVerifier(bits) {
       return function verify(thing, signature, secret) {
         var computedSig = createHmacSigner(bits)(thing, secret);
-        return timingSafeEqual(Buffer3.from(signature), Buffer3.from(computedSig));
+        return timingSafeEqual(Buffer2.from(signature), Buffer2.from(computedSig));
       };
     }
     function createKeySigner(bits) {
@@ -29915,11 +29120,11 @@ var require_jwa = __commonJS({
 // node_modules/jws/lib/tostring.js
 var require_tostring = __commonJS({
   "node_modules/jws/lib/tostring.js"(exports, module) {
-    var Buffer3 = __require("buffer").Buffer;
+    var Buffer2 = __require("buffer").Buffer;
     module.exports = function toString(obj) {
       if (typeof obj === "string")
         return obj;
-      if (typeof obj === "number" || Buffer3.isBuffer(obj))
+      if (typeof obj === "number" || Buffer2.isBuffer(obj))
         return obj.toString();
       return JSON.stringify(obj);
     };
@@ -29929,14 +29134,14 @@ var require_tostring = __commonJS({
 // node_modules/jws/lib/sign-stream.js
 var require_sign_stream = __commonJS({
   "node_modules/jws/lib/sign-stream.js"(exports, module) {
-    var Buffer3 = require_safe_buffer().Buffer;
+    var Buffer2 = require_safe_buffer().Buffer;
     var DataStream2 = require_data_stream();
     var jwa = require_jwa();
     var Stream3 = __require("stream");
     var toString = require_tostring();
     var util3 = __require("util");
     function base64url(string2, encoding) {
-      return Buffer3.from(string2, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+      return Buffer2.from(string2, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
     }
     function jwsSecuredInput(header, payload, encoding) {
       encoding = encoding || "utf8";
@@ -30004,7 +29209,7 @@ var require_sign_stream = __commonJS({
 // node_modules/jws/lib/verify-stream.js
 var require_verify_stream = __commonJS({
   "node_modules/jws/lib/verify-stream.js"(exports, module) {
-    var Buffer3 = require_safe_buffer().Buffer;
+    var Buffer2 = require_safe_buffer().Buffer;
     var DataStream2 = require_data_stream();
     var jwa = require_jwa();
     var Stream3 = __require("stream");
@@ -30025,7 +29230,7 @@ var require_verify_stream = __commonJS({
     }
     function headerFromJWS(jwsSig) {
       var encodedHeader = jwsSig.split(".", 1)[0];
-      return safeJsonParse(Buffer3.from(encodedHeader, "base64").toString("binary"));
+      return safeJsonParse(Buffer2.from(encodedHeader, "base64").toString("binary"));
     }
     function securedInputFromJWS(jwsSig) {
       return jwsSig.split(".", 2).join(".");
@@ -30036,7 +29241,7 @@ var require_verify_stream = __commonJS({
     function payloadFromJWS(jwsSig, encoding) {
       encoding = encoding || "utf8";
       var payload = jwsSig.split(".")[1];
-      return Buffer3.from(payload, "base64").toString(encoding);
+      return Buffer2.from(payload, "base64").toString(encoding);
     }
     function isValidJws(string2) {
       return JWS_REGEX.test(string2) && !!headerFromJWS(string2);
@@ -47247,9 +46452,6 @@ function valueToJson(value) {
 
 // node_modules/@libsql/core/lib-esm/config.js
 var inMemoryMode = ":memory:";
-function isInMemoryConfig(config) {
-  return config.scheme === "file" && (config.path === ":memory:" || config.path.startsWith(":memory:?"));
-}
 function expandConfig(config, preferHttp) {
   if (typeof config !== "object") {
     throw new TypeError(`Expected client configuration as object, got ${typeof config}`);
@@ -47361,612 +46563,6 @@ function expandConfig(config, preferHttp) {
     timeout: config.timeout
   };
 }
-
-// node_modules/@libsql/client/lib-esm/sqlite3.js
-var import_libsql = __toESM(require_libsql(), 1);
-import { Buffer as Buffer2 } from "node:buffer";
-function _createClient(config) {
-  if (config.scheme !== "file") {
-    throw new LibsqlError(`URL scheme ${JSON.stringify(config.scheme + ":")} is not supported by the local sqlite3 client. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
-  }
-  const authority = config.authority;
-  if (authority !== void 0) {
-    const host = authority.host.toLowerCase();
-    if (host !== "" && host !== "localhost") {
-      throw new LibsqlError(`Invalid host in file URL: ${JSON.stringify(authority.host)}. A "file:" URL with an absolute path should start with one slash ("file:/absolute/path.db") or with three slashes ("file:///absolute/path.db"). For more information, please read ${supportedUrlLink}`, "URL_INVALID");
-    }
-    if (authority.port !== void 0) {
-      throw new LibsqlError("File URL cannot have a port", "URL_INVALID");
-    }
-    if (authority.userinfo !== void 0) {
-      throw new LibsqlError("File URL cannot have username and password", "URL_INVALID");
-    }
-  }
-  let isInMemory = isInMemoryConfig(config);
-  if (isInMemory && config.syncUrl) {
-    throw new LibsqlError(`Embedded replica must use file for local db but URI with in-memory mode were provided instead: ${config.path}`, "URL_INVALID");
-  }
-  let path8 = config.path;
-  if (isInMemory) {
-    path8 = `${config.scheme}:${config.path}`;
-  }
-  const maxConnections = isInMemory || config.syncUrl ? 1 : Math.max(1, config.concurrency);
-  const options = {
-    authToken: config.authToken,
-    encryptionKey: config.encryptionKey,
-    remoteEncryptionKey: config.remoteEncryptionKey,
-    syncUrl: config.syncUrl,
-    syncPeriod: config.syncInterval,
-    readYourWrites: config.readYourWrites,
-    offline: config.offline,
-    timeout: config.timeout
-  };
-  const pool = new ConnectionPool(path8, options, maxConnections);
-  const db2 = pool.acquireSync();
-  try {
-    executeStmt(db2, "SELECT 1 AS checkThatTheDatabaseCanBeOpened", config.intMode);
-  } catch (e) {
-    pool.close();
-    throw e;
-  }
-  pool.release(db2);
-  return new Sqlite3Client(pool, config.intMode);
-}
-var ConnectionPool = class {
-  #path;
-  #options;
-  #maxConnections;
-  #idle;
-  #borrowed;
-  // the subset of `#borrowed` held by an open transaction
-  #heldByTransaction;
-  #waiters;
-  #closed;
-  constructor(path8, options, maxConnections) {
-    this.#path = path8;
-    this.#options = options;
-    this.#maxConnections = maxConnections;
-    this.#idle = [];
-    this.#borrowed = /* @__PURE__ */ new Set();
-    this.#heldByTransaction = /* @__PURE__ */ new Set();
-    this.#waiters = [];
-    this.#closed = false;
-  }
-  // Borrows a connection, opening one if the pool is below its limit and
-  // waiting for a release if it is not.
-  //
-  // Every borrow but a transaction's is a short synchronous call that
-  // returns the connection before the caller sees it again, so waiting for
-  // one is safe. A transaction holds its connection until the caller commits
-  // or rolls back, so if transactions hold every connection there is nothing
-  // to wait for - the caller has to act first. Say so instead of hanging.
-  acquire(forTransaction = false) {
-    if (!this.#closed && this.#atLimit()) {
-      if (this.#heldByTransaction.size >= this.#maxConnections) {
-        return Promise.reject(new LibsqlError(this.#maxConnections === 1 ? "This client has a single connection, which an open transaction is holding. In-memory databases and embedded replicas cannot have more than one. Commit or roll back the transaction before using the client again." : `All ${this.#maxConnections} of this client's connections are held by open transactions. Commit or roll back one before using the client again, or raise \`concurrency\`.`, "TRANSACTION_ACTIVE"));
-      }
-      return new Promise((resolve3, reject) => this.#waiters.push({
-        resolve: (db2) => {
-          if (forTransaction) {
-            this.#heldByTransaction.add(db2);
-          }
-          resolve3(db2);
-        },
-        reject
-      }));
-    }
-    try {
-      return Promise.resolve(this.acquireSync(forTransaction));
-    } catch (e) {
-      return Promise.reject(e);
-    }
-  }
-  // Borrows a connection without waiting. Only valid when the pool cannot be
-  // at its limit yet, which is why it is used for the initial probe.
-  acquireSync(forTransaction = false) {
-    this.#checkNotClosed();
-    const idle = this.#idle.pop();
-    const db2 = idle ?? new import_libsql.default(this.#path, this.#options);
-    this.#borrowed.add(db2);
-    if (forTransaction) {
-      this.#heldByTransaction.add(db2);
-    }
-    return db2;
-  }
-  // Returns a borrowed connection to the pool, handing it straight to a
-  // waiter if there is one.
-  release(db2) {
-    this.#borrowed.delete(db2);
-    this.#heldByTransaction.delete(db2);
-    if (db2.open && db2.inTransaction) {
-      try {
-        db2.prepare("ROLLBACK").run();
-      } catch {
-        closeQuietly(db2);
-        return;
-      }
-    }
-    if (this.#closed || !db2.open) {
-      closeQuietly(db2);
-      return;
-    }
-    const waiter = this.#waiters.shift();
-    if (waiter !== void 0) {
-      this.#borrowed.add(db2);
-      waiter.resolve(db2);
-    } else {
-      this.#idle.push(db2);
-    }
-  }
-  close() {
-    this.#closed = true;
-    for (const db2 of this.#idle) {
-      closeQuietly(db2);
-    }
-    this.#idle = [];
-    for (const db2 of this.#borrowed) {
-      closeQuietly(db2);
-    }
-    this.#borrowed.clear();
-    this.#heldByTransaction.clear();
-    const waiters = this.#waiters;
-    this.#waiters = [];
-    for (const waiter of waiters) {
-      waiter.reject(new LibsqlError("The client is closed", "CLIENT_CLOSED"));
-    }
-  }
-  reopen() {
-    this.close();
-    this.#closed = false;
-  }
-  #atLimit() {
-    return this.#idle.length === 0 && this.#borrowed.size >= this.#maxConnections;
-  }
-  #checkNotClosed() {
-    if (this.#closed) {
-      throw new LibsqlError("The client is closed", "CLIENT_CLOSED");
-    }
-  }
-};
-function closeQuietly(db2) {
-  try {
-    if (db2.open) {
-      db2.close();
-    }
-  } catch {
-  }
-}
-var Sqlite3Client = class {
-  #pool;
-  #intMode;
-  closed;
-  protocol;
-  /** @private */
-  constructor(pool, intMode) {
-    this.#pool = pool;
-    this.#intMode = intMode;
-    this.closed = false;
-    this.protocol = "file";
-  }
-  async execute(stmtOrSql, args) {
-    let stmt;
-    if (typeof stmtOrSql === "string") {
-      stmt = {
-        sql: stmtOrSql,
-        args: args || []
-      };
-    } else {
-      stmt = stmtOrSql;
-    }
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire();
-    try {
-      this.#checkUsable(db2);
-      return executeStmt(db2, stmt, this.#intMode);
-    } finally {
-      this.#pool.release(db2);
-    }
-  }
-  async batch(stmts, mode = "deferred") {
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire();
-    try {
-      this.#checkUsable(db2);
-      executeStmt(db2, transactionModeToBegin(mode), this.#intMode);
-      const resultSets = [];
-      for (let i = 0; i < stmts.length; i++) {
-        try {
-          if (!db2.inTransaction) {
-            throw new LibsqlBatchError("The transaction has been rolled back", i, "TRANSACTION_CLOSED");
-          }
-          const stmt = stmts[i];
-          const normalizedStmt = Array.isArray(stmt) ? { sql: stmt[0], args: stmt[1] || [] } : stmt;
-          resultSets.push(executeStmt(db2, normalizedStmt, this.#intMode));
-        } catch (e) {
-          if (e instanceof LibsqlBatchError) {
-            throw e;
-          }
-          if (e instanceof LibsqlError) {
-            throw new LibsqlBatchError(e.message, i, e.code, e.extendedCode, e.rawCode, e.cause instanceof Error ? e.cause : void 0);
-          }
-          throw e;
-        }
-      }
-      executeStmt(db2, "COMMIT", this.#intMode);
-      return resultSets;
-    } finally {
-      this.#pool.release(db2);
-    }
-  }
-  async migrate(stmts) {
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire();
-    try {
-      this.#checkUsable(db2);
-      executeStmt(db2, "PRAGMA foreign_keys=off", this.#intMode);
-      executeStmt(db2, transactionModeToBegin("deferred"), this.#intMode);
-      const resultSets = [];
-      for (let i = 0; i < stmts.length; i++) {
-        try {
-          if (!db2.inTransaction) {
-            throw new LibsqlBatchError("The transaction has been rolled back", i, "TRANSACTION_CLOSED");
-          }
-          resultSets.push(executeStmt(db2, stmts[i], this.#intMode));
-        } catch (e) {
-          if (e instanceof LibsqlBatchError) {
-            throw e;
-          }
-          if (e instanceof LibsqlError) {
-            throw new LibsqlBatchError(e.message, i, e.code, e.extendedCode, e.rawCode, e.cause instanceof Error ? e.cause : void 0);
-          }
-          throw e;
-        }
-      }
-      executeStmt(db2, "COMMIT", this.#intMode);
-      return resultSets;
-    } finally {
-      if (db2.inTransaction) {
-        executeStmt(db2, "ROLLBACK", this.#intMode);
-      }
-      executeStmt(db2, "PRAGMA foreign_keys=on", this.#intMode);
-      this.#pool.release(db2);
-    }
-  }
-  async transaction(mode = "write") {
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire(true);
-    try {
-      this.#checkUsable(db2);
-      executeStmt(db2, transactionModeToBegin(mode), this.#intMode);
-    } catch (e) {
-      this.#pool.release(db2);
-      throw e;
-    }
-    return new Sqlite3Transaction(db2, this.#intMode, (used) => this.#pool.release(used));
-  }
-  async executeMultiple(sql) {
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire();
-    try {
-      this.#checkUsable(db2);
-      return executeMultiple(db2, sql);
-    } finally {
-      this.#pool.release(db2);
-    }
-  }
-  async sync() {
-    this.#checkNotClosed();
-    const db2 = await this.#pool.acquire();
-    try {
-      this.#checkUsable(db2);
-      const rep = await db2.sync();
-      return {
-        frames_synced: rep.frames_synced,
-        frame_no: rep.frame_no
-      };
-    } finally {
-      this.#pool.release(db2);
-    }
-  }
-  async reconnect() {
-    this.#pool.reopen();
-    this.closed = false;
-  }
-  close() {
-    this.closed = true;
-    this.#pool.close();
-  }
-  #checkNotClosed() {
-    if (this.closed) {
-      throw new LibsqlError("The client is closed", "CLIENT_CLOSED");
-    }
-  }
-  // `close()` and `reconnect()` are synchronous and can land between a
-  // borrow and the work it was borrowed for, closing the connection under an
-  // operation that is already holding one. Without this the operation
-  // reaches libsql with a closed handle and fails with a raw TypeError.
-  #checkUsable(db2) {
-    this.#checkNotClosed();
-    if (!db2.open) {
-      throw new LibsqlError("The connection was closed while this operation was in flight", "CLIENT_CLOSED");
-    }
-  }
-};
-var Sqlite3Transaction = class {
-  // null once the connection has been returned to the pool
-  #database;
-  #intMode;
-  #release;
-  /** @private */
-  constructor(database, intMode, release) {
-    this.#database = database;
-    this.#intMode = intMode;
-    this.#release = release;
-  }
-  // Returns the connection to the pool. Idempotent, so every exit path can
-  // call it without checking whether another already did.
-  #settle() {
-    const db2 = this.#database;
-    if (db2 === null) {
-      return;
-    }
-    this.#database = null;
-    this.#release(db2);
-  }
-  #getDatabase() {
-    this.#checkNotClosed();
-    return this.#database;
-  }
-  async execute(stmtOrSql, args) {
-    let stmt;
-    if (typeof stmtOrSql === "string") {
-      stmt = {
-        sql: stmtOrSql,
-        args: args || []
-      };
-    } else {
-      stmt = stmtOrSql;
-    }
-    return executeStmt(this.#getDatabase(), stmt, this.#intMode);
-  }
-  async batch(stmts) {
-    const resultSets = [];
-    for (let i = 0; i < stmts.length; i++) {
-      try {
-        const db2 = this.#getDatabase();
-        const stmt = stmts[i];
-        const normalizedStmt = Array.isArray(stmt) ? { sql: stmt[0], args: stmt[1] || [] } : stmt;
-        resultSets.push(executeStmt(db2, normalizedStmt, this.#intMode));
-      } catch (e) {
-        if (e instanceof LibsqlBatchError) {
-          throw e;
-        }
-        if (e instanceof LibsqlError) {
-          throw new LibsqlBatchError(e.message, i, e.code, e.extendedCode, e.rawCode, e.cause instanceof Error ? e.cause : void 0);
-        }
-        throw e;
-      }
-    }
-    return resultSets;
-  }
-  async executeMultiple(sql) {
-    return executeMultiple(this.#getDatabase(), sql);
-  }
-  async rollback() {
-    const db2 = this.#database;
-    if (db2 === null || !db2.open) {
-      this.#settle();
-      return;
-    }
-    try {
-      this.#checkNotClosed();
-      executeStmt(db2, "ROLLBACK", this.#intMode);
-    } finally {
-      this.#settle();
-    }
-  }
-  async commit() {
-    try {
-      executeStmt(this.#getDatabase(), "COMMIT", this.#intMode);
-    } finally {
-      this.#settle();
-    }
-  }
-  close() {
-    const db2 = this.#database;
-    if (db2 === null) {
-      return;
-    }
-    try {
-      if (db2.open && db2.inTransaction) {
-        executeStmt(db2, "ROLLBACK", this.#intMode);
-      }
-    } finally {
-      this.#settle();
-    }
-  }
-  get closed() {
-    const db2 = this.#database;
-    if (db2 === null || !db2.open) {
-      return true;
-    }
-    return !db2.inTransaction;
-  }
-  #checkNotClosed() {
-    if (this.closed) {
-      throw new LibsqlError("The transaction is closed", "TRANSACTION_CLOSED");
-    }
-  }
-};
-function executeStmt(db2, stmt, intMode) {
-  let sql;
-  let args;
-  if (typeof stmt === "string") {
-    sql = stmt;
-    args = [];
-  } else {
-    sql = stmt.sql;
-    if (Array.isArray(stmt.args)) {
-      args = stmt.args.map((value) => valueToSql(value, intMode));
-    } else {
-      args = {};
-      for (const name2 in stmt.args) {
-        const argName = name2[0] === "@" || name2[0] === "$" || name2[0] === ":" ? name2.substring(1) : name2;
-        args[argName] = valueToSql(stmt.args[name2], intMode);
-      }
-    }
-  }
-  try {
-    const sqlStmt = db2.prepare(sql);
-    sqlStmt.safeIntegers(true);
-    let returnsData = true;
-    try {
-      sqlStmt.raw(true);
-    } catch {
-      returnsData = false;
-    }
-    if (returnsData) {
-      const columns = Array.from(sqlStmt.columns().map((col) => col.name));
-      const columnTypes = Array.from(sqlStmt.columns().map((col) => col.type ?? ""));
-      const rows = sqlStmt.all(args).map((sqlRow) => {
-        return rowFromSql(sqlRow, columns, intMode);
-      });
-      const rowsAffected = 0;
-      const lastInsertRowid = void 0;
-      return new ResultSetImpl(columns, columnTypes, rows, rowsAffected, lastInsertRowid);
-    } else {
-      const info = sqlStmt.run(args);
-      const rowsAffected = info.changes;
-      const lastInsertRowid = BigInt(info.lastInsertRowid);
-      return new ResultSetImpl([], [], [], rowsAffected, lastInsertRowid);
-    }
-  } catch (e) {
-    throw mapSqliteError(e);
-  }
-}
-function rowFromSql(sqlRow, columns, intMode) {
-  const row = {};
-  Object.defineProperty(row, "length", { value: sqlRow.length });
-  for (let i = 0; i < sqlRow.length; ++i) {
-    const value = valueFromSql(sqlRow[i], intMode);
-    Object.defineProperty(row, i, { value });
-    const column = columns[i];
-    if (!Object.hasOwn(row, column)) {
-      Object.defineProperty(row, column, {
-        value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    }
-  }
-  return row;
-}
-function valueFromSql(sqlValue, intMode) {
-  if (typeof sqlValue === "bigint") {
-    if (intMode === "number") {
-      if (sqlValue < minSafeBigint || sqlValue > maxSafeBigint) {
-        throw new RangeError("Received integer which cannot be safely represented as a JavaScript number");
-      }
-      return Number(sqlValue);
-    } else if (intMode === "bigint") {
-      return sqlValue;
-    } else if (intMode === "string") {
-      return "" + sqlValue;
-    } else {
-      throw new Error("Invalid value for IntMode");
-    }
-  } else if (sqlValue instanceof Buffer2) {
-    return sqlValue.buffer;
-  }
-  return sqlValue;
-}
-var minSafeBigint = -9007199254740991n;
-var maxSafeBigint = 9007199254740991n;
-function valueToSql(value, intMode) {
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      throw new RangeError("Only finite numbers (not Infinity or NaN) can be passed as arguments");
-    }
-    return value;
-  } else if (typeof value === "bigint") {
-    if (value < minInteger || value > maxInteger) {
-      throw new RangeError("bigint is too large to be represented as a 64-bit integer and passed as argument");
-    }
-    return value;
-  } else if (typeof value === "boolean") {
-    switch (intMode) {
-      case "bigint":
-        return value ? 1n : 0n;
-      case "string":
-        return value ? "1" : "0";
-      default:
-        return value ? 1 : 0;
-    }
-  } else if (value instanceof ArrayBuffer) {
-    return Buffer2.from(value);
-  } else if (value instanceof Date) {
-    return value.valueOf();
-  } else if (value === void 0) {
-    throw new TypeError("undefined cannot be passed as argument to the database");
-  } else {
-    return value;
-  }
-}
-var minInteger = -9223372036854775808n;
-var maxInteger = 9223372036854775807n;
-function executeMultiple(db2, sql) {
-  try {
-    db2.exec(sql);
-  } catch (e) {
-    throw mapSqliteError(e);
-  }
-}
-function mapSqliteError(e) {
-  if (e instanceof import_libsql.default.SqliteError) {
-    const extendedCode = e.code;
-    const code = mapToBaseCode(e.rawCode);
-    return new LibsqlError(e.message, code, extendedCode, e.rawCode, e);
-  }
-  return e;
-}
-function mapToBaseCode(rawCode) {
-  if (rawCode === void 0) {
-    return "SQLITE_UNKNOWN";
-  }
-  const baseCode = rawCode & 255;
-  return sqliteErrorCodes[baseCode] ?? `SQLITE_UNKNOWN_${baseCode.toString()}`;
-}
-var sqliteErrorCodes = {
-  1: "SQLITE_ERROR",
-  2: "SQLITE_INTERNAL",
-  3: "SQLITE_PERM",
-  4: "SQLITE_ABORT",
-  5: "SQLITE_BUSY",
-  6: "SQLITE_LOCKED",
-  7: "SQLITE_NOMEM",
-  8: "SQLITE_READONLY",
-  9: "SQLITE_INTERRUPT",
-  10: "SQLITE_IOERR",
-  11: "SQLITE_CORRUPT",
-  12: "SQLITE_NOTFOUND",
-  13: "SQLITE_FULL",
-  14: "SQLITE_CANTOPEN",
-  15: "SQLITE_PROTOCOL",
-  16: "SQLITE_EMPTY",
-  17: "SQLITE_SCHEMA",
-  18: "SQLITE_TOOBIG",
-  19: "SQLITE_CONSTRAINT",
-  20: "SQLITE_MISMATCH",
-  21: "SQLITE_MISUSE",
-  22: "SQLITE_NOLFS",
-  23: "SQLITE_AUTH",
-  24: "SQLITE_FORMAT",
-  25: "SQLITE_RANGE",
-  26: "SQLITE_NOTADB",
-  27: "SQLITE_NOTICE",
-  28: "SQLITE_WARNING"
-};
 
 // node_modules/ws/wrapper.mjs
 var import_stream = __toESM(require_stream(), 1);
@@ -48507,7 +47103,7 @@ function valueToProto(value) {
     }
     return value;
   } else if (typeof value === "bigint") {
-    if (value < minInteger2 || value > maxInteger2) {
+    if (value < minInteger || value > maxInteger) {
       throw new RangeError("This bigint value is too large to be represented as a 64-bit integer and passed as argument");
     }
     return value;
@@ -48525,8 +47121,8 @@ function valueToProto(value) {
     throw new TypeError("Unsupported type of value");
   }
 }
-var minInteger2 = -9223372036854775808n;
-var maxInteger2 = 9223372036854775807n;
+var minInteger = -9223372036854775808n;
+var maxInteger = 9223372036854775807n;
 function valueFromProto(value, intMode) {
   if (value === null) {
     return null;
@@ -51685,7 +50281,7 @@ var Lru = class {
 
 // node_modules/@libsql/client/lib-esm/ws.js
 var import_promise_limit = __toESM(require_promise_limit(), 1);
-function _createClient2(config) {
+function _createClient(config) {
   if (config.scheme !== "wss" && config.scheme !== "ws") {
     throw new LibsqlError(`The WebSocket client supports only "libsql:", "wss:" and "ws:" URLs, got ${JSON.stringify(config.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
@@ -51978,7 +50574,7 @@ var WsTransaction = class extends HranaTransaction {
 
 // node_modules/@libsql/client/lib-esm/http.js
 var import_promise_limit2 = __toESM(require_promise_limit(), 1);
-function _createClient3(config) {
+function _createClient2(config) {
   if (config.scheme !== "https" && config.scheme !== "http") {
     throw new LibsqlError(`The HTTP client supports only "libsql:", "https:" and "http:" URLs, got ${JSON.stringify(config.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
@@ -52169,17 +50765,17 @@ var HttpTransaction = class extends HranaTransaction {
   }
 };
 
-// node_modules/@libsql/client/lib-esm/node.js
+// node_modules/@libsql/client/lib-esm/web.js
 function createClient(config) {
-  return _createClient4(expandConfig(config, true));
+  return _createClient3(expandConfig(config, true));
 }
-function _createClient4(config) {
-  if (config.scheme === "wss" || config.scheme === "ws") {
-    return _createClient2(config);
-  } else if (config.scheme === "https" || config.scheme === "http") {
-    return _createClient3(config);
-  } else {
+function _createClient3(config) {
+  if (config.scheme === "ws" || config.scheme === "wss") {
     return _createClient(config);
+  } else if (config.scheme === "http" || config.scheme === "https") {
+    return _createClient2(config);
+  } else {
+    throw new LibsqlError(`The client that uses Web standard APIs supports only "libsql:", "wss:", "ws:", "https:" and "http:" URLs, got ${JSON.stringify(config.scheme + ":")}. For more information, please read ${supportedUrlLink}`, "URL_SCHEME_NOT_SUPPORTED");
   }
 }
 
