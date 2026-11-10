@@ -12,33 +12,36 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   onComplete,
   durationMs = 7000,
 }) => {
-  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const currentPct = Math.min(100, (elapsed / durationMs) * 100);
-      setProgress(currentPct);
+    // Phase 1: 0 - 2.2s ("Every screenshot.")
+    // Phase 2: 2.2s - 4.4s ("Every conversation. Every memory.")
+    // Phase 3: 4.4s - 6.4s (RECALL Emblem & Brand reveal)
+    // Exit: 6.4s - 7.0s (Cinematic blur-scale dissolve into app)
+    const t2 = setTimeout(() => setPhase(2), 2200);
+    const t3 = setTimeout(() => setPhase(3), 4400);
 
-      if (elapsed >= durationMs) {
-        clearInterval(interval);
-        setIsExiting(true);
-        setTimeout(() => {
-          onComplete();
-        }, 650);
-      }
-    }, 25);
+    const exitTimer = setTimeout(() => {
+      setIsExiting(true);
+      setTimeout(() => {
+        onComplete();
+      }, 600);
+    }, durationMs - 600);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(exitTimer);
+    };
   }, [durationMs, onComplete]);
 
   const handleSkip = () => {
     setIsExiting(true);
     setTimeout(() => {
       onComplete();
-    }, 300);
+    }, 250);
   };
 
   return (
@@ -50,46 +53,46 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           animate={{ opacity: 1 }}
           exit={{
             opacity: 0,
-            scale: 1.03,
-            filter: 'blur(10px)',
-            transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+            scale: 1.04,
+            filter: 'blur(12px)',
+            transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
           }}
           className="fixed inset-0 z-[9999] flex flex-col justify-between items-center bg-[#F4F7FB] text-[#0F172A] overflow-hidden select-none px-6 py-8"
         >
-          {/* Subtle Ambient Refraction Aura */}
+          {/* Ambient Ethereal Breathing Aura */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
-            {/* Core luminous glow behind the emblem */}
+            {/* Luminous sapphire halo */}
             <motion.div
               animate={{
-                scale: [1, 1.15, 1],
-                opacity: [0.35, 0.55, 0.35],
+                scale: [0.95, 1.2, 0.95],
+                opacity: [0.25, 0.5, 0.25],
               }}
               transition={{ duration: 7, ease: 'easeInOut', repeat: Infinity }}
-              className="w-[420px] h-[420px] rounded-full"
+              className="w-[460px] h-[460px] rounded-full"
               style={{
                 background:
-                  'radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, rgba(186, 230, 253, 0.15) 45%, transparent 70%)',
-                filter: 'blur(55px)',
+                  'radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(186, 230, 253, 0.18) 50%, transparent 72%)',
+                filter: 'blur(60px)',
               }}
             />
 
-            {/* Subtle expanding concentric focus rings */}
+            {/* Subtle concentric focal ripples */}
             <motion.div
               animate={{
-                scale: [0.85, 1.45],
-                opacity: [0.3, 0],
+                scale: [0.8, 1.6],
+                opacity: [0.25, 0],
               }}
               transition={{
                 duration: 3.5,
                 repeat: Infinity,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="absolute w-56 h-56 rounded-full border border-blue-400/25 pointer-events-none"
+              className="absolute w-64 h-64 rounded-full border border-blue-400/20 pointer-events-none"
             />
             <motion.div
               animate={{
-                scale: [0.85, 1.45],
-                opacity: [0.3, 0],
+                scale: [0.8, 1.6],
+                opacity: [0.25, 0],
               }}
               transition={{
                 duration: 3.5,
@@ -97,7 +100,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                 repeat: Infinity,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="absolute w-56 h-56 rounded-full border border-blue-400/25 pointer-events-none"
+              className="absolute w-64 h-64 rounded-full border border-blue-400/20 pointer-events-none"
             />
           </div>
 
@@ -107,7 +110,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
               type="button"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
               onClick={handleSkip}
               className="flex items-center gap-1 rounded-full px-3 py-1 bg-white/60 hover:bg-white/90 border border-white/80 text-[11px] font-medium text-slate-400 hover:text-slate-700 backdrop-blur-md transition-all cursor-pointer"
             >
@@ -116,73 +119,84 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             </motion.button>
           </div>
 
-          {/* Central Hero Stage */}
-          <div className="relative z-10 flex flex-col items-center text-center my-auto">
-            {/* The Monogram Emblem */}
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
-              className="relative mb-7"
-            >
-              {/* Outer soft shadow pod */}
-              <div
-                className="absolute inset-0 rounded-[28px] pointer-events-none"
-                style={{
-                  boxShadow: '0 12px 36px -6px rgba(37, 99, 235, 0.32)',
-                }}
-              />
+          {/* Central Poetic Narrative Theater (Zero Loading Bars) */}
+          <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto px-4 max-w-sm">
+            <AnimatePresence mode="wait">
+              {phase === 1 && (
+                <motion.div
+                  key="phase1"
+                  initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  className="space-y-2"
+                >
+                  <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
+                    Never lose
+                  </p>
+                  <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
+                    a single screenshot.
+                  </h2>
+                </motion.div>
+              )}
 
-              <RecallEmblem size={88} glow className="rounded-[24px]" />
+              {phase === 2 && (
+                <motion.div
+                  key="phase2"
+                  initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  className="space-y-2"
+                >
+                  <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
+                    Find any message,
+                  </p>
+                  <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
+                    stat, or price in seconds.
+                  </h2>
+                </motion.div>
+              )}
 
-              {/* Shimmer sweep reflection across emblem */}
-              <motion.div
-                initial={{ x: '-120%', opacity: 0 }}
-                animate={{ x: ['120%', '-120%'], opacity: [0, 0.6, 0] }}
-                transition={{
-                  duration: 2.8,
-                  delay: 1.5,
-                  repeat: Infinity,
-                  repeatDelay: 1.2,
-                  ease: 'easeInOut',
-                }}
-                className="absolute inset-0 rounded-[24px] overflow-hidden pointer-events-none"
-                style={{
-                  background:
-                    'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)',
-                }}
-              />
-            </motion.div>
+              {phase === 3 && (
+                <motion.div
+                  key="phase3"
+                  initial={{ opacity: 0, scale: 0.88, filter: 'blur(10px)' }}
+                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col items-center"
+                >
+                  {/* Glowing Jewel Emblem */}
+                  <div className="relative mb-6">
+                    <div
+                      className="absolute inset-0 rounded-[28px] pointer-events-none"
+                      style={{
+                        boxShadow: '0 14px 40px -6px rgba(37, 99, 235, 0.40)',
+                      }}
+                    />
+                    <RecallEmblem size={88} glow className="rounded-[24px]" />
+                  </div>
 
-            {/* Typography */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <h1 className="font-['Outfit'] text-[26px] font-bold tracking-[0.22em] text-[#0F172A] uppercase pl-[0.22em]">
-                Recall
-              </h1>
-              <p className="mt-1.5 text-xs text-slate-500 font-normal tracking-wide">
-                Search your visual memory
-              </p>
-            </motion.div>
+                  {/* Brand Typography */}
+                  <h1 className="font-['Outfit'] text-3xl font-extrabold tracking-[0.24em] text-[#0F172A] uppercase pl-[0.24em]">
+                    Recall
+                  </h1>
+                  <p className="mt-2 text-xs text-slate-500 font-normal tracking-wider">
+                    Instant Visual Search Engine
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Bottom Hairline Progress Indicator */}
-          <div className="w-full max-w-[200px] relative z-10 flex flex-col items-center space-y-2">
-            {/* Hairline Progress Track */}
-            <div className="h-[2px] w-full rounded-full bg-slate-200/80 overflow-hidden relative">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-[#2563EB] to-blue-600"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* Subtle percentage readout */}
-            <span className="font-mono text-[10.5px] font-medium text-slate-400">
-              {Math.round(progress)}%
-            </span>
+          {/* Bottom Silent Ambient Spacer (Zero Loading Bars) */}
+          <div className="h-8 relative z-10 flex items-center justify-center">
+            {/* Subtle serene breath dot */}
+            <motion.div
+              animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.1, 0.9] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="h-1.5 w-1.5 rounded-full bg-blue-500/40"
+            />
           </div>
         </motion.div>
       )}
