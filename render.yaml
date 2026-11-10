@@ -1,21 +1,16 @@
 services:
   - type: web
     name: recall
-    env: node
-    plan: starter
-    buildCommand: npm install && npm run build
-    startCommand: node api/index.js
-    disk:
-      name: recall-data
-      mountPath: /app/data
-      sizeGB: 10
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: 5000
       - key: STORAGE_PATH
-        value: /app/data/uploads
+        value: /app/uploads
       - key: JWT_SECRET
         generateValue: true
       - key: GEMINI_API_KEY
@@ -25,5 +20,9 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
         sync: false
 
