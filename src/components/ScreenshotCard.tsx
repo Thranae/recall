@@ -102,28 +102,55 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           )}
         </div>
 
-        {/* Search match explanation overlay */}
+        {/* Search match percentage pill on thumbnail */}
         {searchResult && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent p-3 pt-6 backdrop-blur-[2px] z-10">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-white truncate max-w-[75%]">
-                {searchResult.match_type.replace('_', ' ')}
-              </span>
-              <span className="font-mono text-[9px] text-white font-bold bg-[#3478F6] px-2 py-0.5 rounded-full shadow-xs">
-                {Math.round(searchResult.match_score * 100)}%
-              </span>
-            </div>
-            {searchResult.match_explanation && (
-              <p className="mt-1 text-[10px] text-white/90 line-clamp-1 font-normal leading-tight">
-                {searchResult.match_explanation}
-              </p>
-            )}
+          <div className="absolute bottom-2 right-2 z-10">
+            <span className="liquid-category-badge px-2 py-0.5 font-mono text-[9.5px] font-bold text-[#3478F6] shadow-xs">
+              {Math.round(searchResult.match_score * 100)}% match
+            </span>
           </div>
         )}
       </div>
 
-      {/* Card Info Details */}
-      {!searchResult && (
+      {/* Card Info Details / Precise Answer Presentation */}
+      {searchResult ? (
+        <div className="p-3 bg-white/75 backdrop-blur-xs border-t border-white/80 space-y-1">
+          {searchResult.precise_value ? (
+            <div>
+              <div className="flex items-center justify-between gap-1 mb-1">
+                {searchResult.precise_value.badge && (
+                  <span className="liquid-category-badge px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#3478F6]">
+                    {searchResult.precise_value.badge}
+                  </span>
+                )}
+                <span className="text-[9.5px] font-semibold text-slate-400 capitalize">
+                  {searchResult.match_type.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-[12.5px] font-bold text-[#172B4D] leading-snug line-clamp-2">
+                {searchResult.precise_value.headline}
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-slate-500 line-clamp-1 font-normal">
+                {searchResult.precise_value.detail}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between gap-1 mb-0.5">
+                <span className="text-[9.5px] font-bold text-[#3478F6] uppercase">
+                  {searchResult.match_type.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="truncate text-[12.5px] font-bold text-[#172B4D]">
+                {screenshot.original_filename}
+              </p>
+              <p className="text-[10.5px] text-slate-500 line-clamp-1 font-normal">
+                {searchResult.match_explanation}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
         <div className="p-3">
           <p className="truncate text-[12.5px] font-bold text-[#172B4D] leading-snug">
             {screenshot.original_filename}

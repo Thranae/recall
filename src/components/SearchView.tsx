@@ -214,6 +214,34 @@ export const SearchView: React.FC<SearchViewProps> = ({
             </div>
           </div>
 
+          {/* Top Direct Answer Callout if high-precision value detected */}
+          {searchResults.results.length > 0 && searchResults.results[0].precise_value && searchResults.results[0].match_score >= 0.88 && (
+            <div
+              onClick={() => onSelectScreenshot(searchResults.results[0].screenshot.id, searchResults.results[0])}
+              className="rounded-[22px] p-4 bg-gradient-to-br from-blue-500/10 via-white/80 to-blue-500/5 border border-white/90 shadow-sm backdrop-blur-md cursor-pointer active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center justify-between gap-1 mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-[#3478F6]" />
+                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">
+                    Direct Answer
+                  </span>
+                </div>
+                {searchResults.results[0].precise_value.badge && (
+                  <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] font-bold text-[#3478F6]">
+                    {searchResults.results[0].precise_value.badge}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm font-bold text-[#172B4D] leading-snug">
+                {searchResults.results[0].precise_value.headline}
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 font-normal">
+                {searchResults.results[0].precise_value.detail}
+              </p>
+            </div>
+          )}
+
           {searchResults.results.length === 0 ? (
             <div className="liquid-glass-card flex flex-col items-center justify-center rounded-[24px] p-8 text-center my-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-[20px] liquid-icon-pod mb-3 text-slate-400">

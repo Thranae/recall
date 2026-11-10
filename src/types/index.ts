@@ -54,11 +54,18 @@ export interface Screenshot {
   updated_at: string;
 }
 
+export interface PreciseValue {
+  headline: string;
+  detail: string;
+  badge?: string;
+}
+
 export interface SearchResultItem {
   screenshot: Screenshot;
   match_score: number;
   match_type: 'conversation_sequence' | 'game_stats' | 'exact_phrase' | 'semantic_visual' | 'text_keyword';
   match_explanation: string;
+  precise_value?: PreciseValue;
   matched_messages?: ExtractedMessage[];
   matched_game?: GameResult;
   confidence: number;

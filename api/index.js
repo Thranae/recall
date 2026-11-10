@@ -68620,6 +68620,45 @@ var screenshotRoutes_default = router2;
 var import_express3 = __toESM(require_express2(), 1);
 
 // server/services/searchEngine.ts
+var STOP_WORDS = /* @__PURE__ */ new Set([
+  "find",
+  "where",
+  "is",
+  "the",
+  "a",
+  "an",
+  "of",
+  "in",
+  "to",
+  "my",
+  "me",
+  "show",
+  "i",
+  "got",
+  "had",
+  "with",
+  "about",
+  "and",
+  "for",
+  "what",
+  "did",
+  "who",
+  "this",
+  "that",
+  "from",
+  "her",
+  "she",
+  "he",
+  "him",
+  "they",
+  "them",
+  "was",
+  "were",
+  "at"
+]);
+function extractSubstantiveKeywords(query) {
+  return query.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((word) => !STOP_WORDS.has(word) && word.length > 1);
+}
 function parseQueryIntent(query) {
   const q = query.trim();
   const lower = q.toLowerCase();
@@ -68676,6 +68715,73 @@ function parseQueryIntent(query) {
     detected_first_message,
     detected_reply_message,
     detected_kill_filter
+  };
+}
+function extractPreciseValue(query, sc, fallbackHeadline) {
+  const ocr = (sc.ocr_text || "").trim();
+  const desc = (sc.visual_description || "").trim();
+  const keywords = extractSubstantiveKeywords(query);
+  const qLower = query.toLowerCase();
+  const lines = ocr.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (qLower.includes("error") || qLower.includes("fail") || qLower.includes("alert") || qLower.includes("exception")) {
+    const errorLine = lines.find((l) => /error|failed|constraint|exception|denied|invalid|crash/i.test(l));
+    if (errorLine) {
+      return {
+        headline: errorLine,
+        detail: `Error detected on ${sc.original_filename}`,
+        badge: "Error Alert"
+      };
+    }
+  }
+  if (qLower.includes("price") || qLower.includes("cost") || qLower.includes("how much") || qLower.includes("shirt") || qLower.includes("buy") || qLower.includes("cart") || qLower.includes("order")) {
+    const priceLine = lines.find((l) => /[\$₹€£]\s*\d+|price\s*[:\-]?\s*[\d,]+|\b\d+%\s*off\b|mrp/i.test(l));
+    if (priceLine) {
+      return {
+        headline: priceLine,
+        detail: `${sc.original_filename} \xB7 Product Specs`,
+        badge: "Price Value"
+      };
+    }
+  }
+  if (lines.length > 0 && keywords.length > 0) {
+    let bestLine = "";
+    let maxMatches = 0;
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      let matches = 0;
+      for (const kw of keywords) {
+        if (lineLower.includes(kw)) matches++;
+      }
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        bestLine = line;
+      }
+    }
+    if (maxMatches > 0 && bestLine.length > 0) {
+      return {
+        headline: bestLine,
+        detail: `Transcribed text in ${sc.original_filename}`,
+        badge: "OCR Match"
+      };
+    }
+  }
+  if (desc.length > 0 && keywords.length > 0) {
+    const sentences = desc.split(/(?<=[.?!])\s+/);
+    for (const sent of sentences) {
+      const sentLower = sent.toLowerCase();
+      if (keywords.some((kw) => sentLower.includes(kw))) {
+        return {
+          headline: sent.trim(),
+          detail: `Visual scene understanding`,
+          badge: "AI Vision"
+        };
+      }
+    }
+  }
+  return {
+    headline: fallbackHeadline || sc.original_filename,
+    detail: desc ? desc.substring(0, 90) + "..." : `${sc.category?.toUpperCase() || "IMAGE"} Screenshot`,
+    badge: sc.category?.toUpperCase() || "MATCH"
   };
 }
 async function executeHybridSearch(userId, rawQuery, filters) {
@@ -68741,6 +68847,11 @@ async function executeHybridSearch(userId, rawQuery, filters) {
             match_score: 0.98,
             match_type: "conversation_sequence",
             match_explanation: `Verified same-screenshot conversation sequence: "${m1.message_text}" (Msg #${m1.sequence_number}) followed by reply "${m2.message_text}" (Msg #${m2.sequence_number}).`,
+            precise_value: {
+              headline: `"${m2.message_text}"`,
+              detail: `Replied by ${m2.sender_label || "Other"} after "${m1.message_text}"`,
+              badge: `Reply #${m2.sequence_number}`
+            },
             matched_messages: [m1, m2],
             confidence: Math.min(m1.confidence, m2.confidence)
           });
@@ -68769,10 +68880,53 @@ async function executeHybridSearch(userId, rawQuery, filters) {
           match_score: 0.95,
           match_type: "game_stats",
           match_explanation: `Exact game stat match: ${g.game_name} match with ${g.kills} kills (${sqlOp} ${value} kills filter), Rank: ${g.rank || "N/A"}, Map: ${g.map_name || "N/A"}.`,
+          precise_value: {
+            headline: `${g.kills} Kills \xB7 ${g.game_name}`,
+            detail: `${g.rank || "Match Result"} on ${g.map_name || "Standard"} (Damage: ${g.damage ?? "N/A"})`,
+            badge: `${g.kills} KILLS`
+          },
           matched_game: g,
           confidence: g.extraction_confidence
         });
       }
+    }
+  }
+  const keywords = extractSubstantiveKeywords(query);
+  if (keywords.length > 0 && !intent.is_conversation_sequence) {
+    try {
+      const getMsgs = db.prepare(`
+        SELECT * FROM extracted_messages 
+        WHERE user_id = ? 
+        ORDER BY sequence_number ASC
+      `);
+      const msgs = await getMsgs.all(userId);
+      for (const m of msgs) {
+        const mTextLower = m.message_text.toLowerCase();
+        const matchesAll = keywords.every((kw) => mTextLower.includes(kw));
+        const matchesAny = keywords.some((kw) => mTextLower.includes(kw));
+        if (matchesAll || matchesAny && keywords.length >= 2) {
+          const sc = userScreenshots.find((s) => s.id === m.screenshot_id);
+          if (sc && !resultsMap.has(m.screenshot_id)) {
+            if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
+              continue;
+            }
+            resultsMap.set(m.screenshot_id, {
+              screenshot: sc,
+              match_score: matchesAll ? 0.94 : 0.88,
+              match_type: "exact_phrase",
+              match_explanation: `Conversation match: "${m.message_text}" from ${m.sender_label || "Sender"}.`,
+              precise_value: {
+                headline: `"${m.message_text}"`,
+                detail: `Message #${m.sequence_number} from ${m.sender_label || (m.sender_side === "right" ? "You" : "Sender")}`,
+                badge: `Chat Bubble`
+              },
+              matched_messages: [m],
+              confidence: m.confidence
+            });
+          }
+        }
+      }
+    } catch {
     }
   }
   const cleanFtsQuery = query.replace(/[^\w\s]/g, " ").trim();
@@ -68787,12 +68941,20 @@ async function executeHybridSearch(userId, rawQuery, filters) {
         if (!resultsMap.has(m.screenshot_id)) {
           const sc = userScreenshots.find((s) => s.id === m.screenshot_id);
           if (sc) {
+            if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
+              continue;
+            }
+            if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
+              continue;
+            }
+            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
             resultsMap.set(m.screenshot_id, {
               screenshot: sc,
-              match_score: 0.85,
+              match_score: 0.88,
               match_type: "exact_phrase",
               match_explanation: `Text match found in OCR content: contains keywords "${query}".`,
-              confidence: 0.88
+              precise_value: preciseVal,
+              confidence: 0.9
             });
           }
         }
@@ -68800,19 +68962,59 @@ async function executeHybridSearch(userId, rawQuery, filters) {
     } catch {
       for (const sc of userScreenshots) {
         if (!resultsMap.has(sc.id)) {
+          if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
+            continue;
+          }
+          if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
+            continue;
+          }
           const ocr = (sc.ocr_text || "").toLowerCase();
           const desc = (sc.visual_description || "").toLowerCase();
           const qLower = query.toLowerCase();
           if (ocr.includes(qLower) || desc.includes(qLower)) {
+            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
             resultsMap.set(sc.id, {
               screenshot: sc,
-              match_score: 0.82,
+              match_score: 0.85,
               match_type: "exact_phrase",
               match_explanation: `Direct text match: screenshot text contains "${query}".`,
-              confidence: 0.85
+              precise_value: preciseVal,
+              confidence: 0.86
             });
           }
         }
+      }
+    }
+  }
+  if (keywords.length > 0) {
+    for (const sc of userScreenshots) {
+      if (resultsMap.has(sc.id)) continue;
+      if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
+        continue;
+      }
+      if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
+        continue;
+      }
+      const ocrLower = (sc.ocr_text || "").toLowerCase();
+      const descLower = (sc.visual_description || "").toLowerCase();
+      const tagsStr = (sc.tags || "").toLowerCase();
+      let matchedCount = 0;
+      for (const kw of keywords) {
+        if (ocrLower.includes(kw) || descLower.includes(kw) || tagsStr.includes(kw)) {
+          matchedCount++;
+        }
+      }
+      if (matchedCount > 0) {
+        const score = 0.7 + matchedCount / keywords.length * 0.18;
+        const preciseVal = extractPreciseValue(query, sc);
+        resultsMap.set(sc.id, {
+          screenshot: sc,
+          match_score: Math.min(0.88, score),
+          match_type: "text_keyword",
+          match_explanation: `Keyword match: found ${matchedCount}/${keywords.length} relevant terms in content.`,
+          precise_value: preciseVal,
+          confidence: 0.85
+        });
       }
     }
   }
@@ -68820,6 +69022,12 @@ async function executeHybridSearch(userId, rawQuery, filters) {
     const queryEmbedding = await generateTextEmbedding(query);
     for (const sc of userScreenshots) {
       if (resultsMap.has(sc.id)) continue;
+      if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
+        continue;
+      }
+      if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
+        continue;
+      }
       let docEmbedding = [];
       if (sc.text_embedding) {
         try {
@@ -68829,11 +69037,13 @@ async function executeHybridSearch(userId, rawQuery, filters) {
       }
       const similarity = computeCosineSimilarity(queryEmbedding, docEmbedding);
       if (similarity > 0.45) {
+        const preciseVal = extractPreciseValue(query, sc);
         resultsMap.set(sc.id, {
           screenshot: sc,
           match_score: similarity,
           match_type: "semantic_visual",
           match_explanation: `Semantic & visual relevance (${Math.round(similarity * 100)}% match): relates conceptually to "${query}".`,
+          precise_value: preciseVal,
           confidence: Math.round(similarity * 100) / 100
         });
       }
