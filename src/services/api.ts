@@ -139,19 +139,27 @@ export const api = {
   // Screenshots (Upload files individually so serverless 4.5MB request payload limit is never exceeded)
   async uploadScreenshots(files: File[]): Promise<{ message: string; screenshots: any[] }> {
     const allScreenshots: any[] = [];
+    const errors: string[] = [];
     for (const file of files) {
-      const formData = new FormData();
-      formData.append('screenshots', file);
-      const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.screenshots) {
-        allScreenshots.push(...res.screenshots);
+      try {
+        const formData = new FormData();
+        formData.append('screenshots', file);
+        const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.screenshots) {
+          allScreenshots.push(...res.screenshots);
+        }
+      } catch (err: any) {
+        errors.push(`${file.name}: ${err.message || 'failed'}`);
       }
     }
+    if (allScreenshots.length === 0 && errors.length > 0) {
+      throw new Error(errors[0]);
+    }
     return {
-      message: `Successfully uploaded ${allScreenshots.length} screenshots.`,
+      message: `Successfully uploaded ${allScreenshots.length} screenshots.${errors.length > 0 ? ` ${errors.length} failed.` : ''}`,
       screenshots: allScreenshots,
     };
   },

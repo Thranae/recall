@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { performLocalOCR } from '../ocr/tesseract';
 import {
   analyzeScreenshotHeuristics,
@@ -70,7 +70,58 @@ export async function analyzeScreenshot(
         model: 'gemini-3.5-flash-lite',
         generationConfig: {
           responseMimeType: 'application/json',
-          temperature: 0.1,
+          temperature: 0.05,
+          responseSchema: {
+            type: SchemaType.OBJECT,
+            properties: {
+              category: {
+                type: SchemaType.STRING,
+                enum: ['chat', 'game', 'product', 'poster_document', 'other'],
+                description: 'Screenshot category',
+              },
+              confidence: { type: SchemaType.NUMBER, description: 'Classification confidence 0-1' },
+              ocr_text: { type: SchemaType.STRING, description: 'Complete verbatim transcription of all visible text' },
+              visual_description: { type: SchemaType.STRING, description: 'Detailed visual scene description' },
+              tags: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+                description: 'Searchable semantic tags',
+              },
+              messages: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    sequence_number: { type: SchemaType.INTEGER },
+                    message_text: { type: SchemaType.STRING },
+                    sender_side: { type: SchemaType.STRING, enum: ['left', 'right', 'unknown'] },
+                    sender_label: { type: SchemaType.STRING },
+                    confidence: { type: SchemaType.NUMBER },
+                  },
+                  required: ['sequence_number', 'message_text', 'sender_side', 'confidence'],
+                },
+                description: 'Extracted chat messages if category is chat',
+              },
+              game_result: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  game_name: { type: SchemaType.STRING },
+                  mode: { type: SchemaType.STRING },
+                  map_name: { type: SchemaType.STRING },
+                  kills: { type: SchemaType.INTEGER },
+                  score: { type: SchemaType.INTEGER },
+                  rank: { type: SchemaType.STRING },
+                  damage: { type: SchemaType.INTEGER },
+                  match_date: { type: SchemaType.STRING },
+                  extraction_confidence: { type: SchemaType.NUMBER },
+                  raw_extracted_text: { type: SchemaType.STRING },
+                },
+                required: ['game_name'],
+                description: 'Game stats if category is game',
+              },
+            },
+            required: ['category', 'confidence', 'ocr_text', 'visual_description', 'tags'],
+          },
         },
       });
 
@@ -146,7 +197,17 @@ PRECISION REQUIREMENT:
             ocrLower.includes('imessage') ||
             ocrLower.includes('whatsapp') ||
             ocrLower.includes('message...') ||
-            /\b(replied|typing|delivered|seen)\b/.test(ocrLower)
+            ocrLower.includes('last seen') ||
+            ocrLower.includes('telegram') ||
+            ocrLower.includes('signal') ||
+            ocrLower.includes('snapchat') ||
+            ocrLower.includes('double tick') ||
+            ocrLower.includes('blue tick') ||
+            ocrLower.includes('✓✓') ||
+            ocrLower.includes('facebook messenger') ||
+            ocrLower.includes('slack') ||
+            ocrLower.includes('discord') ||
+            /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)
           ) {
             category = 'chat';
           } else if (
@@ -156,21 +217,52 @@ PRECISION REQUIREMENT:
             ocrLower.includes('bgmi') ||
             ocrLower.includes('pubg') ||
             ocrLower.includes('eliminated') ||
-            /\b(\d+\s*kills?|kills?\s*:\s*\d+)\b/.test(ocrLower)
+            ocrLower.includes('victory royale') ||
+            ocrLower.includes('booyah') ||
+            ocrLower.includes('defeat') ||
+            ocrLower.includes('game over') ||
+            ocrLower.includes('match result') ||
+            ocrLower.includes('mvp') ||
+            ocrLower.includes('headshot') ||
+            ocrLower.includes('free fire') ||
+            ocrLower.includes('valorant') ||
+            ocrLower.includes('clash') ||
+            ocrLower.includes('cod mobile') ||
+            /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)
           ) {
             category = 'game';
           } else if (
             ocrLower.includes('add to cart') ||
             ocrLower.includes('buy now') ||
             ocrLower.includes('in stock') ||
-            /[\$₹€£]\s*\d+/.test(ocrLower)
+            ocrLower.includes('wishlist') ||
+            ocrLower.includes('save for later') ||
+            ocrLower.includes('ratings') ||
+            ocrLower.includes('reviews') ||
+            ocrLower.includes('shipping') ||
+            ocrLower.includes('delivery') ||
+            ocrLower.includes('flipkart') ||
+            ocrLower.includes('amazon') ||
+            ocrLower.includes('myntra') ||
+            ocrLower.includes('meesho') ||
+            ocrLower.includes('mrp') ||
+            ocrLower.includes('discount') ||
+            /[\$₹€£]\s*\d+/.test(ocrLower) ||
+            /\d+%\s*off\b/.test(ocrLower)
           ) {
             category = 'product';
           } else if (
             ocrLower.includes('invoice') ||
             ocrLower.includes('receipt') ||
             ocrLower.includes('boarding pass') ||
-            ocrLower.includes('total amount')
+            ocrLower.includes('total amount') ||
+            ocrLower.includes('certificate') ||
+            ocrLower.includes('memo') ||
+            ocrLower.includes('notice') ||
+            ocrLower.includes('bill') ||
+            ocrLower.includes('statement') ||
+            ocrLower.includes('page ') ||
+            ocrLower.includes('.pdf')
           ) {
             category = 'poster_document';
           }

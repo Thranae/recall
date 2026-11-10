@@ -27,9 +27,12 @@ if (isVercel && !fs.existsSync(DB_PATH)) {
 
 export const db = new DatabaseSync(DB_PATH);
 
+// Disable foreign keys immediately on connection — critical for serverless cold starts
+db.exec('PRAGMA foreign_keys = OFF;');
+
 // Initialize database tables and full-text search indexes
 export function initDatabase() {
-  // Foreign keys are disabled to ensure resilience across ephemeral serverless container cold starts
+  // Re-enforce: foreign keys OFF for resilience across ephemeral serverless containers
   db.exec('PRAGMA foreign_keys = OFF;');
 
   // 1. Users Table (Supports standard email/password, OTP verification, and Google SSO)
@@ -88,7 +91,7 @@ export function initDatabase() {
       image_data TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
 
@@ -117,8 +120,8 @@ export function initDatabase() {
       sender_label TEXT,
       confidence REAL NOT NULL,
       bounding_box TEXT,
-      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
 
@@ -144,8 +147,8 @@ export function initDatabase() {
       match_date TEXT,
       extraction_confidence REAL NOT NULL,
       raw_extracted_text TEXT,
-      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (screenshot_id) REFERENCES screenshots(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
   `);
 

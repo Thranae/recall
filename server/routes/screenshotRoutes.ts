@@ -63,6 +63,9 @@ router.post(
   upload.array('screenshots', 50),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+      // Safety: ensure FK constraints stay OFF across serverless cold starts
+      try { db.exec('PRAGMA foreign_keys = OFF;'); } catch {}
+
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
         res.status(400).json({ error: 'No screenshot files uploaded' });
@@ -147,7 +150,7 @@ router.post(
         // Synchronous AI vision classification (ensures instant category badge & OCR on Vercel)
         try {
           const analysisPromise = analyzeScreenshot(file.path, file.mimetype, file.originalname, base64Data);
-          const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6500));
+          const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 9000));
           const analysis = await Promise.race([analysisPromise, timeoutPromise]);
 
           if (analysis) {
