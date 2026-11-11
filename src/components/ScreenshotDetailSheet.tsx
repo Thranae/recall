@@ -420,7 +420,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {/* Image Preview with Plump Liquid Glass Frame */}
           <div className="space-y-2">
-            <div className="relative overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
+            <div className="relative min-h-[120px] flex items-center justify-center overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
               <img
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
@@ -441,32 +441,34 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
-              <button
-                type="button"
-                onClick={handleToggleRedact}
-                disabled={isRedacting}
-                className={`absolute bottom-2 left-2 z-20 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-95 cursor-pointer shadow-xs transition-all ${
-                  isRedactedMode
-                    ? 'bg-[#172B4D] text-white'
-                    : 'liquid-category-badge text-[#172B4D]'
-                }`}
-              >
-                {isRedacting ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Shield className={`h-3 w-3 stroke-[2.2] ${isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'}`} />
-                )}
-                <span>{isRedacting ? 'Blurring...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
-              </button>
+              <div className="pointer-events-none absolute inset-x-2.5 bottom-2.5 z-20 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleRedact}
+                  disabled={isRedacting}
+                  className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-95 cursor-pointer shadow-xs transition-all ${
+                    isRedactedMode
+                      ? 'h-[21px] bg-[#172B4D] text-white border border-white/40'
+                      : 'liquid-category-badge text-[#172B4D]'
+                  }`}
+                >
+                  {isRedacting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Shield className={`h-3 w-3 stroke-[2.2] ${isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'}`} />
+                  )}
+                  <span>{isRedacting ? 'Blurring...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsImageExpanded(!isImageExpanded)}
-                className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
-              >
-                <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-                <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImageExpanded(!isImageExpanded)}
+                  className="pointer-events-auto flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
+                >
+                  <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
+                  <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
+                </button>
+              </div>
             </div>
 
             {isRedactedMode && redactedResult && (
