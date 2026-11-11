@@ -302,33 +302,6 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {/* 3. Search Discovery Mode (When no active results) */}
       {!activeResults && !query.trim() && (
         <div className="space-y-3 pt-1">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-            {[
-              { label: 'Boy', q: 'boy' },
-              { label: 'Girl', q: 'girl' },
-              { label: 'Black', q: 'black', dot: '#172B4D' },
-              { label: 'Blue', q: 'blue', dot: '#3478F6' },
-              { label: 'Red', q: 'red', dot: '#EF4444' },
-              { label: 'White', q: 'white', dot: '#FFFFFF' },
-              { label: 'Receipt', q: 'price' },
-            ].map((chip) => (
-              <button
-                key={chip.q}
-                type="button"
-                onClick={() => onChangeQuery(chip.q)}
-                className="shrink-0 inline-flex items-center gap-1.5 rounded-full liquid-glass-pill px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-[#3478F6] active:scale-95 transition-transform cursor-pointer"
-              >
-                {chip.dot && (
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full border ${chip.q === 'white' ? 'border-slate-300' : 'border-white/80'}`}
-                    style={{ backgroundColor: chip.dot }}
-                  />
-                )}
-                <span>{chip.label}</span>
-              </button>
-            ))}
-          </div>
-
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-[#172B4D] flex items-center gap-1.5 tracking-tight">
               <Compass className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />

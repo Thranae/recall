@@ -249,6 +249,11 @@ export const App: React.FC = () => {
             onSelectScreenshot={(id) => handleOpenDetail(id)}
             onOpenUpload={() => setIsUploadOpen(true)}
             onRefresh={fetchScreenshots}
+            onQuickSearch={(q) => {
+              setSearchCategory('all');
+              setQuery(q);
+              setCurrentTab('search');
+            }}
           />
         )}
 

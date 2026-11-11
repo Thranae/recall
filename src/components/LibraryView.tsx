@@ -12,6 +12,8 @@ import {
   X,
   CheckCircle2,
   Loader2,
+  Search,
+  ArrowRight,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, VaultInsightsSummary } from '../types';
@@ -24,6 +26,7 @@ interface LibraryViewProps {
   onSelectScreenshot: (id: string) => void;
   onOpenUpload: () => void;
   onRefresh?: () => void;
+  onQuickSearch?: (query: string) => void;
 }
 
 const CATEGORIES = [
@@ -32,21 +35,7 @@ const CATEGORIES = [
   { id: 'other', label: 'Other', icon: Layers },
 ];
 
-const VISUAL_FILTERS: Array<{
-  id: string;
-  label: string;
-  swatch?: string;
-  pattern: RegExp;
-}> = [
-  { id: 'people', label: 'People', pattern: /\b(boy|girl|man|woman|kid|child|person|people|portrait|selfie|face)\b/i },
-  { id: 'outfits', label: 'Outfits', pattern: /\b(shirt|t-shirt|tshirt|tee|hoodie|jacket|dress|jeans|pants|shoes|sneakers|outfit|apparel)\b/i },
-  { id: 'black', label: 'Black', swatch: '#172B4D', pattern: /\bblack\b/i },
-  { id: 'blue', label: 'Blue', swatch: '#3478F6', pattern: /\b(blue|navy|denim|cyan)\b/i },
-  { id: 'red', label: 'Red', swatch: '#EF4444', pattern: /\b(red|crimson|maroon)\b/i },
-  { id: 'white', label: 'White', swatch: '#FFFFFF', pattern: /\bwhite\b/i },
-  { id: 'green', label: 'Green', swatch: '#10B981', pattern: /\b(green|olive|emerald)\b/i },
-  { id: 'yellow', label: 'Yellow', swatch: '#F59E0B', pattern: /\b(yellow|gold|amber)\b/i },
-];
+const QUICK_FILLER_WORDS = new Set(['a', 'an', 'the', 'in', 'on', 'with', 'of', 'for', 'and', 'to', 'me', 'my', 'find', 'show']);
 
 export const LibraryView: React.FC<LibraryViewProps> = ({
   screenshots,
@@ -55,8 +44,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onSelectScreenshot,
   onOpenUpload,
   onRefresh,
+  onQuickSearch,
 }) => {
-  const [activeVisualFilter, setActiveVisualFilter] = useState<string | null>(null);
+  const [libraryQuery, setLibraryQuery] = useState('');
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -66,17 +56,30 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const otherCount = screenshots.filter((s) => s.category !== 'chat').length;
 
   const filteredScreenshots = useMemo(() => {
-    const activeRule = VISUAL_FILTERS.find((f) => f.id === activeVisualFilter);
+    const raw = libraryQuery.trim().toLowerCase();
+    const tokens = raw
+      .replace(/[^\w\s-]/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length > 0 && !QUICK_FILLER_WORDS.has(t));
+
     return screenshots.filter((s) => {
       if (selectedCategory === 'chat' && s.category !== 'chat') return false;
       if (selectedCategory === 'other' && s.category === 'chat') return false;
-      if (activeRule) {
-        const text = `${s.visual_description || ''} ${(s.tags || []).join(' ')} ${s.ocr_text || ''}`;
-        return activeRule.pattern.test(text);
+      if (tokens.length > 0) {
+        const haystack = `${s.original_filename || ''} ${s.visual_description || ''} ${(s.tags || []).join(' ')} ${s.ocr_text || ''}`.toLowerCase();
+        return tokens.every((tok) => haystack.includes(tok));
       }
       return true;
     });
-  }, [screenshots, selectedCategory, activeVisualFilter]);
+  }, [screenshots, selectedCategory, libraryQuery]);
+
+  const handleLibrarySearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = libraryQuery.trim();
+    if (trimmed && onQuickSearch) {
+      onQuickSearch(trimmed);
+    }
+  };
 
   const handleToggleInsights = async () => {
     const next = !showInsights;
@@ -114,6 +117,40 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
+      {/* Quick Liquid Glass Search Bar directly on Library */}
+      <form onSubmit={handleLibrarySearchSubmit} className="relative">
+        <div className="flex h-12 items-center rounded-[20px] liquid-glass-input px-3.5 transition-all duration-150">
+          <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.2] text-[#3478F6] relative z-10" />
+          <input
+            type="text"
+            value={libraryQuery}
+            onChange={(e) => setLibraryQuery(e.target.value)}
+            placeholder="Search photos, people, colors, chats..."
+            className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none relative z-10"
+          />
+          {libraryQuery && (
+            <button
+              type="button"
+              onClick={() => setLibraryQuery('')}
+              aria-label="Clear filter"
+              className="p-1 text-[#4A5D78] hover:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
+            >
+              <X className="h-4 w-4 stroke-[2.2]" />
+            </button>
+          )}
+          {libraryQuery.trim() && onQuickSearch && (
+            <button
+              type="submit"
+              title="Run Deep AI Search"
+              className="h-8 shrink-0 rounded-full px-3 text-[11px] font-bold relative z-10 liquid-btn-primary text-white active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+            >
+              <span>AI Search</span>
+              <ArrowRight className="h-3 w-3 stroke-[2.4]" />
+            </button>
+          )}
+        </div>
+      </form>
+
       {/* 1. Symmetrical Liquid Glass Filter Chips (3 Chips, Generous Width, Full Text Visibility) */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
@@ -144,47 +181,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           );
         })}
       </div>
-
-      {/* Tactile Color & Visual Subject Swatch Strip (Preserves 3 Main Filter Chips Above) */}
-      {screenshots.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
-          {activeVisualFilter && (
-            <button
-              type="button"
-              onClick={() => setActiveVisualFilter(null)}
-              className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[#172B4D] text-white px-2.5 py-1 text-[10.5px] font-semibold active:scale-95 transition-transform cursor-pointer"
-            >
-              <X className="h-3 w-3" />
-              <span>Reset</span>
-            </button>
-          )}
-          {VISUAL_FILTERS.map((vf) => {
-            const isActive = activeVisualFilter === vf.id;
-            return (
-              <button
-                key={vf.id}
-                type="button"
-                onClick={() => setActiveVisualFilter(isActive ? null : vf.id)}
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all active:scale-95 cursor-pointer ${
-                  isActive
-                    ? 'bg-[#3478F6] text-white shadow-xs'
-                    : 'liquid-glass-pill text-slate-600'
-                }`}
-              >
-                {vf.swatch && (
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full shrink-0 border ${
-                      vf.id === 'white' ? 'border-slate-300' : 'border-white/70'
-                    }`}
-                    style={{ backgroundColor: vf.swatch }}
-                  />
-                )}
-                <span>{vf.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* 2. Library Status Strip */}
       <div className="flex items-center justify-between px-1">
@@ -265,10 +261,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                         <button
                           key={c.color}
                           type="button"
-                          onClick={() => {
-                            const matched = VISUAL_FILTERS.find((f) => f.id === c.color);
-                            if (matched) setActiveVisualFilter(matched.id);
-                          }}
+                          onClick={() => setLibraryQuery(c.color)}
                           className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize hover:text-[#3478F6] cursor-pointer"
                         >
                           {c.color} ({c.count})
@@ -312,19 +305,31 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       </AnimatePresence>
 
       {/* 3. Screenshots Gallery Grid */}
-      {filteredScreenshots.length === 0 && activeVisualFilter && screenshots.length > 0 ? (
+      {filteredScreenshots.length === 0 && libraryQuery.trim() && screenshots.length > 0 ? (
         <div className="liquid-glass-card rounded-[24px] p-6 text-center my-4 space-y-3">
-          <p className="text-sm font-bold text-[#172B4D]">No images match "{activeVisualFilter}"</p>
+          <p className="text-sm font-bold text-[#172B4D]">No quick matches for "{libraryQuery.trim()}"</p>
           <p className="text-xs text-slate-500">
-            Try clearing the visual filter or tap Re-analyze in Settings to index older photos.
+            Run Deep AI Search for semantic synonyms, chat flow sequences, or numeric game stats.
           </p>
-          <button
-            type="button"
-            onClick={() => setActiveVisualFilter(null)}
-            className="inline-flex h-9 items-center justify-center rounded-full liquid-glass-pill px-4 text-xs font-semibold text-[#3478F6] active:scale-95 cursor-pointer"
-          >
-            Clear Filter
-          </button>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setLibraryQuery('')}
+              className="inline-flex h-9 items-center justify-center rounded-full liquid-glass-pill px-4 text-xs font-semibold text-slate-600 active:scale-95 cursor-pointer"
+            >
+              Clear
+            </button>
+            {onQuickSearch && (
+              <button
+                type="button"
+                onClick={() => onQuickSearch(libraryQuery.trim())}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-full liquid-btn-primary px-4 text-xs font-semibold text-white active:scale-95 cursor-pointer"
+              >
+                <span>Deep AI Search</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       ) : filteredScreenshots.length === 0 ? (
         <div className="liquid-glass-card rounded-[26px] p-6 text-center my-4 space-y-4">
