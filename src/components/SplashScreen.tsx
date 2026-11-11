@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { RecallEmblem } from './RecallEmblem';
 import { ChevronRight } from 'lucide-react';
 
@@ -14,192 +13,195 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 }) => {
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [isExiting, setIsExiting] = useState(false);
+  const [exitDurationMs, setExitDurationMs] = useState(550);
+
+  const onCompleteRef = useRef(onComplete);
+  const completedRef = useRef(false);
+  const timersRef = useRef<number[]>([]);
 
   useEffect(() => {
-    // Phase 1: 0 - 2.2s ("Every screenshot.")
-    // Phase 2: 2.2s - 4.4s ("Every conversation. Every memory.")
-    // Phase 3: 4.4s - 6.4s (RECALL Emblem & Brand reveal)
-    // Exit: 6.4s - 7.0s (Cinematic blur-scale dissolve into app)
-    const t2 = setTimeout(() => setPhase(2), 2200);
-    const t3 = setTimeout(() => setPhase(3), 4400);
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
-    const exitTimer = setTimeout(() => {
-      setIsExiting(true);
-      setTimeout(() => {
-        onComplete();
-      }, 600);
-    }, durationMs - 600);
-
-    return () => {
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(exitTimer);
+  useEffect(() => {
+    const clearAllTimers = () => {
+      timersRef.current.forEach((id) => window.clearTimeout(id));
+      timersRef.current = [];
     };
-  }, [durationMs, onComplete]);
+
+    const finishOnce = () => {
+      if (completedRef.current) return;
+      completedRef.current = true;
+      onCompleteRef.current();
+    };
+
+    const exitLead = Math.max(0, durationMs - 550);
+
+    const t2 = window.setTimeout(() => setPhase(2), 2200);
+    const t3 = window.setTimeout(() => setPhase(3), 4400);
+    const tExit = window.setTimeout(() => {
+      setExitDurationMs(550);
+      setIsExiting(true);
+      const tDone = window.setTimeout(finishOnce, 560);
+      timersRef.current.push(tDone);
+    }, exitLead);
+
+    timersRef.current.push(t2, t3, tExit);
+
+    return clearAllTimers;
+  }, [durationMs]);
 
   const handleSkip = () => {
+    if (isExiting || completedRef.current) return;
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
+    setExitDurationMs(240);
     setIsExiting(true);
-    setTimeout(() => {
-      onComplete();
+    const tDone = window.setTimeout(() => {
+      if (completedRef.current) return;
+      completedRef.current = true;
+      onCompleteRef.current();
     }, 250);
+    timersRef.current.push(tDone);
+  };
+
+  const getSlotStyle = (slot: 1 | 2 | 3): React.CSSProperties => {
+    const isActive = phase === slot;
+    const isPast = phase > slot;
+    const yOffset = isActive ? '0px' : isPast ? '-12px' : '12px';
+    const scale = slot === 3 && !isActive ? 0.94 : 1;
+
+    return {
+      opacity: isActive ? 1 : 0,
+      transform: `translate3d(0, ${yOffset}, 0) scale(${scale})`,
+      transitionProperty: 'opacity, transform',
+      transitionDuration: isActive ? '540ms' : '300ms',
+      transitionDelay: isActive && slot > 1 ? '150ms' : '0ms',
+      transitionTimingFunction: isActive
+        ? 'cubic-bezier(0.16, 1, 0.3, 1)'
+        : 'cubic-bezier(0.22, 1, 0.36, 1)',
+      willChange: 'transform, opacity',
+      backfaceVisibility: 'hidden',
+      pointerEvents: isActive ? 'auto' : 'none',
+    };
   };
 
   return (
-    <AnimatePresence>
-      {!isExiting && (
-        <motion.div
-          key="splash"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{
-            opacity: 0,
-            scale: 1.04,
-            filter: 'blur(12px)',
-            transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    <div
+      style={{
+        opacity: isExiting ? 0 : 1,
+        transform: isExiting ? 'translate3d(0, 0, 0) scale(1.02)' : 'translate3d(0, 0, 0) scale(1)',
+        transitionProperty: 'opacity, transform',
+        transitionDuration: `${exitDurationMs}ms`,
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        willChange: 'transform, opacity',
+        backfaceVisibility: 'hidden',
+      }}
+      className="fixed inset-0 z-[9999] flex flex-col justify-between items-center bg-[#F4F7FB] text-[#0F172A] overflow-hidden select-none px-6 py-8"
+    >
+      {/* Ambient Ethereal Breathing Aura (Pure CSS GPU Composited — Off Main Thread) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+        <div
+          className="w-[540px] h-[540px] rounded-full pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(37, 99, 235, 0.16) 0%, rgba(186, 230, 253, 0.18) 38%, rgba(244, 247, 251, 0) 70%)',
+            animation: 'splashAuraPulse 7s ease-in-out infinite',
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden',
           }}
-          className="fixed inset-0 z-[9999] flex flex-col justify-between items-center bg-[#F4F7FB] text-[#0F172A] overflow-hidden select-none px-6 py-8"
+        />
+
+        <div
+          className="absolute w-64 h-64 rounded-full border border-blue-400/25 pointer-events-none"
+          style={{
+            animation: 'splashRippleExpand 3.6s cubic-bezier(0.16, 1, 0.3, 1) infinite',
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden',
+          }}
+        />
+        <div
+          className="absolute w-64 h-64 rounded-full border border-blue-400/20 pointer-events-none"
+          style={{
+            animation: 'splashRippleExpand 3.6s cubic-bezier(0.16, 1, 0.3, 1) 1.8s infinite',
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden',
+          }}
+        />
+      </div>
+
+      {/* Top Bar with Minimal Skip Action */}
+      <div className="w-full flex justify-end relative z-10">
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="flex items-center gap-1 rounded-full px-3 py-1 bg-white/80 hover:bg-white border border-white/90 text-[11px] font-medium text-slate-500 hover:text-slate-800 shadow-2xs transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] cursor-pointer"
         >
-          {/* Ambient Ethereal Breathing Aura */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
-            {/* Luminous sapphire halo */}
-            <motion.div
-              animate={{
-                scale: [0.95, 1.2, 0.95],
-                opacity: [0.25, 0.5, 0.25],
-              }}
-              transition={{ duration: 7, ease: 'easeInOut', repeat: Infinity }}
-              className="w-[460px] h-[460px] rounded-full"
-              style={{
-                background:
-                  'radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(186, 230, 253, 0.18) 50%, transparent 72%)',
-                filter: 'blur(60px)',
-              }}
-            />
+          <span>Skip</span>
+          <ChevronRight className="h-3 w-3 stroke-[2]" />
+        </button>
+      </div>
 
-            {/* Subtle concentric focal ripples */}
-            <motion.div
-              animate={{
-                scale: [0.8, 1.6],
-                opacity: [0.25, 0],
-              }}
-              transition={{
-                duration: 3.5,
-                repeat: Infinity,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="absolute w-64 h-64 rounded-full border border-blue-400/20 pointer-events-none"
-            />
-            <motion.div
-              animate={{
-                scale: [0.8, 1.6],
-                opacity: [0.25, 0],
-              }}
-              transition={{
-                duration: 3.5,
-                delay: 1.75,
-                repeat: Infinity,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="absolute w-64 h-64 rounded-full border border-blue-400/20 pointer-events-none"
-            />
+      {/* Central Poetic Narrative Theater (Single Locked Grid Cell — Zero Layout Shift) */}
+      <div className="relative z-10 grid place-items-center text-center my-auto px-4 max-w-sm w-full min-h-[190px]">
+        <div className="col-start-1 row-start-1 w-full" style={getSlotStyle(1)}>
+          <div
+            className="space-y-2"
+            style={{
+              animation: 'splashPhaseEnter 600ms cubic-bezier(0.16, 1, 0.3, 1) both',
+              willChange: 'transform, opacity',
+            }}
+          >
+            <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
+              Never lose
+            </p>
+            <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
+              a single screenshot.
+            </h2>
+          </div>
+        </div>
+
+        <div className="col-start-1 row-start-1 w-full space-y-2" style={getSlotStyle(2)}>
+          <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
+            Find any message,
+          </p>
+          <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
+            stat, or price in seconds.
+          </h2>
+        </div>
+
+        <div
+          className="col-start-1 row-start-1 w-full flex flex-col items-center"
+          style={getSlotStyle(3)}
+        >
+          <div
+            className="mb-6 rounded-[24px]"
+            style={{
+              boxShadow: '0 14px 36px -6px rgba(37, 99, 235, 0.38)',
+            }}
+          >
+            <RecallEmblem size={88} className="rounded-[24px]" />
           </div>
 
-          {/* Top Bar with Minimal Skip Action */}
-          <div className="w-full flex justify-end relative z-10">
-            <motion.button
-              type="button"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-              onClick={handleSkip}
-              className="flex items-center gap-1 rounded-full px-3 py-1 bg-white/60 hover:bg-white/90 border border-white/80 text-[11px] font-medium text-slate-400 hover:text-slate-700 backdrop-blur-md transition-all cursor-pointer"
-            >
-              <span>Skip</span>
-              <ChevronRight className="h-3 w-3 stroke-[2]" />
-            </motion.button>
-          </div>
+          <h1 className="font-['Outfit'] text-3xl font-extrabold tracking-[0.24em] text-[#0F172A] uppercase pl-[0.24em]">
+            Recall
+          </h1>
+          <p className="mt-2 text-xs text-slate-500 font-normal tracking-wider">
+            Instant Visual Search Engine
+          </p>
+        </div>
+      </div>
 
-          {/* Central Poetic Narrative Theater (Zero Loading Bars) */}
-          <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto px-4 max-w-sm">
-            <AnimatePresence mode="wait">
-              {phase === 1 && (
-                <motion.div
-                  key="phase1"
-                  initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  className="space-y-2"
-                >
-                  <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
-                    Never lose
-                  </p>
-                  <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
-                    a single screenshot.
-                  </h2>
-                </motion.div>
-              )}
-
-              {phase === 2 && (
-                <motion.div
-                  key="phase2"
-                  initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  className="space-y-2"
-                >
-                  <p className="font-['Outfit'] text-2xl font-light tracking-[0.08em] text-slate-400">
-                    Find any message,
-                  </p>
-                  <h2 className="font-['Outfit'] text-3xl font-bold tracking-tight text-[#0F172A]">
-                    stat, or price in seconds.
-                  </h2>
-                </motion.div>
-              )}
-
-              {phase === 3 && (
-                <motion.div
-                  key="phase3"
-                  initial={{ opacity: 0, scale: 0.88, filter: 'blur(10px)' }}
-                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center"
-                >
-                  {/* Glowing Jewel Emblem */}
-                  <div className="relative mb-6">
-                    <div
-                      className="absolute inset-0 rounded-[28px] pointer-events-none"
-                      style={{
-                        boxShadow: '0 14px 40px -6px rgba(37, 99, 235, 0.40)',
-                      }}
-                    />
-                    <RecallEmblem size={88} glow className="rounded-[24px]" />
-                  </div>
-
-                  {/* Brand Typography */}
-                  <h1 className="font-['Outfit'] text-3xl font-extrabold tracking-[0.24em] text-[#0F172A] uppercase pl-[0.24em]">
-                    Recall
-                  </h1>
-                  <p className="mt-2 text-xs text-slate-500 font-normal tracking-wider">
-                    Instant Visual Search Engine
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Bottom Silent Ambient Spacer (Zero Loading Bars) */}
-          <div className="h-8 relative z-10 flex items-center justify-center">
-            {/* Subtle serene breath dot */}
-            <motion.div
-              animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.1, 0.9] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-              className="h-1.5 w-1.5 rounded-full bg-blue-500/40"
-            />
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      {/* Bottom Silent Ambient Spacer */}
+      <div className="h-8 relative z-10 flex items-center justify-center">
+        <div
+          className="h-1.5 w-1.5 rounded-full bg-blue-500/45"
+          style={{
+            animation: 'splashDotBreath 2.2s ease-in-out infinite',
+            willChange: 'transform, opacity',
+          }}
+        />
+      </div>
+    </div>
   );
 };

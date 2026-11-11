@@ -76,6 +76,69 @@ html, body {
   transform: translateZ(0);
 }
 
+@keyframes splashAuraPulse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(0.96);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.12);
+    opacity: 0.85;
+  }
+}
+
+@keyframes splashRippleExpand {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.84);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.58);
+    opacity: 0;
+  }
+}
+
+@keyframes splashDotBreath {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(0.92);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(1.12);
+    opacity: 0.80;
+  }
+}
+
+@keyframes splashPhaseEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes splashAuraPulse {
+    0%, 100% { opacity: 0.65; }
+  }
+  @keyframes splashRippleExpand {
+    0%, 100% { opacity: 0; }
+  }
+  @keyframes splashDotBreath {
+    0%, 100% { opacity: 0.55; }
+  }
+  @keyframes splashPhaseEnter {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+}
+
 /* ========================================================
    PLUMPY LIQUID GLASS SYSTEM (SUBTLE & REFINED)
    ======================================================== */

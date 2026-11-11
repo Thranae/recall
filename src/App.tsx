@@ -162,6 +162,10 @@ export const App: React.FC = () => {
     setSearchResults(null);
   };
 
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
   const processingCount = screenshots.filter(
     (s) => s.processing_status === 'queued' || s.processing_status === 'processing'
   ).length;
@@ -169,7 +173,7 @@ export const App: React.FC = () => {
   return (
     <>
       {showSplash && (
-        <SplashScreen onComplete={() => setShowSplash(false)} durationMs={7000} />
+        <SplashScreen onComplete={handleSplashComplete} durationMs={7000} />
       )}
 
       {isInitializing ? (
