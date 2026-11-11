@@ -22,6 +22,7 @@ export interface SearchResultItem {
   match_type: 'conversation_sequence' | 'game_stats' | 'exact_phrase' | 'semantic_visual' | 'text_keyword';
   match_explanation: string;
   precise_value?: PreciseValue;
+  matched_tags?: string[];
   matched_messages?: any[];
   matched_game?: any;
   confidence: number;
@@ -44,15 +45,165 @@ export interface SearchResponse {
 const STOP_WORDS = new Set([
   'find', 'where', 'is', 'the', 'a', 'an', 'of', 'in', 'to', 'my', 'me', 'show',
   'i', 'got', 'had', 'with', 'about', 'and', 'for', 'what', 'did', 'who', 'this',
-  'that', 'from', 'her', 'she', 'he', 'him', 'they', 'them', 'was', 'were', 'at'
+  'that', 'from', 'her', 'she', 'he', 'him', 'they', 'them', 'was', 'were', 'at',
+  'pic', 'pics', 'picture', 'pictures', 'photo', 'photos', 'image', 'images',
+  'screenshot', 'screenshots', 'wearing', 'dressed', 'having', 'looking', 'seen',
+  'some', 'any', 'there', 'please', 'give', 'tell', 'one', 'has', 'have'
 ]);
 
+const VISUAL_CONCEPT_SYNONYMS: Record<string, string[]> = {
+  boy: ['boy', 'young man', 'male', 'guy', 'teen', 'lad', 'kid'],
+  girl: ['girl', 'young woman', 'female', 'lady', 'teen', 'woman'],
+  man: ['man', 'male', 'gentleman', 'guy', 'boy'],
+  woman: ['woman', 'female', 'lady', 'girl'],
+  kid: ['kid', 'child', 'boy', 'girl', 'toddler'],
+  child: ['child', 'kid', 'boy', 'girl'],
+  person: ['person', 'people', 'human', 'man', 'woman', 'boy', 'girl'],
+  shirt: ['shirt', 't-shirt', 'tshirt', 'tee', 'top', 'polo', 'kurta', 'hoodie', 'sweatshirt', 'blouse'],
+  tshirt: ['t-shirt', 'tshirt', 'tee', 'shirt', 'top'],
+  tee: ['t-shirt', 'tshirt', 'tee', 'shirt', 'top'],
+  hoodie: ['hoodie', 'sweatshirt', 'jacket', 'shirt', 'top'],
+  dress: ['dress', 'gown', 'frock', 'outfit', 'kurti', 'skirt'],
+  jeans: ['jeans', 'pants', 'trousers', 'denim'],
+  pants: ['pants', 'trousers', 'jeans', 'chinos'],
+  shoes: ['shoes', 'shoe', 'sneakers', 'sneaker', 'footwear', 'boots', 'heels', 'sandals'],
+  sneakers: ['sneakers', 'sneaker', 'shoes', 'shoe', 'footwear'],
+  black: ['black', 'dark', 'charcoal', 'ebony', 'jet black', 'onyx'],
+  white: ['white', 'ivory', 'cream', 'off-white'],
+  blue: ['blue', 'navy', 'denim', 'cobalt', 'azure', 'sky blue', 'royal blue'],
+  red: ['red', 'crimson', 'maroon', 'scarlet', 'burgundy'],
+  green: ['green', 'olive', 'emerald', 'lime', 'mint'],
+  yellow: ['yellow', 'mustard', 'gold', 'golden'],
+  pink: ['pink', 'rose', 'magenta', 'blush'],
+  glasses: ['glasses', 'sunglasses', 'eyewear', 'spectacles', 'shades'],
+  sunglasses: ['sunglasses', 'glasses', 'shades'],
+  car: ['car', 'vehicle', 'sedan', 'suv', 'automobile'],
+  bike: ['bike', 'motorcycle', 'motorbike', 'scooter', 'bicycle'],
+  dog: ['dog', 'puppy', 'canine', 'pet'],
+  cat: ['cat', 'kitten', 'feline', 'kitty', 'pet'],
+  smiling: ['smiling', 'smile', 'happy', 'laughing'],
+  happy: ['happy', 'smiling', 'smile', 'laughing'],
+};
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getSynonymsForTerm(term: string): string[] {
+  const lower = term.toLowerCase();
+  const base = VISUAL_CONCEPT_SYNONYMS[lower] || [lower];
+  return Array.from(new Set([lower, ...base]));
+}
+
+function scoreVisualAndTextMatch(
+  keywords: string[],
+  rawQuery: string,
+  sc: any
+): { score: number; matchedKeywords: string[]; matchedTags: string[]; isExactVisualHit: boolean } {
+  const descLower = (sc.visual_description || '').toLowerCase();
+  const ocrLower = (sc.ocr_text || '').toLowerCase();
+  const filenameLower = (sc.original_filename || '').toLowerCase();
+  let parsedTags: string[] = [];
+  if (typeof sc.tags === 'string') {
+    try {
+      const tmp = JSON.parse(sc.tags);
+      if (Array.isArray(tmp)) parsedTags = tmp.map((t: any) => String(t).toLowerCase());
+    } catch {
+      parsedTags = sc.tags.toLowerCase().split(/[,\s]+/);
+    }
+  } else if (Array.isArray(sc.tags)) {
+    parsedTags = sc.tags.map((t: any) => String(t).toLowerCase());
+  }
+  const tagsJoined = parsedTags.join(' ');
+  const combinedVisual = `${tagsJoined} ${descLower}`;
+  const combinedAll = `${tagsJoined} ${descLower} ${ocrLower} ${filenameLower}`;
+
+  if (keywords.length === 0) {
+    return { score: 0, matchedKeywords: [], matchedTags: [], isExactVisualHit: false };
+  }
+
+  let totalWeight = 0;
+  const matchedKeywords: string[] = [];
+  const matchedTagSet = new Set<string>();
+  let visualHits = 0;
+
+  for (const kw of keywords) {
+    const exactWordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, 'i');
+    const syns = getSynonymsForTerm(kw);
+
+    // Priority 1: Exact whole-word match in visual tags or description (e.g. \bboy\b vs "boyfriend")
+    if (exactWordRe.test(combinedVisual)) {
+      totalWeight += 1.0;
+      visualHits++;
+      matchedKeywords.push(kw);
+      matchedTagSet.add(kw);
+    } else if (exactWordRe.test(ocrLower) || exactWordRe.test(filenameLower)) {
+      // Priority 2: Exact whole-word match in OCR or filename
+      totalWeight += 0.92;
+      matchedKeywords.push(kw);
+    } else {
+      // Priority 3: Whole-word synonym match in visual tags or description
+      let synMatched: string | null = null;
+      for (const syn of syns) {
+        if (syn === kw) continue;
+        const synRe = new RegExp(`\\b${escapeRegExp(syn)}\\b`, 'i');
+        if (synRe.test(combinedVisual)) {
+          synMatched = syn;
+          break;
+        }
+      }
+      if (synMatched) {
+        totalWeight += 0.78;
+        visualHits++;
+        matchedKeywords.push(kw);
+        matchedTagSet.add(synMatched);
+      } else if (combinedAll.includes(kw)) {
+        // Priority 4: Partial substring match (lower weight so \bboy\b beats "boyfriend")
+        totalWeight += 0.42;
+        matchedKeywords.push(kw);
+      }
+    }
+  }
+
+  if (matchedKeywords.length === 0) {
+    return { score: 0, matchedKeywords: [], matchedTags: [], isExactVisualHit: false };
+  }
+
+  const coverage = totalWeight / keywords.length;
+  const qClean = keywords.join(' ');
+  const exactPhraseBonus =
+    keywords.length >= 2 && (combinedVisual.includes(qClean) || ocrLower.includes(qClean) || combinedVisual.includes(rawQuery.toLowerCase()))
+      ? 0.08
+      : 0;
+
+  // Compute calibrated relevance score: full multi-term matches rank 0.91 - 0.97, single partial matches ~0.68 - 0.84
+  const score = Math.min(0.97, 0.56 + coverage * 0.35 + exactPhraseBonus);
+
+  // Pull up to 4 most descriptive tags from the item that relate to the query
+  for (const tag of parsedTags) {
+    if (matchedTagSet.size >= 4) break;
+    if (keywords.some(kw => tag.includes(kw))) {
+      matchedTagSet.add(tag);
+    }
+  }
+
+  return {
+    score,
+    matchedKeywords,
+    matchedTags: Array.from(matchedTagSet).slice(0, 4),
+    isExactVisualHit: visualHits > 0,
+  };
+}
+
 export function extractSubstantiveKeywords(query: string): string[] {
-  return query
+  const words = query
     .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
+    .replace(/[^\w\s-]/g, ' ')
     .split(/\s+/)
+    .map(w => w.replace(/^-+|-+$/g, ''))
     .filter(word => !STOP_WORDS.has(word) && word.length > 1);
+  // Deduplicate preserving order
+  return Array.from(new Set(words));
 }
 
 // Parse natural language queries for conversation sequencing, game stats, and visual cues
@@ -70,7 +221,6 @@ export function parseQueryIntent(query: string) {
   let is_visual_query = false;
 
   // 1. Detect Conversation Sequences
-  // Pattern 1: ... said "X" and she replied "Y"
   const quotedSeqMatch = q.match(/["']([^"']+)["']\s*(?:and\s+)?(?:she|he|they|other)?\s*(?:replied|said|sent|answered)\s*["']([^"']+)["']/i);
   if (quotedSeqMatch) {
     is_conversation_sequence = true;
@@ -78,7 +228,6 @@ export function parseQueryIntent(query: string) {
     detected_reply_message = quotedSeqMatch[2].trim();
   }
 
-  // Pattern 2: ... said X and she replied Y (unquoted)
   if (!is_conversation_sequence) {
     const unquotedSeqMatch = q.match(/(?:i said|where i said|i told her)\s+([^,]+?)\s+(?:and\s+)?(?:she|he|they)\s+(?:replied|said|answered)\s+([^,\.\?]+)/i);
     if (unquotedSeqMatch) {
@@ -88,7 +237,6 @@ export function parseQueryIntent(query: string) {
     }
   }
 
-  // Pattern 3: general conversation queries
   const isGeneralChatQuery =
     lower.includes('conversation') ||
     lower.includes('chat') ||
@@ -97,7 +245,6 @@ export function parseQueryIntent(query: string) {
     lower.includes('we discussed');
 
   // 2. Detect Game Stat Queries
-  // Examples: "BGMI match where I got 18 kills", "more than 15 kills", "kills > 15", "at least 10 kills"
   const killComparisonMatch =
     q.match(/(?:kills?|eliminations?)\s*(>|>=|<|<=|=)\s*(\d+)/i) ||
     q.match(/(?:more than|over|greater than)\s*(\d+)\s*kills?/i) ||
@@ -117,7 +264,6 @@ export function parseQueryIntent(query: string) {
     } else if (q.match(/(?:kills?|eliminations?)\s*(>|>=|<|<=|=)\s*(\d+)/i)) {
       detected_kill_filter = { operator: RegExp.$1, value: parseInt(RegExp.$2, 10) };
     } else {
-      // e.g. "18 kills"
       const val = parseInt(killComparisonMatch[1] || killComparisonMatch[2], 10);
       if (!isNaN(val)) {
         detected_kill_filter = { operator: '=', value: val };
@@ -129,9 +275,9 @@ export function parseQueryIntent(query: string) {
     is_game_stat_query = true;
   }
 
-  // 3. Detect Visual Object Queries
+  // 3. Detect Visual Subject, People, Clothing, Colors & Object Queries
   if (
-    /(shirt|sneakers|shoes|backpack|dress|jacket|outfit|coffee shop|watch|bag|car|room|poster|photo of|picture of)/i.test(q) &&
+    /\b(boy|girl|man|woman|kid|child|person|people|portrait|selfie|shirt|t-shirt|tshirt|tee|hoodie|jeans|pants|sneakers|shoes|backpack|dress|jacket|outfit|black|white|blue|red|green|yellow|pink|purple|orange|brown|grey|gray|glasses|sunglasses|watch|bag|car|bike|dog|cat|room|poster|photo|picture)\b/i.test(q) &&
     !is_conversation_sequence &&
     !is_game_stat_query
   ) {
@@ -151,10 +297,10 @@ export function parseQueryIntent(query: string) {
 
 /**
  * Intelligent Precise Value Extractor:
- * Pinpoints the exact answer, numerical metric, dialogue bubble, price, or error text
+ * Pinpoints the exact answer, numerical metric, dialogue bubble, price, error text, OR visual subject attribute
  * that answers the user's specific request.
  */
-function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string): PreciseValue {
+function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string, matchedTags?: string[]): PreciseValue {
   const ocr = (sc.ocr_text || '').trim();
   const desc = (sc.visual_description || '').trim();
   const keywords = extractSubstantiveKeywords(query);
@@ -174,8 +320,8 @@ function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string):
     }
   }
 
-  // 2. Price / E-Commerce / Transaction Extraction
-  if (qLower.includes('price') || qLower.includes('cost') || qLower.includes('how much') || qLower.includes('shirt') || qLower.includes('buy') || qLower.includes('cart') || qLower.includes('order')) {
+  // 2. Price / E-Commerce / Transaction Extraction (only when OCR contains pricing cues)
+  if (qLower.includes('price') || qLower.includes('cost') || qLower.includes('how much') || qLower.includes('buy') || qLower.includes('cart') || qLower.includes('order') || (qLower.includes('shirt') && lines.length > 0)) {
     const priceLine = lines.find((l: string) => /[\$₹€£]\s*\d+|price\s*[:\-]?\s*[\d,]+|\b\d+%\s*off\b|mrp/i.test(l));
     if (priceLine) {
       return {
@@ -186,7 +332,25 @@ function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string):
     }
   }
 
-  // 3. Keyword / Sentence Match in OCR Lines
+  // 3. Visual Description Priority if query matched visual scene / subjects / colors / attributes
+  if (desc.length > 0 && keywords.length > 0) {
+    const sentences = desc.split(/(?<=[.?!])\s+/);
+    for (const sent of sentences) {
+      const sentLower = sent.toLowerCase();
+      const hitInSentence = keywords.some(kw => getSynonymsForTerm(kw).some(syn => new RegExp(`\\b${escapeRegExp(syn)}\\b`, 'i').test(sentLower)));
+      if (hitInSentence) {
+        return {
+          headline: sent.trim(),
+          detail: matchedTags && matchedTags.length > 0
+            ? `Detected: ${matchedTags.join(', ')}`
+            : `Visual understanding · ${sc.original_filename}`,
+          badge: 'Visual Match',
+        };
+      }
+    }
+  }
+
+  // 4. Keyword / Sentence Match in OCR Lines
   if (lines.length > 0 && keywords.length > 0) {
     let bestLine = '';
     let maxMatches = 0;
@@ -212,25 +376,18 @@ function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string):
     }
   }
 
-  // 4. Fallback to Visual Description Sentence
-  if (desc.length > 0 && keywords.length > 0) {
-    const sentences = desc.split(/(?<=[.?!])\s+/);
-    for (const sent of sentences) {
-      const sentLower = sent.toLowerCase();
-      if (keywords.some(kw => sentLower.includes(kw))) {
-        return {
-          headline: sent.trim(),
-          detail: `Visual scene understanding`,
-          badge: 'AI Vision',
-        };
-      }
-    }
+  if (matchedTags && matchedTags.length > 0) {
+    return {
+      headline: desc ? desc.split(/(?<=[.?!])\s+/)[0] : `Matched: ${matchedTags.join(', ')}`,
+      detail: `Detected tags: ${matchedTags.join(', ')}`,
+      badge: 'Visual Match',
+    };
   }
 
   return {
     headline: fallbackHeadline || sc.original_filename,
-    detail: desc ? desc.substring(0, 90) + '...' : `${sc.category?.toUpperCase() || 'IMAGE'} Screenshot`,
-    badge: sc.category?.toUpperCase() || 'MATCH',
+    detail: desc ? desc.substring(0, 90) + '...' : `${sc.category?.toUpperCase() || 'IMAGE'}`,
+    badge: sc.category === 'other' ? 'IMAGE' : (sc.category?.toUpperCase() || 'MATCH'),
   };
 }
 
@@ -412,48 +569,26 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
   }
 
   // --------------------------------------------------------------------------
-  // TRACK D: EXACT PHRASE & FTS5 FULL-TEXT RETRIEVAL
+  // TRACK D: VISUAL, TAG & FULL-TEXT HYBRID RETRIEVAL (WORD-BOUNDARY & SYNONYM AWARE)
   // --------------------------------------------------------------------------
   const cleanFtsQuery = query.replace(/[^\w\s]/g, ' ').trim();
-  if (cleanFtsQuery.length > 0) {
+  const ftsTerms = keywords.length > 0 ? keywords : cleanFtsQuery.split(/\s+/).filter(Boolean);
+  const effectiveKeywords = ftsTerms;
+
+  if (ftsTerms.length > 0) {
     try {
-      // Use FTS5 match query
+      const ftsExpr = ftsTerms.map(t => `"${t.replace(/"/g, '')}"`).join(' OR ');
       const ftsMatches = (await db.prepare(`
-        SELECT screenshot_id, ocr_text, visual_description, category
+        SELECT screenshot_id
         FROM screenshots_fts 
         WHERE user_id = ? AND screenshots_fts MATCH ?
-      `).all(userId, cleanFtsQuery)) as any[];
+      `).all(userId, ftsExpr)) as any[];
 
       for (const m of ftsMatches) {
         if (!resultsMap.has(m.screenshot_id)) {
           const sc = userScreenshots.find(s => s.id === m.screenshot_id);
-          if (sc) {
-            // Precision guard: if user requested a structured game filter, do not add rejected games
-            if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === 'game') {
-              continue;
-            }
-            // Precision guard: if user requested a conversation sequence, do not add rejected chats
-            if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === 'chat') {
-              continue;
-            }
+          if (!sc) continue;
 
-            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
-            resultsMap.set(m.screenshot_id, {
-              screenshot: sc,
-              match_score: 0.88,
-              match_type: 'exact_phrase',
-              match_explanation: `Text match found in OCR content: contains keywords "${query}".`,
-              precise_value: preciseVal,
-              confidence: 0.90,
-            });
-          }
-        }
-      }
-    } catch {
-      // Fallback to LIKE substring match if FTS syntax error
-      for (const sc of userScreenshots) {
-        if (!resultsMap.has(sc.id)) {
-          // Precision guard
           if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === 'game') {
             continue;
           }
@@ -461,32 +596,35 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
             continue;
           }
 
-          const ocr = (sc.ocr_text || '').toLowerCase();
-          const desc = (sc.visual_description || '').toLowerCase();
-          const qLower = query.toLowerCase();
+          const scored = scoreVisualAndTextMatch(effectiveKeywords, query, sc);
+          const finalScore = scored.score > 0 ? scored.score : 0.78;
+          const matchedTags = scored.matchedTags;
+          const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`, matchedTags);
+          const hitRatio = `${scored.matchedKeywords.length || 1}/${effectiveKeywords.length}`;
 
-          if (ocr.includes(qLower) || desc.includes(qLower)) {
-            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
-            resultsMap.set(sc.id, {
-              screenshot: sc,
-              match_score: 0.85,
-              match_type: 'exact_phrase',
-              match_explanation: `Direct text match: screenshot text contains "${query}".`,
-              precise_value: preciseVal,
-              confidence: 0.86,
-            });
-          }
+          resultsMap.set(m.screenshot_id, {
+            screenshot: sc,
+            match_score: finalScore,
+            match_type: scored.isExactVisualHit || finalScore >= 0.88 ? 'exact_phrase' : 'text_keyword',
+            match_explanation: scored.isExactVisualHit
+              ? `Visual match (${hitRatio} concepts)${matchedTags.length > 0 ? `: ${matchedTags.join(', ')}` : ''}.`
+              : `Matched ${hitRatio} terms for "${query}".`,
+            precise_value: preciseVal,
+            matched_tags: matchedTags,
+            confidence: Math.min(0.96, finalScore + 0.02),
+          });
         }
       }
+    } catch {
+      // Fall through to in-memory precision scan below
     }
   }
 
-  // Substring search on individual substantive keywords
-  if (keywords.length > 0) {
+  // Unified in-memory visual/tag/OCR scan (catches synonyms, multi-term coverage, and SQLite fallback)
+  if (effectiveKeywords.length > 0) {
     for (const sc of userScreenshots) {
       if (resultsMap.has(sc.id)) continue;
 
-      // Precision guard
       if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === 'game') {
         continue;
       }
@@ -494,27 +632,20 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
         continue;
       }
 
-      const ocrLower = (sc.ocr_text || '').toLowerCase();
-      const descLower = (sc.visual_description || '').toLowerCase();
-      const tagsStr = (sc.tags || '').toLowerCase();
-
-      let matchedCount = 0;
-      for (const kw of keywords) {
-        if (ocrLower.includes(kw) || descLower.includes(kw) || tagsStr.includes(kw)) {
-          matchedCount++;
-        }
-      }
-
-      if (matchedCount > 0) {
-        const score = 0.70 + (matchedCount / keywords.length) * 0.18;
-        const preciseVal = extractPreciseValue(query, sc);
+      const scored = scoreVisualAndTextMatch(effectiveKeywords, query, sc);
+      if (scored.score > 0) {
+        const preciseVal = extractPreciseValue(query, sc, undefined, scored.matchedTags);
+        const hitRatio = `${scored.matchedKeywords.length}/${effectiveKeywords.length}`;
         resultsMap.set(sc.id, {
           screenshot: sc,
-          match_score: Math.min(0.88, score),
-          match_type: 'text_keyword',
-          match_explanation: `Keyword match: found ${matchedCount}/${keywords.length} relevant terms in content.`,
+          match_score: scored.score,
+          match_type: scored.isExactVisualHit && scored.score >= 0.85 ? 'exact_phrase' : 'text_keyword',
+          match_explanation: scored.isExactVisualHit
+            ? `Visual match (${hitRatio} concepts)${scored.matchedTags.length > 0 ? `: ${scored.matchedTags.join(', ')}` : ''}.`
+            : `Keyword match: found ${hitRatio} relevant terms in content.`,
           precise_value: preciseVal,
-          confidence: 0.85,
+          matched_tags: scored.matchedTags,
+          confidence: Math.min(0.95, scored.score),
         });
       }
     }

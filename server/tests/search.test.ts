@@ -1,5 +1,6 @@
 import { db, initDatabase } from '../db';
 import { executeHybridSearch } from '../services/searchEngine';
+import { generateTextEmbedding } from '../services/ai/embeddings';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -186,7 +187,91 @@ async function runTests() {
   }
   console.log('✅ TEST 3 PASSED: Visual search matched the black shirt screenshot accurately!\n');
 
+  // ========================================================================
+  // TEST 4: REAL-WORLD PHOTO & VISUAL SUBJECT RECOGNITION (ZERO OCR TEXT)
+  // ========================================================================
+  console.log('5️⃣ Running Test 4: Photo / Person / Clothing Color Recognition...');
+  const scBoyPhoto = 'sc_unit_boy_black_shirt';
+  const scGirlPhoto = 'sc_unit_girl_red_dress';
+  const scBoyfriendChat = 'sc_unit_boyfriend_chat';
+
+  const insertPhoto = async (
+    id: string,
+    filename: string,
+    category: string,
+    ocrText: string,
+    visualDesc: string,
+    tagsArr: string[]
+  ) => {
+    const emb = await generateTextEmbedding(`${visualDesc} ${tagsArr.join(' ')} ${ocrText}`);
+    const nowIso = new Date().toISOString();
+    await db.prepare(`
+      INSERT OR REPLACE INTO screenshots
+        (id, user_id, storage_key, original_filename, mime_type, file_size, uploaded_at, created_at, updated_at, category, processing_status, ocr_text, visual_description, tags, text_embedding)
+      VALUES (?, ?, ?, ?, 'image/jpeg', 102400, ?, ?, ?, ?, 'ready', ?, ?, ?, ?)
+    `).run(id, testUserId, `local/${filename}`, filename, nowIso, nowIso, nowIso, category, ocrText, visualDesc, JSON.stringify(tagsArr), JSON.stringify(emb));
+
+    try {
+      await db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?').run(id);
+      await db.prepare(`
+        INSERT INTO screenshots_fts (screenshot_id, user_id, ocr_text, visual_description, tags, category)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, testUserId, ocrText, visualDesc, tagsArr.join(' '), category);
+    } catch {}
+  };
+
+  await insertPhoto(
+    scBoyPhoto,
+    'boy_portrait.jpg',
+    'other',
+    '',
+    'A young boy smiling outdoors wearing a black cotton t-shirt and blue jeans.',
+    ['boy', 'male', 'black', 'black shirt', 't-shirt', 'blue jeans', 'person']
+  );
+
+  await insertPhoto(
+    scGirlPhoto,
+    'girl_park.jpg',
+    'other',
+    '',
+    'A smiling young girl wearing a red summer dress in a sunny park.',
+    ['girl', 'female', 'red', 'red dress', 'person']
+  );
+
+  await insertPhoto(
+    scBoyfriendChat,
+    'boyfriend_chat.png',
+    'chat',
+    'hey boyfriend how was dinner',
+    'A mobile chat screen showing text messages about dinner.',
+    ['chat', 'dinner', 'message']
+  );
+
+  const boyRes = await executeHybridSearch(testUserId, 'boy');
+  if (boyRes.total_results === 0 || boyRes.results[0].screenshot.id !== scBoyPhoto) {
+    throw new Error(`FAIL: Query "boy" should rank ${scBoyPhoto} #1 above partial "boyfriend" chat, got: ${boyRes.results[0]?.screenshot.id}`);
+  }
+
+  const blackRes = await executeHybridSearch(testUserId, 'black');
+  const foundBoyInBlack = blackRes.results.some((r) => r.screenshot.id === scBoyPhoto);
+  if (!foundBoyInBlack) {
+    throw new Error(`FAIL: Query "black" should return ${scBoyPhoto}`);
+  }
+
+  const comboRes = await executeHybridSearch(testUserId, 'boy in black shirt');
+  if (comboRes.total_results === 0 || comboRes.results[0].screenshot.id !== scBoyPhoto) {
+    throw new Error(`FAIL: Query "boy in black shirt" should rank ${scBoyPhoto} #1, got: ${comboRes.results[0]?.screenshot.id}`);
+  }
+
+  const girlRes = await executeHybridSearch(testUserId, 'girl');
+  if (girlRes.total_results === 0 || girlRes.results[0].screenshot.id !== scGirlPhoto) {
+    throw new Error(`FAIL: Query "girl" should rank ${scGirlPhoto} #1, got: ${girlRes.results[0]?.screenshot.id}`);
+  }
+
+  console.log('✅ TEST 4 PASSED: Pure photo person/color/clothing search ("boy", "black", "boy in black shirt", "girl") ranked accurately!\n');
+
   // Clean up test data
+  await db.prepare('DELETE FROM screenshots_fts WHERE user_id = ?').run(testUserId);
   await db.prepare('DELETE FROM screenshots WHERE user_id = ?').run(testUserId);
   await db.prepare('DELETE FROM extracted_messages WHERE user_id = ?').run(testUserId);
   await db.prepare('DELETE FROM game_results WHERE user_id = ?').run(testUserId);

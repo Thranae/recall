@@ -52204,16 +52204,23 @@ var CANDIDATE_GEMINI_MODELS = [
   "gemini-flash-latest",
   "gemini-pro-latest"
 ];
-var COMMON_PROMPT = `You are RECALL's high-precision AI multimodal vision engine.
-Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
+var COMMON_PROMPT = `You are RECALL's universal AI multimodal vision engine.
+The input image may be EITHER a real-world photograph / portrait / camera picture OR a digital / mobile screenshot.
+Inspect EVERYTHING in the image with forensic visual and textual accuracy \u2014 subjects, people, genders, clothing, exact colors, objects, background scenery, UI elements, AND all visible text.
 
-Return a VALID JSON object matching this structure:
+Return a VALID JSON object matching this exact structure:
 {
   "category": "chat" | "game" | "product" | "poster_document" | "other",
   "confidence": 0.98,
-  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, and label visible in the image without summarization or omitting anything.",
-  "visual_description": "Comprehensive 3-5 sentence description detailing the specific application (e.g. WhatsApp, Instagram, Amazon, BGMI, Google Chrome, Settings), UI layout, dialogs, buttons, colors, subjects, and the context of what is happening in this screenshot.",
-  "tags": ["15-25", "searchable", "semantic", "tags", "including", "app_names", "brands", "topics", "keywords"],
+  "ocr_text": "Complete verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, or label visible in the image. Return empty string "" if no text is present in the photo.",
+  "visual_description": "Comprehensive 3-5 sentence description. If people are visible, explicitly state who they are (e.g., boy, girl, young man, young woman, child, man, woman, couple, group), their exact clothing & colors (e.g., black shirt, black t-shirt, blue jeans, red dress, white sneakers), accessories (glasses, watch, hat), expression, pose, objects, and setting. If it is an app screenshot, describe the app UI, layout, messages, scores, or prices clearly.",
+  "visual_entities": {
+    "people": ["exact person descriptors visible, e.g., boy, young man, male, smiling boy, OR girl, young woman, female \u2014 empty array if none"],
+    "clothing_and_colors": ["every garment with color, e.g., black shirt, black t-shirt, black top, blue denim jeans, white shoes"],
+    "dominant_colors": ["top 3-5 exact color names prominent in the image, e.g., black, white, blue, green, red"],
+    "objects_and_scene": ["notable objects, animals, vehicles, lighting, indoor/outdoor environment, e.g., portrait, outdoor, sunglasses, car, dog, coffee"]
+  },
+  "tags": ["20-35 comprehensive searchable lowercase tags combining people, gender/age, clothing, exact colors, objects, scenery, actions, app names, brands, and key topics"],
   "messages": [
     // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
     {
@@ -52230,25 +52237,122 @@ Return a VALID JSON object matching this structure:
     "mode": "Classic" | "Ranked" | "TDM" or null,
     "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
     "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
-    "score": 100, // integer score or null
+    "score": 100,
     "rank": "#1 Winner Winner Chicken Dinner" or rank text,
-    "damage": 2450, // integer total damage or null
+    "damage": 2450,
     "match_date": null,
     "extraction_confidence": 0.95
   }
 }
 
 CATEGORIZATION RULES:
-1. "chat": Any conversation or messaging interface (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Facebook Messenger). Look for chat bubbles, typing bars, sender names, read receipts, or conversational replies.
-2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
-3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/\u20B9/\u20AC/\xA3), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
-4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
-5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings, web browser UI).
+1. "chat": Any messaging UI with chat bubbles or conversational thread (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Messenger).
+2. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
+3. "product": Any e-commerce product listing, shopping cart, or storefront page with price/Buy buttons (Amazon, Flipkart, Myntra, Nike, etc.). Note: A normal photo of a person wearing clothes is NOT "product" \u2014 classify real-world portraits/photos as "other".
+4. "poster_document": Any document, PDF, receipt, bill, invoice, ticket, certificate, slide, book page, or event poster.
+5. "other": Real-world photos, portraits, selfies, people (boys, girls, men, women), animals, cars, scenery, wallpapers, web browser UI, or settings.
 
 PRECISION REQUIREMENT:
-- If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
-- If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
-- Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
+- For any photo containing people, ALWAYS include intuitive everyday words in visual_entities and tags (e.g., if a young male is shown, include BOTH "boy" / "man" / "male" as appropriate; if female, include "girl" / "woman" / "female"; for any dark top, include both "black" and "black shirt" / "black t-shirt" if applicable).
+- Include single-word colors (e.g. "black", "blue", "white") AND combined phrases (e.g. "black shirt") in tags so searching either "black", "boy", or "black shirt" matches accurately.
+- Never write "No text found" in ocr_text; use "" when no text is readable.`;
+var PHOTO_VISUAL_SYNONYMS = {
+  boy: ["boy", "male"],
+  "young man": ["boy", "man", "male", "guy"],
+  man: ["man", "male"],
+  girl: ["girl", "female"],
+  "young woman": ["girl", "woman", "female", "lady"],
+  woman: ["woman", "female"],
+  "t-shirt": ["t-shirt", "shirt", "top"],
+  tshirt: ["t-shirt", "shirt", "top"],
+  tee: ["t-shirt", "shirt", "top"],
+  shirt: ["shirt", "top"],
+  hoodie: ["hoodie", "sweatshirt", "top"],
+  kurta: ["kurta", "shirt", "ethnic"],
+  sneakers: ["sneakers", "shoes"],
+  jeans: ["jeans", "pants", "denim"],
+  sunglasses: ["sunglasses", "glasses"],
+  puppy: ["puppy", "dog"],
+  kitten: ["kitten", "cat"]
+};
+function enrichVisualTags(rawTags, visualEntities, visualDescription) {
+  const tagSet = /* @__PURE__ */ new Set();
+  const pushTag = (t) => {
+    const clean = String(t || "").trim().toLowerCase();
+    if (!clean || clean.length < 2) return;
+    tagSet.add(clean);
+    const parts = clean.split(/[\s,/]+/).filter((p) => p.length >= 2);
+    for (const part of parts) {
+      if (!["with", "and", "the", "for", "wearing", "looking"].includes(part)) {
+        tagSet.add(part);
+      }
+    }
+    if (PHOTO_VISUAL_SYNONYMS[clean]) {
+      for (const syn of PHOTO_VISUAL_SYNONYMS[clean]) {
+        tagSet.add(syn);
+      }
+    }
+  };
+  if (Array.isArray(rawTags)) {
+    rawTags.forEach(pushTag);
+  }
+  if (visualEntities && typeof visualEntities === "object") {
+    for (const bucket of ["people", "clothing_and_colors", "dominant_colors", "objects_and_scene"]) {
+      if (Array.isArray(visualEntities[bucket])) {
+        visualEntities[bucket].forEach(pushTag);
+      }
+    }
+  }
+  const descLower = (visualDescription || "").toLowerCase();
+  const explicitCues = [
+    "boy",
+    "girl",
+    "man",
+    "woman",
+    "child",
+    "kid",
+    "person",
+    "people",
+    "portrait",
+    "selfie",
+    "black",
+    "white",
+    "blue",
+    "red",
+    "green",
+    "yellow",
+    "pink",
+    "purple",
+    "orange",
+    "brown",
+    "grey",
+    "gray",
+    "shirt",
+    "t-shirt",
+    "hoodie",
+    "jacket",
+    "dress",
+    "jeans",
+    "shoes",
+    "sneakers",
+    "glasses",
+    "sunglasses",
+    "car",
+    "bike",
+    "dog",
+    "cat",
+    "outdoor",
+    "indoor",
+    "smiling"
+  ];
+  for (const cue of explicitCues) {
+    const re = new RegExp(`\\b${cue}\\b`, "i");
+    if (re.test(descLower)) {
+      pushTag(cue);
+    }
+  }
+  return Array.from(tagSet).slice(0, 45);
+}
 function normalizeAnalysis(parsed, provider) {
   let category = "other";
   if (["chat", "game", "product", "poster_document", "other"].includes(parsed.category)) {
@@ -52260,30 +52364,40 @@ function normalizeAnalysis(parsed, provider) {
   } else if (parsed.ocr_text && typeof parsed.ocr_text === "object") {
     ocrText = Object.values(parsed.ocr_text).map((v) => typeof v === "object" ? JSON.stringify(v) : String(v)).join("\n");
   }
+  if (/^(none|n\/a|no text|no readable text)$/i.test(ocrText.trim())) {
+    ocrText = "";
+  }
   let visualDescription = "";
   if (typeof parsed.visual_description === "string") {
     visualDescription = parsed.visual_description;
   } else if (parsed.visual_description && typeof parsed.visual_description === "object") {
     visualDescription = Object.entries(parsed.visual_description).map(([k, v]) => `${k}: ${v}`).join(". ");
   }
-  const ocrLower = (ocrText + " " + visualDescription).toLowerCase();
+  const rawOcrLower = ocrText.toLowerCase();
+  const descLower = visualDescription.toLowerCase();
   if (category === "other") {
-    if (Array.isArray(parsed.messages) && parsed.messages.length > 0 || ocrLower.includes("online \u2022") || ocrLower.includes("type a message") || ocrLower.includes("imessage") || ocrLower.includes("whatsapp") || ocrLower.includes("message...") || ocrLower.includes("last seen") || ocrLower.includes("telegram") || ocrLower.includes("signal") || ocrLower.includes("snapchat") || ocrLower.includes("double tick") || ocrLower.includes("blue tick") || ocrLower.includes("\u2713\u2713") || ocrLower.includes("facebook messenger") || ocrLower.includes("slack") || ocrLower.includes("discord") || /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)) {
+    if (Array.isArray(parsed.messages) && parsed.messages.length > 0 || descLower.includes("whatsapp") || descLower.includes("imessage") || descLower.includes("telegram") || descLower.includes("chat bubble") || descLower.includes("messaging app") || rawOcrLower.includes("online \u2022") || rawOcrLower.includes("type a message") || rawOcrLower.includes("last seen") || rawOcrLower.includes("double tick") || rawOcrLower.includes("\u2713\u2713") || /\b(delivered|read\s+\d|sent\s+\d)\b/.test(rawOcrLower) && rawOcrLower.length > 10) {
       category = "chat";
-    } else if (parsed.game_result && typeof parsed.game_result.kills === "number" || ocrLower.includes("winner winner") || ocrLower.includes("chicken dinner") || ocrLower.includes("bgmi") || ocrLower.includes("pubg") || ocrLower.includes("eliminated") || ocrLower.includes("victory royale") || ocrLower.includes("booyah") || ocrLower.includes("defeat") || ocrLower.includes("game over") || ocrLower.includes("match result") || ocrLower.includes("mvp") || ocrLower.includes("headshot") || ocrLower.includes("free fire") || ocrLower.includes("valorant") || ocrLower.includes("clash") || ocrLower.includes("cod mobile") || /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)) {
+    } else if (parsed.game_result && typeof parsed.game_result.kills === "number" || rawOcrLower.includes("winner winner") || rawOcrLower.includes("chicken dinner") || rawOcrLower.includes("bgmi") || rawOcrLower.includes("pubg") || rawOcrLower.includes("victory royale") || rawOcrLower.includes("booyah") || /\b(\d+\s*kills?|kills?\s*:\s*\d+)\b/.test(rawOcrLower)) {
       category = "game";
-    } else if (ocrLower.includes("add to cart") || ocrLower.includes("buy now") || ocrLower.includes("in stock") || ocrLower.includes("wishlist") || ocrLower.includes("save for later") || ocrLower.includes("ratings") || ocrLower.includes("reviews") || ocrLower.includes("shipping") || ocrLower.includes("delivery") || ocrLower.includes("flipkart") || ocrLower.includes("amazon") || ocrLower.includes("myntra") || ocrLower.includes("meesho") || ocrLower.includes("mrp") || ocrLower.includes("discount") || /[\$₹€£]\s*\d+/.test(ocrLower) || /\d+%\s*off\b/.test(ocrLower)) {
+    } else if (rawOcrLower.includes("add to cart") || rawOcrLower.includes("buy now") || rawOcrLower.includes("mrp") || descLower.includes("e-commerce") && /[\$₹€£]\s*\d+/.test(rawOcrLower) || (rawOcrLower.includes("flipkart") || rawOcrLower.includes("amazon") || rawOcrLower.includes("myntra"))) {
       category = "product";
-    } else if (ocrLower.includes("invoice") || ocrLower.includes("receipt") || ocrLower.includes("boarding pass") || ocrLower.includes("total amount") || ocrLower.includes("certificate") || ocrLower.includes("memo") || ocrLower.includes("notice") || ocrLower.includes("bill") || ocrLower.includes("statement") || ocrLower.includes("page ") || ocrLower.includes(".pdf")) {
+    } else if (rawOcrLower.includes("invoice") || rawOcrLower.includes("receipt") || rawOcrLower.includes("boarding pass") || rawOcrLower.includes("total amount") || rawOcrLower.includes("certificate")) {
       category = "poster_document";
     }
   }
+  const enrichedTags = enrichVisualTags(
+    Array.isArray(parsed.tags) ? parsed.tags : [],
+    parsed.visual_entities,
+    visualDescription
+  );
   return {
     category,
     confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.98,
     ocr_text: ocrText,
     visual_description: visualDescription,
-    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    tags: enrichedTags,
+    visual_entities: parsed.visual_entities,
     provider,
     messages: Array.isArray(parsed.messages) ? parsed.messages : [],
     game_result: parsed.game_result ? {
@@ -52299,6 +52413,19 @@ function normalizeAnalysis(parsed, provider) {
       raw_extracted_text: ocrText.substring(0, 500)
     } : null
   };
+}
+function safeParseJson(raw) {
+  const cleaned = (raw || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error("Invalid JSON payload from vision provider");
+  }
 }
 async function callGeminiVision(base64Data, mimeType) {
   if (!genAI || !geminiApiKey) throw new Error("Gemini API not configured");
@@ -52321,7 +52448,7 @@ async function callGeminiVision(base64Data, mimeType) {
         }
       ]);
       const responseText = result.response.text().trim();
-      const parsed = JSON.parse(responseText);
+      const parsed = safeParseJson(responseText);
       return normalizeAnalysis(parsed, `Google Gemini (${modelName})`);
     } catch (err) {
       console.warn(`Gemini ${modelName} returned status ${err.status || err.message?.substring(0, 50)}, falling back...`);
@@ -52358,7 +52485,7 @@ async function callMistralVision(base64Data, mimeType) {
   }
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || "";
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis(parsed, "Mistral Pixtral 12B");
 }
 async function callOpenRouterVision(base64Data, mimeType) {
@@ -52393,7 +52520,7 @@ async function callOpenRouterVision(base64Data, mimeType) {
   }
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || "";
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis(parsed, "OpenAI GPT-4o-mini (OpenRouter)");
 }
 async function callGroqStructuring(ocrText, originalFilename) {
@@ -52429,10 +52556,10 @@ Return a VALID JSON object matching:
   if (!res.ok) throw new Error("Groq structuring request failed");
   const groqData = await res.json();
   const content = groqData.choices?.[0]?.message?.content?.trim() || "";
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis({ ...parsed, ocr_text: ocrText }, "Groq LPU (GPT-OSS-120B)");
 }
-async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
+function resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64) {
   let rawBase64 = fallbackBase64 || null;
   if (!rawBase64 && filePath && fs2.existsSync(filePath)) {
     try {
@@ -52450,6 +52577,10 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackB
   } else if (originalFilename.endsWith(".webp")) {
     resolvedMime = "image/webp";
   }
+  return { base64Data, resolvedMime };
+}
+async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackBase64) {
+  const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
   if (base64Data) {
     const visionTasks = [];
     if (geminiApiKey) {
@@ -52497,6 +52628,260 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackB
     provider: "Rule-Based Heuristics",
     messages: heuristic.messages,
     game_result: heuristic.game_result
+  };
+}
+async function answerImageQuestion(filePath, mimeType, originalFilename, fallbackBase64, storedContext, question) {
+  const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
+  const qaPrompt = `You are RECALL's visual intelligence assistant answering a user's question about THIS specific image ("${originalFilename}").
+Answer directly, accurately, and concisely (2-4 crisp sentences) based strictly on what is visible in the image.
+If the user asks about people (boy, girl, man, woman), clothing, colors, objects, numbers, or text, inspect carefully and state exact details.
+
+User Question: "${question}"`;
+  if (base64Data) {
+    const tasks = [];
+    if (genAI && geminiApiKey) {
+      tasks.push(
+        (async () => {
+          for (const modelName of CANDIDATE_GEMINI_MODELS.slice(0, 3)) {
+            try {
+              const model = genAI.getGenerativeModel({ model: modelName });
+              const result = await model.generateContent([
+                qaPrompt,
+                { inlineData: { data: base64Data, mimeType: resolvedMime } }
+              ]);
+              const text = result.response.text().trim();
+              if (text) return { answer: text, provider: `Gemini (${modelName})` };
+            } catch {
+            }
+          }
+          throw new Error("Gemini QA failed");
+        })()
+      );
+    }
+    if (mistralApiKey) {
+      tasks.push(
+        (async () => {
+          const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${mistralApiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "pixtral-12b-2409",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: qaPrompt },
+                    { type: "image_url", image_url: `data:${resolvedMime};base64,${base64Data}` }
+                  ]
+                }
+              ],
+              max_tokens: 450,
+              temperature: 0.2
+            })
+          });
+          if (!res.ok) throw new Error("Mistral QA failed");
+          const data = await res.json();
+          const answer = data.choices?.[0]?.message?.content?.trim();
+          if (!answer) throw new Error("Empty Mistral QA answer");
+          return { answer, provider: "Mistral Pixtral 12B" };
+        })()
+      );
+    }
+    if (openrouterApiKey) {
+      tasks.push(
+        (async () => {
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${openrouterApiKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": "https://recall.dev",
+              "X-Title": "Recall AI"
+            },
+            body: JSON.stringify({
+              model: "openai/gpt-4o-mini",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: qaPrompt },
+                    { type: "image_url", image_url: { url: `data:${resolvedMime};base64,${base64Data}` } }
+                  ]
+                }
+              ],
+              max_tokens: 450,
+              temperature: 0.2
+            })
+          });
+          if (!res.ok) throw new Error("OpenRouter QA failed");
+          const data = await res.json();
+          const answer = data.choices?.[0]?.message?.content?.trim();
+          if (!answer) throw new Error("Empty OpenRouter QA answer");
+          return { answer, provider: "GPT-4o-mini" };
+        })()
+      );
+    }
+    if (tasks.length > 0) {
+      try {
+        return await Promise.any(tasks);
+      } catch (err) {
+        console.warn("Multimodal image QA failed, trying text context fallback:", err);
+      }
+    }
+  }
+  if (groqApiKey) {
+    try {
+      const contextText = `Visual Description: ${storedContext.visual_description || "N/A"}
+OCR Text: ${storedContext.ocr_text || "None"}
+Tags: ${(storedContext.tags || []).join(", ")}`;
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${groqApiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [
+            {
+              role: "user",
+              content: `Based on this indexed image metadata for "${originalFilename}":
+${contextText}
+
+Answer concisely: "${question}"`
+            }
+          ],
+          max_tokens: 300,
+          temperature: 0.2
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const answer = data.choices?.[0]?.message?.content?.trim();
+        if (answer) return { answer, provider: "Groq LPU Context" };
+      }
+    } catch {
+    }
+  }
+  return {
+    answer: storedContext.visual_description || "Could not reach AI vision providers at the moment. Try clicking Re-Analyze above.",
+    provider: "Cached Summary"
+  };
+}
+async function synthesizeVaultAnswer(query, topMatches) {
+  if (topMatches.length === 0) {
+    return {
+      answer: `I couldn't find any images or screenshots in your vault matching "${query}". Try uploading or re-analyzing recent photos.`,
+      cited_ids: [],
+      provider: "Recall Index"
+    };
+  }
+  const evidenceBlock = topMatches.slice(0, 6).map((m, idx) => {
+    const parts = [`[Item ${idx + 1} | ID: ${m.id} | File: ${m.filename} | Category: ${m.category}]`];
+    if (m.visual_description) parts.push(`Visual: ${m.visual_description.substring(0, 350)}`);
+    if (m.tags && m.tags.length > 0) parts.push(`Tags: ${m.tags.slice(0, 20).join(", ")}`);
+    if (m.ocr_text) parts.push(`Text: ${m.ocr_text.substring(0, 350).replace(/\n+/g, " ")}`);
+    if (m.matched_game) parts.push(`Game Stat: ${m.matched_game.game_name}, ${m.matched_game.kills} kills, Rank ${m.matched_game.rank}`);
+    return parts.join("\n");
+  }).join("\n\n");
+  const synthesisPrompt = `You are Recall AI, the user's private visual & screenshot memory assistant.
+Answer the user's question directly and concisely (2-3 crisp sentences max) using ONLY the matched gallery evidence below.
+Be specific: mention names, clothing/colors, exact numbers, replies, or filenames when relevant. Do not invent facts.
+
+Return a VALID JSON object:
+{
+  "answer": "Concise, helpful direct answer synthesizing what is found across the images.",
+  "cited_ids": ["exact_item_ids_that_directly_support_the_answer"]
+}
+
+User Question: "${query}"
+
+Matched Vault Items:
+${evidenceBlock}`;
+  const tasks = [];
+  if (groqApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${groqApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-120b",
+            messages: [{ role: "user", content: synthesisPrompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 400,
+            temperature: 0.15
+          })
+        });
+        if (!res.ok) throw new Error("Groq synthesis failed");
+        const data = await res.json();
+        const parsed = safeParseJson(data.choices?.[0]?.message?.content || "{}");
+        if (!parsed.answer) throw new Error("Empty Groq answer");
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: "Groq LPU"
+        };
+      })()
+    );
+  }
+  if (openrouterApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openrouterApiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://recall.dev",
+            "X-Title": "Recall AI"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-4o-mini",
+            messages: [{ role: "user", content: synthesisPrompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 400,
+            temperature: 0.15
+          })
+        });
+        if (!res.ok) throw new Error("OpenRouter synthesis failed");
+        const data = await res.json();
+        const parsed = safeParseJson(data.choices?.[0]?.message?.content || "{}");
+        if (!parsed.answer) throw new Error("Empty OpenRouter answer");
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: "GPT-4o-mini"
+        };
+      })()
+    );
+  }
+  if (genAI && geminiApiKey) {
+    tasks.push(
+      (async () => {
+        const model = genAI.getGenerativeModel({
+          model: CANDIDATE_GEMINI_MODELS[0],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.15 }
+        });
+        const result = await model.generateContent(synthesisPrompt);
+        const parsed = safeParseJson(result.response.text().trim());
+        if (!parsed.answer) throw new Error("Empty Gemini answer");
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: "Gemini Flash"
+        };
+      })()
+    );
+  }
+  if (tasks.length > 0) {
+    try {
+      return await Promise.any(tasks);
+    } catch {
+    }
+  }
+  const lead = topMatches[0];
+  return {
+    answer: `Found ${topMatches.length} matching item${topMatches.length === 1 ? "" : "s"}. Top match is ${lead.filename}: ${lead.visual_description || lead.ocr_text?.substring(0, 120) || "Visual match detected."}`,
+    cited_ids: [lead.id],
+    provider: "Recall Index"
   };
 }
 
@@ -68614,6 +68999,99 @@ router2.post("/process-pending", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Failed to process pending screenshot" });
   }
 });
+router2.post("/:id/ask", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email || "";
+    const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    if (!question) {
+      res.status(400).json({ error: "Question is required" });
+      return;
+    }
+    const row = await db.prepare(`
+      SELECT * FROM screenshots
+      WHERE id = ?
+        AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).get(req.params.id, userId, userEmail);
+    if (!row) {
+      res.status(404).json({ error: "Screenshot not found" });
+      return;
+    }
+    let parsedTags = [];
+    if (Array.isArray(row.tags)) {
+      parsedTags = row.tags;
+    } else if (typeof row.tags === "string") {
+      try {
+        const parsed = JSON.parse(row.tags);
+        if (Array.isArray(parsed)) parsedTags = parsed;
+      } catch {
+      }
+    }
+    const filePath = path5.join(UPLOADS_BASE, row.storage_key);
+    const result = await answerImageQuestion(
+      filePath,
+      row.mime_type,
+      row.original_filename,
+      row.image_data,
+      {
+        visual_description: row.visual_description || "",
+        ocr_text: row.ocr_text || "",
+        tags: parsedTags
+      },
+      question
+    );
+    res.json({
+      screenshot_id: row.id,
+      question,
+      answer: result.answer,
+      provider: result.provider
+    });
+  } catch (err) {
+    console.error("Image Q&A error:", err);
+    res.status(500).json({ error: "Failed to answer question about this image", details: err.message });
+  }
+});
+router2.post("/batch/reanalyze-all", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email || "";
+    const rows = await db.prepare(`
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      FROM screenshots
+      WHERE user_id = ?
+         OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
+      ORDER BY created_at DESC
+      LIMIT 25
+    `).all(userId, userEmail);
+    let upgraded = 0;
+    let failed = 0;
+    for (const row of rows) {
+      try {
+        await processScreenshotDirectly(
+          row.id,
+          row.user_id,
+          row.storage_key,
+          row.mime_type,
+          row.original_filename,
+          row.image_data || void 0
+        );
+        upgraded++;
+      } catch (e) {
+        console.warn(`Batch reanalyze skipped ${row.id}:`, e);
+        failed++;
+      }
+    }
+    res.json({
+      total: rows.length,
+      upgraded,
+      failed,
+      message: `Upgraded visual recognition index for ${upgraded} of ${rows.length} image(s).`
+    });
+  } catch (err) {
+    console.error("Batch reanalyze error:", err);
+    res.status(500).json({ error: "Failed to upgrade vision index", details: err.message });
+  }
+});
 var screenshotRoutes_default = router2;
 
 // server/routes/searchRoutes.ts
@@ -68654,10 +69132,153 @@ var STOP_WORDS = /* @__PURE__ */ new Set([
   "them",
   "was",
   "were",
-  "at"
+  "at",
+  "pic",
+  "pics",
+  "picture",
+  "pictures",
+  "photo",
+  "photos",
+  "image",
+  "images",
+  "screenshot",
+  "screenshots",
+  "wearing",
+  "dressed",
+  "having",
+  "looking",
+  "seen",
+  "some",
+  "any",
+  "there",
+  "please",
+  "give",
+  "tell",
+  "one",
+  "has",
+  "have"
 ]);
+var VISUAL_CONCEPT_SYNONYMS = {
+  boy: ["boy", "young man", "male", "guy", "teen", "lad", "kid"],
+  girl: ["girl", "young woman", "female", "lady", "teen", "woman"],
+  man: ["man", "male", "gentleman", "guy", "boy"],
+  woman: ["woman", "female", "lady", "girl"],
+  kid: ["kid", "child", "boy", "girl", "toddler"],
+  child: ["child", "kid", "boy", "girl"],
+  person: ["person", "people", "human", "man", "woman", "boy", "girl"],
+  shirt: ["shirt", "t-shirt", "tshirt", "tee", "top", "polo", "kurta", "hoodie", "sweatshirt", "blouse"],
+  tshirt: ["t-shirt", "tshirt", "tee", "shirt", "top"],
+  tee: ["t-shirt", "tshirt", "tee", "shirt", "top"],
+  hoodie: ["hoodie", "sweatshirt", "jacket", "shirt", "top"],
+  dress: ["dress", "gown", "frock", "outfit", "kurti", "skirt"],
+  jeans: ["jeans", "pants", "trousers", "denim"],
+  pants: ["pants", "trousers", "jeans", "chinos"],
+  shoes: ["shoes", "shoe", "sneakers", "sneaker", "footwear", "boots", "heels", "sandals"],
+  sneakers: ["sneakers", "sneaker", "shoes", "shoe", "footwear"],
+  black: ["black", "dark", "charcoal", "ebony", "jet black", "onyx"],
+  white: ["white", "ivory", "cream", "off-white"],
+  blue: ["blue", "navy", "denim", "cobalt", "azure", "sky blue", "royal blue"],
+  red: ["red", "crimson", "maroon", "scarlet", "burgundy"],
+  green: ["green", "olive", "emerald", "lime", "mint"],
+  yellow: ["yellow", "mustard", "gold", "golden"],
+  pink: ["pink", "rose", "magenta", "blush"],
+  glasses: ["glasses", "sunglasses", "eyewear", "spectacles", "shades"],
+  sunglasses: ["sunglasses", "glasses", "shades"],
+  car: ["car", "vehicle", "sedan", "suv", "automobile"],
+  bike: ["bike", "motorcycle", "motorbike", "scooter", "bicycle"],
+  dog: ["dog", "puppy", "canine", "pet"],
+  cat: ["cat", "kitten", "feline", "kitty", "pet"],
+  smiling: ["smiling", "smile", "happy", "laughing"],
+  happy: ["happy", "smiling", "smile", "laughing"]
+};
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function getSynonymsForTerm(term) {
+  const lower = term.toLowerCase();
+  const base2 = VISUAL_CONCEPT_SYNONYMS[lower] || [lower];
+  return Array.from(/* @__PURE__ */ new Set([lower, ...base2]));
+}
+function scoreVisualAndTextMatch(keywords, rawQuery, sc) {
+  const descLower = (sc.visual_description || "").toLowerCase();
+  const ocrLower = (sc.ocr_text || "").toLowerCase();
+  const filenameLower = (sc.original_filename || "").toLowerCase();
+  let parsedTags = [];
+  if (typeof sc.tags === "string") {
+    try {
+      const tmp = JSON.parse(sc.tags);
+      if (Array.isArray(tmp)) parsedTags = tmp.map((t) => String(t).toLowerCase());
+    } catch {
+      parsedTags = sc.tags.toLowerCase().split(/[,\s]+/);
+    }
+  } else if (Array.isArray(sc.tags)) {
+    parsedTags = sc.tags.map((t) => String(t).toLowerCase());
+  }
+  const tagsJoined = parsedTags.join(" ");
+  const combinedVisual = `${tagsJoined} ${descLower}`;
+  const combinedAll = `${tagsJoined} ${descLower} ${ocrLower} ${filenameLower}`;
+  if (keywords.length === 0) {
+    return { score: 0, matchedKeywords: [], matchedTags: [], isExactVisualHit: false };
+  }
+  let totalWeight = 0;
+  const matchedKeywords = [];
+  const matchedTagSet = /* @__PURE__ */ new Set();
+  let visualHits = 0;
+  for (const kw of keywords) {
+    const exactWordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
+    const syns = getSynonymsForTerm(kw);
+    if (exactWordRe.test(combinedVisual)) {
+      totalWeight += 1;
+      visualHits++;
+      matchedKeywords.push(kw);
+      matchedTagSet.add(kw);
+    } else if (exactWordRe.test(ocrLower) || exactWordRe.test(filenameLower)) {
+      totalWeight += 0.92;
+      matchedKeywords.push(kw);
+    } else {
+      let synMatched = null;
+      for (const syn of syns) {
+        if (syn === kw) continue;
+        const synRe = new RegExp(`\\b${escapeRegExp(syn)}\\b`, "i");
+        if (synRe.test(combinedVisual)) {
+          synMatched = syn;
+          break;
+        }
+      }
+      if (synMatched) {
+        totalWeight += 0.78;
+        visualHits++;
+        matchedKeywords.push(kw);
+        matchedTagSet.add(synMatched);
+      } else if (combinedAll.includes(kw)) {
+        totalWeight += 0.42;
+        matchedKeywords.push(kw);
+      }
+    }
+  }
+  if (matchedKeywords.length === 0) {
+    return { score: 0, matchedKeywords: [], matchedTags: [], isExactVisualHit: false };
+  }
+  const coverage = totalWeight / keywords.length;
+  const qClean = keywords.join(" ");
+  const exactPhraseBonus = keywords.length >= 2 && (combinedVisual.includes(qClean) || ocrLower.includes(qClean) || combinedVisual.includes(rawQuery.toLowerCase())) ? 0.08 : 0;
+  const score = Math.min(0.97, 0.56 + coverage * 0.35 + exactPhraseBonus);
+  for (const tag of parsedTags) {
+    if (matchedTagSet.size >= 4) break;
+    if (keywords.some((kw) => tag.includes(kw))) {
+      matchedTagSet.add(tag);
+    }
+  }
+  return {
+    score,
+    matchedKeywords,
+    matchedTags: Array.from(matchedTagSet).slice(0, 4),
+    isExactVisualHit: visualHits > 0
+  };
+}
 function extractSubstantiveKeywords(query) {
-  return query.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((word) => !STOP_WORDS.has(word) && word.length > 1);
+  const words = query.toLowerCase().replace(/[^\w\s-]/g, " ").split(/\s+/).map((w) => w.replace(/^-+|-+$/g, "")).filter((word) => !STOP_WORDS.has(word) && word.length > 1);
+  return Array.from(new Set(words));
 }
 function parseQueryIntent(query) {
   const q = query.trim();
@@ -68704,7 +69325,7 @@ function parseQueryIntent(query) {
   if (lower.includes("bgmi") || lower.includes("pubg") || lower.includes("chicken dinner") || lower.includes("winner winner")) {
     is_game_stat_query = true;
   }
-  if (/(shirt|sneakers|shoes|backpack|dress|jacket|outfit|coffee shop|watch|bag|car|room|poster|photo of|picture of)/i.test(q) && !is_conversation_sequence && !is_game_stat_query) {
+  if (/\b(boy|girl|man|woman|kid|child|person|people|portrait|selfie|shirt|t-shirt|tshirt|tee|hoodie|jeans|pants|sneakers|shoes|backpack|dress|jacket|outfit|black|white|blue|red|green|yellow|pink|purple|orange|brown|grey|gray|glasses|sunglasses|watch|bag|car|bike|dog|cat|room|poster|photo|picture)\b/i.test(q) && !is_conversation_sequence && !is_game_stat_query) {
     is_visual_query = true;
   }
   return {
@@ -68717,7 +69338,7 @@ function parseQueryIntent(query) {
     detected_kill_filter
   };
 }
-function extractPreciseValue(query, sc, fallbackHeadline) {
+function extractPreciseValue(query, sc, fallbackHeadline, matchedTags) {
   const ocr = (sc.ocr_text || "").trim();
   const desc = (sc.visual_description || "").trim();
   const keywords = extractSubstantiveKeywords(query);
@@ -68733,7 +69354,7 @@ function extractPreciseValue(query, sc, fallbackHeadline) {
       };
     }
   }
-  if (qLower.includes("price") || qLower.includes("cost") || qLower.includes("how much") || qLower.includes("shirt") || qLower.includes("buy") || qLower.includes("cart") || qLower.includes("order")) {
+  if (qLower.includes("price") || qLower.includes("cost") || qLower.includes("how much") || qLower.includes("buy") || qLower.includes("cart") || qLower.includes("order") || qLower.includes("shirt") && lines.length > 0) {
     const priceLine = lines.find((l) => /[\$₹€£]\s*\d+|price\s*[:\-]?\s*[\d,]+|\b\d+%\s*off\b|mrp/i.test(l));
     if (priceLine) {
       return {
@@ -68741,6 +69362,20 @@ function extractPreciseValue(query, sc, fallbackHeadline) {
         detail: `${sc.original_filename} \xB7 Product Specs`,
         badge: "Price Value"
       };
+    }
+  }
+  if (desc.length > 0 && keywords.length > 0) {
+    const sentences = desc.split(/(?<=[.?!])\s+/);
+    for (const sent of sentences) {
+      const sentLower = sent.toLowerCase();
+      const hitInSentence = keywords.some((kw) => getSynonymsForTerm(kw).some((syn) => new RegExp(`\\b${escapeRegExp(syn)}\\b`, "i").test(sentLower)));
+      if (hitInSentence) {
+        return {
+          headline: sent.trim(),
+          detail: matchedTags && matchedTags.length > 0 ? `Detected: ${matchedTags.join(", ")}` : `Visual understanding \xB7 ${sc.original_filename}`,
+          badge: "Visual Match"
+        };
+      }
     }
   }
   if (lines.length > 0 && keywords.length > 0) {
@@ -68765,23 +69400,17 @@ function extractPreciseValue(query, sc, fallbackHeadline) {
       };
     }
   }
-  if (desc.length > 0 && keywords.length > 0) {
-    const sentences = desc.split(/(?<=[.?!])\s+/);
-    for (const sent of sentences) {
-      const sentLower = sent.toLowerCase();
-      if (keywords.some((kw) => sentLower.includes(kw))) {
-        return {
-          headline: sent.trim(),
-          detail: `Visual scene understanding`,
-          badge: "AI Vision"
-        };
-      }
-    }
+  if (matchedTags && matchedTags.length > 0) {
+    return {
+      headline: desc ? desc.split(/(?<=[.?!])\s+/)[0] : `Matched: ${matchedTags.join(", ")}`,
+      detail: `Detected tags: ${matchedTags.join(", ")}`,
+      badge: "Visual Match"
+    };
   }
   return {
     headline: fallbackHeadline || sc.original_filename,
-    detail: desc ? desc.substring(0, 90) + "..." : `${sc.category?.toUpperCase() || "IMAGE"} Screenshot`,
-    badge: sc.category?.toUpperCase() || "MATCH"
+    detail: desc ? desc.substring(0, 90) + "..." : `${sc.category?.toUpperCase() || "IMAGE"}`,
+    badge: sc.category === "other" ? "IMAGE" : sc.category?.toUpperCase() || "MATCH"
   };
 }
 async function executeHybridSearch(userId, rawQuery, filters) {
@@ -68930,63 +69559,46 @@ async function executeHybridSearch(userId, rawQuery, filters) {
     }
   }
   const cleanFtsQuery = query.replace(/[^\w\s]/g, " ").trim();
-  if (cleanFtsQuery.length > 0) {
+  const ftsTerms = keywords.length > 0 ? keywords : cleanFtsQuery.split(/\s+/).filter(Boolean);
+  const effectiveKeywords = ftsTerms;
+  if (ftsTerms.length > 0) {
     try {
+      const ftsExpr = ftsTerms.map((t) => `"${t.replace(/"/g, "")}"`).join(" OR ");
       const ftsMatches = await db.prepare(`
-        SELECT screenshot_id, ocr_text, visual_description, category
+        SELECT screenshot_id
         FROM screenshots_fts 
         WHERE user_id = ? AND screenshots_fts MATCH ?
-      `).all(userId, cleanFtsQuery);
+      `).all(userId, ftsExpr);
       for (const m of ftsMatches) {
         if (!resultsMap.has(m.screenshot_id)) {
           const sc = userScreenshots.find((s) => s.id === m.screenshot_id);
-          if (sc) {
-            if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
-              continue;
-            }
-            if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
-              continue;
-            }
-            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
-            resultsMap.set(m.screenshot_id, {
-              screenshot: sc,
-              match_score: 0.88,
-              match_type: "exact_phrase",
-              match_explanation: `Text match found in OCR content: contains keywords "${query}".`,
-              precise_value: preciseVal,
-              confidence: 0.9
-            });
-          }
-        }
-      }
-    } catch {
-      for (const sc of userScreenshots) {
-        if (!resultsMap.has(sc.id)) {
+          if (!sc) continue;
           if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
             continue;
           }
           if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
             continue;
           }
-          const ocr = (sc.ocr_text || "").toLowerCase();
-          const desc = (sc.visual_description || "").toLowerCase();
-          const qLower = query.toLowerCase();
-          if (ocr.includes(qLower) || desc.includes(qLower)) {
-            const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`);
-            resultsMap.set(sc.id, {
-              screenshot: sc,
-              match_score: 0.85,
-              match_type: "exact_phrase",
-              match_explanation: `Direct text match: screenshot text contains "${query}".`,
-              precise_value: preciseVal,
-              confidence: 0.86
-            });
-          }
+          const scored = scoreVisualAndTextMatch(effectiveKeywords, query, sc);
+          const finalScore = scored.score > 0 ? scored.score : 0.78;
+          const matchedTags = scored.matchedTags;
+          const preciseVal = extractPreciseValue(query, sc, `Contains "${query}"`, matchedTags);
+          const hitRatio = `${scored.matchedKeywords.length || 1}/${effectiveKeywords.length}`;
+          resultsMap.set(m.screenshot_id, {
+            screenshot: sc,
+            match_score: finalScore,
+            match_type: scored.isExactVisualHit || finalScore >= 0.88 ? "exact_phrase" : "text_keyword",
+            match_explanation: scored.isExactVisualHit ? `Visual match (${hitRatio} concepts)${matchedTags.length > 0 ? `: ${matchedTags.join(", ")}` : ""}.` : `Matched ${hitRatio} terms for "${query}".`,
+            precise_value: preciseVal,
+            matched_tags: matchedTags,
+            confidence: Math.min(0.96, finalScore + 0.02)
+          });
         }
       }
+    } catch {
     }
   }
-  if (keywords.length > 0) {
+  if (effectiveKeywords.length > 0) {
     for (const sc of userScreenshots) {
       if (resultsMap.has(sc.id)) continue;
       if (intent.is_game_stat_query && intent.detected_kill_filter && sc.category === "game") {
@@ -68995,25 +69607,18 @@ async function executeHybridSearch(userId, rawQuery, filters) {
       if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message && sc.category === "chat") {
         continue;
       }
-      const ocrLower = (sc.ocr_text || "").toLowerCase();
-      const descLower = (sc.visual_description || "").toLowerCase();
-      const tagsStr = (sc.tags || "").toLowerCase();
-      let matchedCount = 0;
-      for (const kw of keywords) {
-        if (ocrLower.includes(kw) || descLower.includes(kw) || tagsStr.includes(kw)) {
-          matchedCount++;
-        }
-      }
-      if (matchedCount > 0) {
-        const score = 0.7 + matchedCount / keywords.length * 0.18;
-        const preciseVal = extractPreciseValue(query, sc);
+      const scored = scoreVisualAndTextMatch(effectiveKeywords, query, sc);
+      if (scored.score > 0) {
+        const preciseVal = extractPreciseValue(query, sc, void 0, scored.matchedTags);
+        const hitRatio = `${scored.matchedKeywords.length}/${effectiveKeywords.length}`;
         resultsMap.set(sc.id, {
           screenshot: sc,
-          match_score: Math.min(0.88, score),
-          match_type: "text_keyword",
-          match_explanation: `Keyword match: found ${matchedCount}/${keywords.length} relevant terms in content.`,
+          match_score: scored.score,
+          match_type: scored.isExactVisualHit && scored.score >= 0.85 ? "exact_phrase" : "text_keyword",
+          match_explanation: scored.isExactVisualHit ? `Visual match (${hitRatio} concepts)${scored.matchedTags.length > 0 ? `: ${scored.matchedTags.join(", ")}` : ""}.` : `Keyword match: found ${hitRatio} relevant terms in content.`,
           precise_value: preciseVal,
-          confidence: 0.85
+          matched_tags: scored.matchedTags,
+          confidence: Math.min(0.95, scored.score)
         });
       }
     }
@@ -69104,6 +69709,53 @@ router3.get("/", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Search endpoint error:", err);
     res.status(500).json({ error: "Search execution failed" });
+  }
+});
+router3.post("/ask", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
+    const category = typeof req.body?.category === "string" ? req.body.category : "all";
+    if (!query) {
+      res.status(400).json({ error: "Search question is required" });
+      return;
+    }
+    const searchResponse = await executeHybridSearch(userId, query, { category });
+    const topItems = searchResponse.results.slice(0, 6).map((item) => {
+      const sc = item.screenshot;
+      let parsedTags = [];
+      if (Array.isArray(sc.tags)) {
+        parsedTags = sc.tags;
+      } else if (typeof sc.tags === "string") {
+        try {
+          const t = JSON.parse(sc.tags);
+          if (Array.isArray(t)) parsedTags = t;
+        } catch {
+        }
+      }
+      return {
+        id: sc.id,
+        filename: sc.original_filename || "image",
+        category: sc.category || "other",
+        visual_description: sc.visual_description || "",
+        ocr_text: sc.ocr_text || "",
+        tags: parsedTags,
+        matched_game: item.matched_game || null,
+        matched_messages: item.matched_messages || []
+      };
+    });
+    const synthesis = await synthesizeVaultAnswer(query, topItems);
+    res.json({
+      ...searchResponse,
+      ai_answer: synthesis
+    });
+  } catch (err) {
+    console.error("Vault Ask AI error:", err);
+    res.status(500).json({ error: "Failed to synthesize AI answer", details: err.message });
   }
 });
 var searchRoutes_default = router3;

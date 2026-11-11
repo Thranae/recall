@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
+import { answerImageQuestion } from '../services/ai/gemini';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
 import { analyzeScreenshot } from '../services/ai/gemini';
@@ -607,6 +608,112 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
   } catch (err: any) {
     console.error('Process pending error:', err);
     res.status(500).json({ error: 'Failed to process pending screenshot' });
+  }
+});
+
+// Memory Lens: Visual Q&A directly on a specific photo or screenshot
+router.post('/:id/ask', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user!.email || '';
+    const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+
+    if (!question) {
+      res.status(400).json({ error: 'Question is required' });
+      return;
+    }
+
+    const row = (await db.prepare(`
+      SELECT * FROM screenshots
+      WHERE id = ?
+        AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).get(req.params.id, userId, userEmail)) as any;
+
+    if (!row) {
+      res.status(404).json({ error: 'Screenshot not found' });
+      return;
+    }
+
+    let parsedTags: string[] = [];
+    if (Array.isArray(row.tags)) {
+      parsedTags = row.tags;
+    } else if (typeof row.tags === 'string') {
+      try {
+        const parsed = JSON.parse(row.tags);
+        if (Array.isArray(parsed)) parsedTags = parsed;
+      } catch {}
+    }
+
+    const filePath = path.join(UPLOADS_BASE, row.storage_key);
+    const result = await answerImageQuestion(
+      filePath,
+      row.mime_type,
+      row.original_filename,
+      row.image_data,
+      {
+        visual_description: row.visual_description || '',
+        ocr_text: row.ocr_text || '',
+        tags: parsedTags,
+      },
+      question
+    );
+
+    res.json({
+      screenshot_id: row.id,
+      question,
+      answer: result.answer,
+      provider: result.provider,
+    });
+  } catch (err: any) {
+    console.error('Image Q&A error:', err);
+    res.status(500).json({ error: 'Failed to answer question about this image', details: err.message });
+  }
+});
+
+// Upgrade Vision Index: Batch re-analyze existing screenshots so older photos gain full visual_entities & tags
+router.post('/batch/reanalyze-all', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user!.email || '';
+
+    const rows = (await db.prepare(`
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      FROM screenshots
+      WHERE user_id = ?
+         OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
+      ORDER BY created_at DESC
+      LIMIT 25
+    `).all(userId, userEmail)) as any[];
+
+    let upgraded = 0;
+    let failed = 0;
+
+    for (const row of rows) {
+      try {
+        await processScreenshotDirectly(
+          row.id,
+          row.user_id,
+          row.storage_key,
+          row.mime_type,
+          row.original_filename,
+          row.image_data || undefined
+        );
+        upgraded++;
+      } catch (e) {
+        console.warn(`Batch reanalyze skipped ${row.id}:`, e);
+        failed++;
+      }
+    }
+
+    res.json({
+      total: rows.length,
+      upgraded,
+      failed,
+      message: `Upgraded visual recognition index for ${upgraded} of ${rows.length} image(s).`,
+    });
+  } catch (err: any) {
+    console.error('Batch reanalyze error:', err);
+    res.status(500).json({ error: 'Failed to upgrade vision index', details: err.message });
   }
 });
 

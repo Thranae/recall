@@ -14,6 +14,8 @@ import {
   Eye,
   HardDrive,
   CheckCircle2,
+  Brain,
+  Send,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, ExtractedMessage, GameResult, SearchResultItem } from '../types';
@@ -30,6 +32,7 @@ interface ScreenshotDetailSheetProps {
   onClose: () => void;
   onDeleted: () => void;
   onUpdated: () => void;
+  onSelectTag?: (tag: string) => void;
 }
 
 export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
@@ -38,6 +41,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   onClose,
   onDeleted,
   onUpdated,
+  onSelectTag,
 }) => {
   const [data, setData] = useState<ScreenshotDetailData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +50,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [qaInput, setQaInput] = useState('');
+  const [isAskingImage, setIsAskingImage] = useState(false);
+  const [qaResult, setQaResult] = useState<{ question: string; answer: string; provider: string } | null>(null);
+  const [qaError, setQaError] = useState<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load screenshot details
@@ -74,6 +82,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   useEffect(() => {
+    setQaInput('');
+    setQaResult(null);
+    setQaError(null);
     if (!screenshotId) {
       setData(null);
       return;
@@ -81,6 +92,28 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
     fetchDetails(screenshotId, true);
   }, [screenshotId]);
+
+  const handleAskImage = async (customQuestion?: string) => {
+    if (!data?.screenshot?.id || isAskingImage) return;
+    const questionText = (customQuestion ?? qaInput).trim();
+    if (!questionText) return;
+    if (customQuestion) setQaInput(customQuestion);
+
+    setIsAskingImage(true);
+    setQaError(null);
+    try {
+      const res = await api.askScreenshot(data.screenshot.id, questionText);
+      setQaResult({
+        question: res.question,
+        answer: res.answer,
+        provider: res.provider,
+      });
+    } catch (err: any) {
+      setQaError(err.message || 'Could not inspect this image right now.');
+    } finally {
+      setIsAskingImage(false);
+    }
+  };
 
   // Auto-poll if screenshot is still in processing state
   useEffect(() => {
@@ -456,21 +489,104 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                   )}
 
+                  {/* Memory Lens: Interactive Visual Q&A About This Image */}
+                  {data?.screenshot?.id && (
+                    <div className="rounded-[18px] liquid-glass-card p-3.5 space-y-2.5 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2 px-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800">
+                          <Brain className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <span>Ask About This Image</span>
+                        </div>
+                        {qaResult?.provider && (
+                          <span className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[9.5px] font-semibold text-slate-500">
+                            {qaResult.provider}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Describe people & outfit', 'What colors are prominent?', 'Summarize key info'].map((prompt) => (
+                          <button
+                            key={prompt}
+                            type="button"
+                            disabled={isAskingImage}
+                            onClick={() => handleAskImage(prompt)}
+                            className="rounded-full bg-white/75 hover:bg-white border border-white px-2.5 py-1 text-[10px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleAskImage();
+                        }}
+                        className="flex items-center gap-1.5 rounded-full bg-white/85 border border-white px-3 py-1.5 shadow-2xs"
+                      >
+                        <input
+                          type="text"
+                          value={qaInput}
+                          onChange={(e) => setQaInput(e.target.value)}
+                          placeholder="Ask anything about what's inside..."
+                          className="w-full bg-transparent text-[11.5px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isAskingImage || !qaInput.trim()}
+                          aria-label="Send question"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3478F6] text-white disabled:opacity-40 active:scale-90 transition-all cursor-pointer"
+                        >
+                          {isAskingImage ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3 w-3" />
+                          )}
+                        </button>
+                      </form>
+
+                      {qaError && (
+                        <p className="text-[11px] font-medium text-rose-600 px-1">{qaError}</p>
+                      )}
+
+                      {qaResult && (
+                        <div className="rounded-[14px] bg-blue-50/75 border border-blue-100/80 p-2.5 space-y-1">
+                          <p className="text-[10.5px] font-semibold text-[#3478F6]">
+                            Q: {qaResult.question}
+                          </p>
+                          <p className="text-[12px] font-medium text-slate-800 leading-relaxed">
+                            {qaResult.answer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Key Extracted Semantic Entities / Tags */}
                   {data?.screenshot.tags && data.screenshot.tags.length > 0 && (
                     <div className="rounded-[18px] liquid-glass-card p-3 space-y-2 shadow-2xs">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 px-0.5">
-                        <Tag className="h-3.5 w-3.5 text-[#3478F6]" />
-                        <span>Key Entities & Topics</span>
+                      <div className="flex items-center justify-between gap-2 px-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
+                          <Tag className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <span>Key Entities & Topics</span>
+                        </div>
+                        {onSelectTag && (
+                          <span className="text-[9.5px] font-medium text-slate-400">
+                            Tap tag to search
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {data.screenshot.tags.map((tag: string, idx: number) => (
-                          <span
+                          <button
                             key={idx}
-                            className="rounded-full bg-white/80 border border-white px-2.5 py-0.5 text-[10.5px] font-medium text-slate-700 shadow-2xs"
+                            type="button"
+                            onClick={() => onSelectTag?.(tag)}
+                            className="rounded-full bg-white/80 hover:bg-white hover:text-[#3478F6] border border-white px-2.5 py-0.5 text-[10.5px] font-medium text-slate-700 shadow-2xs active:scale-95 transition-all cursor-pointer"
                           >
                             #{tag}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     </div>

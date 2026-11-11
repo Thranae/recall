@@ -42,6 +42,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
+  askVault: (query: string, category?: string) =>
+    request<import('../types').VaultAskResponse>('/search/ask', {
+      method: 'POST',
+      body: JSON.stringify({ query, category }),
+    }),
+
+  askScreenshot: (id: string, question: string) =>
+    request<import('../types').ImageQuestionResponse>(`/screenshots/${encodeURIComponent(id)}/ask`, {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
+
+  reanalyzeBatch: () =>
+    request<import('../types').BatchReanalyzeResponse>('/screenshots/batch/reanalyze-all', {
+      method: 'POST',
+    }),
   // Auth
   async login(email: string, password: string): Promise<{ token: string; user: User }> {
     const data = await request<{ token: string; user: User }>('/auth/login', {

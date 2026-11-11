@@ -270,6 +270,7 @@ export const App: React.FC = () => {
             user={user}
             screenshots={screenshots}
             onLogout={handleLogout}
+            onRefresh={fetchScreenshots}
           />
         )}
       </main>
@@ -310,6 +311,13 @@ export const App: React.FC = () => {
         }}
         onUpdated={() => {
           fetchScreenshots();
+        }}
+        onSelectTag={(tag) => {
+          setSelectedScreenshotId(null);
+          setSelectedSearchResult(undefined);
+          setSearchCategory('all');
+          setQuery(tag);
+          setCurrentTab('search');
         }}
       />
         </div>

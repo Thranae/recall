@@ -66,6 +66,7 @@ export interface SearchResultItem {
   match_type: 'conversation_sequence' | 'game_stats' | 'exact_phrase' | 'semantic_visual' | 'text_keyword';
   match_explanation: string;
   precise_value?: PreciseValue;
+  matched_tags?: string[];
   matched_messages?: ExtractedMessage[];
   matched_game?: GameResult;
   confidence: number;
@@ -83,5 +84,29 @@ export interface SearchResponse {
   };
   total_results: number;
   results: SearchResultItem[];
+}
+
+export interface VaultAnswer {
+  answer: string;
+  cited_ids: string[];
+  provider: string;
+}
+
+export interface VaultAskResponse extends SearchResponse {
+  ai_answer: VaultAnswer;
+}
+
+export interface ImageQuestionResponse {
+  screenshot_id: string;
+  question: string;
+  answer: string;
+  provider: string;
+}
+
+export interface BatchReanalyzeResponse {
+  total: number;
+  upgraded: number;
+  failed: number;
+  message: string;
 }
 

@@ -12,8 +12,11 @@ import {
   Loader2,
   Compass,
   Target,
+  Brain,
+  ArrowUpRight,
 } from 'lucide-react';
-import type { SearchResponse, SearchResultItem } from '../types';
+import { api } from '../services/api';
+import type { SearchResponse, SearchResultItem, VaultAnswer } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
 
 interface SearchViewProps {
@@ -48,9 +51,9 @@ const SUGGESTED_QUERIES = [
     icon: Trophy,
   },
   {
-    title: 'Visual Object',
-    description: 'Clothing, sneakers, and apparel',
-    query: 'black shirt',
+    title: 'Visual Subject',
+    description: 'People, clothing, colors & scenes',
+    query: 'boy in black shirt',
     icon: ShoppingBag,
   },
   {
@@ -72,13 +75,50 @@ export const SearchView: React.FC<SearchViewProps> = ({
   searchResults,
   onSelectScreenshot,
 }) => {
+  const [isAskingAi, setIsAskingAi] = React.useState(false);
+  const [vaultAnswer, setVaultAnswer] = React.useState<VaultAnswer | null>(null);
+  const [askResponse, setAskResponse] = React.useState<SearchResponse | null>(null);
+  const [askError, setAskError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!query.trim()) {
+      setVaultAnswer(null);
+      setAskResponse(null);
+      setAskError(null);
+    }
+  }, [query]);
+
+  React.useEffect(() => {
+    setVaultAnswer(null);
+    setAskResponse(null);
+    setAskError(null);
+  }, [searchResults]);
+
+  const activeResults = searchResults || askResponse;
+
+  const handleAskAi = async () => {
+    const trimmed = query.trim();
+    if (!trimmed || isAskingAi) return;
+    setIsAskingAi(true);
+    setAskError(null);
+    try {
+      const res = await api.askVault(trimmed, selectedCategory);
+      setVaultAnswer(res.ai_answer);
+      setAskResponse(res);
+    } catch (err: any) {
+      setAskError(err.message || 'Could not synthesize an AI answer right now.');
+    } finally {
+      setIsAskingAi(false);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
       {/* 1. Plump Liquid Glass Search Bar */}
       <form onSubmit={onSubmitSearch} className="relative">
         <div className="flex h-13 items-center rounded-[20px] liquid-glass-input px-3.5 transition-all duration-150">
           <div className="shrink-0 relative z-10 flex items-center justify-center">
-            {isSearching ? (
+            {isSearching || isAskingAi ? (
               <Loader2 className="h-4.5 w-4.5 animate-spin text-[#3478F6]" />
             ) : (
               <Search className="h-4.5 w-4.5 stroke-[2.3] text-[#3478F6]" />
@@ -89,18 +129,36 @@ export const SearchView: React.FC<SearchViewProps> = ({
             type="text"
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
-            placeholder="Search conversations, stats, text..."
+            placeholder="Search photos, people, colors, chats..."
             className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none relative z-10"
           />
 
           {query && (
             <button
               type="button"
-              onClick={onClearSearch}
+              onClick={() => {
+                setVaultAnswer(null);
+                setAskResponse(null);
+                setAskError(null);
+                onClearSearch();
+              }}
               aria-label="Clear search"
               className="p-1 text-[#4A5D78] hover:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
             >
               <X className="h-4 w-4 stroke-[2.2]" />
+            </button>
+          )}
+
+          {query.trim() && (
+            <button
+              type="button"
+              onClick={handleAskAi}
+              disabled={isAskingAi || isSearching}
+              title="Ask Recall AI across your gallery"
+              className="h-9 shrink-0 mr-1.5 rounded-full px-3 text-[11.5px] font-bold relative z-10 liquid-glass-pill text-[#172B4D] active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+            >
+              <Brain className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.2]" />
+              <span>Ask AI</span>
             </button>
           )}
 
@@ -141,7 +199,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       </div>
 
       {/* 3. Search Discovery Mode (When no active results) */}
-      {!searchResults && !query.trim() && (
+      {!activeResults && !query.trim() && (
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-[#172B4D] flex items-center gap-1.5 tracking-tight">
@@ -193,32 +251,98 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       )}
 
+      {askError && (
+        <div className="rounded-[18px] bg-rose-50/90 border border-rose-200 px-3.5 py-2.5 text-xs text-rose-700 font-medium">
+          {askError}
+        </div>
+      )}
+
       {/* 4. Active Search Results */}
-      {searchResults && (
+      {activeResults && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-800 font-mono">
-                {searchResults.total_results} {searchResults.total_results === 1 ? 'result' : 'results'}
+                {activeResults.total_results} {activeResults.total_results === 1 ? 'result' : 'results'}
               </span>
 
-              {searchResults.parsed_intent.is_conversation_sequence && (
+              {activeResults.parsed_intent.is_conversation_sequence && (
                 <span className="liquid-category-badge px-2 py-0.5 text-[9.5px]">
                   Chat Sequence
                 </span>
               )}
-              {searchResults.parsed_intent.is_game_stat_query && (
+              {activeResults.parsed_intent.is_game_stat_query && (
                 <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] text-amber-700">
                   Game Filter
                 </span>
               )}
+              {activeResults.parsed_intent.is_visual_query && (
+                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] text-indigo-700">
+                  Visual Subject
+                </span>
+              )}
             </div>
+
+            {!vaultAnswer && activeResults.results.length > 0 && (
+              <button
+                type="button"
+                onClick={handleAskAi}
+                disabled={isAskingAi}
+                className="flex items-center gap-1 rounded-full liquid-glass-pill px-2.5 py-1 text-[10.5px] font-bold text-[#3478F6] active:scale-95 transition-all cursor-pointer"
+              >
+                <Brain className="h-3 w-3 stroke-[2.2]" />
+                <span>{isAskingAi ? 'Thinking...' : 'Synthesize'}</span>
+              </button>
+            )}
           </div>
 
+          {/* Ask Recall AI Synthesized Answer Card */}
+          {vaultAnswer && (
+            <div className="rounded-[22px] p-4 bg-gradient-to-br from-[#3478F6]/12 via-white/88 to-indigo-500/8 border border-white shadow-sm backdrop-blur-md space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3478F6]/15 text-[#3478F6]">
+                    <Brain className="h-3.5 w-3.5 stroke-[2.2]" />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#172B4D] uppercase tracking-wider">
+                    Recall AI Answer
+                  </span>
+                </div>
+                <span className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[9.5px] font-semibold text-slate-500">
+                  {vaultAnswer.provider}
+                </span>
+              </div>
+
+              <p className="text-[13px] font-medium text-[#172B4D] leading-relaxed">
+                {vaultAnswer.answer}
+              </p>
+
+              {vaultAnswer.cited_ids.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {vaultAnswer.cited_ids.map((cid) => {
+                    const citedItem = activeResults.results.find((r) => r.screenshot.id === cid);
+                    if (!citedItem) return null;
+                    return (
+                      <button
+                        key={cid}
+                        type="button"
+                        onClick={() => onSelectScreenshot(citedItem.screenshot.id, citedItem)}
+                        className="inline-flex items-center gap-1 rounded-full bg-white/85 hover:bg-white border border-blue-100 px-2.5 py-1 text-[10.5px] font-semibold text-[#3478F6] shadow-2xs active:scale-95 transition-all cursor-pointer max-w-[190px]"
+                      >
+                        <span className="truncate">{citedItem.screenshot.original_filename}</span>
+                        <ArrowUpRight className="h-3 w-3 shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Top Direct Answer Callout if high-precision value detected */}
-          {searchResults.results.length > 0 && searchResults.results[0].precise_value && searchResults.results[0].match_score >= 0.88 && (
+          {activeResults.results.length > 0 && activeResults.results[0].precise_value && activeResults.results[0].match_score >= 0.88 && (
             <div
-              onClick={() => onSelectScreenshot(searchResults.results[0].screenshot.id, searchResults.results[0])}
+              onClick={() => onSelectScreenshot(activeResults.results[0].screenshot.id, activeResults.results[0])}
               className="rounded-[22px] p-4 bg-gradient-to-br from-blue-500/10 via-white/80 to-blue-500/5 border border-white/90 shadow-sm backdrop-blur-md cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="flex items-center justify-between gap-1 mb-1.5">
@@ -228,34 +352,34 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     Direct Answer
                   </span>
                 </div>
-                {searchResults.results[0].precise_value.badge && (
+                {activeResults.results[0].precise_value.badge && (
                   <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] font-bold text-[#3478F6]">
-                    {searchResults.results[0].precise_value.badge}
+                    {activeResults.results[0].precise_value.badge}
                   </span>
                 )}
               </div>
               <h3 className="text-sm font-bold text-[#172B4D] leading-snug">
-                {searchResults.results[0].precise_value.headline}
+                {activeResults.results[0].precise_value.headline}
               </h3>
               <p className="mt-1 text-xs text-slate-600 font-normal">
-                {searchResults.results[0].precise_value.detail}
+                {activeResults.results[0].precise_value.detail}
               </p>
             </div>
           )}
 
-          {searchResults.results.length === 0 ? (
+          {activeResults.results.length === 0 ? (
             <div className="liquid-glass-card flex flex-col items-center justify-center rounded-[24px] p-8 text-center my-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-[20px] liquid-icon-pod mb-3 text-slate-400">
                 <SearchX className="h-7 w-7 stroke-[2]" />
               </div>
               <h3 className="text-sm font-bold text-slate-800">No matching screenshots</h3>
               <p className="mt-1 text-xs text-slate-500 max-w-xs font-normal">
-                Try searching by words spoken in a chat, victory rank, or game stats like 'kills &gt; 10'.
+                Try searching by people, colors like 'black shirt', words in a chat, or game stats like 'kills &gt; 10'.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {searchResults.results.map((item) => (
+              {activeResults.results.map((item) => (
                 <ScreenshotCard
                   key={item.screenshot.id}
                   screenshot={item.screenshot}

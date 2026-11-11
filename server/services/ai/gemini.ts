@@ -28,6 +28,12 @@ export interface ScreenshotAnalysisPayload {
   ocr_text: string;
   visual_description: string;
   tags: string[];
+  visual_entities?: {
+    people?: string[];
+    clothing_and_colors?: string[];
+    dominant_colors?: string[];
+    objects_and_scene?: string[];
+  };
   provider?: string;
   messages: Array<{
     sequence_number: number;
@@ -51,16 +57,23 @@ export interface ScreenshotAnalysisPayload {
   } | null;
 }
 
-const COMMON_PROMPT = `You are RECALL's high-precision AI multimodal vision engine.
-Analyze this mobile screenshot with extreme accuracy. Transcribe all text verbatim and classify the screenshot into the exact category.
+const COMMON_PROMPT = `You are RECALL's universal AI multimodal vision engine.
+The input image may be EITHER a real-world photograph / portrait / camera picture OR a digital / mobile screenshot.
+Inspect EVERYTHING in the image with forensic visual and textual accuracy — subjects, people, genders, clothing, exact colors, objects, background scenery, UI elements, AND all visible text.
 
-Return a VALID JSON object matching this structure:
+Return a VALID JSON object matching this exact structure:
 {
   "category": "chat" | "game" | "product" | "poster_document" | "other",
   "confidence": 0.98,
-  "ocr_text": "Complete, verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, and label visible in the image without summarization or omitting anything.",
-  "visual_description": "Comprehensive 3-5 sentence description detailing the specific application (e.g. WhatsApp, Instagram, Amazon, BGMI, Google Chrome, Settings), UI layout, dialogs, buttons, colors, subjects, and the context of what is happening in this screenshot.",
-  "tags": ["15-25", "searchable", "semantic", "tags", "including", "app_names", "brands", "topics", "keywords"],
+  "ocr_text": "Complete verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, or label visible in the image. Return empty string \"\" if no text is present in the photo.",
+  "visual_description": "Comprehensive 3-5 sentence description. If people are visible, explicitly state who they are (e.g., boy, girl, young man, young woman, child, man, woman, couple, group), their exact clothing & colors (e.g., black shirt, black t-shirt, blue jeans, red dress, white sneakers), accessories (glasses, watch, hat), expression, pose, objects, and setting. If it is an app screenshot, describe the app UI, layout, messages, scores, or prices clearly.",
+  "visual_entities": {
+    "people": ["exact person descriptors visible, e.g., boy, young man, male, smiling boy, OR girl, young woman, female — empty array if none"],
+    "clothing_and_colors": ["every garment with color, e.g., black shirt, black t-shirt, black top, blue denim jeans, white shoes"],
+    "dominant_colors": ["top 3-5 exact color names prominent in the image, e.g., black, white, blue, green, red"],
+    "objects_and_scene": ["notable objects, animals, vehicles, lighting, indoor/outdoor environment, e.g., portrait, outdoor, sunglasses, car, dog, coffee"]
+  },
+  "tags": ["20-35 comprehensive searchable lowercase tags combining people, gender/age, clothing, exact colors, objects, scenery, actions, app names, brands, and key topics"],
   "messages": [
     // ONLY IF category is "chat" (WhatsApp, Telegram, iMessage, Instagram DM, Discord, SMS):
     {
@@ -77,25 +90,96 @@ Return a VALID JSON object matching this structure:
     "mode": "Classic" | "Ranked" | "TDM" or null,
     "map_name": "Erangel" | "Miramar" | "Livik" | "Sanhok" or null,
     "kills": 18, // MUST be an integer number of eliminations/kills if visible, otherwise null
-    "score": 100, // integer score or null
+    "score": 100,
     "rank": "#1 Winner Winner Chicken Dinner" or rank text,
-    "damage": 2450, // integer total damage or null
+    "damage": 2450,
     "match_date": null,
     "extraction_confidence": 0.95
   }
 }
 
 CATEGORIZATION RULES:
-1. "chat": Any conversation or messaging interface (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Facebook Messenger). Look for chat bubbles, typing bars, sender names, read receipts, or conversational replies.
-2. "game": Any game match summary, victory/defeat banner ("Winner Winner Chicken Dinner", "Victory Royale", "Defeat", "Booyah"), scoreboard, kill counter, or in-game HUD.
-3. "product": Any e-commerce product page, apparel, sneakers, electronic gadget listing, price tag ($/₹/€/£), shopping cart, or "Add to Cart" screen (Amazon, Flipkart, Myntra, Nike, etc.).
-4. "poster_document": Any text document, PDF, bill, receipt, invoice, boarding pass, ticket, certificate, book page, slide, or event flyer.
-5. "other": Only use if the image does not fit any of the above (e.g. wallpaper, camera landscape photo, phone settings, web browser UI).
+1. "chat": Any messaging UI with chat bubbles or conversational thread (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Messenger).
+2. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
+3. "product": Any e-commerce product listing, shopping cart, or storefront page with price/Buy buttons (Amazon, Flipkart, Myntra, Nike, etc.). Note: A normal photo of a person wearing clothes is NOT "product" — classify real-world portraits/photos as "other".
+4. "poster_document": Any document, PDF, receipt, bill, invoice, ticket, certificate, slide, book page, or event poster.
+5. "other": Real-world photos, portraits, selfies, people (boys, girls, men, women), animals, cars, scenery, wallpapers, web browser UI, or settings.
 
 PRECISION REQUIREMENT:
-- If conversation messages are visible, category MUST be "chat" and messages MUST be populated in chronological order.
-- If game stats or kill count are visible, category MUST be "game" and game_result MUST contain the exact integer kills count.
-- Never summarize ocr_text: transcribe all visible on-screen text faithfully.`;
+- For any photo containing people, ALWAYS include intuitive everyday words in visual_entities and tags (e.g., if a young male is shown, include BOTH "boy" / "man" / "male" as appropriate; if female, include "girl" / "woman" / "female"; for any dark top, include both "black" and "black shirt" / "black t-shirt" if applicable).
+- Include single-word colors (e.g. "black", "blue", "white") AND combined phrases (e.g. "black shirt") in tags so searching either "black", "boy", or "black shirt" matches accurately.
+- Never write "No text found" in ocr_text; use "" when no text is readable.`;
+
+const PHOTO_VISUAL_SYNONYMS: Record<string, string[]> = {
+  boy: ['boy', 'male'],
+  'young man': ['boy', 'man', 'male', 'guy'],
+  man: ['man', 'male'],
+  girl: ['girl', 'female'],
+  'young woman': ['girl', 'woman', 'female', 'lady'],
+  woman: ['woman', 'female'],
+  't-shirt': ['t-shirt', 'shirt', 'top'],
+  tshirt: ['t-shirt', 'shirt', 'top'],
+  tee: ['t-shirt', 'shirt', 'top'],
+  shirt: ['shirt', 'top'],
+  hoodie: ['hoodie', 'sweatshirt', 'top'],
+  kurta: ['kurta', 'shirt', 'ethnic'],
+  sneakers: ['sneakers', 'shoes'],
+  jeans: ['jeans', 'pants', 'denim'],
+  sunglasses: ['sunglasses', 'glasses'],
+  puppy: ['puppy', 'dog'],
+  kitten: ['kitten', 'cat'],
+};
+
+function enrichVisualTags(rawTags: string[], visualEntities: any, visualDescription: string): string[] {
+  const tagSet = new Set<string>();
+
+  const pushTag = (t: string) => {
+    const clean = String(t || '').trim().toLowerCase();
+    if (!clean || clean.length < 2) return;
+    tagSet.add(clean);
+    // Split multi-word apparel/color tags like "black shirt" into individual searchable atoms too ("black", "shirt")
+    const parts = clean.split(/[\s,/]+/).filter(p => p.length >= 2);
+    for (const part of parts) {
+      if (!['with', 'and', 'the', 'for', 'wearing', 'looking'].includes(part)) {
+        tagSet.add(part);
+      }
+    }
+    if (PHOTO_VISUAL_SYNONYMS[clean]) {
+      for (const syn of PHOTO_VISUAL_SYNONYMS[clean]) {
+        tagSet.add(syn);
+      }
+    }
+  };
+
+  if (Array.isArray(rawTags)) {
+    rawTags.forEach(pushTag);
+  }
+
+  if (visualEntities && typeof visualEntities === 'object') {
+    for (const bucket of ['people', 'clothing_and_colors', 'dominant_colors', 'objects_and_scene']) {
+      if (Array.isArray(visualEntities[bucket])) {
+        visualEntities[bucket].forEach(pushTag);
+      }
+    }
+  }
+
+  // Extract explicit visual subject/color cues mentioned in visual_description if missing
+  const descLower = (visualDescription || '').toLowerCase();
+  const explicitCues = [
+    'boy', 'girl', 'man', 'woman', 'child', 'kid', 'person', 'people', 'portrait', 'selfie',
+    'black', 'white', 'blue', 'red', 'green', 'yellow', 'pink', 'purple', 'orange', 'brown', 'grey', 'gray',
+    'shirt', 't-shirt', 'hoodie', 'jacket', 'dress', 'jeans', 'shoes', 'sneakers', 'glasses', 'sunglasses',
+    'car', 'bike', 'dog', 'cat', 'outdoor', 'indoor', 'smiling',
+  ];
+  for (const cue of explicitCues) {
+    const re = new RegExp(`\\b${cue}\\b`, 'i');
+    if (re.test(descLower)) {
+      pushTag(cue);
+    }
+  }
+
+  return Array.from(tagSet).slice(0, 45);
+}
 
 function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPayload {
   let category: ScreenshotAnalysisPayload['category'] = 'other';
@@ -112,6 +196,9 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
       .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
       .join('\n');
   }
+  if (/^(none|n\/a|no text|no readable text)$/i.test(ocrText.trim())) {
+    ocrText = '';
+  }
 
   // Handle visual_description whether string or object
   let visualDescription = '';
@@ -123,94 +210,69 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
       .join('. ');
   }
 
-  const ocrLower = (ocrText + ' ' + visualDescription).toLowerCase();
+  const rawOcrLower = ocrText.toLowerCase();
+  const descLower = visualDescription.toLowerCase();
 
-  // Secondary intelligent category validation to guarantee zero false "other" badges
+  // Secondary intelligent category validation (strictly using OCR + UI indicators so portraits are never misclassified)
   if (category === 'other') {
     if (
       (Array.isArray(parsed.messages) && parsed.messages.length > 0) ||
-      ocrLower.includes('online •') ||
-      ocrLower.includes('type a message') ||
-      ocrLower.includes('imessage') ||
-      ocrLower.includes('whatsapp') ||
-      ocrLower.includes('message...') ||
-      ocrLower.includes('last seen') ||
-      ocrLower.includes('telegram') ||
-      ocrLower.includes('signal') ||
-      ocrLower.includes('snapchat') ||
-      ocrLower.includes('double tick') ||
-      ocrLower.includes('blue tick') ||
-      ocrLower.includes('✓✓') ||
-      ocrLower.includes('facebook messenger') ||
-      ocrLower.includes('slack') ||
-      ocrLower.includes('discord') ||
-      /\b(replied|typing|delivered|seen|read\s+\d|sent\s+\d|dm|inbox)\b/.test(ocrLower)
+      descLower.includes('whatsapp') ||
+      descLower.includes('imessage') ||
+      descLower.includes('telegram') ||
+      descLower.includes('chat bubble') ||
+      descLower.includes('messaging app') ||
+      rawOcrLower.includes('online •') ||
+      rawOcrLower.includes('type a message') ||
+      rawOcrLower.includes('last seen') ||
+      rawOcrLower.includes('double tick') ||
+      rawOcrLower.includes('✓✓') ||
+      (/\b(delivered|read\s+\d|sent\s+\d)\b/.test(rawOcrLower) && rawOcrLower.length > 10)
     ) {
       category = 'chat';
     } else if (
       (parsed.game_result && typeof parsed.game_result.kills === 'number') ||
-      ocrLower.includes('winner winner') ||
-      ocrLower.includes('chicken dinner') ||
-      ocrLower.includes('bgmi') ||
-      ocrLower.includes('pubg') ||
-      ocrLower.includes('eliminated') ||
-      ocrLower.includes('victory royale') ||
-      ocrLower.includes('booyah') ||
-      ocrLower.includes('defeat') ||
-      ocrLower.includes('game over') ||
-      ocrLower.includes('match result') ||
-      ocrLower.includes('mvp') ||
-      ocrLower.includes('headshot') ||
-      ocrLower.includes('free fire') ||
-      ocrLower.includes('valorant') ||
-      ocrLower.includes('clash') ||
-      ocrLower.includes('cod mobile') ||
-      /\b(\d+\s*kills?|kills?\s*:\s*\d+|squad|solo|duo)\b/.test(ocrLower)
+      rawOcrLower.includes('winner winner') ||
+      rawOcrLower.includes('chicken dinner') ||
+      rawOcrLower.includes('bgmi') ||
+      rawOcrLower.includes('pubg') ||
+      rawOcrLower.includes('victory royale') ||
+      rawOcrLower.includes('booyah') ||
+      /\b(\d+\s*kills?|kills?\s*:\s*\d+)\b/.test(rawOcrLower)
     ) {
       category = 'game';
     } else if (
-      ocrLower.includes('add to cart') ||
-      ocrLower.includes('buy now') ||
-      ocrLower.includes('in stock') ||
-      ocrLower.includes('wishlist') ||
-      ocrLower.includes('save for later') ||
-      ocrLower.includes('ratings') ||
-      ocrLower.includes('reviews') ||
-      ocrLower.includes('shipping') ||
-      ocrLower.includes('delivery') ||
-      ocrLower.includes('flipkart') ||
-      ocrLower.includes('amazon') ||
-      ocrLower.includes('myntra') ||
-      ocrLower.includes('meesho') ||
-      ocrLower.includes('mrp') ||
-      ocrLower.includes('discount') ||
-      /[\$₹€£]\s*\d+/.test(ocrLower) ||
-      /\d+%\s*off\b/.test(ocrLower)
+      rawOcrLower.includes('add to cart') ||
+      rawOcrLower.includes('buy now') ||
+      rawOcrLower.includes('mrp') ||
+      (descLower.includes('e-commerce') && /[\$₹€£]\s*\d+/.test(rawOcrLower)) ||
+      (rawOcrLower.includes('flipkart') || rawOcrLower.includes('amazon') || rawOcrLower.includes('myntra'))
     ) {
       category = 'product';
     } else if (
-      ocrLower.includes('invoice') ||
-      ocrLower.includes('receipt') ||
-      ocrLower.includes('boarding pass') ||
-      ocrLower.includes('total amount') ||
-      ocrLower.includes('certificate') ||
-      ocrLower.includes('memo') ||
-      ocrLower.includes('notice') ||
-      ocrLower.includes('bill') ||
-      ocrLower.includes('statement') ||
-      ocrLower.includes('page ') ||
-      ocrLower.includes('.pdf')
+      rawOcrLower.includes('invoice') ||
+      rawOcrLower.includes('receipt') ||
+      rawOcrLower.includes('boarding pass') ||
+      rawOcrLower.includes('total amount') ||
+      rawOcrLower.includes('certificate')
     ) {
       category = 'poster_document';
     }
   }
+
+  const enrichedTags = enrichVisualTags(
+    Array.isArray(parsed.tags) ? parsed.tags : [],
+    parsed.visual_entities,
+    visualDescription
+  );
 
   return {
     category,
     confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.98,
     ocr_text: ocrText,
     visual_description: visualDescription,
-    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    tags: enrichedTags,
+    visual_entities: parsed.visual_entities,
     provider,
     messages: Array.isArray(parsed.messages) ? parsed.messages : [],
     game_result: parsed.game_result
@@ -228,6 +290,24 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
         }
       : null,
   };
+}
+
+function safeParseJson(raw: string): any {
+  const cleaned = (raw || '')
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error('Invalid JSON payload from vision provider');
+  }
 }
 
 /**
@@ -257,7 +337,7 @@ async function callGeminiVision(base64Data: string, mimeType: string): Promise<S
       ]);
 
       const responseText = result.response.text().trim();
-      const parsed = JSON.parse(responseText);
+      const parsed = safeParseJson(responseText);
       return normalizeAnalysis(parsed, `Google Gemini (${modelName})`);
     } catch (err: any) {
       console.warn(`Gemini ${modelName} returned status ${err.status || err.message?.substring(0, 50)}, falling back...`);
@@ -302,7 +382,7 @@ async function callMistralVision(base64Data: string, mimeType: string): Promise<
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || '';
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis(parsed, 'Mistral Pixtral 12B');
 }
 
@@ -344,7 +424,7 @@ async function callOpenRouterVision(base64Data: string, mimeType: string): Promi
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || '';
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis(parsed, 'OpenAI GPT-4o-mini (OpenRouter)');
 }
 
@@ -387,17 +467,16 @@ Return a VALID JSON object matching:
   if (!res.ok) throw new Error('Groq structuring request failed');
   const groqData: any = await res.json();
   const content = groqData.choices?.[0]?.message?.content?.trim() || '';
-  const parsed = JSON.parse(content);
+  const parsed = safeParseJson(content);
   return normalizeAnalysis({ ...parsed, ocr_text: ocrText }, 'Groq LPU (GPT-OSS-120B)');
 }
 
-export async function analyzeScreenshot(
+function resolveCleanImagePayload(
   filePath: string,
   mimeType: string,
   originalFilename: string,
   fallbackBase64?: string | null
-): Promise<ScreenshotAnalysisPayload> {
-  // Read and sanitize image bytes safely
+): { base64Data: string | null; resolvedMime: string } {
   let rawBase64: string | null = fallbackBase64 || null;
   if (!rawBase64 && filePath && fs.existsSync(filePath)) {
     try {
@@ -407,7 +486,6 @@ export async function analyzeScreenshot(
     }
   }
 
-  // Strip any data URI prefix to ensure clean base64 data
   const base64Data = rawBase64
     ? rawBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, '').trim()
     : null;
@@ -420,6 +498,17 @@ export async function analyzeScreenshot(
   } else if (originalFilename.endsWith('.webp')) {
     resolvedMime = 'image/webp';
   }
+
+  return { base64Data, resolvedMime };
+}
+
+export async function analyzeScreenshot(
+  filePath: string,
+  mimeType: string,
+  originalFilename: string,
+  fallbackBase64?: string | null
+): Promise<ScreenshotAnalysisPayload> {
+  const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
 
   // Tier 1: Multi-Provider Vision Race (Gemini + Mistral Pixtral + OpenRouter)
   // Whichever high-precision vision model responds successfully first wins!
@@ -478,5 +567,301 @@ export async function analyzeScreenshot(
     provider: 'Rule-Based Heuristics',
     messages: heuristic.messages,
     game_result: heuristic.game_result,
+  };
+}
+
+/**
+ * Interactive Visual Q&A ("Memory Lens"):
+ * Inspects a single image directly with the multimodal vision ensemble to answer follow-up user questions.
+ */
+export async function answerImageQuestion(
+  filePath: string,
+  mimeType: string,
+  originalFilename: string,
+  fallbackBase64: string | null | undefined,
+  storedContext: { visual_description?: string; ocr_text?: string; tags?: string[] },
+  question: string
+): Promise<{ answer: string; provider: string }> {
+  const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
+
+  const qaPrompt = `You are RECALL's visual intelligence assistant answering a user's question about THIS specific image ("${originalFilename}").
+Answer directly, accurately, and concisely (2-4 crisp sentences) based strictly on what is visible in the image.
+If the user asks about people (boy, girl, man, woman), clothing, colors, objects, numbers, or text, inspect carefully and state exact details.
+
+User Question: "${question}"`;
+
+  if (base64Data) {
+    const tasks: Promise<{ answer: string; provider: string }>[] = [];
+
+    if (genAI && geminiApiKey) {
+      tasks.push(
+        (async () => {
+          for (const modelName of CANDIDATE_GEMINI_MODELS.slice(0, 3)) {
+            try {
+              const model = genAI.getGenerativeModel({ model: modelName });
+              const result = await model.generateContent([
+                qaPrompt,
+                { inlineData: { data: base64Data, mimeType: resolvedMime } },
+              ]);
+              const text = result.response.text().trim();
+              if (text) return { answer: text, provider: `Gemini (${modelName})` };
+            } catch {}
+          }
+          throw new Error('Gemini QA failed');
+        })()
+      );
+    }
+
+    if (mistralApiKey) {
+      tasks.push(
+        (async () => {
+          const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${mistralApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'pixtral-12b-2409',
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: qaPrompt },
+                    { type: 'image_url', image_url: `data:${resolvedMime};base64,${base64Data}` },
+                  ],
+                },
+              ],
+              max_tokens: 450,
+              temperature: 0.2,
+            }),
+          });
+          if (!res.ok) throw new Error('Mistral QA failed');
+          const data: any = await res.json();
+          const answer = data.choices?.[0]?.message?.content?.trim();
+          if (!answer) throw new Error('Empty Mistral QA answer');
+          return { answer, provider: 'Mistral Pixtral 12B' };
+        })()
+      );
+    }
+
+    if (openrouterApiKey) {
+      tasks.push(
+        (async () => {
+          const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${openrouterApiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://recall.dev',
+              'X-Title': 'Recall AI',
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4o-mini',
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: qaPrompt },
+                    { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
+                  ],
+                },
+              ],
+              max_tokens: 450,
+              temperature: 0.2,
+            }),
+          });
+          if (!res.ok) throw new Error('OpenRouter QA failed');
+          const data: any = await res.json();
+          const answer = data.choices?.[0]?.message?.content?.trim();
+          if (!answer) throw new Error('Empty OpenRouter QA answer');
+          return { answer, provider: 'GPT-4o-mini' };
+        })()
+      );
+    }
+
+    if (tasks.length > 0) {
+      try {
+        return await Promise.any(tasks);
+      } catch (err) {
+        console.warn('Multimodal image QA failed, trying text context fallback:', err);
+      }
+    }
+  }
+
+  // Fallback to Groq LPU using extracted metadata
+  if (groqApiKey) {
+    try {
+      const contextText = `Visual Description: ${storedContext.visual_description || 'N/A'}\nOCR Text: ${storedContext.ocr_text || 'None'}\nTags: ${(storedContext.tags || []).join(', ')}`;
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: [
+            {
+              role: 'user',
+              content: `Based on this indexed image metadata for "${originalFilename}":\n${contextText}\n\nAnswer concisely: "${question}"`,
+            },
+          ],
+          max_tokens: 300,
+          temperature: 0.2,
+        }),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        const answer = data.choices?.[0]?.message?.content?.trim();
+        if (answer) return { answer, provider: 'Groq LPU Context' };
+      }
+    } catch {}
+  }
+
+  return {
+    answer: storedContext.visual_description || 'Could not reach AI vision providers at the moment. Try clicking Re-Analyze above.',
+    provider: 'Cached Summary',
+  };
+}
+
+/**
+ * Cross-Gallery Answer Synthesis ("Ask Recall AI"):
+ * Synthesizes a direct, conversational answer across top matching images/screenshots using Groq / Gemini / OpenRouter.
+ */
+export async function synthesizeVaultAnswer(
+  query: string,
+  topMatches: Array<{
+    id: string;
+    filename: string;
+    category: string;
+    visual_description?: string;
+    ocr_text?: string;
+    tags?: string[];
+    matched_game?: any;
+    matched_messages?: any[];
+  }>
+): Promise<{ answer: string; cited_ids: string[]; provider: string }> {
+  if (topMatches.length === 0) {
+    return {
+      answer: `I couldn't find any images or screenshots in your vault matching "${query}". Try uploading or re-analyzing recent photos.`,
+      cited_ids: [],
+      provider: 'Recall Index',
+    };
+  }
+
+  const evidenceBlock = topMatches
+    .slice(0, 6)
+    .map((m, idx) => {
+      const parts = [`[Item ${idx + 1} | ID: ${m.id} | File: ${m.filename} | Category: ${m.category}]`];
+      if (m.visual_description) parts.push(`Visual: ${m.visual_description.substring(0, 350)}`);
+      if (m.tags && m.tags.length > 0) parts.push(`Tags: ${m.tags.slice(0, 20).join(', ')}`);
+      if (m.ocr_text) parts.push(`Text: ${m.ocr_text.substring(0, 350).replace(/\n+/g, ' ')}`);
+      if (m.matched_game) parts.push(`Game Stat: ${m.matched_game.game_name}, ${m.matched_game.kills} kills, Rank ${m.matched_game.rank}`);
+      return parts.join('\n');
+    })
+    .join('\n\n');
+
+  const synthesisPrompt = `You are Recall AI, the user's private visual & screenshot memory assistant.
+Answer the user's question directly and concisely (2-3 crisp sentences max) using ONLY the matched gallery evidence below.
+Be specific: mention names, clothing/colors, exact numbers, replies, or filenames when relevant. Do not invent facts.
+
+Return a VALID JSON object:
+{
+  "answer": "Concise, helpful direct answer synthesizing what is found across the images.",
+  "cited_ids": ["exact_item_ids_that_directly_support_the_answer"]
+}
+
+User Question: "${query}"
+
+Matched Vault Items:
+${evidenceBlock}`;
+
+  const tasks: Promise<{ answer: string; cited_ids: string[]; provider: string }>[] = [];
+
+  if (groqApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'openai/gpt-oss-120b',
+            messages: [{ role: 'user', content: synthesisPrompt }],
+            response_format: { type: 'json_object' },
+            max_tokens: 400,
+            temperature: 0.15,
+          }),
+        });
+        if (!res.ok) throw new Error('Groq synthesis failed');
+        const data: any = await res.json();
+        const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+        if (!parsed.answer) throw new Error('Empty Groq answer');
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: 'Groq LPU',
+        };
+      })()
+    );
+  }
+
+  if (openrouterApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openrouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://recall.dev',
+            'X-Title': 'Recall AI',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: synthesisPrompt }],
+            response_format: { type: 'json_object' },
+            max_tokens: 400,
+            temperature: 0.15,
+          }),
+        });
+        if (!res.ok) throw new Error('OpenRouter synthesis failed');
+        const data: any = await res.json();
+        const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+        if (!parsed.answer) throw new Error('Empty OpenRouter answer');
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: 'GPT-4o-mini',
+        };
+      })()
+    );
+  }
+
+  if (genAI && geminiApiKey) {
+    tasks.push(
+      (async () => {
+        const model = genAI.getGenerativeModel({
+          model: CANDIDATE_GEMINI_MODELS[0],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.15 },
+        });
+        const result = await model.generateContent(synthesisPrompt);
+        const parsed = safeParseJson(result.response.text().trim());
+        if (!parsed.answer) throw new Error('Empty Gemini answer');
+        return {
+          answer: parsed.answer,
+          cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
+          provider: 'Gemini Flash',
+        };
+      })()
+    );
+  }
+
+  if (tasks.length > 0) {
+    try {
+      return await Promise.any(tasks);
+    } catch {}
+  }
+
+  // Deterministic clean summary fallback
+  const lead = topMatches[0];
+  return {
+    answer: `Found ${topMatches.length} matching item${topMatches.length === 1 ? '' : 's'}. Top match is ${lead.filename}: ${lead.visual_description || lead.ocr_text?.substring(0, 120) || 'Visual match detected.'}`,
+    cited_ids: [lead.id],
+    provider: 'Recall Index',
   };
 }

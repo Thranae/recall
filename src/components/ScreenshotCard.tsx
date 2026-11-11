@@ -133,6 +133,18 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
               <p className="mt-0.5 text-[10.5px] text-slate-500 line-clamp-1 font-normal">
                 {searchResult.precise_value.detail}
               </p>
+              {searchResult.matched_tags && searchResult.matched_tags.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {searchResult.matched_tags.slice(0, 3).map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="rounded-full bg-white/80 border border-blue-100/80 px-1.5 py-0.5 text-[9px] font-semibold text-[#3478F6]"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div>
