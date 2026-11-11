@@ -52884,6 +52884,172 @@ ${evidenceBlock}`;
     provider: "Recall Index"
   };
 }
+async function generateSmartCoachInsights(payload) {
+  const ocr = (payload.ocr_text || "").trim();
+  const desc = (payload.visual_description || "").trim();
+  const msgs = payload.messages || [];
+  const isChat = payload.category === "chat" || msgs.length > 0;
+  const hasFinancialOrLink = /[$₹€£]\s*\d+|total|paid|amount|invoice|order|otp|http[s]?:\/\/|bit\.ly|tinyurl|verify|urgent|bank|upi/i.test(ocr) || payload.category === "product" || payload.category === "poster_document";
+  const mode = isChat ? "chat_replies" : hasFinancialOrLink ? "receipt_safety" : "memory_insight";
+  const chatSnippet = msgs.length > 0 ? msgs.map((m) => `${m.sender_side === "right" ? "Me" : m.sender_label || "Them"}: ${m.message_text}`).join("\n") : ocr.substring(0, 1200);
+  const coachPrompt = isChat ? `You are RECALL's Smart Chat Reply Coach.
+Based on this chat conversation screenshot:
+"""
+${chatSnippet || desc}
+"""
+Visual context: ${desc}
+
+Return ONLY valid JSON:
+{
+  "summary": "One crisp sentence summarizing the chat mood and what needs a reply",
+  "replies": [
+    { "tone": "Casual", "text": "Natural friendly reply under 18 words" },
+    { "tone": "Warm", "text": "Warm thoughtful reply under 20 words" },
+    { "tone": "Concise", "text": "Short direct reply under 10 words" }
+  ]
+}` : hasFinancialOrLink ? `You are RECALL's Receipt & Link Safety Inspector.
+Inspect this screenshot/photo:
+Filename: ${payload.original_filename}
+Visual: ${desc}
+Text/OCR:
+"""
+${ocr.substring(0, 1600) || "(no text)"}
+"""
+
+Analyze any prices, totals, URLs, domains, urgent requests, or verification codes. Flag phishing/suspicious shortened links or urgent money demands as "caution".
+Return ONLY valid JSON:
+{
+  "summary": "1-2 sentence breakdown of the item, order, document, or link",
+  "detected_amount": "$XX.XX or null",
+  "safety_status": "safe" | "caution",
+  "safety_note": "Short explanation of why link/sender looks safe or needs verification",
+  "key_points": ["2 to 3 crisp factual bullet insights"]
+}` : `You are RECALL's Memory Coach.
+Analyze this saved image/scoreboard:
+Category: ${payload.category}
+Visual: ${desc}
+Tags: ${(payload.tags || []).slice(0, 12).join(", ")}
+Game Stats: ${payload.game_result ? JSON.stringify(payload.game_result) : "None"}
+OCR: ${ocr.substring(0, 800)}
+
+Return ONLY valid JSON:
+{
+  "summary": "1-2 sentence insightful highlight of what stands out in this image",
+  "key_points": ["2 to 3 helpful observations, colors, outfits, or performance stats"]
+}`;
+  const mapCoachResult = (parsed, provider) => ({
+    mode,
+    title: isChat ? "Suggested Replies" : hasFinancialOrLink ? "Receipt & Safety Check" : "Memory Insights",
+    summary: parsed.summary || desc || "Analyzed memory.",
+    replies: Array.isArray(parsed.replies) ? parsed.replies.slice(0, 3) : void 0,
+    safety_status: parsed.safety_status === "caution" ? "caution" : parsed.safety_status === "safe" ? "safe" : void 0,
+    safety_note: parsed.safety_note,
+    detected_amount: parsed.detected_amount ?? null,
+    key_points: Array.isArray(parsed.key_points) ? parsed.key_points.slice(0, 4) : void 0,
+    provider
+  });
+  const tasks = [];
+  if (groqApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-120b",
+            messages: [{ role: "user", content: coachPrompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 450,
+            temperature: 0.2
+          })
+        });
+        if (!res.ok) throw new Error("Groq coach failed");
+        const data = await res.json();
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || "{}"), "Groq LPU");
+      })()
+    );
+  }
+  if (openrouterApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openrouterApiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://recall.dev",
+            "X-Title": "Recall AI"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-4o-mini",
+            messages: [{ role: "user", content: coachPrompt }],
+            response_format: { type: "json_object" },
+            max_tokens: 450,
+            temperature: 0.2
+          })
+        });
+        if (!res.ok) throw new Error("OpenRouter coach failed");
+        const data = await res.json();
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || "{}"), "GPT-4o-mini");
+      })()
+    );
+  }
+  if (genAI && geminiApiKey) {
+    tasks.push(
+      (async () => {
+        const model = genAI.getGenerativeModel({
+          model: CANDIDATE_GEMINI_MODELS[0],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
+        });
+        const result = await model.generateContent(coachPrompt);
+        return mapCoachResult(safeParseJson(result.response.text().trim()), "Gemini Flash");
+      })()
+    );
+  }
+  if (tasks.length > 0) {
+    try {
+      return await Promise.any(tasks);
+    } catch {
+    }
+  }
+  if (isChat) {
+    return {
+      mode: "chat_replies",
+      title: "Suggested Replies",
+      summary: "Ready-to-send replies drafted from your conversation thread.",
+      replies: [
+        { tone: "Casual", text: "Sounds good to me! Let me check and get back to you." },
+        { tone: "Warm", text: "Thanks for letting me know\u2014appreciate it!" },
+        { tone: "Concise", text: "Got it, noted!" }
+      ],
+      provider: "Recall Coach"
+    };
+  }
+  const priceMatch = ocr.match(/([₹$€£]\s*[\d,]+(?:\.\d{1,2})?)/);
+  const suspicious = /(bit\.ly|tinyurl|kyc\s*suspend|verify\s*now|urgent\s*transfer|claim\s*prize)/i.test(ocr);
+  if (hasFinancialOrLink) {
+    return {
+      mode: "receipt_safety",
+      title: "Receipt & Safety Check",
+      summary: desc || "Extracted payment, product, or document text.",
+      detected_amount: priceMatch ? priceMatch[1] : null,
+      safety_status: suspicious ? "caution" : "safe",
+      safety_note: suspicious ? "Contains shortened links or urgent phrasing\u2014verify sender before acting." : "No common urgency or shortened phishing markers detected in extracted text.",
+      key_points: payload.tags.slice(0, 3).map((t) => `Detected topic: ${t}`),
+      provider: "Recall Coach"
+    };
+  }
+  return {
+    mode: "memory_insight",
+    title: "Memory Insights",
+    summary: desc || "Indexed visual memory ready for search.",
+    key_points: payload.tags.slice(0, 4),
+    provider: "Recall Index"
+  };
+}
 
 // server/services/ai/embeddings.ts
 var apiKey = process.env.GEMINI_API_KEY || "";
@@ -68696,6 +68862,135 @@ router2.get("/", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve screenshots" });
   }
 });
+function safeJsonArray(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+router2.get("/insights/summary", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user?.email || userId;
+    const rows = await db.prepare(`
+      SELECT id, original_filename, file_size, uploaded_at, category, ocr_text, visual_description, text_embedding, tags
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      ORDER BY uploaded_at DESC
+    `).all(userId, userEmail);
+    const gameRows = await db.prepare(`
+      SELECT kills, rank, damage
+      FROM game_results
+      WHERE screenshot_id IN (
+        SELECT id FROM screenshots WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      )
+    `).all(userId, userEmail);
+    const category_counts = {
+      chat: 0,
+      game: 0,
+      product: 0,
+      poster_document: 0,
+      other: 0
+    };
+    const TRACKED_COLORS = ["black", "blue", "white", "red", "green", "yellow", "pink", "purple", "grey", "orange", "brown"];
+    const colorCounts = /* @__PURE__ */ new Map();
+    const parsedItems = rows.map((r) => {
+      const cat = r.category || "other";
+      category_counts[cat] = (category_counts[cat] || 0) + 1;
+      const tags = safeJsonArray(r.tags).map((t) => String(t).toLowerCase());
+      const desc = `${r.visual_description || ""} ${tags.join(" ")}`.toLowerCase();
+      for (const c of TRACKED_COLORS) {
+        if (new RegExp(`\\b${c}\\b`, "i").test(desc)) {
+          colorCounts.set(c, (colorCounts.get(c) || 0) + 1);
+        }
+      }
+      return {
+        ...r,
+        parsedTags: tags,
+        embedding: safeJsonArray(r.text_embedding)
+      };
+    });
+    const top_colors = Array.from(colorCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([color, count]) => ({ color, count }));
+    let total_kills = 0;
+    let best_kills = 0;
+    let chicken_dinners = 0;
+    for (const g of gameRows) {
+      const k = Number(g.kills) || 0;
+      total_kills += k;
+      if (k > best_kills) best_kills = k;
+      if (typeof g.rank === "string" && /#?1\b|chicken|winner/i.test(g.rank)) {
+        chicken_dinners++;
+      }
+    }
+    const claimed = /* @__PURE__ */ new Set();
+    const duplicate_groups = [];
+    for (let i = 0; i < parsedItems.length; i++) {
+      const a = parsedItems[i];
+      if (claimed.has(a.id)) continue;
+      const dupsForA = [];
+      for (let j = i + 1; j < parsedItems.length; j++) {
+        const b = parsedItems[j];
+        if (claimed.has(b.id)) continue;
+        const sameSize = a.file_size > 0 && a.file_size === b.file_size;
+        const aOcr = (a.ocr_text || "").trim();
+        const bOcr = (b.ocr_text || "").trim();
+        const sameOcr = aOcr.length > 16 && aOcr === bOcr;
+        const embSim = computeCosineSimilarity(a.embedding, b.embedding);
+        if (sameSize && (sameOcr || a.original_filename === b.original_filename)) {
+          dupsForA.push({
+            id: b.id,
+            original_filename: b.original_filename,
+            file_size: b.file_size,
+            uploaded_at: b.uploaded_at,
+            reason: "Identical file size & content"
+          });
+          claimed.add(b.id);
+        } else if (embSim >= 0.95 && a.category === b.category && aOcr === bOcr && (a.visual_description || "") === (b.visual_description || "") && (a.visual_description || "").length > 12) {
+          dupsForA.push({
+            id: b.id,
+            original_filename: b.original_filename,
+            file_size: b.file_size,
+            uploaded_at: b.uploaded_at,
+            reason: `${Math.round(embSim * 100)}% visual match`
+          });
+          claimed.add(b.id);
+        }
+      }
+      if (dupsForA.length > 0) {
+        claimed.add(a.id);
+        duplicate_groups.push({
+          keep: {
+            id: a.id,
+            original_filename: a.original_filename,
+            file_size: a.file_size,
+            uploaded_at: a.uploaded_at
+          },
+          duplicates: dupsForA
+        });
+      }
+    }
+    res.json({
+      total: rows.length,
+      category_counts,
+      gaming: {
+        matches: gameRows.length,
+        total_kills,
+        best_kills,
+        chicken_dinners
+      },
+      top_colors,
+      duplicate_groups,
+      duplicate_count: duplicate_groups.reduce((sum, g) => sum + g.duplicates.length, 0)
+    });
+  } catch (err) {
+    console.error("Insights summary error:", err);
+    res.status(500).json({ error: "Failed to compute vault insights" });
+  }
+});
 router2.get("/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -69090,6 +69385,97 @@ router2.post("/batch/reanalyze-all", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Batch reanalyze error:", err);
     res.status(500).json({ error: "Failed to upgrade vision index", details: err.message });
+  }
+});
+router2.get("/:id/similar", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user?.email || userId;
+    const { id } = req.params;
+    const rows = await db.prepare(`
+      SELECT id, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at, storage_key
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).all(userId, userEmail);
+    const target = rows.find((r) => r.id === id);
+    if (!target) {
+      res.status(404).json({ error: "Screenshot not found" });
+      return;
+    }
+    const targetTags = new Set(safeJsonArray(target.tags).map((t) => String(t).toLowerCase()));
+    const targetEmb = safeJsonArray(target.text_embedding);
+    const targetWords = new Set(
+      (target.visual_description || "").toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((w) => w.length > 3)
+    );
+    const candidates = rows.filter((r) => r.id !== id).map((r) => {
+      const candTags = safeJsonArray(r.tags).map((t) => String(t).toLowerCase());
+      const candEmb = safeJsonArray(r.text_embedding);
+      const embSim = computeCosineSimilarity(targetEmb, candEmb);
+      const shared_tags = candTags.filter((t) => targetTags.has(t));
+      const tagUnion = (/* @__PURE__ */ new Set([...targetTags, ...candTags])).size;
+      const tagJaccard = tagUnion > 0 ? shared_tags.length / tagUnion : 0;
+      let wordOverlap = 0;
+      const candDesc = (r.visual_description || "").toLowerCase();
+      targetWords.forEach((w) => {
+        if (candDesc.includes(w)) wordOverlap++;
+      });
+      const descSim = targetWords.size > 0 ? wordOverlap / targetWords.size : 0;
+      const catBonus = r.category === target.category ? 0.08 : 0;
+      const similarity = Math.min(0.99, embSim * 0.45 + tagJaccard * 0.35 + descSim * 0.2 + catBonus);
+      const is_duplicate = target.file_size > 0 && r.file_size === target.file_size && (target.ocr_text || "") === (r.ocr_text || "") || similarity >= 0.92;
+      return {
+        screenshot: {
+          ...r,
+          tags: candTags
+        },
+        similarity: Math.round(similarity * 100) / 100,
+        shared_tags: shared_tags.slice(0, 4),
+        is_duplicate
+      };
+    }).filter((c) => c.similarity >= 0.32 || c.shared_tags.length >= 2).sort((a, b) => b.similarity - a.similarity).slice(0, 6);
+    res.json({ similar: candidates });
+  } catch (err) {
+    console.error("Similar screenshots error:", err);
+    res.status(500).json({ error: "Failed to find similar images" });
+  }
+});
+router2.post("/:id/coach", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user?.email || userId;
+    const { id } = req.params;
+    const row = await db.prepare(`
+      SELECT id, original_filename, category, ocr_text, visual_description, tags
+      FROM screenshots
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).get(id, userId, userEmail);
+    if (!row) {
+      res.status(404).json({ error: "Screenshot not found" });
+      return;
+    }
+    const messages = await db.prepare(`
+      SELECT sender_side, sender_label, message_text
+      FROM extracted_messages
+      WHERE screenshot_id = ?
+      ORDER BY sequence_number ASC
+    `).all(id);
+    const gameResult = await db.prepare("SELECT game_name, kills, rank, damage, map_name FROM game_results WHERE screenshot_id = ?").get(id);
+    const insights = await generateSmartCoachInsights({
+      category: row.category || "other",
+      original_filename: row.original_filename || "image",
+      visual_description: row.visual_description || "",
+      ocr_text: row.ocr_text || "",
+      tags: safeJsonArray(row.tags).map((t) => String(t)),
+      messages,
+      game_result: gameResult || null
+    });
+    res.json({
+      screenshot_id: row.id,
+      ...insights
+    });
+  } catch (err) {
+    console.error("Smart coach error:", err);
+    res.status(500).json({ error: "Failed to generate smart insights", details: err.message });
   }
 });
 var screenshotRoutes_default = router2;

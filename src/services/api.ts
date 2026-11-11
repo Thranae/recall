@@ -58,6 +58,17 @@ export const api = {
     request<import('../types').BatchReanalyzeResponse>('/screenshots/batch/reanalyze-all', {
       method: 'POST',
     }),
+
+  getSimilarScreenshots: (id: string) =>
+    request<{ similar: import('../types').SimilarMemoryItem[] }>(`/screenshots/${encodeURIComponent(id)}/similar`),
+
+  getCoachInsights: (id: string) =>
+    request<import('../types').SmartCoachResponse>(`/screenshots/${encodeURIComponent(id)}/coach`, {
+      method: 'POST',
+    }),
+
+  getVaultInsights: () =>
+    request<import('../types').VaultInsightsSummary>('/screenshots/insights/summary'),
   // Auth
   async login(email: string, password: string): Promise<{ token: string; user: User }> {
     const data = await request<{ token: string; user: User }>('/auth/login', {

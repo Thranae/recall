@@ -3,11 +3,10 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
-import { answerImageQuestion } from '../services/ai/gemini';
+import { answerImageQuestion, analyzeScreenshot, generateSmartCoachInsights } from '../services/ai/gemini';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
-import { analyzeScreenshot } from '../services/ai/gemini';
-import { generateTextEmbedding } from '../services/ai/embeddings';
+import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/embeddings';
 
 const router = Router();
 
@@ -255,6 +254,159 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise
   } catch (err: any) {
     console.error('List screenshots error:', err);
     res.status(500).json({ error: 'Failed to retrieve screenshots' });
+  }
+});
+
+function safeJsonArray(raw: any): any[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+// Vault Insights & Near-Duplicate Radar (registered before GET /:id)
+router.get('/insights/summary', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+
+    const rows = (await db.prepare(`
+      SELECT id, original_filename, file_size, uploaded_at, category, ocr_text, visual_description, text_embedding, tags
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      ORDER BY uploaded_at DESC
+    `).all(userId, userEmail)) as any[];
+
+    const gameRows = (await db.prepare(`
+      SELECT kills, rank, damage
+      FROM game_results
+      WHERE screenshot_id IN (
+        SELECT id FROM screenshots WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      )
+    `).all(userId, userEmail)) as any[];
+
+    const category_counts: Record<string, number> = {
+      chat: 0,
+      game: 0,
+      product: 0,
+      poster_document: 0,
+      other: 0,
+    };
+
+    const TRACKED_COLORS = ['black', 'blue', 'white', 'red', 'green', 'yellow', 'pink', 'purple', 'grey', 'orange', 'brown'];
+    const colorCounts = new Map<string, number>();
+
+    const parsedItems = rows.map((r) => {
+      const cat = r.category || 'other';
+      category_counts[cat] = (category_counts[cat] || 0) + 1;
+      const tags = safeJsonArray(r.tags).map((t: any) => String(t).toLowerCase());
+      const desc = `${r.visual_description || ''} ${tags.join(' ')}`.toLowerCase();
+      for (const c of TRACKED_COLORS) {
+        if (new RegExp(`\\b${c}\\b`, 'i').test(desc)) {
+          colorCounts.set(c, (colorCounts.get(c) || 0) + 1);
+        }
+      }
+      return {
+        ...r,
+        parsedTags: tags,
+        embedding: safeJsonArray(r.text_embedding) as number[],
+      };
+    });
+
+    const top_colors = Array.from(colorCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([color, count]) => ({ color, count }));
+
+    let total_kills = 0;
+    let best_kills = 0;
+    let chicken_dinners = 0;
+    for (const g of gameRows) {
+      const k = Number(g.kills) || 0;
+      total_kills += k;
+      if (k > best_kills) best_kills = k;
+      if (typeof g.rank === 'string' && /#?1\b|chicken|winner/i.test(g.rank)) {
+        chicken_dinners++;
+      }
+    }
+
+    // Detect near-duplicate candidates (keeps newest item in each group)
+    const claimed = new Set<string>();
+    const duplicate_groups: Array<{
+      keep: { id: string; original_filename: string; file_size: number; uploaded_at: string };
+      duplicates: Array<{ id: string; original_filename: string; file_size: number; uploaded_at: string; reason: string }>;
+    }> = [];
+
+    for (let i = 0; i < parsedItems.length; i++) {
+      const a = parsedItems[i];
+      if (claimed.has(a.id)) continue;
+
+      const dupsForA: Array<{ id: string; original_filename: string; file_size: number; uploaded_at: string; reason: string }> = [];
+      for (let j = i + 1; j < parsedItems.length; j++) {
+        const b = parsedItems[j];
+        if (claimed.has(b.id)) continue;
+
+        const sameSize = a.file_size > 0 && a.file_size === b.file_size;
+        const aOcr = (a.ocr_text || '').trim();
+        const bOcr = (b.ocr_text || '').trim();
+        const sameOcr = aOcr.length > 16 && aOcr === bOcr;
+        const embSim = computeCosineSimilarity(a.embedding, b.embedding);
+
+        if (sameSize && (sameOcr || a.original_filename === b.original_filename)) {
+          dupsForA.push({
+            id: b.id,
+            original_filename: b.original_filename,
+            file_size: b.file_size,
+            uploaded_at: b.uploaded_at,
+            reason: 'Identical file size & content',
+          });
+          claimed.add(b.id);
+        } else if (embSim >= 0.95 && a.category === b.category && aOcr === bOcr && (a.visual_description || '') === (b.visual_description || '') && (a.visual_description || '').length > 12) {
+          dupsForA.push({
+            id: b.id,
+            original_filename: b.original_filename,
+            file_size: b.file_size,
+            uploaded_at: b.uploaded_at,
+            reason: `${Math.round(embSim * 100)}% visual match`,
+          });
+          claimed.add(b.id);
+        }
+      }
+
+      if (dupsForA.length > 0) {
+        claimed.add(a.id);
+        duplicate_groups.push({
+          keep: {
+            id: a.id,
+            original_filename: a.original_filename,
+            file_size: a.file_size,
+            uploaded_at: a.uploaded_at,
+          },
+          duplicates: dupsForA,
+        });
+      }
+    }
+
+    res.json({
+      total: rows.length,
+      category_counts,
+      gaming: {
+        matches: gameRows.length,
+        total_kills,
+        best_kills,
+        chicken_dinners,
+      },
+      top_colors,
+      duplicate_groups,
+      duplicate_count: duplicate_groups.reduce((sum, g) => sum + g.duplicates.length, 0),
+    });
+  } catch (err: any) {
+    console.error('Insights summary error:', err);
+    res.status(500).json({ error: 'Failed to compute vault insights' });
   }
 });
 
@@ -714,6 +866,126 @@ router.post('/batch/reanalyze-all', authMiddleware, async (req: AuthRequest, res
   } catch (err: any) {
     console.error('Batch reanalyze error:', err);
     res.status(500).json({ error: 'Failed to upgrade vision index', details: err.message });
+  }
+});
+
+// Find Visually & Semantically Similar Memories
+router.get('/:id/similar', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+    const { id } = req.params;
+
+    const rows = (await db.prepare(`
+      SELECT id, original_filename, mime_type, file_size, uploaded_at, category, processing_status, ocr_text, visual_description, text_embedding, tags, created_at, updated_at, storage_key
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).all(userId, userEmail)) as any[];
+
+    const target = rows.find((r) => r.id === id);
+    if (!target) {
+      res.status(404).json({ error: 'Screenshot not found' });
+      return;
+    }
+
+    const targetTags = new Set(safeJsonArray(target.tags).map((t: any) => String(t).toLowerCase()));
+    const targetEmb = safeJsonArray(target.text_embedding) as number[];
+    const targetWords = new Set(
+      (target.visual_description || '')
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w: string) => w.length > 3)
+    );
+
+    const candidates = rows
+      .filter((r) => r.id !== id)
+      .map((r) => {
+        const candTags = safeJsonArray(r.tags).map((t: any) => String(t).toLowerCase());
+        const candEmb = safeJsonArray(r.text_embedding) as number[];
+        const embSim = computeCosineSimilarity(targetEmb, candEmb);
+        const shared_tags = candTags.filter((t: string) => targetTags.has(t));
+        const tagUnion = new Set([...targetTags, ...candTags]).size;
+        const tagJaccard = tagUnion > 0 ? shared_tags.length / tagUnion : 0;
+
+        let wordOverlap = 0;
+        const candDesc = (r.visual_description || '').toLowerCase();
+        targetWords.forEach((w) => {
+          if (candDesc.includes(w)) wordOverlap++;
+        });
+        const descSim = targetWords.size > 0 ? wordOverlap / targetWords.size : 0;
+        const catBonus = r.category === target.category ? 0.08 : 0;
+
+        const similarity = Math.min(0.99, embSim * 0.45 + tagJaccard * 0.35 + descSim * 0.20 + catBonus);
+        const is_duplicate =
+          (target.file_size > 0 && r.file_size === target.file_size && (target.ocr_text || '') === (r.ocr_text || '')) ||
+          similarity >= 0.92;
+
+        return {
+          screenshot: {
+            ...r,
+            tags: candTags,
+          },
+          similarity: Math.round(similarity * 100) / 100,
+          shared_tags: shared_tags.slice(0, 4),
+          is_duplicate,
+        };
+      })
+      .filter((c) => c.similarity >= 0.32 || c.shared_tags.length >= 2)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 6);
+
+    res.json({ similar: candidates });
+  } catch (err: any) {
+    console.error('Similar screenshots error:', err);
+    res.status(500).json({ error: 'Failed to find similar images' });
+  }
+});
+
+// Smart Coach & Receipt/Safety Inspector
+router.post('/:id/coach', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+    const { id } = req.params;
+
+    const row = (await db.prepare(`
+      SELECT id, original_filename, category, ocr_text, visual_description, tags
+      FROM screenshots
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).get(id, userId, userEmail)) as any;
+
+    if (!row) {
+      res.status(404).json({ error: 'Screenshot not found' });
+      return;
+    }
+
+    const messages = (await db.prepare(`
+      SELECT sender_side, sender_label, message_text
+      FROM extracted_messages
+      WHERE screenshot_id = ?
+      ORDER BY sequence_number ASC
+    `).all(id)) as any[];
+
+    const gameResult = (await db.prepare('SELECT game_name, kills, rank, damage, map_name FROM game_results WHERE screenshot_id = ?').get(id)) as any;
+
+    const insights = await generateSmartCoachInsights({
+      category: row.category || 'other',
+      original_filename: row.original_filename || 'image',
+      visual_description: row.visual_description || '',
+      ocr_text: row.ocr_text || '',
+      tags: safeJsonArray(row.tags).map((t: any) => String(t)),
+      messages,
+      game_result: gameResult || null,
+    });
+
+    res.json({
+      screenshot_id: row.id,
+      ...insights,
+    });
+  } catch (err: any) {
+    console.error('Smart coach error:', err);
+    res.status(500).json({ error: 'Failed to generate smart insights', details: err.message });
   }
 });
 

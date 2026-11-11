@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { RefreshCw, Cpu, Loader2 } from 'lucide-react';
+import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck } from 'lucide-react';
 import { api } from '../services/api';
-import { User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2 } from 'lucide-react';
-import type { User, Screenshot } from '../types';
+import type { User, Screenshot, VaultInsightsSummary } from '../types';
 
 interface SettingsViewProps {
   user: User;
@@ -19,6 +18,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeNote, setUpgradeNote] = useState<string | null>(null);
+  const [isScanningDups, setIsScanningDups] = useState(false);
+  const [dupSummary, setDupSummary] = useState<VaultInsightsSummary | null>(null);
+  const [isCleaningDups, setIsCleaningDups] = useState(false);
 
   const handleUpgradeVisionIndex = async () => {
     if (isUpgrading) return;
@@ -32,6 +34,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       setUpgradeNote(err.message || 'Vision index upgrade failed.');
     } finally {
       setIsUpgrading(false);
+    }
+  };
+
+  const handleScanDuplicates = async () => {
+    if (isScanningDups) return;
+    setIsScanningDups(true);
+    try {
+      const res = await api.getVaultInsights();
+      setDupSummary(res);
+    } catch (err) {
+      console.error('Duplicate scan failed:', err);
+    } finally {
+      setIsScanningDups(false);
+    }
+  };
+
+  const handleDeleteDuplicates = async () => {
+    if (!dupSummary || dupSummary.duplicate_groups.length === 0 || isCleaningDups) return;
+    setIsCleaningDups(true);
+    try {
+      const ids = dupSummary.duplicate_groups.flatMap((g) => g.duplicates.map((d) => d.id));
+      for (const id of ids) {
+        await api.deleteScreenshot(id);
+      }
+      const res = await api.getVaultInsights();
+      setDupSummary(res);
+      onRefresh?.();
+    } catch (err) {
+      console.error('Clean duplicates failed:', err);
+    } finally {
+      setIsCleaningDups(false);
     }
   };
   const readyCount = screenshots.filter((s) => s.processing_status === 'ready').length;
@@ -175,6 +208,74 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <RefreshCw className="h-3.5 w-3.5 stroke-[2.2]" />
               <span>Re-analyze Existing Library ({screenshots.length})</span>
             </>
+          )}
+        </button>
+      </div>
+
+      {/* Near-Duplicate Cleanup Radar Card */}
+      <div className="liquid-glass-card rounded-[24px] p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] liquid-icon-pod text-amber-600">
+            <CopyCheck className="h-4.5 w-4.5 stroke-[2.2]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-[#172B4D]">Duplicate Screenshot Radar</p>
+            <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5 font-normal">
+              Find identical or near-duplicate burst screenshots using vector & size matching so your gallery stays clean.
+            </p>
+          </div>
+        </div>
+
+        {dupSummary && (
+          <div className="rounded-[14px] bg-white/80 border border-white p-3 space-y-2 text-[11px]">
+            {dupSummary.duplicate_count === 0 ? (
+              <div className="flex items-center gap-2 text-emerald-700 font-semibold">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>Your vault has zero near-duplicate screenshots.</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-800">
+                    Found {dupSummary.duplicate_count} duplicate{dupSummary.duplicate_count === 1 ? '' : 's'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDeleteDuplicates}
+                    disabled={isCleaningDups}
+                    className="inline-flex items-center gap-1 rounded-full bg-rose-500 text-white px-2.5 py-1 text-[10px] font-bold active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>{isCleaningDups ? 'Removing...' : 'Clean All'}</span>
+                  </button>
+                </div>
+                <div className="space-y-1 max-h-28 overflow-y-auto">
+                  {dupSummary.duplicate_groups.map((grp) =>
+                    grp.duplicates.map((d) => (
+                      <p key={d.id} className="text-[10.5px] text-slate-600 truncate">
+                        • {d.original_filename} ({d.reason})
+                      </p>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleScanDuplicates}
+          disabled={isScanningDups || screenshots.length < 2}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-full liquid-glass-pill text-xs font-semibold text-slate-700 disabled:opacity-50 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+        >
+          {isScanningDups ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
+              <span>Scanning Vault...</span>
+            </>
+          ) : (
+            <span>Scan for Near-Duplicates</span>
           )}
         </button>
       </div>

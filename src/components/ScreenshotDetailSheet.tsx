@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Trash2,
@@ -16,9 +16,29 @@ import {
   CheckCircle2,
   Brain,
   Send,
+  MapPin,
+  Phone,
+  Mail,
+  ShoppingBag,
+  ExternalLink,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Share2,
+  Layers,
+  Zap,
 } from 'lucide-react';
 import { api } from '../services/api';
-import type { Screenshot, ExtractedMessage, GameResult, SearchResultItem } from '../types';
+import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
+import { generateRedactedImage } from '../utils/privacyRedact';
+import type {
+  Screenshot,
+  ExtractedMessage,
+  GameResult,
+  SearchResultItem,
+  SimilarMemoryItem,
+  SmartCoachResponse,
+} from '../types';
 
 type ScreenshotDetailData = {
   screenshot: Screenshot;
@@ -33,6 +53,7 @@ interface ScreenshotDetailSheetProps {
   onDeleted: () => void;
   onUpdated: () => void;
   onSelectTag?: (tag: string) => void;
+  onSelectRelated?: (id: string) => void;
 }
 
 export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
@@ -42,6 +63,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   onDeleted,
   onUpdated,
   onSelectTag,
+  onSelectRelated,
 }) => {
   const [data, setData] = useState<ScreenshotDetailData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +76,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isAskingImage, setIsAskingImage] = useState(false);
   const [qaResult, setQaResult] = useState<{ question: string; answer: string; provider: string } | null>(null);
   const [qaError, setQaError] = useState<string | null>(null);
+  const [copiedActionId, setCopiedActionId] = useState<string | null>(null);
+  const [similarItems, setSimilarItems] = useState<SimilarMemoryItem[]>([]);
+  const [coachData, setCoachData] = useState<SmartCoachResponse | null>(null);
+  const [loadingCoach, setLoadingCoach] = useState(false);
+  const [copiedReplyIdx, setCopiedReplyIdx] = useState<number | null>(null);
+  const [isRedactedMode, setIsRedactedMode] = useState(false);
+  const [isRedacting, setIsRedacting] = useState(false);
+  const [redactBars, setRedactBars] = useState(false);
+  const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load screenshot details
@@ -85,13 +116,106 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setQaInput('');
     setQaResult(null);
     setQaError(null);
+    setSimilarItems([]);
+    setCoachData(null);
+    setCopiedActionId(null);
+    setCopiedReplyIdx(null);
+    setIsRedactedMode(false);
+    setRedactedResult(null);
+    setRedactBars(false);
     if (!screenshotId) {
       setData(null);
       return;
     }
 
     fetchDetails(screenshotId, true);
+    api.getSimilarScreenshots(screenshotId)
+      .then((res) => setSimilarItems(res.similar || []))
+      .catch(() => {});
   }, [screenshotId]);
+
+  const smartActions = useMemo(
+    () => extractSmartActions(data?.screenshot),
+    [data?.screenshot]
+  );
+
+  const handleSmartAction = (action: SmartActionItem) => {
+    if (action.kind === 'calendar' && action.icsPayload) {
+      triggerCalendarDownload(action.icsPayload.title, action.icsPayload.dateStr, action.icsPayload.location);
+      return;
+    }
+    if (action.href) {
+      window.open(action.href, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    navigator.clipboard.writeText(action.value);
+    setCopiedActionId(action.id);
+    setTimeout(() => setCopiedActionId(null), 1800);
+  };
+
+  const handleLoadCoach = async () => {
+    if (!screenshotId || loadingCoach) return;
+    setLoadingCoach(true);
+    try {
+      const res = await api.getCoachInsights(screenshotId);
+      setCoachData(res);
+    } catch (err) {
+      console.error('Coach error:', err);
+    } finally {
+      setLoadingCoach(false);
+    }
+  };
+
+  const runPrivacyRedaction = async (includeBars: boolean) => {
+    if (!screenshotId) return;
+    setIsRedacting(true);
+    try {
+      const result = await generateRedactedImage(api.getImageUrl(screenshotId), {
+        autoSensitiveText: true,
+        blurTopBar: includeBars,
+        blurBottomBar: includeBars,
+      });
+      setRedactedResult(result);
+      setIsRedactedMode(true);
+    } catch (err) {
+      console.error('Redaction error:', err);
+    } finally {
+      setIsRedacting(false);
+    }
+  };
+
+  const handleToggleRedact = async () => {
+    if (isRedactedMode) {
+      setIsRedactedMode(false);
+      return;
+    }
+    if (redactedResult) {
+      setIsRedactedMode(true);
+      return;
+    }
+    await runPrivacyRedaction(redactBars);
+  };
+
+  const handleShareRedacted = async () => {
+    if (!redactedResult || !data?.screenshot) return;
+    const filename = `redacted-${data.screenshot.original_filename.replace(/\.[a-z0-9]+$/i, '')}.png`;
+    const file = new File([redactedResult.blob], filename, { type: 'image/png' });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Shared from RECALL',
+        });
+        return;
+      } catch {}
+    }
+    const link = document.createElement('a');
+    link.href = redactedResult.dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleAskImage = async (customQuestion?: string) => {
     if (!data?.screenshot?.id || isAskingImage) return;
@@ -295,35 +419,88 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {/* Image Preview with Plump Liquid Glass Frame */}
-          <div className="relative overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
-            <img
-              src={imageUrl}
-              alt="Screenshot Preview"
-              className={`w-full object-contain transition-all duration-200 ${
-                isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
-              }`}
-            />
+          <div className="space-y-2">
+            <div className="relative overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
+              <img
+                src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
+                alt="Screenshot Preview"
+                className={`w-full object-contain transition-all duration-200 ${
+                  isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
+                }`}
+              />
 
-            {/* Plump Liquid Glass Inner Stroke Overlay */}
-            <div className="liquid-card-inner-stroke" />
+              {/* Plump Liquid Glass Inner Stroke Overlay */}
+              <div className="liquid-card-inner-stroke" />
 
-            {/* Top Specular Hairline Highlight */}
-            <div
-              className="pointer-events-none absolute top-0 left-6 right-6 h-px z-20 rounded-full"
-              style={{
-                background:
-                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 75%, transparent 100%)',
-              }}
-            />
+              {/* Top Specular Hairline Highlight */}
+              <div
+                className="pointer-events-none absolute top-0 left-6 right-6 h-px z-20 rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 75%, transparent 100%)',
+                }}
+              />
 
-            <button
-              type="button"
-              onClick={() => setIsImageExpanded(!isImageExpanded)}
-              className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
-            >
-              <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-              <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleToggleRedact}
+                disabled={isRedacting}
+                className={`absolute bottom-2 left-2 z-20 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-95 cursor-pointer shadow-xs transition-all ${
+                  isRedactedMode
+                    ? 'bg-[#172B4D] text-white'
+                    : 'liquid-category-badge text-[#172B4D]'
+                }`}
+              >
+                {isRedacting ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Shield className={`h-3 w-3 stroke-[2.2] ${isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'}`} />
+                )}
+                <span>{isRedacting ? 'Blurring...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsImageExpanded(!isImageExpanded)}
+                className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
+              >
+                <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
+                <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
+              </button>
+            </div>
+
+            {isRedactedMode && redactedResult && (
+              <div className="flex items-center justify-between gap-2 rounded-[16px] bg-slate-900/5 border border-white px-3 py-2 text-[11px]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-semibold text-[#172B4D] truncate">
+                    {redactedResult.redactedCount} region{redactedResult.redactedCount === 1 ? '' : 's'} masked
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !redactBars;
+                      setRedactBars(next);
+                      runPrivacyRedaction(next);
+                    }}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer transition-all ${
+                      redactBars
+                        ? 'bg-[#172B4D] text-white border-[#172B4D]'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {redactBars ? 'Status Bars Masked' : '+ Mask Status Bars'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleShareRedacted}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[#3478F6] text-white px-2.5 py-1 text-[10.5px] font-bold active:scale-95 cursor-pointer"
+                >
+                  <Share2 className="h-3 w-3" />
+                  <span>Share</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* AI Processing Status Indicator Banner */}
@@ -403,6 +580,44 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Tap-to-Act Smart Actions (Shown only when actionable entities exist) */}
+                  {smartActions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 px-0.5">
+                      {smartActions.map((act) => {
+                        const isCopied = copiedActionId === act.id;
+                        const ActionIcon =
+                          act.kind === 'calendar'
+                            ? Calendar
+                            : act.kind === 'maps'
+                              ? MapPin
+                              : act.kind === 'phone'
+                                ? Phone
+                                : act.kind === 'email'
+                                  ? Mail
+                                  : act.kind === 'shop'
+                                    ? ShoppingBag
+                                    : act.kind === 'url'
+                                      ? ExternalLink
+                                      : Copy;
+                        return (
+                          <button
+                            key={act.id}
+                            type="button"
+                            onClick={() => handleSmartAction(act)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-white/85 hover:bg-white border border-blue-100 px-3 py-1.5 text-[11px] font-semibold text-[#172B4D] shadow-2xs active:scale-95 transition-all cursor-pointer"
+                          >
+                            {isCopied ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[2.3]" />
+                            ) : (
+                              <ActionIcon className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.1]" />
+                            )}
+                            <span>{isCopied ? 'Copied' : act.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Chat Conversation Thread (if chat) */}
                   {data?.messages && data.messages.length > 0 && (
@@ -586,6 +801,153 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                             className="rounded-full bg-white/80 hover:bg-white hover:text-[#3478F6] border border-white px-2.5 py-0.5 text-[10.5px] font-medium text-slate-700 shadow-2xs active:scale-95 transition-all cursor-pointer"
                           >
                             #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Smart Coach: Chat Suggested Replies / Receipt & Link Safety */}
+                  {data?.screenshot?.id && (
+                    <div className="rounded-[18px] liquid-glass-card p-3.5 space-y-2.5 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800">
+                          <Zap className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <span>
+                            {data.screenshot.category === 'chat'
+                              ? 'Smart Reply Coach'
+                              : data.screenshot.category === 'product' || data.screenshot.category === 'poster_document'
+                                ? 'Receipt & Safety Check'
+                                : 'Memory Highlights'}
+                          </span>
+                        </div>
+                        {!coachData && (
+                          <button
+                            type="button"
+                            onClick={handleLoadCoach}
+                            disabled={loadingCoach}
+                            className="inline-flex items-center gap-1 rounded-full liquid-glass-pill px-2.5 py-1 text-[10.5px] font-bold text-[#3478F6] active:scale-95 cursor-pointer disabled:opacity-50"
+                          >
+                            {loadingCoach && <Loader2 className="h-3 w-3 animate-spin" />}
+                            <span>{loadingCoach ? 'Checking...' : data.screenshot.category === 'chat' ? 'Draft Replies' : 'Inspect'}</span>
+                          </button>
+                        )}
+                        {coachData && (
+                          <span className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[9.5px] font-semibold text-slate-500">
+                            {coachData.provider}
+                          </span>
+                        )}
+                      </div>
+
+                      {coachData && (
+                        <div className="space-y-2 pt-0.5">
+                          <p className="text-[11.5px] text-slate-700 leading-relaxed">{coachData.summary}</p>
+
+                          {coachData.safety_status && (
+                            <div
+                              className={`flex items-start gap-2 rounded-[12px] px-2.5 py-2 text-[11px] border ${
+                                coachData.safety_status === 'caution'
+                                  ? 'bg-amber-50/90 border-amber-200 text-amber-900'
+                                  : 'bg-emerald-50/85 border-emerald-200 text-emerald-900'
+                              }`}
+                            >
+                              {coachData.safety_status === 'caution' ? (
+                                <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                              ) : (
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                              )}
+                              <div className="space-y-0.5">
+                                {coachData.detected_amount && (
+                                  <span className="font-bold block">Detected Amount: {coachData.detected_amount}</span>
+                                )}
+                                <span>{coachData.safety_note}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {coachData.replies && coachData.replies.length > 0 && (
+                            <div className="space-y-1.5">
+                              {coachData.replies.map((reply, rIdx) => (
+                                <button
+                                  key={rIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(reply.text);
+                                    setCopiedReplyIdx(rIdx);
+                                    setTimeout(() => setCopiedReplyIdx(null), 1600);
+                                  }}
+                                  className="w-full text-left flex items-center justify-between gap-2 rounded-[14px] bg-white/85 hover:bg-white border border-white px-3 py-2 text-[11.5px] active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#3478F6] block">
+                                      {reply.tone}
+                                    </span>
+                                    <span className="text-slate-800 font-medium">{reply.text}</span>
+                                  </div>
+                                  {copiedReplyIdx === rIdx ? (
+                                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {coachData.key_points && coachData.key_points.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {coachData.key_points.map((pt, pIdx) => (
+                                <span
+                                  key={pIdx}
+                                  className="rounded-[10px] bg-white/80 border border-white px-2 py-1 text-[10.5px] font-medium text-slate-700"
+                                >
+                                  {pt}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Visually & Semantically Similar Memories Strip */}
+                  {similarItems.length > 0 && (
+                    <div className="rounded-[18px] liquid-glass-card p-3 space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 px-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <span>Similar Memories ({similarItems.length})</span>
+                        </div>
+                        <span className="text-[9.5px] font-medium text-slate-400">Tap to open</span>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                        {similarItems.map((sim) => (
+                          <button
+                            key={sim.screenshot.id}
+                            type="button"
+                            onClick={() => onSelectRelated?.(sim.screenshot.id)}
+                            className="shrink-0 w-20 text-left space-y-1 group cursor-pointer active:scale-95 transition-transform"
+                          >
+                            <div className="relative h-16 w-20 overflow-hidden rounded-[12px] border border-white bg-slate-100 shadow-2xs">
+                              <img
+                                src={api.getImageUrl(sim.screenshot.id)}
+                                alt={sim.screenshot.original_filename}
+                                className="h-full w-full object-cover"
+                              />
+                              <span className="absolute bottom-1 right-1 rounded-full bg-white/90 px-1.5 py-0.2 text-[8.5px] font-bold text-[#172B4D]">
+                                {Math.round(sim.similarity * 100)}%
+                              </span>
+                              {sim.is_duplicate && (
+                                <span
+                                  title="Near duplicate"
+                                  className="absolute top-1 left-1 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white"
+                                />
+                              )}
+                            </div>
+                            <p className="text-[9.5px] font-semibold text-slate-600 truncate px-0.5">
+                              {sim.screenshot.original_filename}
+                            </p>
                           </button>
                         ))}
                       </div>

@@ -865,3 +865,223 @@ ${evidenceBlock}`;
     provider: 'Recall Index',
   };
 }
+
+export interface SmartCoachResponse {
+  mode: 'chat_replies' | 'receipt_safety' | 'memory_insight';
+  title: string;
+  summary: string;
+  replies?: Array<{ tone: string; text: string }>;
+  safety_status?: 'safe' | 'caution';
+  safety_note?: string;
+  detected_amount?: string | null;
+  key_points?: string[];
+  provider: string;
+}
+
+/**
+ * Smart Coach & Receipt/Safety Inspector:
+ * Generates 3 contextual chat replies for chat screenshots, scam/total extraction for receipts/links,
+ * or highlights for gaming & real-world photos.
+ */
+export async function generateSmartCoachInsights(payload: {
+  category: string;
+  original_filename: string;
+  visual_description: string;
+  ocr_text: string;
+  tags: string[];
+  messages?: Array<{ sender_side?: string; sender_label?: string; message_text: string }>;
+  game_result?: { game_name?: string; kills?: number | null; rank?: string | null; damage?: number | null; map_name?: string | null } | null;
+}): Promise<SmartCoachResponse> {
+  const ocr = (payload.ocr_text || '').trim();
+  const desc = (payload.visual_description || '').trim();
+  const msgs = payload.messages || [];
+  const isChat = payload.category === 'chat' || msgs.length > 0;
+  const hasFinancialOrLink =
+    /[$₹€£]\s*\d+|total|paid|amount|invoice|order|otp|http[s]?:\/\/|bit\.ly|tinyurl|verify|urgent|bank|upi/i.test(ocr) ||
+    payload.category === 'product' ||
+    payload.category === 'poster_document';
+
+  const mode: SmartCoachResponse['mode'] = isChat
+    ? 'chat_replies'
+    : hasFinancialOrLink
+      ? 'receipt_safety'
+      : 'memory_insight';
+
+  const chatSnippet = msgs.length > 0
+    ? msgs.map(m => `${m.sender_side === 'right' ? 'Me' : (m.sender_label || 'Them')}: ${m.message_text}`).join('\n')
+    : ocr.substring(0, 1200);
+
+  const coachPrompt = isChat
+    ? `You are RECALL's Smart Chat Reply Coach.
+Based on this chat conversation screenshot:
+"""
+${chatSnippet || desc}
+"""
+Visual context: ${desc}
+
+Return ONLY valid JSON:
+{
+  "summary": "One crisp sentence summarizing the chat mood and what needs a reply",
+  "replies": [
+    { "tone": "Casual", "text": "Natural friendly reply under 18 words" },
+    { "tone": "Warm", "text": "Warm thoughtful reply under 20 words" },
+    { "tone": "Concise", "text": "Short direct reply under 10 words" }
+  ]
+}`
+    : hasFinancialOrLink
+      ? `You are RECALL's Receipt & Link Safety Inspector.
+Inspect this screenshot/photo:
+Filename: ${payload.original_filename}
+Visual: ${desc}
+Text/OCR:
+"""
+${ocr.substring(0, 1600) || '(no text)'}
+"""
+
+Analyze any prices, totals, URLs, domains, urgent requests, or verification codes. Flag phishing/suspicious shortened links or urgent money demands as "caution".
+Return ONLY valid JSON:
+{
+  "summary": "1-2 sentence breakdown of the item, order, document, or link",
+  "detected_amount": "$XX.XX or null",
+  "safety_status": "safe" | "caution",
+  "safety_note": "Short explanation of why link/sender looks safe or needs verification",
+  "key_points": ["2 to 3 crisp factual bullet insights"]
+}`
+      : `You are RECALL's Memory Coach.
+Analyze this saved image/scoreboard:
+Category: ${payload.category}
+Visual: ${desc}
+Tags: ${(payload.tags || []).slice(0, 12).join(', ')}
+Game Stats: ${payload.game_result ? JSON.stringify(payload.game_result) : 'None'}
+OCR: ${ocr.substring(0, 800)}
+
+Return ONLY valid JSON:
+{
+  "summary": "1-2 sentence insightful highlight of what stands out in this image",
+  "key_points": ["2 to 3 helpful observations, colors, outfits, or performance stats"]
+}`;
+
+  const mapCoachResult = (parsed: any, provider: string): SmartCoachResponse => ({
+    mode,
+    title: isChat ? 'Suggested Replies' : hasFinancialOrLink ? 'Receipt & Safety Check' : 'Memory Insights',
+    summary: parsed.summary || desc || 'Analyzed memory.',
+    replies: Array.isArray(parsed.replies) ? parsed.replies.slice(0, 3) : undefined,
+    safety_status: parsed.safety_status === 'caution' ? 'caution' : parsed.safety_status === 'safe' ? 'safe' : undefined,
+    safety_note: parsed.safety_note,
+    detected_amount: parsed.detected_amount ?? null,
+    key_points: Array.isArray(parsed.key_points) ? parsed.key_points.slice(0, 4) : undefined,
+    provider,
+  });
+
+  const tasks: Promise<SmartCoachResponse>[] = [];
+
+  if (groqApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${groqApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-oss-120b',
+            messages: [{ role: 'user', content: coachPrompt }],
+            response_format: { type: 'json_object' },
+            max_tokens: 450,
+            temperature: 0.2,
+          }),
+        });
+        if (!res.ok) throw new Error('Groq coach failed');
+        const data: any = await res.json();
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'Groq LPU');
+      })()
+    );
+  }
+
+  if (openrouterApiKey) {
+    tasks.push(
+      (async () => {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openrouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://recall.dev',
+            'X-Title': 'Recall AI',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: coachPrompt }],
+            response_format: { type: 'json_object' },
+            max_tokens: 450,
+            temperature: 0.2,
+          }),
+        });
+        if (!res.ok) throw new Error('OpenRouter coach failed');
+        const data: any = await res.json();
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'GPT-4o-mini');
+      })()
+    );
+  }
+
+  if (genAI && geminiApiKey) {
+    tasks.push(
+      (async () => {
+        const model = genAI.getGenerativeModel({
+          model: CANDIDATE_GEMINI_MODELS[0],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+        });
+        const result = await model.generateContent(coachPrompt);
+        return mapCoachResult(safeParseJson(result.response.text().trim()), 'Gemini Flash');
+      })()
+    );
+  }
+
+  if (tasks.length > 0) {
+    try {
+      return await Promise.any(tasks);
+    } catch {}
+  }
+
+  // Deterministic fallback
+  if (isChat) {
+    return {
+      mode: 'chat_replies',
+      title: 'Suggested Replies',
+      summary: 'Ready-to-send replies drafted from your conversation thread.',
+      replies: [
+        { tone: 'Casual', text: 'Sounds good to me! Let me check and get back to you.' },
+        { tone: 'Warm', text: 'Thanks for letting me know—appreciate it!' },
+        { tone: 'Concise', text: 'Got it, noted!' },
+      ],
+      provider: 'Recall Coach',
+    };
+  }
+
+  const priceMatch = ocr.match(/([₹$€£]\s*[\d,]+(?:\.\d{1,2})?)/);
+  const suspicious = /(bit\.ly|tinyurl|kyc\s*suspend|verify\s*now|urgent\s*transfer|claim\s*prize)/i.test(ocr);
+
+  if (hasFinancialOrLink) {
+    return {
+      mode: 'receipt_safety',
+      title: 'Receipt & Safety Check',
+      summary: desc || 'Extracted payment, product, or document text.',
+      detected_amount: priceMatch ? priceMatch[1] : null,
+      safety_status: suspicious ? 'caution' : 'safe',
+      safety_note: suspicious
+        ? 'Contains shortened links or urgent phrasing—verify sender before acting.'
+        : 'No common urgency or shortened phishing markers detected in extracted text.',
+      key_points: payload.tags.slice(0, 3).map(t => `Detected topic: ${t}`),
+      provider: 'Recall Coach',
+    };
+  }
+
+  return {
+    mode: 'memory_insight',
+    title: 'Memory Insights',
+    summary: desc || 'Indexed visual memory ready for search.',
+    key_points: payload.tags.slice(0, 4),
+    provider: 'Recall Index',
+  };
+}

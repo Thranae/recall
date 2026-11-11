@@ -248,6 +248,7 @@ export const App: React.FC = () => {
             onSelectCategory={setSelectedCategory}
             onSelectScreenshot={(id) => handleOpenDetail(id)}
             onOpenUpload={() => setIsUploadOpen(true)}
+            onRefresh={fetchScreenshots}
           />
         )}
 
@@ -318,6 +319,10 @@ export const App: React.FC = () => {
           setSearchCategory('all');
           setQuery(tag);
           setCurrentTab('search');
+        }}
+        onSelectRelated={(id) => {
+          setSelectedSearchResult(undefined);
+          setSelectedScreenshotId(id);
         }}
       />
         </div>

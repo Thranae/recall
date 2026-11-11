@@ -14,6 +14,9 @@ import {
   Target,
   Brain,
   ArrowUpRight,
+  Mic,
+  MicOff,
+  Volume2,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { SearchResponse, SearchResultItem, VaultAnswer } from '../types';
@@ -79,6 +82,22 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [vaultAnswer, setVaultAnswer] = React.useState<VaultAnswer | null>(null);
   const [askResponse, setAskResponse] = React.useState<SearchResponse | null>(null);
   const [askError, setAskError] = React.useState<string | null>(null);
+  const [isListening, setIsListening] = React.useState(false);
+  const [isSpeaking, setIsSpeaking] = React.useState(false);
+  const recognitionRef = React.useRef<any>(null);
+
+  const speechSupported =
+    typeof window !== 'undefined' &&
+    Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+  React.useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop?.();
+        window.speechSynthesis?.cancel?.();
+      } catch {}
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!query.trim()) {
@@ -96,9 +115,9 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
   const activeResults = searchResults || askResponse;
 
-  const handleAskAi = async () => {
-    const trimmed = query.trim();
-    if (!trimmed || isAskingAi) return;
+  const runAskWithText = async (questionText: string) => {
+    const trimmed = questionText.trim();
+    if (!trimmed) return;
     setIsAskingAi(true);
     setAskError(null);
     try {
@@ -110,6 +129,72 @@ export const SearchView: React.FC<SearchViewProps> = ({
     } finally {
       setIsAskingAi(false);
     }
+  };
+
+  const handleAskAi = async () => {
+    if (isAskingAi) return;
+    await runAskWithText(query);
+  };
+
+  const handleToggleVoice = () => {
+    if (!speechSupported) {
+      setAskError('Voice recognition is not supported in this browser.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop?.();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRec();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const spoken = event?.results?.[0]?.[0]?.transcript?.trim();
+      setIsListening(false);
+      if (spoken) {
+        onChangeQuery(spoken);
+        runAskWithText(spoken);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    setAskError(null);
+    setIsListening(true);
+    try {
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
+
+  const handleToggleSpeak = (text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.02;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
@@ -129,9 +214,25 @@ export const SearchView: React.FC<SearchViewProps> = ({
             type="text"
             value={query}
             onChange={(e) => onChangeQuery(e.target.value)}
-            placeholder="Search photos, people, colors, chats..."
+            placeholder={isListening ? 'Listening... say a photo, color, or chat' : 'Search photos, people, colors, chats...'}
             className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none relative z-10"
           />
+
+          {speechSupported && !query.trim() && (
+            <button
+              type="button"
+              onClick={handleToggleVoice}
+              title={isListening ? 'Stop voice listening' : 'Voice recall'}
+              aria-label={isListening ? 'Stop voice listening' : 'Voice recall'}
+              className={`flex h-8 w-8 shrink-0 mr-1.5 items-center justify-center rounded-full relative z-10 transition-all active:scale-90 cursor-pointer ${
+                isListening
+                  ? 'bg-rose-500 text-white animate-pulse shadow-xs'
+                  : 'liquid-glass-pill text-[#3478F6]'
+              }`}
+            >
+              {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5 stroke-[2.2]" />}
+            </button>
+          )}
 
           {query && (
             <button
@@ -201,6 +302,33 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {/* 3. Search Discovery Mode (When no active results) */}
       {!activeResults && !query.trim() && (
         <div className="space-y-3 pt-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            {[
+              { label: 'Boy', q: 'boy' },
+              { label: 'Girl', q: 'girl' },
+              { label: 'Black', q: 'black', dot: '#172B4D' },
+              { label: 'Blue', q: 'blue', dot: '#3478F6' },
+              { label: 'Red', q: 'red', dot: '#EF4444' },
+              { label: 'White', q: 'white', dot: '#FFFFFF' },
+              { label: 'Receipt', q: 'price' },
+            ].map((chip) => (
+              <button
+                key={chip.q}
+                type="button"
+                onClick={() => onChangeQuery(chip.q)}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full liquid-glass-pill px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-[#3478F6] active:scale-95 transition-transform cursor-pointer"
+              >
+                {chip.dot && (
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full border ${chip.q === 'white' ? 'border-slate-300' : 'border-white/80'}`}
+                    style={{ backgroundColor: chip.dot }}
+                  />
+                )}
+                <span>{chip.label}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between px-1">
             <span className="text-[13px] font-bold text-[#172B4D] flex items-center gap-1.5 tracking-tight">
               <Compass className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
@@ -308,9 +436,25 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     Recall AI Answer
                   </span>
                 </div>
-                <span className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[9.5px] font-semibold text-slate-500">
-                  {vaultAnswer.provider}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {typeof window !== 'undefined' && 'speechSynthesis' in window && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSpeak(vaultAnswer.answer)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold border transition-all cursor-pointer ${
+                        isSpeaking
+                          ? 'bg-[#3478F6] text-white border-[#3478F6]'
+                          : 'bg-white/80 text-slate-600 border-white hover:text-[#3478F6]'
+                      }`}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      <span>{isSpeaking ? 'Stop' : 'Speak'}</span>
+                    </button>
+                  )}
+                  <span className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[9.5px] font-semibold text-slate-500">
+                    {vaultAnswer.provider}
+                  </span>
+                </div>
               </div>
 
               <p className="text-[13px] font-medium text-[#172B4D] leading-relaxed">

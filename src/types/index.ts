@@ -110,3 +110,40 @@ export interface BatchReanalyzeResponse {
   message: string;
 }
 
+export interface SimilarMemoryItem {
+  screenshot: Screenshot;
+  similarity: number;
+  shared_tags: string[];
+  is_duplicate: boolean;
+}
+
+export interface SmartCoachResponse {
+  screenshot_id?: string;
+  mode: 'chat_replies' | 'receipt_safety' | 'memory_insight';
+  title: string;
+  summary: string;
+  replies?: Array<{ tone: string; text: string }>;
+  safety_status?: 'safe' | 'caution';
+  safety_note?: string;
+  detected_amount?: string | null;
+  key_points?: string[];
+  provider: string;
+}
+
+export interface VaultInsightsSummary {
+  total: number;
+  category_counts: Record<string, number>;
+  gaming: {
+    matches: number;
+    total_kills: number;
+    best_kills: number;
+    chicken_dinners: number;
+  };
+  top_colors: Array<{ color: string; count: number }>;
+  duplicate_groups: Array<{
+    keep: { id: string; original_filename: string; file_size: number; uploaded_at: string };
+    duplicates: Array<{ id: string; original_filename: string; file_size: number; uploaded_at: string; reason: string }>;
+  }>;
+  duplicate_count: number;
+}
+
