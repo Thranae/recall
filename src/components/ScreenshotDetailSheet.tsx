@@ -27,10 +27,18 @@ import {
   Share2,
   Layers,
   Zap,
+  Undo2,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
-import { generateRedactedImage } from '../utils/privacyRedact';
+import {
+  loadUntaintedImage,
+  detectSensitiveRegions,
+  composeRedactedImage,
+  getStatusBarRegions,
+  extractSensitiveHintsFromText,
+  type RedactRegion,
+} from '../utils/privacyRedact';
 import type {
   Screenshot,
   ExtractedMessage,
@@ -84,7 +92,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isRedactedMode, setIsRedactedMode] = useState(false);
   const [isRedacting, setIsRedacting] = useState(false);
   const [redactBars, setRedactBars] = useState(false);
+  const [autoRedactBoxes, setAutoRedactBoxes] = useState<RedactRegion[]>([]);
+  const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
+  const [redactError, setRedactError] = useState<string | null>(null);
+  const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
+  const loadedRedactImgRef = useRef<HTMLImageElement | null>(null);
+  const previewImgRef = useRef<HTMLImageElement | null>(null);
+  const redactBoxRef = useRef<HTMLDivElement | null>(null);
+  const dragSessionRef = useRef<{
+    normX: number;
+    normY: number;
+    startClientX: number;
+    startClientY: number;
+    bounds: { left: number; top: number; width: number; height: number; containerLeft: number; containerTop: number };
+  } | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load screenshot details
@@ -123,6 +145,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setIsRedactedMode(false);
     setRedactedResult(null);
     setRedactBars(false);
+    setAutoRedactBoxes([]);
+    setManualRedactBoxes([]);
+    setRedactError(null);
+    setDragRect(null);
+    loadedRedactImgRef.current = null;
+    dragSessionRef.current = null;
     if (!screenshotId) {
       setData(null);
       return;
@@ -166,39 +194,240 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
   };
 
+  const rebuildRedactedPreview = async (
+    img: HTMLImageElement,
+    nextAutoBoxes: RedactRegion[],
+    nextManualBoxes: RedactRegion[],
+    includeBars: boolean
+  ) => {
+    const combinedBoxes = [
+      ...getStatusBarRegions(includeBars, includeBars),
+      ...nextAutoBoxes,
+      ...nextManualBoxes,
+    ];
+    const composed = await composeRedactedImage(img, combinedBoxes);
+    setRedactedResult(composed);
+  };
+
   const runPrivacyRedaction = async (includeBars: boolean) => {
     if (!screenshotId) return;
     setIsRedacting(true);
+    setRedactError(null);
     try {
-      const result = await generateRedactedImage(api.getImageUrl(screenshotId), {
-        autoSensitiveText: true,
-        blurTopBar: includeBars,
-        blurBottomBar: includeBars,
+      const img =
+        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId)));
+      loadedRedactImgRef.current = img;
+
+      const hintSource = [
+        data?.screenshot.ocr_text,
+        ...(data?.messages || []).map((m) => `${m.sender_label || ''} ${m.message_text || ''}`),
+      ]
+        .filter(Boolean)
+        .join('\n');
+      const extraHintTokens = extractSensitiveHintsFromText(hintSource);
+
+      const { boxes: detected } = await detectSensitiveRegions(img, {
+        extraHintTokens,
       });
-      setRedactedResult(result);
+
+      setAutoRedactBoxes(detected);
+      await rebuildRedactedPreview(img, detected, manualRedactBoxes, includeBars);
       setIsRedactedMode(true);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Redaction error:', err);
+      const message =
+        err instanceof Error ? err.message : 'Unable to mask this image right now.';
+      setRedactError(message);
     } finally {
       setIsRedacting(false);
     }
   };
 
   const handleToggleRedact = async () => {
+    if (isRedacting) return;
     if (isRedactedMode) {
       setIsRedactedMode(false);
+      setDragRect(null);
       return;
     }
     if (redactedResult) {
+      setRedactError(null);
       setIsRedactedMode(true);
       return;
     }
     await runPrivacyRedaction(redactBars);
   };
 
+  const handleToggleStatusBars = async () => {
+    const next = !redactBars;
+    setRedactBars(next);
+    if (loadedRedactImgRef.current) {
+      try {
+        await rebuildRedactedPreview(
+          loadedRedactImgRef.current,
+          autoRedactBoxes,
+          manualRedactBoxes,
+          next
+        );
+      } catch (err) {
+        console.error('Status bar mask error:', err);
+      }
+    } else {
+      await runPrivacyRedaction(next);
+    }
+  };
+
+  const handleUndoManualRedact = async () => {
+    if (!loadedRedactImgRef.current || manualRedactBoxes.length === 0) return;
+    const nextManual = manualRedactBoxes.slice(0, -1);
+    setManualRedactBoxes(nextManual);
+    try {
+      await rebuildRedactedPreview(
+        loadedRedactImgRef.current,
+        autoRedactBoxes,
+        nextManual,
+        redactBars
+      );
+    } catch (err) {
+      console.error('Undo redact error:', err);
+    }
+  };
+
+  const getRenderedImageBounds = () => {
+    const imgEl = previewImgRef.current;
+    const boxEl = redactBoxRef.current;
+    if (!imgEl || !boxEl || !imgEl.naturalWidth || !imgEl.naturalHeight) return null;
+    const imgRect = imgEl.getBoundingClientRect();
+    const boxRect = boxEl.getBoundingClientRect();
+    if (!imgRect.width || !imgRect.height) return null;
+
+    const natAspect = imgEl.naturalWidth / imgEl.naturalHeight;
+    const elAspect = imgRect.width / imgRect.height;
+    let drawW = imgRect.width;
+    let drawH = imgRect.height;
+    let left = imgRect.left;
+    let top = imgRect.top;
+    if (natAspect > elAspect) {
+      drawH = imgRect.width / natAspect;
+      top = imgRect.top + (imgRect.height - drawH) / 2;
+    } else {
+      drawW = imgRect.height * natAspect;
+      left = imgRect.left + (imgRect.width - drawW) / 2;
+    }
+    return {
+      left,
+      top,
+      width: drawW,
+      height: drawH,
+      containerLeft: boxRect.left,
+      containerTop: boxRect.top,
+    };
+  };
+
+  const handleImagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isRedactedMode || !loadedRedactImgRef.current || isRedacting) return;
+    if ((e.target as HTMLElement)?.closest('button')) return;
+
+    const bounds = getRenderedImageBounds();
+    if (!bounds) return;
+
+    const relX = (e.clientX - bounds.left) / bounds.width;
+    const relY = (e.clientY - bounds.top) / bounds.height;
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    dragSessionRef.current = {
+      normX: Math.max(0, Math.min(1, relX)),
+      normY: Math.max(0, Math.min(1, relY)),
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      bounds,
+    };
+  };
+
+  const handleImagePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const session = dragSessionRef.current;
+    if (!session) return;
+
+    const { bounds, startClientX, startClientY } = session;
+    const clampedX = Math.max(bounds.left, Math.min(bounds.left + bounds.width, e.clientX));
+    const clampedY = Math.max(bounds.top, Math.min(bounds.top + bounds.height, e.clientY));
+    const startX = Math.max(bounds.left, Math.min(bounds.left + bounds.width, startClientX));
+    const startY = Math.max(bounds.top, Math.min(bounds.top + bounds.height, startClientY));
+
+    const left = Math.min(startX, clampedX) - bounds.containerLeft;
+    const top = Math.min(startY, clampedY) - bounds.containerTop;
+    const width = Math.abs(clampedX - startX);
+    const height = Math.abs(clampedY - startY);
+
+    if (width > 4 || height > 4) {
+      setDragRect({ left, top, width, height });
+    }
+  };
+
+  const handleImagePointerUp = async (e: React.PointerEvent<HTMLDivElement>) => {
+    const session = dragSessionRef.current;
+    dragSessionRef.current = null;
+    setDragRect(null);
+    if (!session || !loadedRedactImgRef.current) return;
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+
+    const { bounds, normX: startNormX, normY: startNormY } = session;
+    const endNormX = Math.max(0, Math.min(1, (e.clientX - bounds.left) / bounds.width));
+    const endNormY = Math.max(0, Math.min(1, (e.clientY - bounds.top) / bounds.height));
+    const dx = Math.abs(endNormX - startNormX);
+    const dy = Math.abs(endNormY - startNormY);
+
+    let newBox: RedactRegion;
+    if (dx > 0.025 || dy > 0.025) {
+      const x = Math.min(startNormX, endNormX);
+      const y = Math.min(startNormY, endNormY);
+      newBox = {
+        x,
+        y,
+        w: Math.max(0.05, dx),
+        h: Math.max(0.035, dy),
+        source: 'manual',
+      };
+    } else {
+      const defaultW = 0.24;
+      const defaultH = 0.07;
+      newBox = {
+        x: Math.max(0, Math.min(1 - defaultW, endNormX - defaultW / 2)),
+        y: Math.max(0, Math.min(1 - defaultH, endNormY - defaultH / 2)),
+        w: defaultW,
+        h: defaultH,
+        source: 'manual',
+      };
+    }
+
+    const nextManual = [...manualRedactBoxes, newBox];
+    setManualRedactBoxes(nextManual);
+    try {
+      await rebuildRedactedPreview(
+        loadedRedactImgRef.current,
+        autoRedactBoxes,
+        nextManual,
+        redactBars
+      );
+    } catch (err) {
+      console.error('Manual redact compose error:', err);
+    }
+  };
+
   const handleShareRedacted = async () => {
-    if (!redactedResult || !data?.screenshot) return;
-    const filename = `redacted-${data.screenshot.original_filename.replace(/\.[a-z0-9]+$/i, '')}.png`;
+    if (!redactedResult) return;
+    const baseName = (data?.screenshot?.original_filename || screenshotId || 'image').replace(
+      /\.[a-z0-9]+$/i,
+      ''
+    );
+    const filename = `redacted-${baseName}.png`;
     const file = new File([redactedResult.blob], filename, { type: 'image/png' });
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
@@ -420,14 +649,49 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {/* Image Preview with Plump Liquid Glass Frame */}
           <div className="space-y-2">
-            <div className="relative min-h-[120px] flex items-center justify-center overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm">
+            <div
+              ref={redactBoxRef}
+              onPointerDown={handleImagePointerDown}
+              onPointerMove={handleImagePointerMove}
+              onPointerUp={handleImagePointerUp}
+              onPointerCancel={() => {
+                dragSessionRef.current = null;
+                setDragRect(null);
+              }}
+              className={`relative min-h-[120px] flex items-center justify-center overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm ${
+                isRedactedMode ? 'cursor-crosshair touch-none select-none' : ''
+              }`}
+            >
               <img
+                ref={previewImgRef}
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
-                className={`w-full object-contain transition-all duration-200 ${
+                draggable={false}
+                className={`w-full select-none object-contain transition-all duration-200 ${
                   isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
                 }`}
               />
+
+              {dragRect && (
+                <div
+                  className="pointer-events-none absolute z-[16] rounded-md border-2 border-[#3478F6] bg-[#3478F6]/20"
+                  style={{
+                    left: `${dragRect.left}px`,
+                    top: `${dragRect.top}px`,
+                    width: `${dragRect.width}px`,
+                    height: `${dragRect.height}px`,
+                  }}
+                />
+              )}
+
+              {isRedacting && (
+                <div className="pointer-events-none absolute inset-0 z-[16] flex items-center justify-center bg-slate-900/15 backdrop-blur-[1px]">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#172B4D] shadow-sm">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
+                    <span>Scanning sensitive areas...</span>
+                  </div>
+                </div>
+              )}
 
               {/* Plump Liquid Glass Inner Stroke Overlay */}
               <div className="liquid-card-inner-stroke" />
@@ -457,7 +721,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   ) : (
                     <Shield className={`h-3 w-3 stroke-[2.2] ${isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'}`} />
                   )}
-                  <span>{isRedacting ? 'Blurring...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+                  <span>{isRedacting ? 'Scanning...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
                 </button>
 
                 <button
@@ -471,20 +735,41 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               </div>
             </div>
 
+            {redactError && (
+              <div className="flex items-center justify-between gap-2 rounded-[14px] bg-rose-50 border border-rose-200 px-3 py-2 text-[11px] text-rose-700">
+                <span className="font-medium truncate">{redactError}</span>
+                <button
+                  type="button"
+                  onClick={() => runPrivacyRedaction(redactBars)}
+                  className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200 cursor-pointer"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             {isRedactedMode && redactedResult && (
-              <div className="flex items-center justify-between gap-2 rounded-[16px] bg-slate-900/5 border border-white px-3 py-2 text-[11px]">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold text-[#172B4D] truncate">
-                    {redactedResult.redactedCount} region{redactedResult.redactedCount === 1 ? '' : 's'} masked
+              <div className="rounded-[16px] bg-slate-900/5 border border-white px-3 py-2 text-[11px] space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-[#172B4D]">
+                    {redactedResult.redactedCount > 0
+                      ? `${redactedResult.redactedCount} region${redactedResult.redactedCount === 1 ? '' : 's'} masked`
+                      : 'No auto-matches — tap or drag image to mask'}
                   </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      const next = !redactBars;
-                      setRedactBars(next);
-                      runPrivacyRedaction(next);
-                    }}
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer transition-all ${
+                    onClick={handleShareRedacted}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[#3478F6] text-white px-2.5 py-1 text-[10.5px] font-bold active:scale-95 cursor-pointer"
+                  >
+                    <Share2 className="h-3 w-3" />
+                    <span>Share</span>
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleToggleStatusBars}
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold border cursor-pointer transition-all ${
                       redactBars
                         ? 'bg-[#172B4D] text-white border-[#172B4D]'
                         : 'bg-white text-slate-600 border-slate-200'
@@ -492,15 +777,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   >
                     {redactBars ? 'Status Bars Masked' : '+ Mask Status Bars'}
                   </button>
+                  {manualRedactBoxes.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleUndoManualRedact}
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-600 border-slate-200 cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Undo2 className="h-2.5 w-2.5" />
+                      <span>Undo</span>
+                    </button>
+                  )}
+                  {redactedResult.redactedCount > 0 && (
+                    <span className="text-[10px] text-slate-500 ml-auto">
+                      Drag on image to add mask
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleShareRedacted}
-                  className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[#3478F6] text-white px-2.5 py-1 text-[10.5px] font-bold active:scale-95 cursor-pointer"
-                >
-                  <Share2 className="h-3 w-3" />
-                  <span>Share</span>
-                </button>
               </div>
             )}
           </div>
