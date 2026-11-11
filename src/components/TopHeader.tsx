@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { RefreshCw, Loader2, Search, X, ArrowRight } from 'lucide-react';
 import { RecallEmblem } from './RecallEmblem';
 
 interface TopHeaderProps {
@@ -8,6 +8,10 @@ interface TopHeaderProps {
   processingCount: number;
   onRefresh: () => void;
   isRefreshing: boolean;
+  showSearch?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
+  onSearchSubmit?: (q: string) => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -16,8 +20,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   processingCount,
   onRefresh,
   isRefreshing,
+  showSearch = true,
+  searchQuery = '',
+  onSearchChange,
+  onSearchSubmit,
 }) => {
   const [isLocalSpinning, setIsLocalSpinning] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!showSearch) {
+      setIsSearchOpen(false);
+    }
+  }, [showSearch]);
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      const id = setTimeout(() => inputRef.current?.focus(), 40);
+      return () => clearTimeout(id);
+    }
+  }, [isSearchOpen]);
 
   const handleRefreshClick = () => {
     if (isRefreshing || isLocalSpinning) return;
@@ -28,7 +51,26 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     }, 750);
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed && onSearchSubmit) {
+      onSearchSubmit(trimmed);
+      setIsSearchOpen(false);
+    }
+  };
+
+  const handleCloseOrClear = () => {
+    if (searchQuery.trim()) {
+      onSearchChange?.('');
+      inputRef.current?.focus();
+    } else {
+      setIsSearchOpen(false);
+    }
+  };
+
   const isSpinning = isRefreshing || isLocalSpinning;
+  const activeSearchMode = showSearch && (isSearchOpen || Boolean(searchQuery.trim()));
 
   return (
     <div
@@ -61,52 +103,104 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }}
           />
 
-          {/* Brand / Distinctive Title & Branded Screenshot Emblem */}
-          <div className="flex items-center gap-2.5">
-            <RecallEmblem className="h-9 w-9" />
-
-            {/* Distinctive Recall Wordmark */}
-            <div className="flex items-baseline">
-              <h1 className="font-['Outfit'] text-[18.5px] font-extrabold tracking-[-0.03em] text-[#172B4D] leading-none select-none">
-                {title || 'Recall'}
-                <span className="text-[#3478F6] font-black ml-0.5 select-none">.</span>
-              </h1>
-            </div>
-          </div>
-
-          {/* Right actions: Subtle, Reduced-Prominence Synced Status & Refresh */}
-          <div className="flex items-center gap-1.5">
-            {isProcessing ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
-                <span>Indexing {processingCount}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#4A5D78]/80 font-medium select-none">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-                    isSpinning ? 'bg-[#3478F6] scale-110 shadow-[0_0_6px_rgba(52,120,246,0.6)]' : 'bg-emerald-500/80'
-                  }`}
-                />
-                <span className="tracking-tight">{isSpinning ? 'Updating...' : 'Synced'}</span>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleRefreshClick}
-              disabled={isSpinning}
-              aria-label="Refresh library"
-              className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-[#4A5D78] active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 stroke-[2] transition-colors duration-200 ${
-                  isSpinning ? 'subtle-refresh-spin text-[#3478F6]' : 'text-[#4A5D78]'
-                }`}
+          {activeSearchMode ? (
+            <form onSubmit={handleFormSubmit} className="flex w-full items-center gap-2">
+              <Search className="h-4.5 w-4.5 shrink-0 text-[#3478F6] stroke-[2.2]" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    onSearchChange?.('');
+                    setIsSearchOpen(false);
+                  }
+                }}
+                placeholder="Search photos, people, colors, chats..."
+                className="w-full bg-transparent text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none select-text"
               />
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleCloseOrClear}
+                aria-label={searchQuery ? 'Clear search' : 'Close search'}
+                className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full liquid-glass-pill text-[#4A5D78] active:scale-90 transition-transform cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5 stroke-[2.2]" />
+              </button>
+              {searchQuery.trim() && onSearchSubmit && (
+                <button
+                  type="submit"
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-full liquid-btn-primary px-3 text-[11px] font-bold text-white active:scale-95 transition-transform cursor-pointer"
+                >
+                  <span>AI</span>
+                  <ArrowRight className="h-3 w-3 stroke-[2.4]" />
+                </button>
+              )}
+            </form>
+          ) : (
+            <>
+              {/* Brand / Distinctive Title & Branded Screenshot Emblem */}
+              <div className="flex items-center gap-2.5">
+                <RecallEmblem className="h-9 w-9" />
+
+                {/* Distinctive Recall Wordmark */}
+                <div className="flex items-baseline">
+                  <h1 className="font-['Outfit'] text-[18.5px] font-extrabold tracking-[-0.03em] text-[#172B4D] leading-none select-none">
+                    {title || 'Recall'}
+                    <span className="text-[#3478F6] font-black ml-0.5 select-none">.</span>
+                  </h1>
+                </div>
+              </div>
+
+              {/* Right actions: Integrated Search Toggle, Synced Status & Refresh */}
+              <div className="flex items-center gap-1.5">
+                {isProcessing ? (
+                  <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
+                    <span>Indexing {processingCount}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#4A5D78]/80 font-medium select-none">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                        isSpinning ? 'bg-[#3478F6] scale-110 shadow-[0_0_6px_rgba(52,120,246,0.6)]' : 'bg-emerald-500/80'
+                      }`}
+                    />
+                    <span className="tracking-tight">{isSpinning ? 'Updating...' : 'Synced'}</span>
+                  </div>
+                )}
+
+                {showSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSearchOpen(true)}
+                    aria-label="Quick search library"
+                    title="Search library"
+                    className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-[#3478F6] active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <Search className="h-3.5 w-3.5 stroke-[2.2]" />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleRefreshClick}
+                  disabled={isSpinning}
+                  aria-label="Refresh library"
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-[#4A5D78] active:scale-90 transition-all duration-150 cursor-pointer focus:outline-none"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 stroke-[2] transition-colors duration-200 ${
+                      isSpinning ? 'subtle-refresh-spin text-[#3478F6]' : 'text-[#4A5D78]'
+                    }`}
+                  />
+                </button>
+              </div>
+            </>
+          )}
         </header>
       </div>
     </div>

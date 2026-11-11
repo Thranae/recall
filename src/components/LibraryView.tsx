@@ -9,10 +9,8 @@ import {
   BarChart3,
   Trophy,
   Trash2,
-  X,
   CheckCircle2,
   Loader2,
-  Search,
   ArrowRight,
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -26,6 +24,8 @@ interface LibraryViewProps {
   onSelectScreenshot: (id: string) => void;
   onOpenUpload: () => void;
   onRefresh?: () => void;
+  filterQuery?: string;
+  onFilterChange?: (q: string) => void;
   onQuickSearch?: (query: string) => void;
 }
 
@@ -44,9 +44,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onSelectScreenshot,
   onOpenUpload,
   onRefresh,
+  filterQuery = '',
+  onFilterChange,
   onQuickSearch,
 }) => {
-  const [libraryQuery, setLibraryQuery] = useState('');
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -56,7 +57,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const otherCount = screenshots.filter((s) => s.category !== 'chat').length;
 
   const filteredScreenshots = useMemo(() => {
-    const raw = libraryQuery.trim().toLowerCase();
+    const raw = filterQuery.trim().toLowerCase();
     const tokens = raw
       .replace(/[^\w\s-]/g, ' ')
       .split(/\s+/)
@@ -71,15 +72,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       }
       return true;
     });
-  }, [screenshots, selectedCategory, libraryQuery]);
-
-  const handleLibrarySearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = libraryQuery.trim();
-    if (trimmed && onQuickSearch) {
-      onQuickSearch(trimmed);
-    }
-  };
+  }, [screenshots, selectedCategory, filterQuery]);
 
   const handleToggleInsights = async () => {
     const next = !showInsights;
@@ -117,40 +110,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
-      {/* Quick Liquid Glass Search Bar directly on Library */}
-      <form onSubmit={handleLibrarySearchSubmit} className="relative">
-        <div className="flex h-12 items-center rounded-[20px] liquid-glass-input px-3.5 transition-all duration-150">
-          <Search className="h-4.5 w-4.5 shrink-0 stroke-[2.2] text-[#3478F6] relative z-10" />
-          <input
-            type="text"
-            value={libraryQuery}
-            onChange={(e) => setLibraryQuery(e.target.value)}
-            placeholder="Search photos, people, colors, chats..."
-            className="w-full bg-transparent px-3 text-[13px] font-semibold text-[#172B4D] placeholder:text-[#4A5D78]/70 focus:outline-none relative z-10"
-          />
-          {libraryQuery && (
-            <button
-              type="button"
-              onClick={() => setLibraryQuery('')}
-              aria-label="Clear filter"
-              className="p-1 text-[#4A5D78] hover:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
-            >
-              <X className="h-4 w-4 stroke-[2.2]" />
-            </button>
-          )}
-          {libraryQuery.trim() && onQuickSearch && (
-            <button
-              type="submit"
-              title="Run Deep AI Search"
-              className="h-8 shrink-0 rounded-full px-3 text-[11px] font-bold relative z-10 liquid-btn-primary text-white active:scale-95 transition-all cursor-pointer flex items-center gap-1"
-            >
-              <span>AI Search</span>
-              <ArrowRight className="h-3 w-3 stroke-[2.4]" />
-            </button>
-          )}
-        </div>
-      </form>
-
       {/* 1. Symmetrical Liquid Glass Filter Chips (3 Chips, Generous Width, Full Text Visibility) */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
@@ -261,7 +220,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                         <button
                           key={c.color}
                           type="button"
-                          onClick={() => setLibraryQuery(c.color)}
+                          onClick={() => onFilterChange?.(c.color)}
                           className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize hover:text-[#3478F6] cursor-pointer"
                         >
                           {c.color} ({c.count})
@@ -305,16 +264,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       </AnimatePresence>
 
       {/* 3. Screenshots Gallery Grid */}
-      {filteredScreenshots.length === 0 && libraryQuery.trim() && screenshots.length > 0 ? (
+      {filteredScreenshots.length === 0 && filterQuery.trim() && screenshots.length > 0 ? (
         <div className="liquid-glass-card rounded-[24px] p-6 text-center my-4 space-y-3">
-          <p className="text-sm font-bold text-[#172B4D]">No quick matches for "{libraryQuery.trim()}"</p>
+          <p className="text-sm font-bold text-[#172B4D]">No quick matches for "{filterQuery.trim()}"</p>
           <p className="text-xs text-slate-500">
             Run Deep AI Search for semantic synonyms, chat flow sequences, or numeric game stats.
           </p>
           <div className="flex items-center justify-center gap-2 pt-1">
             <button
               type="button"
-              onClick={() => setLibraryQuery('')}
+              onClick={() => onFilterChange?.('')}
               className="inline-flex h-9 items-center justify-center rounded-full liquid-glass-pill px-4 text-xs font-semibold text-slate-600 active:scale-95 cursor-pointer"
             >
               Clear
@@ -322,7 +281,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             {onQuickSearch && (
               <button
                 type="button"
-                onClick={() => onQuickSearch(libraryQuery.trim())}
+                onClick={() => onQuickSearch(filterQuery.trim())}
                 className="inline-flex h-9 items-center justify-center gap-1 rounded-full liquid-btn-primary px-4 text-xs font-semibold text-white active:scale-95 cursor-pointer"
               >
                 <span>Deep AI Search</span>

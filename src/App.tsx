@@ -23,6 +23,7 @@ export const App: React.FC = () => {
   // Library State
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [libraryFilterQuery, setLibraryFilterQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Search State
@@ -234,6 +235,19 @@ export const App: React.FC = () => {
         processingCount={processingCount}
         onRefresh={fetchScreenshots}
         isRefreshing={isRefreshing}
+        showSearch={currentTab !== 'search'}
+        searchQuery={libraryFilterQuery}
+        onSearchChange={(q) => {
+          setLibraryFilterQuery(q);
+          if (q.trim() && currentTab !== 'library') {
+            setCurrentTab('library');
+          }
+        }}
+        onSearchSubmit={(q) => {
+          setSearchCategory('all');
+          setQuery(q);
+          setCurrentTab('search');
+        }}
       />
 
       {/* Main Tab Views with Top Padding for Fixed Static Top Navbar */}
@@ -249,6 +263,8 @@ export const App: React.FC = () => {
             onSelectScreenshot={(id) => handleOpenDetail(id)}
             onOpenUpload={() => setIsUploadOpen(true)}
             onRefresh={fetchScreenshots}
+            filterQuery={libraryFilterQuery}
+            onFilterChange={setLibraryFilterQuery}
             onQuickSearch={(q) => {
               setSearchCategory('all');
               setQuery(q);
