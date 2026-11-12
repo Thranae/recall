@@ -13,7 +13,8 @@ import type { User, Screenshot, SearchResponse, SearchResultItem } from './types
 import { Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashRunId, setSplashRunId] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -155,11 +156,32 @@ export const App: React.FC = () => {
     setSelectedSearchResult(searchItem);
   };
 
+  const resetWorkspaceState = useCallback(() => {
+    setCurrentTab('library');
+    setSelectedCategory('all');
+    setLibraryFilterQuery('');
+    setQuery('');
+    setSearchCategory('all');
+    setSearchResults(null);
+    setIsUploadOpen(false);
+    setSelectedScreenshotId(null);
+    setSelectedSearchResult(undefined);
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const handleAuthSuccess = (authenticatedUser: User) => {
+    resetWorkspaceState();
+    setUser(authenticatedUser);
+    setSplashRunId((n) => n + 1);
+    setShowSplash(true);
+  };
+
   const handleLogout = () => {
+    setShowSplash(false);
     api.logout();
     setUser(null);
     setScreenshots([]);
-    setSearchResults(null);
+    resetWorkspaceState();
   };
 
   const handleSplashComplete = useCallback(() => {
@@ -172,8 +194,13 @@ export const App: React.FC = () => {
 
   return (
     <>
-      {showSplash && (
-        <SplashScreen onComplete={handleSplashComplete} durationMs={7000} />
+      {showSplash && user && (
+        <SplashScreen
+          key={splashRunId}
+          userName={user.name}
+          onComplete={handleSplashComplete}
+          durationMs={3600}
+        />
       )}
 
       {isInitializing ? (
@@ -181,7 +208,7 @@ export const App: React.FC = () => {
           <Loader2 className="h-8 w-8 animate-spin text-[#3478F6]" />
         </div>
       ) : !user ? (
-        <AuthView onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)} />
+        <AuthView onAuthSuccess={handleAuthSuccess} />
       ) : (
         <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
       {/* Ambient Aurora Light for Liquid Glass Refraction (Arctic Blue palette) */}
