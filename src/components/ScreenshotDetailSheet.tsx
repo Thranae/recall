@@ -856,8 +856,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       willChange: 'transform, opacity',
                     }}
                   />
-                  <div className="absolute inset-x-0 bottom-3 flex justify-center px-3">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0B1220]/90 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+                  <div className="absolute inset-x-0 top-3 flex justify-center px-6">
+                    <div className="inline-flex max-w-[82%] items-center gap-2 rounded-full border border-white/15 bg-[#0B1220]/90 px-3 py-1 text-[10.5px] font-medium text-white shadow-sm backdrop-blur-md">
                       <span className="relative flex h-3.5 w-5 flex-col justify-center gap-[3px]">
                         <span className="h-[2px] w-full rounded-full bg-white/30" />
                         <span className="h-[2px] w-3.5 rounded-full bg-white/30" />
@@ -905,8 +905,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <span className="absolute bottom-0 left-0 h-3 w-3 rounded-bl-[4px] border-b-2 border-l-2 border-[#60A5FA]/85" />
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-br-[4px] border-b-2 border-r-2 border-[#60A5FA]/85" />
                   </div>
-                  <div className="absolute inset-x-0 bottom-3 flex justify-center px-3">
-                    <div className="inline-flex max-w-[90%] items-center gap-2 rounded-full border border-[#60A5FA]/40 bg-[#0B1220]/92 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+                  <div className="absolute inset-x-0 top-3 flex justify-center px-6">
+                    <div className="inline-flex max-w-[82%] items-center gap-2 rounded-full border border-[#60A5FA]/40 bg-[#0B1220]/92 px-3 py-1 text-[10.5px] font-medium text-white shadow-sm backdrop-blur-md">
                       <span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
                         <span
                           className="absolute inset-0 rounded-full border border-[#60A5FA]"
@@ -1030,12 +1030,18 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
-              <div className="pointer-events-none absolute inset-x-2.5 bottom-2.5 z-20 flex items-center justify-between gap-2">
+              <div
+                className={`pointer-events-none absolute inset-x-2.5 bottom-2.5 z-20 flex items-center justify-between gap-2 transition-[opacity,transform] duration-200 ease-out ${
+                  isRedacting || isAiRedacting ? 'opacity-0 scale-[0.97]' : 'opacity-100 scale-100'
+                }`}
+              >
                 <button
                   type="button"
                   onClick={handleToggleRedact}
                   disabled={isRedacting || isAiRedacting}
-                  className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
+                    isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
+                  } ${
                     isRedactedMode || isRedacting || isAiRedacting
                       ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
                       : 'liquid-category-badge text-[#172B4D]'
@@ -1064,7 +1070,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsImageExpanded(!isImageExpanded)}
-                  className="pointer-events-auto flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs"
+                  disabled={isRedacting || isAiRedacting}
+                  className={`flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
+                    isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
+                  }`}
                 >
                   <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
                   <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
