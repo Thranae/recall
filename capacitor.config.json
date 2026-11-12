@@ -3,7 +3,14 @@
   "appName": "RECALL",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": [
+      "accounts.google.com",
+      "*.google.com",
+      "*.googleusercontent.com",
+      "*.gstatic.com",
+      "web-app-vert-nu.vercel.app"
+    ]
   },
   "plugins": {
     "SplashScreen": {
@@ -20,4 +27,3 @@
     }
   }
 }
-
