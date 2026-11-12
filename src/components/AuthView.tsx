@@ -192,12 +192,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       } catch (nativeErr: any) {
         console.warn('Native Google Sign-In attempt:', nativeErr);
         const msg = (nativeErr?.message || String(nativeErr)).toLowerCase();
-        // If user cancelled, closed, or backed out of the account chooser
-        if (msg.includes('cancel') || msg.includes('16') || msg.includes('abort') || msg.includes('dismiss')) {
+        // Only return early if user explicitly tapped the Android back button or dismissed without selecting
+        if (msg.includes('user cancel') || msg.includes('user_cancel') || (msg.includes('cancel') && !msg.includes('reauth') && !msg.includes('16'))) {
           setIsGoogleLoading(false);
           return;
         }
-        console.info('Native accounts chooser fell back, checking web client...');
+        console.info('Native accounts chooser fell back, launching web Google OAuth flow...');
       }
     }
 
