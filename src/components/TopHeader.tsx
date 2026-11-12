@@ -27,7 +27,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 }) => {
   const [isLocalSpinning, setIsLocalSpinning] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [brandPulseSeq, setBrandPulseSeq] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastBrandTapRef = useRef(0);
+
+  const handleBrandPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const now = performance.now();
+    if (now - lastBrandTapRef.current <= 340) {
+      lastBrandTapRef.current = 0;
+      setBrandPulseSeq((n) => n + 1);
+      if (window.scrollY > 12) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      lastBrandTapRef.current = now;
+    }
+  };
 
   useEffect(() => {
     if (!showSearch) {
@@ -141,14 +157,58 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           ) : (
             <>
               {/* Brand / Distinctive Title & Branded Screenshot Emblem */}
-              <div className="flex items-center gap-2.5">
-                <RecallEmblem className="h-9 w-9" />
+              <div
+                onPointerUp={handleBrandPointerUp}
+                title="Double-tap Recall"
+                className="relative flex items-center gap-2.5 cursor-pointer select-none active:scale-[0.97] transition-transform duration-150 ease-out"
+              >
+                <div className="relative flex items-center justify-center">
+                  {brandPulseSeq > 0 && (
+                    <span
+                      key={`halo-${brandPulseSeq}`}
+                      className="pointer-events-none absolute inset-0 rounded-[14px] border border-[#3478F6]/45"
+                      style={{
+                        animation: 'navbarEmblemHalo 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                        willChange: 'transform, opacity',
+                      }}
+                    />
+                  )}
+                  <div
+                    key={`emblem-${brandPulseSeq}`}
+                    style={
+                      brandPulseSeq > 0
+                        ? {
+                            animation:
+                              'navbarEmblemDoubleTap 520ms cubic-bezier(0.22, 1, 0.36, 1) both',
+                            willChange: 'transform',
+                          }
+                        : undefined
+                    }
+                  >
+                    <RecallEmblem className="h-9 w-9" glow={brandPulseSeq > 0} />
+                  </div>
+                </div>
 
                 {/* Distinctive Recall Wordmark */}
                 <div className="flex items-baseline">
                   <h1 className="font-['Outfit'] text-[18.5px] font-extrabold tracking-[-0.03em] text-[#172B4D] leading-none select-none">
                     {title || 'Recall'}
-                    <span className="text-[#3478F6] font-black ml-0.5 select-none">.</span>
+                    <span
+                      key={`dot-${brandPulseSeq}`}
+                      style={
+                        brandPulseSeq > 0
+                          ? {
+                              display: 'inline-block',
+                              animation:
+                                'navbarDotHop 460ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both',
+                              willChange: 'transform',
+                            }
+                          : { display: 'inline-block' }
+                      }
+                      className="text-[#3478F6] font-black ml-0.5 select-none"
+                    >
+                      .
+                    </span>
                   </h1>
                 </div>
               </div>
