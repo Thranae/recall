@@ -1,24 +1,32 @@
 package com.recall.app;
 
-import android.app.Dialog;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
+import android.webkit.GeolocationPermissions;
+import android.webkit.JsPromptResult;
+import android.webkit.JsResult;
+import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.BridgeWebChromeClient;
 
 public class MainActivity extends BridgeActivity {
-    private Dialog popupDialog;
+    private WebView popupWebView;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,8 +41,6 @@ public class MainActivity extends BridgeActivity {
         if (webView != null) {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             WebSettings settings = webView.getSettings();
-            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
-            settings.setEnableSmoothTransition(true);
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
             settings.setJavaScriptEnabled(true);
@@ -51,105 +57,203 @@ public class MainActivity extends BridgeActivity {
             CookieManager.getInstance().setAcceptCookie(true);
             CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
 
-            // Set custom BridgeWebChromeClient that handles OAuth window popups within the app context
-            webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+            final WebChromeClient defaultClient = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 
+                ? webView.getWebChromeClient() 
+                : null;
+
+            webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                    if (popupDialog != null && popupDialog.isShowing()) {
-                        try {
-                            popupDialog.dismiss();
-                        } catch (Exception ignored) {}
-                    }
+                    try {
+                        closePopupWebView();
 
-                    WebView popupWebView = new WebView(MainActivity.this);
-                    popupWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                        popupWebView = new WebView(MainActivity.this);
+                        popupWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
-                    WebSettings popupSettings = popupWebView.getSettings();
-                    popupSettings.setJavaScriptEnabled(true);
-                    popupSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-                    popupSettings.setSupportMultipleWindows(true);
-                    popupSettings.setDomStorageEnabled(true);
-                    popupSettings.setDatabaseEnabled(true);
-                    popupSettings.setUserAgentString(cleanUa);
+                        WebSettings popupSettings = popupWebView.getSettings();
+                        popupSettings.setJavaScriptEnabled(true);
+                        popupSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+                        popupSettings.setSupportMultipleWindows(true);
+                        popupSettings.setDomStorageEnabled(true);
+                        popupSettings.setDatabaseEnabled(true);
+                        popupSettings.setUserAgentString(cleanUa);
 
-                    CookieManager.getInstance().setAcceptCookie(true);
-                    CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true);
+                        CookieManager.getInstance().setAcceptCookie(true);
+                        CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true);
 
-                    popupDialog = new Dialog(MainActivity.this, android.R.style.Theme_DeviceDefault_Light_NoActionBar_Fullscreen);
-                    popupDialog.setContentView(popupWebView, new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    ));
-                    popupDialog.setCancelable(true);
-
-                    popupDialog.setOnDismissListener(dialogInterface -> {
-                        try {
-                            popupWebView.destroy();
-                        } catch (Exception ignored) {}
-                    });
-
-                    popupWebView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
-                        @Override
-                        public void onCloseWindow(WebView window) {
-                            if (popupDialog != null && popupDialog.isShowing()) {
-                                try {
-                                    popupDialog.dismiss();
-                                } catch (Exception ignored) {}
+                        popupWebView.setWebChromeClient(new WebChromeClient() {
+                            @Override
+                            public void onCloseWindow(WebView window) {
+                                closePopupWebView();
                             }
-                        }
-                    });
+                        });
 
-                    popupWebView.setWebViewClient(new WebViewClient() {
-                        @Override
-                        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                            Uri uri = request.getUrl();
-                            String host = uri != null ? uri.getHost() : null;
-                            // Keep Google auth and localhost flows inside this popup webview
-                            if (host != null && (host.contains("google.com") || host.contains("localhost") || host.contains("googleusercontent.com") || host.contains("gstatic.com"))) {
+                        popupWebView.setWebViewClient(new WebViewClient() {
+                            @Override
+                            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                                Uri uri = request.getUrl();
+                                String host = uri != null ? uri.getHost() : null;
+                                if (host != null && (
+                                    host.contains("google.com") ||
+                                    host.contains("accounts.google") ||
+                                    host.contains("googleusercontent.com") ||
+                                    host.contains("gstatic.com") ||
+                                    host.contains("localhost")
+                                )) {
+                                    return false;
+                                }
+                                if (uri != null) {
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                        startActivity(intent);
+                                        closePopupWebView();
+                                        return true;
+                                    } catch (Exception ignored) {}
+                                }
                                 return false;
                             }
-                            // External links open in browser
-                            if (uri != null) {
-                                try {
-                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                    startActivity(intent);
-                                    if (popupDialog != null && popupDialog.isShowing()) {
-                                        popupDialog.dismiss();
-                                    }
-                                    return true;
-                                } catch (Exception ignored) {}
-                            }
-                            return false;
+                        });
+
+                        ViewGroup rootView = findViewById(android.R.id.content);
+                        if (rootView != null) {
+                            rootView.addView(popupWebView, new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            ));
                         }
-                    });
 
-                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                    transport.setWebView(popupWebView);
-                    resultMsg.sendToTarget();
+                        if (resultMsg != null && resultMsg.obj instanceof WebView.WebViewTransport) {
+                            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                            transport.setWebView(popupWebView);
+                            resultMsg.sendToTarget();
+                        }
 
-                    popupDialog.show();
-                    return true;
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
                 }
 
                 @Override
                 public void onCloseWindow(WebView window) {
-                    if (popupDialog != null && popupDialog.isShowing()) {
+                    closePopupWebView();
+                    if (defaultClient != null) {
                         try {
-                            popupDialog.dismiss();
+                            defaultClient.onCloseWindow(window);
                         } catch (Exception ignored) {}
+                    }
+                }
+
+                @Override
+                public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                    if (defaultClient != null) {
+                        return defaultClient.onShowFileChooser(webView, filePathCallback, fileChooserParams);
+                    }
+                    return super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
+                }
+
+                @Override
+                public void onPermissionRequest(PermissionRequest request) {
+                    if (defaultClient != null) {
+                        defaultClient.onPermissionRequest(request);
+                    } else {
+                        super.onPermissionRequest(request);
+                    }
+                }
+
+                @Override
+                public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                    if (defaultClient != null) {
+                        defaultClient.onGeolocationPermissionsShowPrompt(origin, callback);
+                    } else {
+                        super.onGeolocationPermissionsShowPrompt(origin, callback);
+                    }
+                }
+
+                @Override
+                public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                    if (defaultClient != null) {
+                        return defaultClient.onConsoleMessage(consoleMessage);
+                    }
+                    return super.onConsoleMessage(consoleMessage);
+                }
+
+                @Override
+                public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+                    if (defaultClient != null) {
+                        return defaultClient.onJsAlert(view, url, message, result);
+                    }
+                    return super.onJsAlert(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                    if (defaultClient != null) {
+                        return defaultClient.onJsConfirm(view, url, message, result);
+                    }
+                    return super.onJsConfirm(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+                    if (defaultClient != null) {
+                        return defaultClient.onJsPrompt(view, url, message, defaultValue, result);
+                    }
+                    return super.onJsPrompt(view, url, message, defaultValue, result);
+                }
+
+                @Override
+                public void onShowCustomView(View view, CustomViewCallback callback) {
+                    if (defaultClient != null) {
+                        defaultClient.onShowCustomView(view, callback);
+                    } else {
+                        super.onShowCustomView(view, callback);
+                    }
+                }
+
+                @Override
+                public void onHideCustomView() {
+                    if (defaultClient != null) {
+                        defaultClient.onHideCustomView();
+                    } else {
+                        super.onHideCustomView();
                     }
                 }
             });
         }
     }
 
+    private void closePopupWebView() {
+        runOnUiThread(() -> {
+            if (popupWebView != null) {
+                try {
+                    ViewGroup rootView = findViewById(android.R.id.content);
+                    if (rootView != null) {
+                        rootView.removeView(popupWebView);
+                    }
+                    popupWebView.destroy();
+                } catch (Exception ignored) {}
+                popupWebView = null;
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (popupWebView != null) {
+            if (popupWebView.canGoBack()) {
+                popupWebView.goBack();
+            } else {
+                closePopupWebView();
+            }
+            return;
+        }
+        super.onBackPressed();
+    }
+
     @Override
     protected void onDestroy() {
-        if (popupDialog != null && popupDialog.isShowing()) {
-            try {
-                popupDialog.dismiss();
-            } catch (Exception ignored) {}
-        }
+        closePopupWebView();
         super.onDestroy();
     }
 }
