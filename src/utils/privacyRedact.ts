@@ -478,17 +478,20 @@ function drawPrivacyMask(
   x: number,
   y: number,
   w: number,
-  h: number
+  h: number,
+  source?: 'auto' | 'bar' | 'manual' | 'ai'
 ) {
-  // Generous safety margin so numbers, letters, colons, and edge serifs are 100% masked
-  const padX = Math.max(10, Math.round(Math.max(w * 0.08, Math.min(w, h) * 0.28) + 4));
-  const padY = Math.max(7, Math.round(Math.max(h * 0.14, Math.min(w, h) * 0.22) + 3));
+  // AI-targeted and manual selections are surgically calibrated to mask ONLY the target without bleeding into neighbors
+  const isSurgical = source === 'ai' || source === 'manual';
+  const padX = isSurgical ? Math.max(1, Math.round(w * 0.015)) : Math.max(4, Math.round(Math.max(w * 0.05, Math.min(w, h) * 0.15) + 2));
+  const padY = isSurgical ? Math.max(1, Math.round(h * 0.02)) : Math.max(3, Math.round(Math.max(h * 0.08, Math.min(w, h) * 0.12) + 2));
+
   const rx = Math.max(0, Math.round(x - padX));
   const ry = Math.max(0, Math.round(y - padY));
-  const rw = Math.max(16, Math.min(canvasWidth - rx, Math.round(w + padX * 2)));
-  const rh = Math.max(14, Math.min(canvasHeight - ry, Math.round(h + padY * 2)));
-  // Keep corner radius small (1..4px) so curved corners never shave off outer digits
-  const radius = Math.min(4, Math.max(1, Math.round(Math.min(rw, rh) / 8)));
+  const rw = Math.max(4, Math.min(canvasWidth - rx, Math.round(w + padX * 2)));
+  const rh = Math.max(4, Math.min(canvasHeight - ry, Math.round(h + padY * 2)));
+  // Tight corner radius so nearby characters are never covered
+  const radius = isSurgical ? 2 : Math.min(4, Math.max(1, Math.round(Math.min(rw, rh) / 8)));
 
   // 100% opaque solid redaction fill so underlying text/details are completely invisible
   ctx.save();
@@ -497,7 +500,7 @@ function drawPrivacyMask(
   ctx.fillStyle = '#0B1220';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-  ctx.lineWidth = Math.max(1, Math.min(2, Math.round(canvasWidth / 600)));
+  ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
 }
@@ -527,7 +530,7 @@ export async function composeRedactedImage(
     const py = box.y * outH;
     const pw = box.w * outW;
     const ph = box.h * outH;
-    drawPrivacyMask(outCtx, outW, outH, px, py, pw, ph);
+    drawPrivacyMask(outCtx, outW, outH, px, py, pw, ph, box.source);
   }
 
   const blob: Blob = await new Promise((resolve, reject) => {

@@ -1118,9 +1118,9 @@ function normalizeBox2dToRegion(
   const isNormalizedUnit = nums.every((n) => n >= 0 && n <= 1.01) && nums.some((n) => n > 0 && n < 1);
   const scale = isNormalizedUnit ? 1 : 1000;
 
-  // Add 1.2% horizontal and 0.6% vertical safety margin so numbers, colons, and edge serifs are never clipped
-  const marginX = 0.012;
-  const marginY = 0.006;
+  // Surgical margin (0.2%) to cover antialiased glyph contours without bleeding into adjacent words or icons
+  const marginX = 0.002;
+  const marginY = 0.002;
 
   const ymin = Math.max(0, Math.min(1, nums[0] / scale - marginY));
   const xmin = Math.max(0, Math.min(1, nums[1] / scale - marginX));
@@ -1290,18 +1290,18 @@ export async function detectAiRedactTargets(
       : '';
 
   const redactPrompt = `You are RECALL's surgical privacy redaction vision system.
-Locate ALL tight bounding boxes matching this user instruction: "${instruction}".
+Locate tight, exact bounding boxes matching ONLY this user instruction: "${instruction}".
 Coordinates MUST use 0..1000 integers [ymin, xmin, ymax, xmax].
 
-DETECTION KNOWLEDGE:
-- Mask ONLY pixels matching "${instruction}". Exclude unrelated nearby items.
-- Battery / Status bar: "battery" / "battery percentage" / "charge" includes the battery glyph and numeric level (e.g. "53", "53%", "100%") typically in the top status bar corner (ymin 10..60, xmin 780..980).
-- Network / Wifi: "wifi" / "signal" / "network" / "speed" includes Wi-Fi/VoWiFi icon or label, signal bars, 5G/4G/LTE, or data speed ("62.7 KB/s").
-- Time / Clock: "time" includes status bar clock (e.g. "10:20", "9:41") and timestamps (exclude battery, dates, signal, names).
-- Complete Text & Digit Enclosure: When masking time (e.g. "10:20", "9:41 PM"), numbers, or words, you MUST completely enclose the ENTIRE sequence—including the very first digit, all inner colons/slashes/dots, and the final digit/AM/PM. Never leave even a single number, serif, or colon unmasked.
-- People & Chat: "face", "avatar" / "profile photo", "name" / "username" / "@handle", or specific requested message bubbles/calls.
-- Numbers & Links: "price", "amount", "balance", "phone", "email", "otp", "url" / "link".
-- Prefer tightly cropped OCR box coordinates when readable tokens are provided below.
+SURGICAL ISOLATION (CRITICAL):
+- Mask ONLY the specific entity requested by "${instruction}". Strictly DO NOT mask any surrounding or adjacent elements.
+- For example: if asked to redact "time", enclose ONLY the digits of the time (e.g. "10:20"). Do NOT cover nearby app notification icons, WiFi glyphs, network signal, or battery percentages.
+- If asked to redact "battery", enclose ONLY the battery glyph and numeric percentage. Do NOT cover adjacent WiFi, network, or time.
+- If asked to redact "name", enclose ONLY the name or handle text, not the avatar or message text next to it.
+- If asked to redact "price" or "amount", enclose ONLY the price digits and currency symbol, not the product description or transaction text.
+- If asked to redact "face" or "avatar", enclose ONLY the face/avatar circle, not the username or background.
+- When enclosing numbers or time, fit tightly to the outermost edges of the first and last glyphs. Never mask extra pixels outside the requested target.
+- Prefer tightly cropped OCR word box coordinates when readable tokens are provided below.
 
 Return strict JSON ONLY:
 {"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"1-2 word label","matched_text":"text or empty"}],"summary":"concise confirmation"}

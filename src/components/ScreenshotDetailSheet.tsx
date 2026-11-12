@@ -239,8 +239,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   ) => {
     const rawW = box.w * bounds.width;
     const rawH = box.h * bounds.height;
-    const padX = Math.max(6, Math.max(rawW * 0.08, Math.min(rawW, rawH) * 0.26) + 3);
-    const padY = Math.max(4, Math.max(rawH * 0.12, Math.min(rawW, rawH) * 0.2) + 2);
+    const isSurgical = box.source === 'ai' || box.source === 'manual';
+    const padX = isSurgical ? Math.max(1, Math.round(rawW * 0.015)) : Math.max(4, Math.max(rawW * 0.05, Math.min(rawW, rawH) * 0.15) + 2);
+    const padY = isSurgical ? Math.max(1, Math.round(rawH * 0.02)) : Math.max(3, Math.max(rawH * 0.08, Math.min(rawW, rawH) * 0.12) + 2);
     const imgOffsetX = bounds.left - bounds.containerLeft;
     const imgOffsetY = bounds.top - bounds.containerTop;
     const left = Math.max(imgOffsetX, imgOffsetX + box.x * bounds.width - padX);
@@ -250,8 +251,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     return {
       left,
       top,
-      width: Math.max(6, Math.min(maxW, rawW + padX * 2)),
-      height: Math.max(6, Math.min(maxH, rawH + padY * 2)),
+      width: Math.max(4, Math.min(maxW, rawW + padX * 2)),
+      height: Math.max(4, Math.min(maxH, rawH + padY * 2)),
     };
   };
 
