@@ -1,24 +1,40 @@
 import type { User, Screenshot, ExtractedMessage, GameResult, SearchResponse } from '../types';
+import { Capacitor } from '@capacitor/core';
 
-const getApiBase = (): string => {
+export const PROD_BACKEND_URL = 'https://web-app-vert-nu.vercel.app/api';
+
+export function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
 
   const envUrl = (import.meta as any).env?.VITE_API_URL;
   if (envUrl) return envUrl;
 
-  const isNative = Boolean((window as any).Capacitor?.isNativePlatform?.());
-  const isCapacitorOrigin =
-    window.location.protocol === 'capacitor:' ||
-    (window.location.hostname === 'localhost' && !window.location.port);
+  try {
+    if (Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'web') {
+      return PROD_BACKEND_URL;
+    }
+  } catch {
+    // fallback to location heuristics below
+  }
 
-  if (isNative || isCapacitorOrigin) {
-    return 'https://web-app-vert-nu.vercel.app/api';
+  const loc = window.location;
+  if (
+    loc.protocol === 'capacitor:' ||
+    loc.protocol === 'file:' ||
+    loc.protocol === 'ionic:' ||
+    loc.protocol === 'content:'
+  ) {
+    return PROD_BACKEND_URL;
+  }
+
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+    if (loc.port !== '5173') {
+      return PROD_BACKEND_URL;
+    }
   }
 
   return '/api';
-};
-
-const API_BASE = getApiBase();
+}
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('recall_auth_token');
@@ -44,19 +60,40 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers.set('Content-Type', 'application/json');
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const apiBase = getApiBase();
+  const res = await fetch(`${apiBase}${endpoint}`, {
     ...options,
     headers,
   });
 
+  const contentType = res.headers.get('content-type') || '';
+
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    const err = new Error(errorBody.error || `Request failed with status ${res.status}`);
-    Object.assign(err, errorBody);
-    throw err;
+    if (contentType.includes('application/json')) {
+      const errorBody = await res.json().catch(() => ({}));
+      const err = new Error(errorBody.error || `Request failed with status ${res.status}`);
+      Object.assign(err, errorBody);
+      throw err;
+    } else {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Server error (${res.status}): ${text.slice(0, 100)}`);
+    }
   }
 
-  return res.json() as Promise<T>;
+  if (contentType.includes('application/json')) {
+    return res.json() as Promise<T>;
+  }
+
+  const text = await res.text().catch(() => '');
+  if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<html')) {
+    throw new Error('Unable to connect to Recall servers. Please verify your internet connection.');
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error('Received non-JSON response from server.');
+  }
 }
 
 export const api = {
@@ -338,7 +375,7 @@ export const api = {
 
   getImageUrl(id: string): string {
     const token = getAuthToken();
-    return `${API_BASE}/screenshots/image/${id}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    return `${getApiBase()}/screenshots/image/${id}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   },
 
   async updateMetadata(id: string, updates: { category?: string; visual_description?: string; tags?: string[] }): Promise<void> {
