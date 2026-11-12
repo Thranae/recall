@@ -242,6 +242,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     };
   };
 
+  const triggerInkWipeOverlay = (regions: RedactRegion[]) => {
+    const bounds = getRenderedImageBounds();
+    if (!bounds || regions.length === 0) return;
+    const wipeBatch = regions.slice(0, 18).map((box, idx) => ({
+      id: `auto-${Date.now()}-${idx}`,
+      ...toOverlayRect(box, bounds),
+      delayMs: Math.min(idx * 34, 200),
+    }));
+    setAutoInkMasks(wipeBatch);
+    const timerId = window.setTimeout(() => {
+      setAutoInkMasks([]);
+    }, 680);
+    animTimersRef.current.push(timerId);
+  };
+
   const runPrivacyRedaction = async (includeBars: boolean) => {
     if (!screenshotId) return;
     setIsRedacting(true);
@@ -265,20 +280,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
       setAutoRedactBoxes(detected);
       await rebuildRedactedPreview(img, detected, manualRedactBoxes, includeBars);
-      const bounds = getRenderedImageBounds();
-      const allAutoRegions = [...getStatusBarRegions(includeBars, includeBars), ...detected];
-      if (bounds && allAutoRegions.length > 0) {
-        const wipeBatch = allAutoRegions.slice(0, 18).map((box, idx) => ({
-          id: `auto-${Date.now()}-${idx}`,
-          ...toOverlayRect(box, bounds),
-          delayMs: Math.min(idx * 32, 180),
-        }));
-        setAutoInkMasks(wipeBatch);
-        const timerId = window.setTimeout(() => {
-          setAutoInkMasks([]);
-        }, 680);
-        animTimersRef.current.push(timerId);
-      }
+      triggerInkWipeOverlay([...getStatusBarRegions(includeBars, includeBars), ...detected]);
       setIsRedactedMode(true);
     } catch (err: unknown) {
       console.error('Redaction error:', err);
@@ -299,6 +301,11 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
     if (redactedResult) {
       setRedactError(null);
+      triggerInkWipeOverlay([
+        ...getStatusBarRegions(redactBars, redactBars),
+        ...autoRedactBoxes,
+        ...manualRedactBoxes,
+      ]);
       setIsRedactedMode(true);
       return;
     }
@@ -788,30 +795,47 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               ))}
 
-              {/* Auto-Scan Animation: Quiet Optical Corner Brackets + Gossamer Specular Slit */}
+              {/* Editorial Black-Ink Marker Passes While Redacting */}
               {isRedacting && (
                 <div className="pointer-events-none absolute inset-0 z-[16] overflow-hidden">
-                  <span className="absolute top-3 left-3 h-3.5 w-3.5 border-t-[1.5px] border-l-[1.5px] border-white/85 rounded-tl-[4px] drop-shadow-xs" />
-                  <span className="absolute top-3 right-3 h-3.5 w-3.5 border-t-[1.5px] border-r-[1.5px] border-white/85 rounded-tr-[4px] drop-shadow-xs" />
-                  <span className="absolute bottom-3 left-3 h-3.5 w-3.5 border-b-[1.5px] border-l-[1.5px] border-white/85 rounded-bl-[4px] drop-shadow-xs" />
-                  <span className="absolute bottom-3 right-3 h-3.5 w-3.5 border-b-[1.5px] border-r-[1.5px] border-white/85 rounded-br-[4px] drop-shadow-xs" />
+                  <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#0B1220]/90 border border-white/15 px-2.5 py-0.5 text-[9px] font-bold tracking-[0.16em] uppercase text-white shadow-xs">
+                    <span className="flex flex-col gap-[2px] w-2.5">
+                      <span
+                        className="block h-[2px] w-full rounded-full bg-white"
+                        style={{
+                          transformOrigin: 'left center',
+                          animation: 'redactGlyphBar 900ms cubic-bezier(0.22, 1, 0.36, 1) infinite',
+                        }}
+                      />
+                      <span
+                        className="block h-[2px] w-2/3 rounded-full bg-white/75"
+                        style={{
+                          transformOrigin: 'left center',
+                          animation: 'redactGlyphBar 900ms cubic-bezier(0.22, 1, 0.36, 1) 180ms infinite',
+                        }}
+                      />
+                    </span>
+                    <span>Redacting</span>
+                  </div>
 
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      animation: 'redactOpticalRibbon 1.45s cubic-bezier(0.37, 0, 0.63, 1) infinite',
-                      willChange: 'transform, opacity',
-                    }}
-                  >
+                  {[
+                    { top: '22%', left: '16%', width: '44%', delay: '0ms' },
+                    { top: '40%', left: '24%', width: '56%', delay: '170ms' },
+                    { top: '58%', left: '14%', width: '48%', delay: '340ms' },
+                    { top: '75%', left: '32%', width: '34%', delay: '510ms' },
+                  ].map((stroke, idx) => (
                     <div
-                      className="h-7 w-full"
+                      key={idx}
+                      className="absolute h-3.5 rounded-[5px] bg-[#0B1220] border border-white/15 shadow-xs"
                       style={{
-                        background:
-                          'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(191,219,254,0.18) 88%, rgba(255,255,255,0.75) 100%)',
-                        boxShadow: '0 1px 10px rgba(59, 130, 246, 0.35)',
+                        top: stroke.top,
+                        left: stroke.left,
+                        width: stroke.width,
+                        animation: `redactMarkerPass 1.15s cubic-bezier(0.22, 1, 0.36, 1) ${stroke.delay} infinite`,
+                        willChange: 'clip-path, opacity',
                       }}
                     />
-                  </div>
+                  ))}
                 </div>
               )}
 
@@ -838,16 +862,31 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       : 'liquid-category-badge text-[#172B4D]'
                   }`}
                 >
-                  <Shield
-                    className={`h-3 w-3 stroke-[2.2] ${
-                      isRedacting
-                        ? 'text-sky-300 animate-pulse'
-                        : isRedactedMode
-                        ? 'text-emerald-300'
-                        : 'text-[#3478F6]'
-                    }`}
-                  />
-                  <span>{isRedacting ? 'Redacting…' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+                  {isRedacting ? (
+                    <span className="flex flex-col gap-[2px] w-2.5">
+                      <span
+                        className="block h-[2px] w-full rounded-full bg-white"
+                        style={{
+                          transformOrigin: 'left center',
+                          animation: 'redactGlyphBar 800ms cubic-bezier(0.22, 1, 0.36, 1) infinite',
+                        }}
+                      />
+                      <span
+                        className="block h-[2px] w-2/3 rounded-full bg-white/75"
+                        style={{
+                          transformOrigin: 'left center',
+                          animation: 'redactGlyphBar 800ms cubic-bezier(0.22, 1, 0.36, 1) 160ms infinite',
+                        }}
+                      />
+                    </span>
+                  ) : (
+                    <Shield
+                      className={`h-3 w-3 stroke-[2.2] ${
+                        isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'
+                      }`}
+                    />
+                  )}
+                  <span>{isRedacting ? 'Redacting' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
                 </button>
 
                 <button
