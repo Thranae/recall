@@ -1174,16 +1174,25 @@ function deterministicRedactHintFallback(
 ): AiRedactResult {
   const q = instruction.toLowerCase();
   const isTimeQuery = /\b(time|clock|hour|timestamp|am|pm)\b/.test(q);
-  const isPriceQuery = /\b(price|amount|cost|total|rs|inr|usd|\$|₹)\b/.test(q);
+  const isBatteryQuery = /\b(battery|charge|charging|power|percent|percentage)\b/.test(q);
+  const isNetworkQuery = /\b(wifi|wi-fi|signal|network|speed|carrier|5g|4g|lte|vowifi|volte|kb\/s|mb\/s)\b/.test(q);
+  const isPriceQuery = /\b(price|amount|cost|total|balance|rs|inr|usd|\$|₹)\b/.test(q);
   const isEmailQuery = /\b(email|mail|gmail)\b/.test(q);
   const isPhoneQuery = /\b(phone|mobile|number|contact|call)\b/.test(q);
+  const isUrlQuery = /\b(url|link|website|domain|site)\b/.test(q);
+  const isHandleQuery = /\b(handle|username|account|id)\b/.test(q);
 
   const timePattern = /^(?:[01]?\d|2[0-3]):[0-5]\d(?:\s?[ap]m)?$/i;
+  const batteryPercentPattern = /^\d{1,3}%$/;
+  const batteryNumPattern = /^(?:100|[1-9]?\d)$/;
+  const networkPattern = /^(?:vowifi|volte|wifi|wi-fi|5g|4g|3g|lte|vo|kb\/s|mb\/s)$/i;
   const pricePattern = /^(?:[₹$€£]\s*\d[\d,.]*|\d[\d,.]*\s?(?:rs|inr|usd))$/i;
   const emailPattern = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
   const phonePattern = /(?:\+?\d[\d\s-]{5,}\d)/;
+  const urlPattern = /(?:https?:\/\/|www\.|[a-z0-9-]+\.(?:com|org|net|app|io|dev|in)\b)/i;
+  const handlePattern = /^@[a-z0-9_.]{2,}$/i;
 
-  const stopWords = new Set(['blur', 'redact', 'hide', 'mask', 'only', 'the', 'this', 'image', 'screenshot', 'in', 'from', 'all', 'please', 'my']);
+  const stopWords = new Set(['blur', 'redact', 'hide', 'mask', 'only', 'the', 'this', 'image', 'screenshot', 'in', 'from', 'all', 'please', 'my', 'and', 'or']);
   const keywords = q
     .replace(/[^\w\s:]/g, ' ')
     .split(/\s+/)
@@ -1193,11 +1202,24 @@ function deterministicRedactHintFallback(
   for (const hint of ocrWordHints) {
     const t = hint.text.trim();
     if (!t) continue;
+    const [ymin, xmin] = hint.box_2d;
+    const inTopStatusBar = ymin <= 85;
+    const inTopRightStatus = ymin <= 85 && xmin >= 620;
+
     let matched = false;
     let label = 'Match';
     if (isTimeQuery && timePattern.test(t)) {
       matched = true;
       label = 'Time';
+    } else if (
+      isBatteryQuery &&
+      (batteryPercentPattern.test(t) || (inTopRightStatus && batteryNumPattern.test(t)))
+    ) {
+      matched = true;
+      label = 'Battery';
+    } else if (isNetworkQuery && (networkPattern.test(t) || (inTopStatusBar && /(?:kb|mb)\/s/i.test(t)))) {
+      matched = true;
+      label = 'Network';
     } else if (isPriceQuery && pricePattern.test(t)) {
       matched = true;
       label = 'Amount';
@@ -1207,6 +1229,12 @@ function deterministicRedactHintFallback(
     } else if (isPhoneQuery && phonePattern.test(t)) {
       matched = true;
       label = 'Phone';
+    } else if (isUrlQuery && urlPattern.test(t)) {
+      matched = true;
+      label = 'URL';
+    } else if (isHandleQuery && handlePattern.test(t)) {
+      matched = true;
+      label = 'Handle';
     } else if (keywords.some((kw) => t.toLowerCase().includes(kw))) {
       matched = true;
       label = keywords[0];
@@ -1231,7 +1259,7 @@ function deterministicRedactHintFallback(
 /**
  * Targeted AI Visual & Textual Redaction:
  * Locates ONLY the exact region(s) requested by the user's natural-language prompt
- * using multimodal vision grounding plus optional tight OCR word coordinates.
+ * using multimodal vision grounding, Groq semantic OCR reasoning, and tight word coordinates.
  */
 export async function detectAiRedactTargets(
   filePath: string,
@@ -1249,7 +1277,7 @@ export async function detectAiRedactTargets(
   );
 
   const compactHints = ocrWordHints
-    .slice(0, 120)
+    .slice(0, 140)
     .filter((h) => h && typeof h.text === 'string' && Array.isArray(h.box_2d) && h.box_2d.length === 4);
 
   const hintsSection =
@@ -1257,59 +1285,108 @@ export async function detectAiRedactTargets(
       ? `\nOCR word boxes (0..1000 [ymin,xmin,ymax,xmax]):\n${JSON.stringify(compactHints)}\n`
       : '';
 
-  const redactPrompt = `Locate ONLY pixels matching "${instruction}". Return tight boxes in normalized 0..1000 [ymin, xmin, ymax, xmax] coordinates.
-Rules:
-- Mask ONLY elements matching "${instruction}". Nothing unrelated.
-- For readable text (time like "9:41", prices, names, phones, OTP), keep boxes tightly cropped around those characters (prefer matching OCR word boxes when given).
-- If user asks for "time", include clock/timestamps only (exclude battery, dates, signal, sender names).
-- For visual targets ("face", "shirt", "logo", "person"), tightly box that subject.
-- Return {"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"1-2 word label","matched_text":"text or empty"}],"summary":"short confirmation"} JSON only.
+  const redactPrompt = `You are RECALL's surgical privacy redaction vision system.
+Locate ALL tight bounding boxes matching this user instruction: "${instruction}".
+Coordinates MUST use 0..1000 integers [ymin, xmin, ymax, xmax].
+
+DETECTION KNOWLEDGE:
+- Mask ONLY pixels matching "${instruction}". Exclude unrelated nearby items.
+- Battery / Status bar: "battery" / "battery percentage" / "charge" includes the battery glyph and numeric level (e.g. "53", "53%", "100%") typically in the top status bar corner (ymin 10..60, xmin 780..980).
+- Network / Wifi: "wifi" / "signal" / "network" / "speed" includes Wi-Fi/VoWiFi icon or label, signal bars, 5G/4G/LTE, or data speed ("62.7 KB/s").
+- Time / Clock: "time" includes status bar clock (e.g. "10:20", "9:41") and timestamps (exclude battery, dates, signal, names).
+- People & Chat: "face", "avatar" / "profile photo", "name" / "username" / "@handle", or specific requested message bubbles/calls.
+- Numbers & Links: "price", "amount", "balance", "phone", "email", "otp", "url" / "link".
+- Prefer tightly cropped OCR box coordinates when readable tokens are provided below.
+
+Return strict JSON ONLY:
+{"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"1-2 word label","matched_text":"text or empty"}],"summary":"concise confirmation"}
 ${hintsSection}`;
 
-  const withTimeout = async <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      return await Promise.race([
-        promise,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-        }),
-      ]);
-    } finally {
-      if (timer) clearTimeout(timer);
+  const callGeminiRestVision = async (
+    modelName: string,
+    disableThinking: boolean,
+    timeoutMs: number
+  ): Promise<AiRedactResult> => {
+    if (!geminiApiKey || !base64Data) throw new Error('Gemini unavailable');
+    const generationConfig: Record<string, unknown> = {
+      responseMimeType: 'application/json',
+      temperature: 0.05,
+      maxOutputTokens: 400,
+    };
+    if (disableThinking) {
+      generationConfig.thinkingConfig = { thinkingBudget: 0 };
     }
-  };
 
-  const callGeminiVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
-    if (!genAI || !geminiApiKey) throw new Error('Gemini unavailable');
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.05,
-        maxOutputTokens: 350,
-      },
-    });
-    const result = await withTimeout(
-      model.generateContent([
-        redactPrompt,
-        { inlineData: { data: base64Data!, mimeType: resolvedMime } },
-      ]),
-      timeoutMs,
-      modelName
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: redactPrompt },
+                { inlineData: { mimeType: resolvedMime, data: base64Data } },
+              ],
+            },
+          ],
+          generationConfig,
+        }),
+      }
     );
-    const parsed = safeParseJson(result.response.text().trim());
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Gemini ${modelName} HTTP ${res.status}: ${errText.slice(0, 140)}`);
+    }
+    const payload: any = await res.json();
+    const rawText = payload?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const parsed = safeParseJson(rawText.trim());
     return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
   };
 
-  const callMistralVision = async (timeoutMs: number): Promise<AiRedactResult> => {
-    if (!mistralApiKey) throw new Error('Mistral unavailable');
+  const callMistralVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
+    if (!mistralApiKey || !base64Data) throw new Error('Mistral unavailable');
     const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${mistralApiKey}`, 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({
-        model: 'pixtral-12b-2409',
+        model: modelName,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: redactPrompt },
+              { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
+            ],
+          },
+        ],
+        max_tokens: 400,
+        temperature: 0.05,
+      }),
+    });
+    if (!res.ok) throw new Error(`Mistral ${modelName} status ${res.status}`);
+    const data: any = await res.json();
+    const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+    return parseAiRedactResponse(parsed, `Mistral (${modelName})`);
+  };
+
+  const callOpenRouterVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
+    if (!openrouterApiKey || !base64Data) throw new Error('OpenRouter unavailable');
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${openrouterApiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://recall.dev',
+        'X-Title': 'Recall AI',
+      },
+      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify({
+        model: modelName,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -1324,51 +1401,121 @@ ${hintsSection}`;
         temperature: 0.05,
       }),
     });
-    if (!res.ok) throw new Error(`Mistral status ${res.status}`);
+    if (!res.ok) throw new Error(`OpenRouter ${modelName} status ${res.status}`);
     const data: any = await res.json();
     const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-    return parseAiRedactResponse(parsed, 'Mistral Pixtral 12B');
+    return parseAiRedactResponse(parsed, `OpenRouter (${modelName})`);
+  };
+
+  const callGroqSemanticOcrMatch = async (): Promise<AiRedactResult | null> => {
+    if (!groqApiKey || compactHints.length === 0) return null;
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(3500),
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'user',
+              content: `Select OCR tokens matching "${instruction}" from this list (0..1000 [ymin,xmin,ymax,xmax]):\n${JSON.stringify(
+                compactHints
+              )}\nNote: battery percentages often sit at top status bar (ymin<=70, xmin>=700) as e.g. "53" or "53%".\nReturn JSON {"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"short label","matched_text":"text"}],"summary":"concise confirmation"}.`,
+            },
+          ],
+          max_tokens: 350,
+          temperature: 0.05,
+        }),
+      });
+      if (!res.ok) return null;
+      const data: any = await res.json();
+      const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+      return parseAiRedactResponse(parsed, 'Groq LPU Semantic Matcher');
+    } catch (err) {
+      console.warn('Groq semantic OCR match failed:', err);
+      return null;
+    }
   };
 
   if (base64Data) {
-    // Hedge fast providers in parallel so worst-case latency stays near ~1-2.5s
-    const raceCandidates: Array<Promise<AiRedactResult>> = [];
-    let geminiDone = false;
+    let bestEmptyResult: AiRedactResult | null = null;
+    const requireDetectedTargets = async (runner: Promise<AiRedactResult>): Promise<AiRedactResult> => {
+      const res = await runner;
+      if (res.targets.length > 0) return res;
+      if (!bestEmptyResult) bestEmptyResult = res;
+      throw new Error(`${res.provider} returned 0 targets`);
+    };
 
-    if (genAI && geminiApiKey) {
-      raceCandidates.push(
-        callGeminiVision('gemini-flash-lite-latest', 4200).finally(() => {
-          geminiDone = true;
-        })
-      );
-    }
+    // Tier 1: Fast spatial grounding race across Gemini Flash-Lite variants
+    if (geminiApiKey) {
+      const tier1: Array<Promise<AiRedactResult>> = [];
+      let primaryWon = false;
 
-    if (mistralApiKey) {
-      raceCandidates.push(
-        (async () => {
-          if (genAI && geminiApiKey) {
-            await new Promise((r) => setTimeout(r, 650));
+      tier1.push(
+        requireDetectedTargets(callGeminiRestVision('gemini-3.1-flash-lite-preview', true, 6500)).then(
+          (res) => {
+            primaryWon = true;
+            return res;
           }
-          if (geminiDone) throw new Error('Superseded by fast primary response');
-          return callMistralVision(3500);
+        )
+      );
+
+      tier1.push(
+        (async () => {
+          await new Promise((r) => setTimeout(r, 2200));
+          if (primaryWon) throw new Error('Superseded');
+          return requireDetectedTargets(callGeminiRestVision('gemini-flash-lite-latest', false, 9500));
         })()
       );
-    }
 
-    if (raceCandidates.length > 0) {
-      try {
-        return await Promise.any(raceCandidates);
-      } catch (raceErr) {
-        console.warn('AI redact primary race fell back:', raceErr);
-      }
-    }
+      tier1.push(
+        (async () => {
+          await new Promise((r) => setTimeout(r, 3200));
+          if (primaryWon) throw new Error('Superseded');
+          return requireDetectedTargets(callGeminiRestVision('gemini-3.1-flash-lite', true, 9000));
+        })()
+      );
 
-    if (genAI && geminiApiKey) {
       try {
-        return await callGeminiVision('gemini-flash-latest', 4500);
+        return await Promise.any(tier1);
       } catch (err) {
-        console.warn('AI redact Gemini fallback attempt failed:', err);
+        console.warn('AI redact Gemini Tier 1 did not yield targets, trying secondary vision APIs:', err);
       }
+    }
+
+    // Tier 2: Secondary Multimodal APIs (Mistral Pixtral / Small & OpenRouter Vision)
+    const tier2: Array<Promise<AiRedactResult>> = [];
+    if (mistralApiKey) {
+      tier2.push(requireDetectedTargets(callMistralVision('pixtral-12b-2409', 5000)));
+      tier2.push(requireDetectedTargets(callMistralVision('mistral-small-latest', 5000)));
+    }
+    if (openrouterApiKey) {
+      tier2.push(requireDetectedTargets(callOpenRouterVision('openai/gpt-4o-mini', 5000)));
+    }
+
+    if (tier2.length > 0) {
+      try {
+        return await Promise.any(tier2);
+      } catch (err) {
+        console.warn('AI redact Tier 2 vision APIs finished without targets:', err);
+      }
+    }
+
+    // Tier 3: Groq LPU Semantic OCR Token Matching
+    const groqResult = await callGroqSemanticOcrMatch();
+    if (groqResult && groqResult.targets.length > 0) {
+      return groqResult;
+    }
+
+    const hintFallback = deterministicRedactHintFallback(instruction, compactHints);
+    if (hintFallback.targets.length > 0) {
+      return hintFallback;
+    }
+
+    if (bestEmptyResult) {
+      return bestEmptyResult;
     }
   }
 

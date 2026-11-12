@@ -1167,7 +1167,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
                 {/* Quick AI Targets + Mask Controls */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {(['Time', 'Prices', 'Names', 'Face'] as const).map((preset) => {
+                  {(['Time', 'Battery', 'Prices', 'Names', 'Face'] as const).map((preset) => {
                     const presetText = `Redact only ${preset.toLowerCase()}`;
                     const isSelected = aiRedactPrompt.trim().toLowerCase() === presetText.toLowerCase();
                     return (
