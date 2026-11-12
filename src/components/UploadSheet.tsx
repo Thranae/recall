@@ -45,7 +45,9 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
 
   const handleFilesAdded = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const newFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    const newFiles = Array.from(files).filter(
+      (f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|heif|svg)$/i.test(f.name)
+    );
     setSelectedFiles((prev) => {
       const combined = [...prev, ...newFiles];
       if (combined.length > MAX_UPLOAD_LIMIT) {
@@ -209,7 +211,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
               <input
                 ref={cameraInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 capture="environment"
                 onChange={(e) => handleFilesAdded(e.target.files)}
                 className="hidden"
@@ -217,7 +219,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 multiple
                 onChange={(e) => handleFilesAdded(e.target.files)}
                 className="hidden"

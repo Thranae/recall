@@ -1,5 +1,5 @@
-import React from 'react';
-import { MessageSquare, Trophy, ShoppingBag, FileText, Layers, Clock, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageSquare, Trophy, ShoppingBag, FileText, Layers, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
 
@@ -14,7 +14,33 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   searchResult,
   onClick,
 }) => {
-  const imageUrl = api.getImageUrl(screenshot.id);
+  const baseImageUrl = api.getImageUrl(screenshot.id);
+  const [retryState, setRetryState] = useState<{ id: string; count: number }>({
+    id: screenshot.id,
+    count: 0,
+  });
+  const [failedId, setFailedId] = useState<string | null>(null);
+
+  const retryCount = retryState.id === screenshot.id ? retryState.count : 0;
+  const imgFailed = failedId === screenshot.id;
+
+  const imageUrl =
+    retryCount > 0
+      ? `${baseImageUrl}${baseImageUrl.includes('?') ? '&' : '?'}v=${retryCount}`
+      : baseImageUrl;
+
+  const handleImageError = () => {
+    if (retryCount < 1) {
+      setTimeout(() => {
+        setRetryState((prev) => ({
+          id: screenshot.id,
+          count: (prev.id === screenshot.id ? prev.count : 0) + 1,
+        }));
+      }, 350);
+    } else {
+      setFailedId(screenshot.id);
+    }
+  };
 
   const getCategoryDetails = (cat: string) => {
     switch (cat) {
@@ -53,12 +79,35 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
       {/* Thumbnail Aspect Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100/50">
-        <img
-          src={imageUrl}
-          alt={screenshot.original_filename}
-          loading="lazy"
-          className="h-full w-full object-cover"
-        />
+        {imgFailed ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center text-slate-400">
+            <Layers className="h-5 w-5 text-slate-300" />
+            <span className="text-[10px] font-medium">Preview unavailable</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFailedId(null);
+                setRetryState((prev) => ({
+                  id: screenshot.id,
+                  count: (prev.id === screenshot.id ? prev.count : 0) + 1,
+                }));
+              }}
+              className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2 py-0.5 text-[9.5px] font-semibold text-[#3478F6] border border-slate-200 cursor-pointer"
+            >
+              <RefreshCw className="h-2.5 w-2.5" />
+              <span>Retry</span>
+            </button>
+          </div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={screenshot.original_filename}
+            loading="lazy"
+            onError={handleImageError}
+            className="h-full w-full object-cover"
+          />
+        )}
 
         {/* Minimal Liquid Glass Inner Stroke on Image */}
         <div

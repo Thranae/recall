@@ -237,8 +237,21 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const switchAuthMode = (nextMode: 'signin' | 'signup' | 'forgot_password') => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    if (nextMode === 'signin' || nextMode === 'signup') {
+      setEmail('');
+      setPassword('');
+      setName('');
+      setShowPassword(false);
+    }
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between bg-[#F3F7FC] px-6 pt-10 pb-8 text-[#172B4D] sm:mx-auto sm:max-w-md sm:justify-center sm:py-14 relative overflow-hidden">
+    <div className="relative flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-x-hidden bg-[#F3F7FC] px-6 py-8 text-[#172B4D]">
       {/* Subtle Ambient Arctic Blue Light */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div
@@ -265,19 +278,47 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         />
       </div>
 
-      {/* Brand & Hero */}
-      <div className="relative z-10 flex flex-col items-center text-center">
-        <RecallEmblem className="h-16 w-16 mb-3 rounded-[22px]" glow />
+      {/* Unified Centered Content Stack — keeps Brand & Slogan consistently anchored above forms */}
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center">
+        {/* Brand & Hero */}
+        <div
+          className="mb-5 flex flex-col items-center text-center"
+          style={{
+            animation: 'splashPhaseEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both',
+            willChange: 'transform, opacity',
+          }}
+        >
+          <div className="relative mb-3 flex items-center justify-center">
+            <div
+              className="pointer-events-none absolute h-24 w-24 rounded-full"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(52, 120, 246, 0.24) 0%, rgba(185, 217, 255, 0.12) 48%, transparent 72%)',
+                animation: 'splashAuraPulse 6s ease-in-out infinite',
+              }}
+            />
+            <div className="relative rounded-[22px] shadow-[0_12px_30px_-6px_rgba(37,99,235,0.34)] transition-transform duration-200 ease-out hover:scale-[1.03] active:scale-[0.97]">
+              <RecallEmblem className="h-15 w-15 rounded-[22px]" />
+            </div>
+          </div>
 
-        <h1 className="text-2xl font-bold tracking-tight text-[#172B4D]">RECALL</h1>
-        <p className="mt-1 text-xs text-[#4A5D78] font-medium">
-          Intelligent visual memory for personal screenshot history
-        </p>
-      </div>
+          <h1 className="font-['Outfit'] text-2xl font-extrabold tracking-[0.14em] text-[#172B4D] pl-[0.14em]">
+            RECALL
+          </h1>
+          <p className="mt-1 max-w-[260px] text-xs leading-relaxed text-[#4A5D78] font-medium">
+            Intelligent visual memory for personal screenshot history
+          </p>
+        </div>
 
-      {/* Main Liquid Glass Container */}
-      <div className="relative z-10 my-auto w-full py-5">
-        <div className="liquid-glass-container rounded-[28px] p-6 shadow-lg">
+        {/* Main Liquid Glass Container */}
+        <div
+          className="w-full"
+          style={{
+            animation: 'splashPhaseEnter 580ms cubic-bezier(0.16, 1, 0.3, 1) 70ms both',
+            willChange: 'transform, opacity',
+          }}
+        >
+          <div className="liquid-glass-container rounded-[28px] p-5 sm:p-6 shadow-lg">
           {mode === 'otp_verify' ? (
             /* --- OTP Verification Mode (Packwise standard) --- */
             <div className="space-y-4">
@@ -417,26 +458,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 <div className="mb-4 grid grid-cols-2 gap-2.5 w-full">
                   <button
                     type="button"
-                    onClick={() => {
-                      setMode('signin');
-                      setError(null);
-                      setSuccessMessage(null);
-                    }}
-                    className={`liquid-filter-chip w-full flex items-center justify-center ${
-                      mode === 'signin' ? 'liquid-filter-chip-active' : ''
+                    onClick={() => switchAuthMode('signin')}
+                    className={`liquid-filter-chip w-full flex items-center justify-center transition-[transform,box-shadow,background-color] duration-200 ease-out cursor-pointer ${
+                      mode === 'signin' ? 'liquid-filter-chip-active text-[#172B4D] font-bold' : 'text-slate-600 font-semibold'
                     }`}
                   >
                     Sign In
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setMode('signup');
-                      setError(null);
-                      setSuccessMessage(null);
-                    }}
-                    className={`liquid-filter-chip w-full flex items-center justify-center ${
-                      mode === 'signup' ? 'liquid-filter-chip-active' : ''
+                    onClick={() => switchAuthMode('signup')}
+                    className={`liquid-filter-chip w-full flex items-center justify-center transition-[transform,box-shadow,background-color] duration-200 ease-out cursor-pointer ${
+                      mode === 'signup' ? 'liquid-filter-chip-active text-[#172B4D] font-bold' : 'text-slate-600 font-semibold'
                     }`}
                   >
                     Create Account
@@ -446,10 +479,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 <div className="mb-4 flex items-center justify-between">
                   <button
                     type="button"
-                    onClick={() => {
-                      setMode('signin');
-                      setError(null);
-                    }}
+                    onClick={() => switchAuthMode('signin')}
                     className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
                   >
                     <ChevronLeft className="h-4 w-4 stroke-[2]" />
@@ -472,7 +502,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-3 relative z-10">
+              <form
+                key={mode}
+                onSubmit={handleSubmit}
+                className="space-y-3 relative z-10"
+                style={{
+                  animation: 'splashPhaseEnter 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                }}
+              >
                 {mode === 'signup' && (
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1 px-1">
@@ -482,6 +519,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       <UserIcon className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
                       <input
                         type="text"
+                        autoComplete="name"
                         value={name}
                         onChange={(e) => {
                           setName(e.target.value);
@@ -503,6 +541,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
                     <input
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
@@ -522,10 +561,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       {mode === 'signin' && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setMode('forgot_password');
-                            setError(null);
-                          }}
+                          onClick={() => switchAuthMode('forgot_password')}
                           className="text-[11px] font-medium text-[#208AEF] hover:underline cursor-pointer"
                         >
                           Forgot password?
@@ -536,6 +572,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       <Lock className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
                       <input
                         type={showPassword ? 'text' : 'password'}
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
@@ -584,13 +621,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               </form>
             </>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* Security Statement */}
-      <div className="relative z-10 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500 font-medium">
-        <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.2]" />
-        <span>End-to-end user isolation • 100% private library</span>
+        {/* Security Statement */}
+        <div className="mt-5 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500 font-medium">
+          <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.2]" />
+          <span>End-to-end user isolation • 100% private library</span>
+        </div>
       </div>
     </div>
   );

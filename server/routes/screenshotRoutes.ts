@@ -7,6 +7,7 @@ import { answerImageQuestion, analyzeScreenshot, generateSmartCoachInsights } fr
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
 import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/embeddings';
+import { ensureWebCompatibleImage, isHeicFormat, detectImageMimeType } from '../utils/imageConverter';
 
 const router = Router();
 
@@ -48,10 +49,11 @@ const upload = multer({
   storage,
   limits: { fileSize: 35 * 1024 * 1024, files: 50 }, // 35 MB per file, up to 50 files
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    const isImageExt = /\.(png|jpe?g|webp|gif|heic|heif|svg)$/i.test(file.originalname || '');
+    if (file.mimetype.startsWith('image/') || isImageExt) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files (PNG, JPG, WEBP, SVG) are supported'));
+      cb(new Error('Only image files (PNG, JPG, WEBP, HEIC, SVG) are supported'));
     }
   },
 });
@@ -105,18 +107,35 @@ router.post(
         const storageKey = path.join(userId, file.filename).replace(/\\/g, '/');
         const now = new Date().toISOString();
 
+        let effectiveMime = file.mimetype || 'image/jpeg';
+        let effectiveFilename = file.originalname;
+        let effectiveSize = file.size;
         let base64Data: string | null = null;
         try {
           if (file.path && fs.existsSync(file.path)) {
-            base64Data = fs.readFileSync(file.path).toString('base64');
+            const rawBuffer = fs.readFileSync(file.path);
+            const normalized = await ensureWebCompatibleImage(
+              rawBuffer,
+              file.mimetype,
+              file.originalname
+            );
+            effectiveMime = normalized.mimeType;
+            effectiveFilename = normalized.filename;
+            effectiveSize = normalized.buffer.length;
+            if (normalized.converted) {
+              fs.writeFileSync(file.path, normalized.buffer);
+              file.mimetype = normalized.mimeType;
+              file.size = normalized.buffer.length;
+            }
+            base64Data = normalized.buffer.toString('base64');
           }
         } catch (e) {
-          console.warn('Could not read image file for base64 storage:', e);
+          console.warn('Could not read/normalize image file for storage:', e);
         }
 
         // Fast initial heuristic categorization (<1ms) based on filename
         let initialCategory = 'other';
-        const nameLower = file.originalname.toLowerCase();
+        const nameLower = effectiveFilename.toLowerCase();
         if (nameLower.includes('chat') || nameLower.includes('wa') || nameLower.includes('msg') || nameLower.includes('whatsapp') || nameLower.includes('telegram')) {
           initialCategory = 'chat';
         } else if (nameLower.includes('game') || nameLower.includes('bgmi') || nameLower.includes('pubg') || nameLower.includes('score')) {
@@ -139,11 +158,11 @@ router.post(
           screenshotId,
           userId,
           storageKey,
-          file.originalname,
-          file.mimetype,
+          effectiveFilename,
+          effectiveMime,
           null, // width (optional)
           null, // height (optional)
-          file.size,
+          effectiveSize,
           now,
           now,
           initialCategory,
@@ -160,7 +179,7 @@ router.post(
 
         createdScreenshots.push({
           id: screenshotId,
-          filename: file.originalname,
+          filename: effectiveFilename,
           storage_key: storageKey,
           category: initialCategory,
           status: 'processing',
@@ -495,21 +514,54 @@ router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response)
     }
 
     const fullPath = path.join(UPLOADS_BASE, row.storage_key);
+    let imgBuffer: Buffer | null = null;
     if (fs.existsSync(fullPath)) {
-      res.setHeader('Content-Type', row.mime_type || 'image/png');
-      res.setHeader('Cache-Control', 'private, max-age=86400');
-      fs.createReadStream(fullPath).pipe(res);
+      imgBuffer = fs.readFileSync(fullPath);
+    } else if (row.image_data) {
+      imgBuffer = Buffer.from(row.image_data, 'base64');
+    }
+
+    if (!imgBuffer) {
+      res.status(404).json({ error: 'Image file does not exist on disk' });
       return;
     }
 
-    if (row.image_data) {
-      res.setHeader('Content-Type', row.mime_type || 'image/png');
-      res.setHeader('Cache-Control', 'private, max-age=86400');
-      res.send(Buffer.from(row.image_data, 'base64'));
-      return;
+    // Self-heal legacy HEIC/HEIF images on-the-fly so non-Safari browsers always render them cleanly
+    if (isHeicFormat(imgBuffer, row.mime_type)) {
+      try {
+        const converted = await ensureWebCompatibleImage(imgBuffer, row.mime_type);
+        imgBuffer = converted.buffer;
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.writeFileSync(fullPath, converted.buffer);
+          } catch {}
+        }
+        try {
+          await db
+            .prepare('UPDATE screenshots SET mime_type = ?, file_size = ?, image_data = ?, updated_at = ? WHERE id = ?')
+            .run(
+              converted.mimeType,
+              converted.buffer.length,
+              converted.buffer.toString('base64'),
+              new Date().toISOString(),
+              id
+            );
+        } catch (persistErr) {
+          console.warn('Could not persist converted JPEG back to DB:', persistErr);
+        }
+        res.setHeader('Content-Type', converted.mimeType);
+        res.setHeader('Cache-Control', 'private, max-age=86400');
+        res.send(converted.buffer);
+        return;
+      } catch (convErr) {
+        console.error('On-the-fly HEIC conversion failed:', convErr);
+      }
     }
 
-    res.status(404).json({ error: 'Image file does not exist on disk' });
+    const contentType = detectImageMimeType(imgBuffer, row.mime_type);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.send(imgBuffer);
   } catch (err: any) {
     console.error('Image streaming error:', err);
     res.status(500).json({ error: 'Failed to stream image' });
