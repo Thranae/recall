@@ -479,6 +479,10 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response): Prom
 
 // 4. Secure Private Image Streaming (Token Authenticated)
 router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+
   try {
     const userId = req.user!.id;
     const userEmail = req.user?.email;
@@ -533,7 +537,8 @@ router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response)
           console.warn('Could not persist converted JPEG back to DB:', persistErr);
         }
         res.setHeader('Content-Type', converted.mimeType);
-        res.setHeader('Cache-Control', 'private, max-age=86400');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.send(converted.buffer);
         return;
       } catch (convErr) {
@@ -543,7 +548,8 @@ router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response)
 
     const contentType = detectImageMimeType(imgBuffer, row.mime_type);
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(imgBuffer);
   } catch (err: any) {
     console.error('Image streaming error:', err);

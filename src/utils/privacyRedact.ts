@@ -150,29 +150,13 @@ export async function loadUntaintedImage(
     return loadImageElement(imageUrl);
   }
 
-  // 2. Try loading directly via new Image with crossOrigin = 'anonymous'
+  // 2. Fetch the image directly and convert to Data URL
+  // Adding cache-busting query parameter avoids browser opaque image cache collisions
   try {
-    return await loadImageElement(imageUrl, 'anonymous');
-  } catch {
-    // 3. If direct element load fails, fetch as Blob and convert to permanent Data URL
-    try {
-      const headers: Record<string, string> = {};
-      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('recall_auth_token') : null;
-      // If imageUrl doesn't already contain ?token=, add Authorization header
-      if (token && !imageUrl.includes('token=')) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(imageUrl, {
-        headers,
-        mode: 'cors',
-        credentials: 'omit',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Image request failed (${response.status})`);
-      }
-
+    const separator = imageUrl.includes('?') ? '&' : '?';
+    const fetchUrl = `${imageUrl}${separator}_nocache=${Date.now()}`;
+    const response = await fetch(fetchUrl);
+    if (response.ok) {
       const blob = await response.blob();
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -180,12 +164,17 @@ export async function loadUntaintedImage(
         reader.onerror = () => reject(new Error('Failed to read image as Data URL'));
         reader.readAsDataURL(blob);
       });
-
       return await loadImageElement(dataUrl);
-    } catch (fetchErr) {
-      console.warn('loadUntaintedImage fallback warning:', fetchErr);
-      throw new Error('Unable to fetch image for redaction. Please check your network connection.');
     }
+  } catch (fetchErr) {
+    console.warn('loadUntaintedImage cache-busting fetch warning:', fetchErr);
+  }
+
+  // 3. Fallback: direct element loading
+  try {
+    return await loadImageElement(imageUrl, 'anonymous');
+  } catch {
+    return await loadImageElement(imageUrl);
   }
 }
 

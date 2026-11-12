@@ -894,7 +894,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 ref={previewImgRef}
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
-                crossOrigin="anonymous"
                 draggable={false}
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded ? 'max-h-[48dvh] sm:max-h-[56vh]' : 'max-h-56'
