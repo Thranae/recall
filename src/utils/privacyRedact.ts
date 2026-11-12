@@ -306,11 +306,13 @@ async function recognizeWordLines(
   return { wordLines, natW, natH, scaleX, scaleY, timedOut };
 }
 
-export async function extractOcrWordHints(
-  img: HTMLImageElement,
-  timeoutMs = 6000
-): Promise<Array<{ text: string; box_2d: [number, number, number, number] }>> {
-  const { wordLines, natW, natH, scaleX, scaleY } = await recognizeWordLines(img, timeoutMs);
+function buildWordHintsFromLines(
+  wordLines: Array<Array<{ text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }>>,
+  natW: number,
+  natH: number,
+  scaleX: number,
+  scaleY: number
+): Array<{ text: string; box_2d: [number, number, number, number] }> {
   const hints: Array<{ text: string; box_2d: [number, number, number, number] }> = [];
 
   for (const line of wordLines) {
@@ -322,22 +324,35 @@ export async function extractOcrWordHints(
       const ymax = Math.max(ymin + 1, Math.min(1000, Math.round(((word.bbox.y1 * scaleY) / natH) * 1000)));
       const xmax = Math.max(xmin + 1, Math.min(1000, Math.round(((word.bbox.x1 * scaleX) / natW) * 1000)));
       hints.push({ text, box_2d: [ymin, xmin, ymax, xmax] });
-      if (hints.length >= 180) return hints;
+      if (hints.length >= 160) return hints;
     }
   }
 
   return hints;
 }
 
+export async function extractOcrWordHints(
+  img: HTMLImageElement,
+  timeoutMs = 5000
+): Promise<Array<{ text: string; box_2d: [number, number, number, number] }>> {
+  const { wordLines, natW, natH, scaleX, scaleY } = await recognizeWordLines(img, timeoutMs);
+  return buildWordHintsFromLines(wordLines, natW, natH, scaleX, scaleY);
+}
+
 export async function detectSensitiveRegions(
   img: HTMLImageElement,
   options?: { timeoutMs?: number; extraHintTokens?: string[] }
-): Promise<{ boxes: RedactRegion[]; timedOut: boolean }> {
+): Promise<{
+  boxes: RedactRegion[];
+  timedOut: boolean;
+  wordHints: Array<{ text: string; box_2d: [number, number, number, number] }>;
+}> {
   const hintSet = new Set((options?.extraHintTokens || []).map((t) => t.toLowerCase()));
   const { wordLines, natW, natH, scaleX, scaleY, timedOut } = await recognizeWordLines(
     img,
     options?.timeoutMs ?? 12000
   );
+  const wordHints = buildWordHintsFromLines(wordLines, natW, natH, scaleX, scaleY);
 
   const boxes: RedactRegion[] = [];
 
@@ -424,7 +439,7 @@ export async function detectSensitiveRegions(
     }
   }
 
-  return { boxes, timedOut };
+  return { boxes, timedOut, wordHints };
 }
 
 function drawPrivacyMask(
@@ -464,7 +479,7 @@ export async function composeRedactedImage(
   const natH = img.naturalHeight || img.height || 1;
 
   // Keep output fast & mobile-safe (within iOS Safari's canvas pixel limits) while preserving sharp resolution
-  const maxOutDim = 2048;
+  const maxOutDim = 1600;
   const scale = Math.max(natW, natH) > maxOutDim ? maxOutDim / Math.max(natW, natH) : 1;
   const outW = Math.max(1, Math.round(natW * scale));
   const outH = Math.max(1, Math.round(natH * scale));

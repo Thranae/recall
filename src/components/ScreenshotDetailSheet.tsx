@@ -94,6 +94,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isRedactedMode, setIsRedactedMode] = useState(false);
   const [isRedacting, setIsRedacting] = useState(false);
   const [aiRedactPrompt, setAiRedactPrompt] = useState('');
+  const [activeAiInstruction, setActiveAiInstruction] = useState('');
   const [isAiRedacting, setIsAiRedacting] = useState(false);
   const [aiRedactSummary, setAiRedactSummary] = useState<string | null>(null);
   const [redactBars, setRedactBars] = useState(false);
@@ -157,6 +158,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setCopiedReplyIdx(null);
     setIsRedactedMode(false);
     setAiRedactPrompt('');
+    setActiveAiInstruction('');
     setIsAiRedacting(false);
     setAiRedactSummary(null);
     setRedactedResult(null);
@@ -299,9 +301,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         .join('\n');
       const extraHintTokens = extractSensitiveHintsFromText(hintSource);
 
-      const { boxes: detected } = await detectSensitiveRegions(img, {
+      const { boxes: detected, wordHints } = await detectSensitiveRegions(img, {
         extraHintTokens,
       });
+      if (wordHints.length > 0) {
+        ocrWordHintsRef.current = wordHints;
+      }
 
       setAutoRedactBoxes(detected);
       setAiRedactSummary(null);
@@ -321,8 +326,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     if (!screenshotId || isAiRedacting || isRedacting) return;
     const instruction = (customInstruction ?? aiRedactPrompt).trim();
     if (!instruction) return;
-    if (customInstruction) setAiRedactPrompt(customInstruction);
 
+    setActiveAiInstruction(instruction);
     setIsAiRedacting(true);
     setRedactError(null);
     setAiRedactSummary(null);
@@ -331,14 +336,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId)));
       loadedRedactImgRef.current = img;
 
+      // Never block AI redaction on client Tesseract WASM; warm hints quietly for follow-up runs
       if (!ocrWordHintsRef.current) {
-        ocrWordHintsRef.current = await extractOcrWordHints(img, 6000);
+        void extractOcrWordHints(img, 4500)
+          .then((hints) => {
+            if (!ocrWordHintsRef.current && hints.length > 0) {
+              ocrWordHintsRef.current = hints;
+            }
+          })
+          .catch(() => {});
       }
 
       const res = await api.aiRedactScreenshot(
         screenshotId,
         instruction,
-        ocrWordHintsRef.current
+        ocrWordHintsRef.current || []
       );
 
       const aiRegions: RedactRegion[] = res.targets.map((t) => ({
@@ -354,6 +366,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       setRedactBars(false);
       setAutoRedactBoxes(aiRegions);
       setAiRedactSummary(res.summary);
+      setAiRedactPrompt('');
       await rebuildRedactedPreview(img, aiRegions, manualRedactBoxes, false);
       triggerInkWipeOverlay(aiRegions, 'ai');
     } catch (err: unknown) {
@@ -363,6 +376,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       );
     } finally {
       setIsAiRedacting(false);
+      setActiveAiInstruction('');
     }
   };
 
@@ -903,8 +917,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                         <span className="h-1.5 w-1.5 rounded-full bg-[#60A5FA]" />
                       </span>
                       <span className="truncate">
-                        {aiRedactPrompt.trim()
-                          ? `AI locating “${aiRedactPrompt.trim()}”…`
+                        {activeAiInstruction || aiRedactPrompt.trim()
+                          ? `AI locating “${activeAiInstruction || aiRedactPrompt.trim()}”…`
                           : 'AI locating target…'}
                       </span>
                     </div>
@@ -1117,17 +1131,25 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
                 {/* Quick AI Targets + Mask Controls */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {(['Time', 'Prices', 'Names', 'Face'] as const).map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      disabled={isAiRedacting || isRedacting}
-                      onClick={() => handleRunAiRedact(`Redact only ${preset.toLowerCase()}`)}
-                      className="rounded-full bg-white/90 hover:bg-white text-slate-700 border border-slate-200/80 px-2.5 py-0.5 text-[10px] font-medium active:scale-[0.97] cursor-pointer disabled:opacity-50"
-                    >
-                      {preset}
-                    </button>
-                  ))}
+                  {(['Time', 'Prices', 'Names', 'Face'] as const).map((preset) => {
+                    const presetText = `Redact only ${preset.toLowerCase()}`;
+                    const isSelected = aiRedactPrompt.trim().toLowerCase() === presetText.toLowerCase();
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        disabled={isAiRedacting || isRedacting}
+                        onClick={() => setAiRedactPrompt(presetText)}
+                        className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium active:scale-[0.97] cursor-pointer transition-colors disabled:opacity-50 ${
+                          isSelected
+                            ? 'bg-[#0B1220] text-white border-[#0B1220]'
+                            : 'bg-white/90 hover:bg-white text-slate-700 border-slate-200/80'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
 
                   <button
                     type="button"

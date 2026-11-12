@@ -53143,40 +53143,37 @@ async function detectAiRedactTargets(filePath, mimeType, originalFilename, fallb
     originalFilename,
     fallbackBase64
   );
-  const compactHints = ocrWordHints.slice(0, 180).filter((h) => h && typeof h.text === "string" && Array.isArray(h.box_2d) && h.box_2d.length === 4);
+  const compactHints = ocrWordHints.slice(0, 120).filter((h) => h && typeof h.text === "string" && Array.isArray(h.box_2d) && h.box_2d.length === 4);
   const hintsSection = compactHints.length > 0 ? `
-Measured OCR word tokens on a 0..1000 [ymin, xmin, ymax, xmax] grid:
+OCR word boxes (0..1000 [ymin,xmin,ymax,xmax]):
 ${JSON.stringify(compactHints)}
 ` : "";
-  const redactPrompt = `You are RECALL's surgical privacy redaction vision system.
-The user wants to mask ONLY specific item(s) matching this instruction:
-"${instruction}"
-
-STRICT RULES:
-1. Return tight bounding boxes ONLY for the requested item(s) in "targets". Do NOT redact anything else in the image unless it directly matches "${instruction}".
-2. Coordinates in "box_2d" MUST use [ymin, xmin, ymax, xmax] integers in the normalized 0..1000 image coordinate space (0 = top/left edge, 1000 = bottom/right edge).
-3. If the requested item is readable text (for example: time like "9:41" or "10:30 PM", date, price, phone number, OTP, name, handle, URL) AND matching tokens exist in the Measured OCR word tokens list below, use those exact tight bounds (or the minimal union covering a multi-word target). Keep the box tight around only those characters\u2014never include nearby unrelated words or empty margin.
-4. Notice special care for "time": if user asks to redact "the time", include visible clock/time indicators (such as status bar time or chat message timestamps if relevant), and do NOT include battery percentage, signal bars, dates unless requested, or sender names.
-5. If the requested item is visual (such as "face", "shirt", "logo", "person", "background photo", "status bar"), return tight bounds strictly enclosing that visual subject.
-6. If multiple instances match the user's instruction cleanly, return each separate tight box; if nothing in the image matches, return an empty array "targets": [].
-${hintsSection}
-Return STRICTLY valid JSON:
-{
-  "targets": [
-    {
-      "box_2d": [16, 44, 38, 128],
-      "label": "Short 1-2 word label",
-      "matched_text": "Exact visible text if textual, otherwise empty string"
-    }
-  ],
-  "summary": "Brief 1-sentence confirmation of what was targeted"
-}`;
+  const redactPrompt = `Locate ONLY pixels matching "${instruction}". Return tight boxes in normalized 0..1000 [ymin, xmin, ymax, xmax] coordinates.
+Rules:
+- Mask ONLY elements matching "${instruction}". Nothing unrelated.
+- For readable text (time like "9:41", prices, names, phones, OTP), keep boxes tightly cropped around those characters (prefer matching OCR word boxes when given).
+- If user asks for "time", include clock/timestamps only (exclude battery, dates, signal, sender names).
+- For visual targets ("face", "shirt", "logo", "person"), tightly box that subject.
+- Return {"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"1-2 word label","matched_text":"text or empty"}],"summary":"short confirmation"} JSON only.
+${hintsSection}`;
   const visionModels = [
+    "gemini-flash-lite-latest",
     "gemini-flash-latest",
-    "gemini-3.5-flash",
-    "gemini-2.5-flash",
-    "gemini-flash-lite-latest"
+    "gemini-2.5-flash"
   ];
+  const withTimeout = async (promise, ms, label) => {
+    let timer;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        })
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
   if (base64Data) {
     if (genAI && geminiApiKey) {
       for (const modelName of visionModels) {
@@ -53185,18 +53182,54 @@ Return STRICTLY valid JSON:
             model: modelName,
             generationConfig: {
               responseMimeType: "application/json",
-              temperature: 0.05
+              temperature: 0.05,
+              maxOutputTokens: 350
             }
           });
-          const result = await model.generateContent([
-            redactPrompt,
-            { inlineData: { data: base64Data, mimeType: resolvedMime } }
-          ]);
+          const result = await withTimeout(
+            model.generateContent([
+              redactPrompt,
+              { inlineData: { data: base64Data, mimeType: resolvedMime } }
+            ]),
+            modelName === "gemini-flash-lite-latest" ? 5500 : 7500,
+            modelName
+          );
           const parsed = safeParseJson(result.response.text().trim());
           return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
         } catch (err) {
           console.warn(`AI redact Gemini (${modelName}) attempt failed:`, err);
         }
+      }
+    }
+    if (mistralApiKey) {
+      try {
+        const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${mistralApiKey}`, "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(6e3),
+          body: JSON.stringify({
+            model: "pixtral-12b-2409",
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: redactPrompt },
+                  { type: "image_url", image_url: { url: `data:${resolvedMime};base64,${base64Data}` } }
+                ]
+              }
+            ],
+            max_tokens: 350,
+            temperature: 0.05
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const parsed = safeParseJson(data.choices?.[0]?.message?.content || "{}");
+          return parseAiRedactResponse(parsed, "Mistral Pixtral 12B");
+        }
+      } catch (err) {
+        console.warn("AI redact Mistral attempt failed:", err);
       }
     }
     if (openrouterApiKey) {
@@ -53209,6 +53242,7 @@ Return STRICTLY valid JSON:
             "HTTP-Referer": "https://recall.dev",
             "X-Title": "Recall AI"
           },
+          signal: AbortSignal.timeout(5e3),
           body: JSON.stringify({
             model: "openai/gpt-4o-mini",
             messages: [
@@ -53221,7 +53255,7 @@ Return STRICTLY valid JSON:
               }
             ],
             response_format: { type: "json_object" },
-            max_tokens: 700,
+            max_tokens: 350,
             temperature: 0.05
           })
         });
@@ -53232,35 +53266,6 @@ Return STRICTLY valid JSON:
         }
       } catch (err) {
         console.warn("AI redact OpenRouter attempt failed:", err);
-      }
-    }
-    if (mistralApiKey) {
-      try {
-        const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${mistralApiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "pixtral-12b-2409",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: redactPrompt },
-                  { type: "image_url", image_url: `data:${resolvedMime};base64,${base64Data}` }
-                ]
-              }
-            ],
-            max_tokens: 700,
-            temperature: 0.05
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const parsed = safeParseJson(data.choices?.[0]?.message?.content || "{}");
-          return parseAiRedactResponse(parsed, "Mistral Pixtral 12B");
-        }
-      } catch (err) {
-        console.warn("AI redact Mistral attempt failed:", err);
       }
     }
   }
