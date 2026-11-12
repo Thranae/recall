@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Trophy,
   Maximize2,
+  Minimize2,
   RefreshCw,
   Eye,
   HardDrive,
@@ -755,7 +756,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     .filter(Boolean).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4 overscroll-none">
       {/* Dismiss backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
@@ -780,6 +781,19 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {isImageExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsImageExpanded(false)}
+                title="Collapse image preview"
+                aria-label="Collapse image preview"
+                className="flex h-8 items-center gap-1 rounded-full bg-[#0B1220] px-2.5 text-[11px] font-semibold text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                <Minimize2 className="h-3 w-3 stroke-[2.2]" />
+                <span>Collapse</span>
+              </button>
+            )}
+
             {/* Re-Analyze with AI Button */}
             <button
               type="button"
@@ -818,7 +832,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-4 space-y-4">
           {/* Image Preview with Plump Liquid Glass Frame */}
           <div className="space-y-2">
             <div
@@ -831,7 +845,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 setDragRect(null);
               }}
               className={`relative min-h-[120px] flex items-center justify-center overflow-hidden rounded-[22px] border border-white/90 bg-slate-100/60 shadow-sm ${
-                isRedactedMode ? 'cursor-crosshair touch-none select-none' : ''
+                isRedactedMode ? 'cursor-crosshair touch-none select-none' : 'touch-pan-y'
               }`}
             >
               <img
@@ -840,7 +854,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 alt="Screenshot Preview"
                 draggable={false}
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
-                  isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
+                  isImageExpanded ? 'max-h-[48dvh] sm:max-h-[56vh]' : 'max-h-56'
                 } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'}`}
               />
 
@@ -1067,18 +1081,31 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   </span>
                 </button>
 
+                {!isImageExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setIsImageExpanded(true)}
+                    disabled={isRedacting || isAiRedacting}
+                    className={`flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
+                      isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
+                    }`}
+                  >
+                    <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
+                    <span>Expand</span>
+                  </button>
+                )}
+              </div>
+
+              {isImageExpanded && !(isRedacting || isAiRedacting) && (
                 <button
                   type="button"
-                  onClick={() => setIsImageExpanded(!isImageExpanded)}
-                  disabled={isRedacting || isAiRedacting}
-                  className={`flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
-                    isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
-                  }`}
+                  onClick={() => setIsImageExpanded(false)}
+                  className="pointer-events-auto absolute top-2.5 right-2.5 z-20 flex items-center gap-1 rounded-full bg-[#0B1220]/85 border border-white/25 px-2.5 py-1 text-[9.5px] font-bold text-white backdrop-blur-md active:scale-95 cursor-pointer shadow-xs"
                 >
-                  <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-                  <span>{isImageExpanded ? 'Collapse' : 'Expand'}</span>
+                  <Minimize2 className="h-3 w-3 stroke-[2.2]" />
+                  <span>Collapse</span>
                 </button>
-              </div>
+              )}
             </div>
 
             {redactError && (
