@@ -96,11 +96,17 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
   const [redactError, setRedactError] = useState<string | null>(null);
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-  const [redactRevealSeq, setRedactRevealSeq] = useState(0);
+  const [autoInkMasks, setAutoInkMasks] = useState<
+    Array<{ id: string; left: number; top: number; width: number; height: number; delayMs: number }>
+  >([]);
+  const [manualInkMasks, setManualInkMasks] = useState<
+    Array<{ id: string; left: number; top: number; width: number; height: number }>
+  >([]);
   const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
   const loadedRedactImgRef = useRef<HTMLImageElement | null>(null);
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
+  const animTimersRef = useRef<number[]>([]);
   const dragSessionRef = useRef<{
     normX: number;
     normY: number;
@@ -150,7 +156,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setManualRedactBoxes([]);
     setRedactError(null);
     setDragRect(null);
-    setRedactRevealSeq(0);
+    setAutoInkMasks([]);
+    setManualInkMasks([]);
+    animTimersRef.current.forEach((id) => window.clearTimeout(id));
+    animTimersRef.current = [];
     loadedRedactImgRef.current = null;
     dragSessionRef.current = null;
     if (!screenshotId) {
@@ -209,7 +218,28 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     ];
     const composed = await composeRedactedImage(img, combinedBoxes);
     setRedactedResult(composed);
-    setRedactRevealSeq((n) => n + 1);
+  };
+
+  const toOverlayRect = (
+    box: RedactRegion,
+    bounds: { left: number; top: number; width: number; height: number; containerLeft: number; containerTop: number }
+  ) => {
+    const rawW = box.w * bounds.width;
+    const rawH = box.h * bounds.height;
+    const padX = Math.max(2, Math.min(rawW, rawH) * 0.22);
+    const padY = Math.max(1.5, Math.min(rawW, rawH) * 0.18);
+    const imgOffsetX = bounds.left - bounds.containerLeft;
+    const imgOffsetY = bounds.top - bounds.containerTop;
+    const left = Math.max(imgOffsetX, imgOffsetX + box.x * bounds.width - padX);
+    const top = Math.max(imgOffsetY, imgOffsetY + box.y * bounds.height - padY);
+    const maxW = imgOffsetX + bounds.width - left;
+    const maxH = imgOffsetY + bounds.height - top;
+    return {
+      left,
+      top,
+      width: Math.max(6, Math.min(maxW, rawW + padX * 2)),
+      height: Math.max(6, Math.min(maxH, rawH + padY * 2)),
+    };
   };
 
   const runPrivacyRedaction = async (includeBars: boolean) => {
@@ -235,6 +265,20 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
       setAutoRedactBoxes(detected);
       await rebuildRedactedPreview(img, detected, manualRedactBoxes, includeBars);
+      const bounds = getRenderedImageBounds();
+      const allAutoRegions = [...getStatusBarRegions(includeBars, includeBars), ...detected];
+      if (bounds && allAutoRegions.length > 0) {
+        const wipeBatch = allAutoRegions.slice(0, 18).map((box, idx) => ({
+          id: `auto-${Date.now()}-${idx}`,
+          ...toOverlayRect(box, bounds),
+          delayMs: Math.min(idx * 32, 180),
+        }));
+        setAutoInkMasks(wipeBatch);
+        const timerId = window.setTimeout(() => {
+          setAutoInkMasks([]);
+        }, 680);
+        animTimersRef.current.push(timerId);
+      }
       setIsRedactedMode(true);
     } catch (err: unknown) {
       console.error('Redaction error:', err);
@@ -412,6 +456,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
     const nextManual = [...manualRedactBoxes, newBox];
     setManualRedactBoxes(nextManual);
+
+    const settlingRect = toOverlayRect(newBox, bounds);
+    const maskId = `manual-${Date.now()}-${nextManual.length}`;
+    setManualInkMasks((prev) => [...prev, { id: maskId, ...settlingRect }]);
+    const cleanupTimer = window.setTimeout(() => {
+      setManualInkMasks((prev) => prev.filter((item) => item.id !== maskId));
+    }, 430);
+    animTimersRef.current.push(cleanupTimer);
+
     try {
       await rebuildRedactedPreview(
         loadedRedactImgRef.current,
@@ -666,51 +719,98 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               }`}
             >
               <img
-                key={isRedactedMode ? `redacted-${redactRevealSeq}` : 'original'}
                 ref={previewImgRef}
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
                 draggable={false}
-                style={
-                  isRedactedMode && redactRevealSeq > 0 && !isRedacting
-                    ? {
-                        animation: 'redactImageSettle 320ms cubic-bezier(0.23, 1, 0.32, 1) both',
-                        willChange: 'transform, opacity',
-                      }
-                    : undefined
-                }
                 className={`w-full select-none object-contain transition-[opacity,transform,max-height] duration-300 ease-out ${
                   isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
-                } ${isRedacting ? 'opacity-80 scale-[0.988]' : 'opacity-100 scale-100'}`}
+                } ${isRedacting ? 'opacity-95 scale-[0.996]' : 'opacity-100 scale-100'}`}
               />
 
+              {/* Dragging Preview: Frosted Obsidian Precision Lens */}
               {dragRect && (
                 <div
-                  className="pointer-events-none absolute z-[16] rounded-md border-2 border-[#3478F6] bg-[#3478F6]/20"
+                  className="pointer-events-none absolute z-[16] rounded-[6px] border border-white/60 bg-[#0B1220]/45 backdrop-blur-[3px] shadow-xs"
                   style={{
                     left: `${dragRect.left}px`,
                     top: `${dragRect.top}px`,
                     width: `${dragRect.width}px`,
                     height: `${dragRect.height}px`,
                   }}
-                />
+                >
+                  <span className="absolute -top-px -left-px h-2 w-2 border-t-[1.5px] border-l-[1.5px] border-white/90 rounded-tl-[4px]" />
+                  <span className="absolute -top-px -right-px h-2 w-2 border-t-[1.5px] border-r-[1.5px] border-white/90 rounded-tr-[4px]" />
+                  <span className="absolute -bottom-px -left-px h-2 w-2 border-b-[1.5px] border-l-[1.5px] border-white/90 rounded-bl-[4px]" />
+                  <span className="absolute -bottom-px -right-px h-2 w-2 border-b-[1.5px] border-r-[1.5px] border-white/90 rounded-br-[4px]" />
+                </div>
               )}
 
-              {isRedacting && (
-                <div className="pointer-events-none absolute inset-0 z-[16] overflow-hidden flex items-center justify-center bg-slate-900/10 backdrop-blur-[1.5px]">
+              {/* Auto-Redaction Wipe: Matte Ink Curtain Reveal Across Detected Boxes */}
+              {autoInkMasks.map((mask) => (
+                <div
+                  key={mask.id}
+                  className="pointer-events-none absolute z-[17] rounded-[6px] bg-[#0B1220] border border-white/15"
+                  style={{
+                    left: `${mask.left}px`,
+                    top: `${mask.top}px`,
+                    width: `${mask.width}px`,
+                    height: `${mask.height}px`,
+                    animation: `redactInkWipe 420ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
+                    willChange: 'clip-path, opacity',
+                  }}
+                />
+              ))}
+
+              {/* Manual-Redaction Release: Matte Ink Seal + Subtle Oblique Glint */}
+              {manualInkMasks.map((mask) => (
+                <div
+                  key={mask.id}
+                  className="pointer-events-none absolute z-[17] overflow-hidden rounded-[6px] bg-[#0B1220] border border-white/20"
+                  style={{
+                    left: `${mask.left}px`,
+                    top: `${mask.top}px`,
+                    width: `${mask.width}px`,
+                    height: `${mask.height}px`,
+                    animation: 'manualInkSeal 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                    willChange: 'transform, opacity',
+                  }}
+                >
                   <div
-                    className="absolute inset-x-0 top-0 h-24 pointer-events-none"
+                    className="absolute inset-y-0 left-0 w-1/2 pointer-events-none"
                     style={{
                       background:
-                        'linear-gradient(180deg, rgba(52, 120, 246, 0) 0%, rgba(52, 120, 246, 0.14) 88%, rgba(59, 130, 246, 0.65) 100%)',
-                      borderBottom: '1.5px solid rgba(59, 130, 246, 0.8)',
-                      animation: 'redactScanSweep 1.5s cubic-bezier(0.37, 0, 0.63, 1) infinite',
+                        'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%)',
+                      animation: 'manualSpecularPass 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
                       willChange: 'transform, opacity',
                     }}
                   />
-                  <div className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 border border-white px-3 py-1 text-[11px] font-semibold text-[#172B4D] shadow-sm">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
-                    <span>Masking sensitive areas...</span>
+                </div>
+              ))}
+
+              {/* Auto-Scan Animation: Quiet Optical Corner Brackets + Gossamer Specular Slit */}
+              {isRedacting && (
+                <div className="pointer-events-none absolute inset-0 z-[16] overflow-hidden">
+                  <span className="absolute top-3 left-3 h-3.5 w-3.5 border-t-[1.5px] border-l-[1.5px] border-white/85 rounded-tl-[4px] drop-shadow-xs" />
+                  <span className="absolute top-3 right-3 h-3.5 w-3.5 border-t-[1.5px] border-r-[1.5px] border-white/85 rounded-tr-[4px] drop-shadow-xs" />
+                  <span className="absolute bottom-3 left-3 h-3.5 w-3.5 border-b-[1.5px] border-l-[1.5px] border-white/85 rounded-bl-[4px] drop-shadow-xs" />
+                  <span className="absolute bottom-3 right-3 h-3.5 w-3.5 border-b-[1.5px] border-r-[1.5px] border-white/85 rounded-br-[4px] drop-shadow-xs" />
+
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      animation: 'redactOpticalRibbon 1.45s cubic-bezier(0.37, 0, 0.63, 1) infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  >
+                    <div
+                      className="h-7 w-full"
+                      style={{
+                        background:
+                          'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(191,219,254,0.18) 88%, rgba(255,255,255,0.75) 100%)',
+                        boxShadow: '0 1px 10px rgba(59, 130, 246, 0.35)',
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -732,18 +832,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   type="button"
                   onClick={handleToggleRedact}
                   disabled={isRedacting}
-                  className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-95 cursor-pointer shadow-xs transition-all ${
-                    isRedactedMode
-                      ? 'h-[21px] bg-[#172B4D] text-white border border-white/40'
+                  className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
+                    isRedactedMode || isRedacting
+                      ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
                       : 'liquid-category-badge text-[#172B4D]'
                   }`}
                 >
-                  {isRedacting ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Shield className={`h-3 w-3 stroke-[2.2] ${isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'}`} />
-                  )}
-                  <span>{isRedacting ? 'Scanning...' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+                  <Shield
+                    className={`h-3 w-3 stroke-[2.2] ${
+                      isRedacting
+                        ? 'text-sky-300 animate-pulse'
+                        : isRedactedMode
+                        ? 'text-emerald-300'
+                        : 'text-[#3478F6]'
+                    }`}
+                  />
+                  <span>{isRedacting ? 'Redacting…' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
                 </button>
 
                 <button
