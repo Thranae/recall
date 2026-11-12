@@ -291,7 +291,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setRedactError(null);
     try {
       const img =
-        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId)));
+        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId), previewImgRef.current));
       loadedRedactImgRef.current = img;
 
       const hintSource = [
@@ -334,7 +334,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setAiRedactSummary(null);
     try {
       const img =
-        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId)));
+        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId), previewImgRef.current));
       loadedRedactImgRef.current = img;
 
       // Never block AI redaction on client Tesseract WASM; warm hints quietly for follow-up runs
@@ -893,6 +893,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 ref={previewImgRef}
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
+                crossOrigin="anonymous"
                 draggable={false}
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded ? 'max-h-[48dvh] sm:max-h-[56vh]' : 'max-h-56'

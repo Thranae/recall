@@ -125,37 +125,66 @@ function loadImageElement(src: string, crossOrigin?: string): Promise<HTMLImageE
   });
 }
 
-export async function loadUntaintedImage(imageUrl: string): Promise<HTMLImageElement> {
+export async function loadUntaintedImage(
+  imageUrl: string,
+  existingImg?: HTMLImageElement | null
+): Promise<HTMLImageElement> {
+  // 1. If an existing image element is already fully loaded in the DOM, test if it can be drawn untainted
+  if (existingImg && existingImg.complete && existingImg.naturalWidth > 0) {
+    try {
+      const testCanvas = document.createElement('canvas');
+      testCanvas.width = 1;
+      testCanvas.height = 1;
+      const testCtx = testCanvas.getContext('2d');
+      if (testCtx) {
+        testCtx.drawImage(existingImg, 0, 0, 1, 1, 0, 0, 1, 1);
+        testCanvas.toDataURL('image/png'); // Throws SecurityError if tainted
+        return existingImg; // 100% untainted, in memory, 0 network calls!
+      }
+    } catch {
+      // tainted or error, fall through to safe loaders below
+    }
+  }
+
   if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return loadImageElement(imageUrl);
   }
 
-  // Fetch directly as Blob -> ObjectURL so Chrome/Safari HTTP cache never causes CORS-tainted canvas failures.
+  // 2. Try loading directly via new Image with crossOrigin = 'anonymous'
   try {
-    const headers: Record<string, string> = {};
+    return await loadImageElement(imageUrl, 'anonymous');
+  } catch {
+    // 3. If direct element load fails, fetch as Blob and convert to permanent Data URL
     try {
+      const headers: Record<string, string> = {};
       const token = typeof localStorage !== 'undefined' ? localStorage.getItem('recall_auth_token') : null;
-      if (token) headers.Authorization = `Bearer ${token}`;
-    } catch {}
+      // If imageUrl doesn't already contain ?token=, add Authorization header
+      if (token && !imageUrl.includes('token=')) {
+        headers.Authorization = `Bearer ${token}`;
+      }
 
-    const response = await fetch(imageUrl, { headers });
-    if (!response.ok) {
-      throw new Error(`Image request failed (${response.status})`);
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    try {
-      const img = await loadImageElement(objectUrl);
-      return img;
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  } catch (fetchErr) {
-    // Fallback for external hosts supporting anonymous CORS without fetch credentials
-    try {
-      return await loadImageElement(imageUrl, 'anonymous');
-    } catch {
-      throw fetchErr instanceof Error ? fetchErr : new Error('Could not load image onto privacy canvas.');
+      const response = await fetch(imageUrl, {
+        headers,
+        mode: 'cors',
+        credentials: 'omit',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Image request failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read image as Data URL'));
+        reader.readAsDataURL(blob);
+      });
+
+      return await loadImageElement(dataUrl);
+    } catch (fetchErr) {
+      console.warn('loadUntaintedImage fallback warning:', fetchErr);
+      throw new Error('Unable to fetch image for redaction. Please check your network connection.');
     }
   }
 }
