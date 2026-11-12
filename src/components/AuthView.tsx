@@ -17,6 +17,8 @@ import {
 import { api } from '../services/api';
 import type { User } from '../types';
 import { OtpInput } from './OtpInput';
+import { Capacitor } from '@capacitor/core';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
 declare global {
   interface Window {
@@ -137,6 +139,17 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     return () => clearInterval(interval);
   }, [initGoogleClient]);
 
+  // Initialize native Google Sign-In for Capacitor Android
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      GoogleSignIn.initialize({
+        clientId: GOOGLE_CLIENT_ID,
+      }).catch((err) => {
+        console.warn('Native GoogleSignIn initialize warning:', err);
+      });
+    }
+  }, []);
+
   // Clean up any pending Google timeout
   useEffect(() => {
     return () => {
@@ -157,14 +170,44 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     };
   }, [mode, resendTimer]);
 
-  const handleGoogleClick = () => {
+  const handleGoogleClick = async () => {
     setError(null);
+    setIsGoogleLoading(true);
+
+    // 1. Native Android: display device Google accounts in system bottom sheet
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await GoogleSignIn.signIn();
+        if (result?.idToken) {
+          const res = await api.loginGoogle({
+            credential: result.idToken,
+            email: result.email || undefined,
+            name: result.displayName || undefined,
+            picture: result.imageUrl || undefined,
+            sub: result.userId || undefined,
+          });
+          onAuthSuccess(res.user);
+          return;
+        }
+      } catch (nativeErr: any) {
+        console.warn('Native Google Sign-In attempt:', nativeErr);
+        const msg = (nativeErr?.message || String(nativeErr)).toLowerCase();
+        // If user cancelled, closed, or backed out of the account chooser
+        if (msg.includes('cancel') || msg.includes('16') || msg.includes('abort') || msg.includes('dismiss')) {
+          setIsGoogleLoading(false);
+          return;
+        }
+        console.info('Native accounts chooser fell back, checking web client...');
+      }
+    }
+
+    // 2. Web Desktop / Browser Fallback
     if (!initGoogleClient() || !tokenClientRef.current) {
+      setIsGoogleLoading(false);
       setError('Connecting to Google services... Please tap again in a moment.');
       return;
     }
 
-    setIsGoogleLoading(true);
     if (googleTimeoutRef.current) clearTimeout(googleTimeoutRef.current);
     // 60-second safety timeout so button never gets stuck in loading state
     googleTimeoutRef.current = setTimeout(() => {
