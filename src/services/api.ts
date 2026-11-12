@@ -1,6 +1,24 @@
 import type { User, Screenshot, ExtractedMessage, GameResult, SearchResponse } from '../types';
 
-const API_BASE = '/api';
+const getApiBase = (): string => {
+  if (typeof window === 'undefined') return '/api';
+
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl) return envUrl;
+
+  const isNative = Boolean((window as any).Capacitor?.isNativePlatform?.());
+  const isCapacitorOrigin =
+    window.location.protocol === 'capacitor:' ||
+    (window.location.hostname === 'localhost' && !window.location.port);
+
+  if (isNative || isCapacitorOrigin) {
+    return 'https://web-app-vert-nu.vercel.app/api';
+  }
+
+  return '/api';
+};
+
+const API_BASE = getApiBase();
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('recall_auth_token');
