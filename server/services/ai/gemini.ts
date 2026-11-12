@@ -1266,12 +1266,6 @@ Rules:
 - Return {"targets":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"1-2 word label","matched_text":"text or empty"}],"summary":"short confirmation"} JSON only.
 ${hintsSection}`;
 
-  const visionModels = [
-    'gemini-flash-lite-latest',
-    'gemini-flash-latest',
-    'gemini-2.5-flash',
-  ];
-
   const withTimeout = async <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -1286,100 +1280,94 @@ ${hintsSection}`;
     }
   };
 
+  const callGeminiVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
+    if (!genAI || !geminiApiKey) throw new Error('Gemini unavailable');
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.05,
+        maxOutputTokens: 350,
+      },
+    });
+    const result = await withTimeout(
+      model.generateContent([
+        redactPrompt,
+        { inlineData: { data: base64Data!, mimeType: resolvedMime } },
+      ]),
+      timeoutMs,
+      modelName
+    );
+    const parsed = safeParseJson(result.response.text().trim());
+    return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
+  };
+
+  const callMistralVision = async (timeoutMs: number): Promise<AiRedactResult> => {
+    if (!mistralApiKey) throw new Error('Mistral unavailable');
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${mistralApiKey}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify({
+        model: 'pixtral-12b-2409',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: redactPrompt },
+              { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
+            ],
+          },
+        ],
+        max_tokens: 350,
+        temperature: 0.05,
+      }),
+    });
+    if (!res.ok) throw new Error(`Mistral status ${res.status}`);
+    const data: any = await res.json();
+    const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+    return parseAiRedactResponse(parsed, 'Mistral Pixtral 12B');
+  };
+
   if (base64Data) {
+    // Hedge fast providers in parallel so worst-case latency stays near ~1-2.5s
+    const raceCandidates: Array<Promise<AiRedactResult>> = [];
+    let geminiDone = false;
+
     if (genAI && geminiApiKey) {
-      for (const modelName of visionModels) {
-        try {
-          const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.05,
-              maxOutputTokens: 350,
-            },
-          });
-          const result = await withTimeout(
-            model.generateContent([
-              redactPrompt,
-              { inlineData: { data: base64Data, mimeType: resolvedMime } },
-            ]),
-            modelName === 'gemini-flash-lite-latest' ? 5500 : 7500,
-            modelName
-          );
-          const parsed = safeParseJson(result.response.text().trim());
-          return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
-        } catch (err) {
-          console.warn(`AI redact Gemini (${modelName}) attempt failed:`, err);
-        }
-      }
+      raceCandidates.push(
+        callGeminiVision('gemini-flash-lite-latest', 4200).finally(() => {
+          geminiDone = true;
+        })
+      );
     }
 
     if (mistralApiKey) {
+      raceCandidates.push(
+        (async () => {
+          if (genAI && geminiApiKey) {
+            await new Promise((r) => setTimeout(r, 650));
+          }
+          if (geminiDone) throw new Error('Superseded by fast primary response');
+          return callMistralVision(3500);
+        })()
+      );
+    }
+
+    if (raceCandidates.length > 0) {
       try {
-        const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${mistralApiKey}`, 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(6000),
-          body: JSON.stringify({
-            model: 'pixtral-12b-2409',
-            response_format: { type: 'json_object' },
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: redactPrompt },
-                  { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
-                ],
-              },
-            ],
-            max_tokens: 350,
-            temperature: 0.05,
-          }),
-        });
-        if (res.ok) {
-          const data: any = await res.json();
-          const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-          return parseAiRedactResponse(parsed, 'Mistral Pixtral 12B');
-        }
-      } catch (err) {
-        console.warn('AI redact Mistral attempt failed:', err);
+        return await Promise.any(raceCandidates);
+      } catch (raceErr) {
+        console.warn('AI redact primary race fell back:', raceErr);
       }
     }
 
-    if (openrouterApiKey) {
+    if (genAI && geminiApiKey) {
       try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openrouterApiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://recall.dev',
-            'X-Title': 'Recall AI',
-          },
-          signal: AbortSignal.timeout(5000),
-          body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: redactPrompt },
-                  { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
-                ],
-              },
-            ],
-            response_format: { type: 'json_object' },
-            max_tokens: 350,
-            temperature: 0.05,
-          }),
-        });
-        if (res.ok) {
-          const data: any = await res.json();
-          const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-          return parseAiRedactResponse(parsed, 'GPT-4o-mini Vision');
-        }
+        return await callGeminiVision('gemini-flash-latest', 4500);
       } catch (err) {
-        console.warn('AI redact OpenRouter attempt failed:', err);
+        console.warn('AI redact Gemini fallback attempt failed:', err);
       }
     }
   }
