@@ -363,12 +363,29 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         label: t.label,
       }));
 
-      // Apply strictly the user-requested AI regions (clearing unrelated auto bars)
-      setRedactBars(false);
-      setAutoRedactBoxes(aiRegions);
-      setAiRedactSummary(res.summary);
+      // Accumulate new AI regions with existing regions so previous redactions stay intact
+      const mergedAiBoxes = [...autoRedactBoxes];
+      for (const newBox of aiRegions) {
+        const isDuplicate = mergedAiBoxes.some(
+          (existing) =>
+            Math.abs(existing.x - newBox.x) < 0.02 &&
+            Math.abs(existing.y - newBox.y) < 0.02 &&
+            Math.abs(existing.w - newBox.w) < 0.03 &&
+            Math.abs(existing.h - newBox.h) < 0.03
+        );
+        if (!isDuplicate) {
+          mergedAiBoxes.push(newBox);
+        }
+      }
+
+      setAutoRedactBoxes(mergedAiBoxes);
+      setAiRedactSummary(
+        mergedAiBoxes.length > aiRegions.length
+          ? `${res.summary} (${mergedAiBoxes.length} total masked)`
+          : res.summary
+      );
       setAiRedactPrompt('');
-      await rebuildRedactedPreview(img, aiRegions, manualRedactBoxes, false);
+      await rebuildRedactedPreview(img, mergedAiBoxes, manualRedactBoxes, redactBars);
       triggerInkWipeOverlay(aiRegions, 'ai');
     } catch (err: unknown) {
       console.error('AI targeted redact error:', err);
@@ -441,19 +458,37 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
   };
 
-  const handleUndoManualRedact = async () => {
-    if (!loadedRedactImgRef.current || manualRedactBoxes.length === 0) return;
-    const nextManual = manualRedactBoxes.slice(0, -1);
-    setManualRedactBoxes(nextManual);
-    try {
-      await rebuildRedactedPreview(
-        loadedRedactImgRef.current,
-        autoRedactBoxes,
-        nextManual,
-        redactBars
-      );
-    } catch (err) {
-      console.error('Undo redact error:', err);
+  const handleUndoLastRedact = async () => {
+    if (!loadedRedactImgRef.current) return;
+    if (manualRedactBoxes.length > 0) {
+      const nextManual = manualRedactBoxes.slice(0, -1);
+      setManualRedactBoxes(nextManual);
+      try {
+        await rebuildRedactedPreview(
+          loadedRedactImgRef.current,
+          autoRedactBoxes,
+          nextManual,
+          redactBars
+        );
+      } catch (err) {
+        console.error('Undo manual redact error:', err);
+      }
+      return;
+    }
+
+    if (autoRedactBoxes.length > 0) {
+      const nextAuto = autoRedactBoxes.slice(0, -1);
+      setAutoRedactBoxes(nextAuto);
+      try {
+        await rebuildRedactedPreview(
+          loadedRedactImgRef.current,
+          nextAuto,
+          manualRedactBoxes,
+          redactBars
+        );
+      } catch (err) {
+        console.error('Undo auto redact error:', err);
+      }
     }
   };
 
@@ -602,15 +637,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     );
     const filename = `redacted-${baseName}.png`;
     const file = new File([redactedResult.blob], filename, { type: 'image/png' });
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({
-          files: [file],
-          title: 'Shared from RECALL',
-        });
+        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Shared from RECALL',
+          });
+          return;
+        }
+      } catch {
+        // User cancelled, dismissed, or aborted the share sheet - NEVER trigger accidental download
         return;
-      } catch {}
+      }
     }
+    // Fallback download only when navigator.share is completely unsupported (e.g., desktop web without Web Share API)
     const link = document.createElement('a');
     link.href = redactedResult.dataUrl;
     link.download = filename;
@@ -1210,10 +1251,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </button>
                   )}
 
-                  {manualRedactBoxes.length > 0 && (
+                  {(manualRedactBoxes.length > 0 || autoRedactBoxes.length > 0) && (
                     <button
                       type="button"
-                      onClick={handleUndoManualRedact}
+                      onClick={handleUndoLastRedact}
                       className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-600 border-slate-200 cursor-pointer active:scale-95"
                     >
                       <Undo2 className="h-2.5 w-2.5" />
