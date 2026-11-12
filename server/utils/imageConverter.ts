@@ -1,4 +1,8 @@
-import convert from 'heic-convert';
+type HeicConvertFn = (options: {
+  buffer: Buffer;
+  format: 'JPEG' | 'PNG';
+  quality?: number;
+}) => Promise<ArrayBuffer | Uint8Array | Buffer>;
 
 const HEIC_BRANDS = new Set([
   'heic',
@@ -82,6 +86,8 @@ export async function ensureWebCompatibleImage(
   const safeName = filename || 'image.jpg';
 
   if (isHeicFormat(buffer, mimeType, safeName)) {
+    const mod = await import('heic-convert');
+    const convert = ((mod as { default?: HeicConvertFn }).default ?? mod) as HeicConvertFn;
     const convertedRaw = await convert({
       buffer,
       format: 'JPEG',
