@@ -96,6 +96,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
   const [redactError, setRedactError] = useState<string | null>(null);
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [redactRevealSeq, setRedactRevealSeq] = useState(0);
   const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
   const loadedRedactImgRef = useRef<HTMLImageElement | null>(null);
   const previewImgRef = useRef<HTMLImageElement | null>(null);
@@ -149,6 +150,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setManualRedactBoxes([]);
     setRedactError(null);
     setDragRect(null);
+    setRedactRevealSeq(0);
     loadedRedactImgRef.current = null;
     dragSessionRef.current = null;
     if (!screenshotId) {
@@ -207,6 +209,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     ];
     const composed = await composeRedactedImage(img, combinedBoxes);
     setRedactedResult(composed);
+    setRedactRevealSeq((n) => n + 1);
   };
 
   const runPrivacyRedaction = async (includeBars: boolean) => {
@@ -663,13 +666,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               }`}
             >
               <img
+                key={isRedactedMode ? `redacted-${redactRevealSeq}` : 'original'}
                 ref={previewImgRef}
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
                 draggable={false}
-                className={`w-full select-none object-contain transition-all duration-200 ${
+                style={
+                  isRedactedMode && redactRevealSeq > 0 && !isRedacting
+                    ? {
+                        animation: 'redactImageSettle 320ms cubic-bezier(0.23, 1, 0.32, 1) both',
+                        willChange: 'transform, opacity',
+                      }
+                    : undefined
+                }
+                className={`w-full select-none object-contain transition-[opacity,transform,max-height] duration-300 ease-out ${
                   isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
-                }`}
+                } ${isRedacting ? 'opacity-80 scale-[0.988]' : 'opacity-100 scale-100'}`}
               />
 
               {dragRect && (
@@ -685,10 +697,20 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               )}
 
               {isRedacting && (
-                <div className="pointer-events-none absolute inset-0 z-[16] flex items-center justify-center bg-slate-900/15 backdrop-blur-[1px]">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#172B4D] shadow-sm">
+                <div className="pointer-events-none absolute inset-0 z-[16] overflow-hidden flex items-center justify-center bg-slate-900/10 backdrop-blur-[1.5px]">
+                  <div
+                    className="absolute inset-x-0 top-0 h-24 pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, rgba(52, 120, 246, 0) 0%, rgba(52, 120, 246, 0.14) 88%, rgba(59, 130, 246, 0.65) 100%)',
+                      borderBottom: '1.5px solid rgba(59, 130, 246, 0.8)',
+                      animation: 'redactScanSweep 1.5s cubic-bezier(0.37, 0, 0.63, 1) infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  />
+                  <div className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 border border-white px-3 py-1 text-[11px] font-semibold text-[#172B4D] shadow-sm">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
-                    <span>Scanning sensitive areas...</span>
+                    <span>Masking sensitive areas...</span>
                   </div>
                 </div>
               )}

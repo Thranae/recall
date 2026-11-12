@@ -389,53 +389,29 @@ export async function detectSensitiveRegions(
 
 function drawPrivacyMask(
   ctx: CanvasRenderingContext2D,
-  srcCanvas: HTMLCanvasElement,
+  canvasWidth: number,
+  canvasHeight: number,
   x: number,
   y: number,
   w: number,
   h: number
 ) {
-  const padX = Math.max(4, Math.round(Math.min(w, h) * 0.14));
-  const padY = Math.max(3, Math.round(Math.min(w, h) * 0.12));
+  const padX = Math.max(6, Math.round(Math.min(w, h) * 0.22));
+  const padY = Math.max(4, Math.round(Math.min(w, h) * 0.18));
   const rx = Math.max(0, Math.round(x - padX));
   const ry = Math.max(0, Math.round(y - padY));
-  const rw = Math.max(8, Math.min(srcCanvas.width - rx, Math.round(w + padX * 2)));
-  const rh = Math.max(8, Math.min(srcCanvas.height - ry, Math.round(h + padY * 2)));
-  const radius = Math.min(12, Math.max(4, Math.round(Math.min(rw, rh) / 3.5)));
+  const rw = Math.max(10, Math.min(canvasWidth - rx, Math.round(w + padX * 2)));
+  const rh = Math.max(10, Math.min(canvasHeight - ry, Math.round(h + padY * 2)));
+  const radius = Math.min(8, Math.max(3, Math.round(Math.min(rw, rh) / 5)));
 
-  // 1. Pixelate underlying source region on an offscreen mini-canvas so text/faces are genuinely illegible
-  const sampleW = Math.max(3, Math.round(rw / 14));
-  const sampleH = Math.max(3, Math.round(rh / 14));
-  const pixelCanvas = document.createElement('canvas');
-  pixelCanvas.width = sampleW;
-  pixelCanvas.height = sampleH;
-  const pCtx = pixelCanvas.getContext('2d');
-  if (pCtx) {
-    pCtx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, sampleW, sampleH);
-  }
-
+  // 100% opaque solid redaction fill so underlying text/details are completely invisible
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(rx, ry, rw, rh, radius);
-  ctx.clip();
-
-  if (pCtx) {
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(pixelCanvas, 0, 0, sampleW, sampleH, rx, ry, rw, rh);
-    ctx.imageSmoothingEnabled = true;
-  }
-
-  // 2. Dark Apple-inspired frosted glass privacy veil so masked areas stand out cleanly on light & dark images
-  ctx.fillStyle = 'rgba(19, 34, 62, 0.78)';
-  ctx.fillRect(rx, ry, rw, rh);
-  ctx.restore();
-
-  // 3. Subtle crisp border around the privacy pill
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(rx, ry, rw, rh, radius);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
-  ctx.lineWidth = Math.max(1.5, Math.min(3, Math.round(srcCanvas.width / 450)));
+  ctx.fillStyle = '#0B1220';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = Math.max(1, Math.min(2, Math.round(canvasWidth / 600)));
   ctx.stroke();
   ctx.restore();
 }
@@ -453,26 +429,19 @@ export async function composeRedactedImage(
   const outW = Math.max(1, Math.round(natW * scale));
   const outH = Math.max(1, Math.round(natH * scale));
 
-  const srcCanvas = document.createElement('canvas');
-  srcCanvas.width = outW;
-  srcCanvas.height = outH;
-  const srcCtx = srcCanvas.getContext('2d');
-  if (!srcCtx) throw new Error('Canvas 2D context is unavailable.');
-  srcCtx.drawImage(img, 0, 0, outW, outH);
-
   const outCanvas = document.createElement('canvas');
   outCanvas.width = outW;
   outCanvas.height = outH;
   const outCtx = outCanvas.getContext('2d');
   if (!outCtx) throw new Error('Canvas 2D context is unavailable.');
-  outCtx.drawImage(srcCanvas, 0, 0);
+  outCtx.drawImage(img, 0, 0, outW, outH);
 
   for (const box of boxes) {
     const px = box.x * outW;
     const py = box.y * outH;
     const pw = box.w * outW;
     const ph = box.h * outH;
-    drawPrivacyMask(outCtx, srcCanvas, px, py, pw, ph);
+    drawPrivacyMask(outCtx, outW, outH, px, py, pw, ph);
   }
 
   const blob: Blob = await new Promise((resolve, reject) => {

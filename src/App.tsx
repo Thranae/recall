@@ -8,13 +8,16 @@ import { SettingsView } from './components/SettingsView';
 import { ScreenshotDetailSheet } from './components/ScreenshotDetailSheet';
 import { UploadSheet } from './components/UploadSheet';
 import { SplashScreen } from './components/SplashScreen';
+import { SignOutTransition } from './components/SignOutTransition';
 import { api } from './services/api';
 import type { User, Screenshot, SearchResponse, SearchResultItem } from './types';
 import { Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashVariant, setSplashVariant] = useState<'launch' | 'login'>('launch');
   const [splashRunId, setSplashRunId] = useState(0);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -172,16 +175,22 @@ export const App: React.FC = () => {
   const handleAuthSuccess = (authenticatedUser: User) => {
     resetWorkspaceState();
     setUser(authenticatedUser);
+    setSplashVariant('login');
     setSplashRunId((n) => n + 1);
     setShowSplash(true);
   };
 
-  const handleLogout = () => {
-    setShowSplash(false);
+  const completeLogoutReset = useCallback(() => {
     api.logout();
     setUser(null);
     setScreenshots([]);
     resetWorkspaceState();
+  }, [resetWorkspaceState]);
+
+  const handleLogout = () => {
+    if (isSigningOut) return;
+    setShowSplash(false);
+    setIsSigningOut(true);
   };
 
   const handleSplashComplete = useCallback(() => {
@@ -194,12 +203,20 @@ export const App: React.FC = () => {
 
   return (
     <>
-      {showSplash && user && (
+      {showSplash && (
         <SplashScreen
-          key={splashRunId}
-          userName={user.name}
+          key={`${splashVariant}-${splashRunId}`}
+          variant={splashVariant}
+          userName={user?.name}
           onComplete={handleSplashComplete}
-          durationMs={3600}
+          durationMs={splashVariant === 'launch' ? 7000 : 3600}
+        />
+      )}
+
+      {isSigningOut && (
+        <SignOutTransition
+          onSessionCleared={completeLogoutReset}
+          onComplete={() => setIsSigningOut(false)}
         />
       )}
 
