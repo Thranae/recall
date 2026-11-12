@@ -54,6 +54,16 @@ export const api = {
       body: JSON.stringify({ question }),
     }),
 
+  aiRedactScreenshot: (
+    id: string,
+    instruction: string,
+    ocrWords?: import('../types').AiRedactWordHint[]
+  ) =>
+    request<import('../types').AiRedactResponse>(`/screenshots/${encodeURIComponent(id)}/ai-redact`, {
+      method: 'POST',
+      body: JSON.stringify({ instruction, ocrWords }),
+    }),
+
   reanalyzeBatch: () =>
     request<import('../types').BatchReanalyzeResponse>('/screenshots/batch/reanalyze-all', {
       method: 'POST',

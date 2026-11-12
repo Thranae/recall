@@ -103,6 +103,28 @@ export interface ImageQuestionResponse {
   provider: string;
 }
 
+export interface AiRedactWordHint {
+  text: string;
+  box_2d: [number, number, number, number];
+}
+
+export interface AiRedactTarget {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  matched_text?: string;
+}
+
+export interface AiRedactResponse {
+  screenshot_id: string;
+  instruction: string;
+  targets: AiRedactTarget[];
+  summary: string;
+  provider: string;
+}
+
 export interface BatchReanalyzeResponse {
   total: number;
   upgraded: number;

@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { db } from '../db';
-import { answerImageQuestion, analyzeScreenshot, generateSmartCoachInsights } from '../services/ai/gemini';
+import { answerImageQuestion, analyzeScreenshot, generateSmartCoachInsights, detectAiRedactTargets } from '../services/ai/gemini';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
 import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/embeddings';
@@ -871,6 +871,53 @@ router.post('/:id/ask', authMiddleware, async (req: AuthRequest, res) => {
   } catch (err: any) {
     console.error('Image Q&A error:', err);
     res.status(500).json({ error: 'Failed to answer question about this image', details: err.message });
+  }
+});
+
+// Prompt-Guided AI Redaction: Locates exact coordinates matching the user's redaction instruction
+router.post('/:id/ai-redact', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user!.email || '';
+    const instruction = typeof req.body?.instruction === 'string' ? req.body.instruction.trim() : '';
+    const ocrWords = Array.isArray(req.body?.ocrWords) ? req.body.ocrWords : [];
+
+    if (!instruction) {
+      res.status(400).json({ error: 'Redaction instruction is required' });
+      return;
+    }
+
+    const row = (await db.prepare(`
+      SELECT * FROM screenshots
+      WHERE id = ?
+        AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `).get(req.params.id, userId, userEmail)) as any;
+
+    if (!row) {
+      res.status(404).json({ error: 'Screenshot not found' });
+      return;
+    }
+
+    const filePath = path.join(UPLOADS_BASE, row.storage_key);
+    const result = await detectAiRedactTargets(
+      filePath,
+      row.mime_type,
+      row.original_filename,
+      row.image_data,
+      instruction,
+      ocrWords
+    );
+
+    res.json({
+      screenshot_id: row.id,
+      instruction,
+      targets: result.targets,
+      summary: result.summary,
+      provider: result.provider,
+    });
+  } catch (err: any) {
+    console.error('AI redact error:', err);
+    res.status(500).json({ error: 'Failed to locate redaction targets', details: err.message });
   }
 });
 

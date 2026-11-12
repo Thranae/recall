@@ -4,7 +4,7 @@ export interface RedactRegion {
   y: number;
   w: number;
   h: number;
-  source: 'auto' | 'bar' | 'manual';
+  source: 'auto' | 'bar' | 'manual' | 'ai';
   label?: string;
 }
 
@@ -242,15 +242,20 @@ function buildNormalizedBox(
   return { x, y, w, h, source: 'auto', label };
 }
 
-export async function detectSensitiveRegions(
+async function recognizeWordLines(
   img: HTMLImageElement,
-  options?: { timeoutMs?: number; extraHintTokens?: string[] }
-): Promise<{ boxes: RedactRegion[]; timedOut: boolean }> {
+  timeoutMs: number
+): Promise<{
+  wordLines: OcrWord[][];
+  natW: number;
+  natH: number;
+  scaleX: number;
+  scaleY: number;
+  timedOut: boolean;
+}> {
   const natW = img.naturalWidth || img.width || 1;
   const natH = img.naturalHeight || img.height || 1;
   const { ocrCanvas, scaleX, scaleY } = prepareOcrCanvas(img);
-  const timeoutMs = options?.timeoutMs ?? 12000;
-  const hintSet = new Set((options?.extraHintTokens || []).map((t) => t.toLowerCase()));
 
   let worker: any = null;
   let timedOut = false;
@@ -274,7 +279,6 @@ export async function detectSensitiveRegions(
       workerErrorPromise,
     ]);
 
-    // Tesseract.js v7 disables `blocks` output by default unless explicitly requested
     const recognized: any = await worker.recognize(ocrCanvas, {}, { text: true, blocks: true });
     return extractWordsByLine(recognized);
   })();
@@ -298,6 +302,42 @@ export async function detectSensitiveRegions(
       } catch {}
     }
   }
+
+  return { wordLines, natW, natH, scaleX, scaleY, timedOut };
+}
+
+export async function extractOcrWordHints(
+  img: HTMLImageElement,
+  timeoutMs = 6000
+): Promise<Array<{ text: string; box_2d: [number, number, number, number] }>> {
+  const { wordLines, natW, natH, scaleX, scaleY } = await recognizeWordLines(img, timeoutMs);
+  const hints: Array<{ text: string; box_2d: [number, number, number, number] }> = [];
+
+  for (const line of wordLines) {
+    for (const word of line) {
+      const text = word.text.trim();
+      if (!text || !word.bbox) continue;
+      const ymin = Math.max(0, Math.min(1000, Math.round(((word.bbox.y0 * scaleY) / natH) * 1000)));
+      const xmin = Math.max(0, Math.min(1000, Math.round(((word.bbox.x0 * scaleX) / natW) * 1000)));
+      const ymax = Math.max(ymin + 1, Math.min(1000, Math.round(((word.bbox.y1 * scaleY) / natH) * 1000)));
+      const xmax = Math.max(xmin + 1, Math.min(1000, Math.round(((word.bbox.x1 * scaleX) / natW) * 1000)));
+      hints.push({ text, box_2d: [ymin, xmin, ymax, xmax] });
+      if (hints.length >= 180) return hints;
+    }
+  }
+
+  return hints;
+}
+
+export async function detectSensitiveRegions(
+  img: HTMLImageElement,
+  options?: { timeoutMs?: number; extraHintTokens?: string[] }
+): Promise<{ boxes: RedactRegion[]; timedOut: boolean }> {
+  const hintSet = new Set((options?.extraHintTokens || []).map((t) => t.toLowerCase()));
+  const { wordLines, natW, natH, scaleX, scaleY, timedOut } = await recognizeWordLines(
+    img,
+    options?.timeoutMs ?? 12000
+  );
 
   const boxes: RedactRegion[] = [];
 

@@ -1085,3 +1085,298 @@ Return ONLY valid JSON:
     provider: 'Recall Index',
   };
 }
+
+export interface AiRedactWordHint {
+  text: string;
+  box_2d: [number, number, number, number];
+}
+
+export interface AiRedactTarget {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  matched_text?: string;
+}
+
+export interface AiRedactResult {
+  targets: AiRedactTarget[];
+  summary: string;
+  provider: string;
+}
+
+function normalizeBox2dToRegion(
+  rawBox: unknown,
+  label: string,
+  matchedText?: string
+): AiRedactTarget | null {
+  if (!Array.isArray(rawBox) || rawBox.length !== 4) return null;
+  const nums = rawBox.map((n) => Number(n));
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+
+  const isNormalizedUnit = nums.every((n) => n >= 0 && n <= 1.01) && nums.some((n) => n > 0 && n < 1);
+  const scale = isNormalizedUnit ? 1 : 1000;
+
+  const ymin = Math.max(0, Math.min(1, nums[0] / scale));
+  const xmin = Math.max(0, Math.min(1, nums[1] / scale));
+  const ymax = Math.max(0, Math.min(1, nums[2] / scale));
+  const xmax = Math.max(0, Math.min(1, nums[3] / scale));
+
+  const w = xmax - xmin;
+  const h = ymax - ymin;
+  if (w <= 0.004 || h <= 0.004) return null;
+  if (w > 0.94 && h > 0.94) return null;
+
+  return {
+    x: xmin,
+    y: ymin,
+    w,
+    h,
+    label: label.trim() || 'Target',
+    ...(matchedText ? { matched_text: matchedText.trim() } : {}),
+  };
+}
+
+function parseAiRedactResponse(
+  rawParsed: any,
+  provider: string
+): AiRedactResult {
+  const rawTargets = Array.isArray(rawParsed?.targets) ? rawParsed.targets : [];
+  const targets: AiRedactTarget[] = [];
+
+  for (const item of rawTargets) {
+    const label = typeof item?.label === 'string' ? item.label : 'Redacted';
+    const matchedText = typeof item?.matched_text === 'string' ? item.matched_text : undefined;
+    const region = normalizeBox2dToRegion(item?.box_2d ?? item?.bbox ?? item?.box, label, matchedText);
+    if (region) {
+      targets.push(region);
+    }
+  }
+
+  const summary =
+    typeof rawParsed?.summary === 'string' && rawParsed.summary.trim()
+      ? rawParsed.summary.trim()
+      : targets.length > 0
+      ? `Targeted ${targets.length} matching region${targets.length === 1 ? '' : 's'}`
+      : 'No matching element found for that instruction';
+
+  return {
+    targets: targets.slice(0, 24),
+    summary,
+    provider,
+  };
+}
+
+function deterministicRedactHintFallback(
+  instruction: string,
+  ocrWordHints: AiRedactWordHint[]
+): AiRedactResult {
+  const q = instruction.toLowerCase();
+  const isTimeQuery = /\b(time|clock|hour|timestamp|am|pm)\b/.test(q);
+  const isPriceQuery = /\b(price|amount|cost|total|rs|inr|usd|\$|₹)\b/.test(q);
+  const isEmailQuery = /\b(email|mail|gmail)\b/.test(q);
+  const isPhoneQuery = /\b(phone|mobile|number|contact|call)\b/.test(q);
+
+  const timePattern = /^(?:[01]?\d|2[0-3]):[0-5]\d(?:\s?[ap]m)?$/i;
+  const pricePattern = /^(?:[₹$€£]\s*\d[\d,.]*|\d[\d,.]*\s?(?:rs|inr|usd))$/i;
+  const emailPattern = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+  const phonePattern = /(?:\+?\d[\d\s-]{5,}\d)/;
+
+  const stopWords = new Set(['blur', 'redact', 'hide', 'mask', 'only', 'the', 'this', 'image', 'screenshot', 'in', 'from', 'all', 'please', 'my']);
+  const keywords = q
+    .replace(/[^\w\s:]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !stopWords.has(w));
+
+  const targets: AiRedactTarget[] = [];
+  for (const hint of ocrWordHints) {
+    const t = hint.text.trim();
+    if (!t) continue;
+    let matched = false;
+    let label = 'Match';
+    if (isTimeQuery && timePattern.test(t)) {
+      matched = true;
+      label = 'Time';
+    } else if (isPriceQuery && pricePattern.test(t)) {
+      matched = true;
+      label = 'Amount';
+    } else if (isEmailQuery && emailPattern.test(t)) {
+      matched = true;
+      label = 'Email';
+    } else if (isPhoneQuery && phonePattern.test(t)) {
+      matched = true;
+      label = 'Phone';
+    } else if (keywords.some((kw) => t.toLowerCase().includes(kw))) {
+      matched = true;
+      label = keywords[0];
+    }
+
+    if (matched) {
+      const box = normalizeBox2dToRegion(hint.box_2d, label, t);
+      if (box) targets.push(box);
+    }
+  }
+
+  return {
+    targets: targets.slice(0, 20),
+    summary:
+      targets.length > 0
+        ? `Matched ${targets.length} item${targets.length === 1 ? '' : 's'} for "${instruction}"`
+        : `No exact match found for "${instruction}"`,
+    provider: 'Recall Precision Index',
+  };
+}
+
+/**
+ * Targeted AI Visual & Textual Redaction:
+ * Locates ONLY the exact region(s) requested by the user's natural-language prompt
+ * using multimodal vision grounding plus optional tight OCR word coordinates.
+ */
+export async function detectAiRedactTargets(
+  filePath: string,
+  mimeType: string,
+  originalFilename: string,
+  fallbackBase64: string | null | undefined,
+  instruction: string,
+  ocrWordHints: AiRedactWordHint[] = []
+): Promise<AiRedactResult> {
+  const { base64Data, resolvedMime } = resolveCleanImagePayload(
+    filePath,
+    mimeType,
+    originalFilename,
+    fallbackBase64
+  );
+
+  const compactHints = ocrWordHints
+    .slice(0, 180)
+    .filter((h) => h && typeof h.text === 'string' && Array.isArray(h.box_2d) && h.box_2d.length === 4);
+
+  const hintsSection =
+    compactHints.length > 0
+      ? `\nMeasured OCR word tokens on a 0..1000 [ymin, xmin, ymax, xmax] grid:\n${JSON.stringify(compactHints)}\n`
+      : '';
+
+  const redactPrompt = `You are RECALL's surgical privacy redaction vision system.
+The user wants to mask ONLY specific item(s) matching this instruction:
+"${instruction}"
+
+STRICT RULES:
+1. Return tight bounding boxes ONLY for the requested item(s) in "targets". Do NOT redact anything else in the image unless it directly matches "${instruction}".
+2. Coordinates in "box_2d" MUST use [ymin, xmin, ymax, xmax] integers in the normalized 0..1000 image coordinate space (0 = top/left edge, 1000 = bottom/right edge).
+3. If the requested item is readable text (for example: time like "9:41" or "10:30 PM", date, price, phone number, OTP, name, handle, URL) AND matching tokens exist in the Measured OCR word tokens list below, use those exact tight bounds (or the minimal union covering a multi-word target). Keep the box tight around only those characters—never include nearby unrelated words or empty margin.
+4. Notice special care for "time": if user asks to redact "the time", include visible clock/time indicators (such as status bar time or chat message timestamps if relevant), and do NOT include battery percentage, signal bars, dates unless requested, or sender names.
+5. If the requested item is visual (such as "face", "shirt", "logo", "person", "background photo", "status bar"), return tight bounds strictly enclosing that visual subject.
+6. If multiple instances match the user's instruction cleanly, return each separate tight box; if nothing in the image matches, return an empty array "targets": [].
+${hintsSection}
+Return STRICTLY valid JSON:
+{
+  "targets": [
+    {
+      "box_2d": [16, 44, 38, 128],
+      "label": "Short 1-2 word label",
+      "matched_text": "Exact visible text if textual, otherwise empty string"
+    }
+  ],
+  "summary": "Brief 1-sentence confirmation of what was targeted"
+}`;
+
+  const visionModels = [
+    'gemini-flash-latest',
+    'gemini-3.5-flash',
+    'gemini-2.5-flash',
+    'gemini-flash-lite-latest',
+  ];
+
+  if (base64Data) {
+    if (genAI && geminiApiKey) {
+      for (const modelName of visionModels) {
+        try {
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.05,
+            },
+          });
+          const result = await model.generateContent([
+            redactPrompt,
+            { inlineData: { data: base64Data, mimeType: resolvedMime } },
+          ]);
+          const parsed = safeParseJson(result.response.text().trim());
+          return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
+        } catch (err) {
+          console.warn(`AI redact Gemini (${modelName}) attempt failed:`, err);
+        }
+      }
+    }
+
+    if (openrouterApiKey) {
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openrouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://recall.dev',
+            'X-Title': 'Recall AI',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: redactPrompt },
+                  { type: 'image_url', image_url: { url: `data:${resolvedMime};base64,${base64Data}` } },
+                ],
+              },
+            ],
+            response_format: { type: 'json_object' },
+            max_tokens: 700,
+            temperature: 0.05,
+          }),
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+          return parseAiRedactResponse(parsed, 'GPT-4o-mini Vision');
+        }
+      } catch (err) {
+        console.warn('AI redact OpenRouter attempt failed:', err);
+      }
+    }
+
+    if (mistralApiKey) {
+      try {
+        const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${mistralApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'pixtral-12b-2409',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: redactPrompt },
+                  { type: 'image_url', image_url: `data:${resolvedMime};base64,${base64Data}` },
+                ],
+              },
+            ],
+            max_tokens: 700,
+            temperature: 0.05,
+          }),
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
+          return parseAiRedactResponse(parsed, 'Mistral Pixtral 12B');
+        }
+      } catch (err) {
+        console.warn('AI redact Mistral attempt failed:', err);
+      }
+    }
+  }
+
+  return deterministicRedactHintFallback(instruction, compactHints);
+}

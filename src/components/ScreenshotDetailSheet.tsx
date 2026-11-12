@@ -34,6 +34,7 @@ import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } fr
 import {
   loadUntaintedImage,
   detectSensitiveRegions,
+  extractOcrWordHints,
   composeRedactedImage,
   getStatusBarRegions,
   extractSensitiveHintsFromText,
@@ -46,6 +47,7 @@ import type {
   SearchResultItem,
   SimilarMemoryItem,
   SmartCoachResponse,
+  AiRedactWordHint,
 } from '../types';
 
 type ScreenshotDetailData = {
@@ -91,6 +93,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [copiedReplyIdx, setCopiedReplyIdx] = useState<number | null>(null);
   const [isRedactedMode, setIsRedactedMode] = useState(false);
   const [isRedacting, setIsRedacting] = useState(false);
+  const [aiRedactPrompt, setAiRedactPrompt] = useState('');
+  const [isAiRedacting, setIsAiRedacting] = useState(false);
+  const [aiRedactSummary, setAiRedactSummary] = useState<string | null>(null);
   const [redactBars, setRedactBars] = useState(false);
   const [autoRedactBoxes, setAutoRedactBoxes] = useState<RedactRegion[]>([]);
   const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
@@ -104,6 +109,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   >([]);
   const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
   const loadedRedactImgRef = useRef<HTMLImageElement | null>(null);
+  const ocrWordHintsRef = useRef<AiRedactWordHint[] | null>(null);
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
   const animTimersRef = useRef<number[]>([]);
@@ -150,6 +156,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setCopiedActionId(null);
     setCopiedReplyIdx(null);
     setIsRedactedMode(false);
+    setAiRedactPrompt('');
+    setIsAiRedacting(false);
+    setAiRedactSummary(null);
     setRedactedResult(null);
     setRedactBars(false);
     setAutoRedactBoxes([]);
@@ -161,6 +170,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     animTimersRef.current.forEach((id) => window.clearTimeout(id));
     animTimersRef.current = [];
     loadedRedactImgRef.current = null;
+    ocrWordHintsRef.current = null;
     dragSessionRef.current = null;
     if (!screenshotId) {
       setData(null);
@@ -279,6 +289,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       });
 
       setAutoRedactBoxes(detected);
+      setAiRedactSummary(null);
       await rebuildRedactedPreview(img, detected, manualRedactBoxes, includeBars);
       triggerInkWipeOverlay([...getStatusBarRegions(includeBars, includeBars), ...detected]);
       setIsRedactedMode(true);
@@ -292,8 +303,71 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
   };
 
+  const handleRunAiRedact = async (customInstruction?: string) => {
+    if (!screenshotId || isAiRedacting || isRedacting) return;
+    const instruction = (customInstruction ?? aiRedactPrompt).trim();
+    if (!instruction) return;
+    if (customInstruction) setAiRedactPrompt(customInstruction);
+
+    setIsAiRedacting(true);
+    setRedactError(null);
+    setAiRedactSummary(null);
+    try {
+      const img =
+        loadedRedactImgRef.current || (await loadUntaintedImage(api.getImageUrl(screenshotId)));
+      loadedRedactImgRef.current = img;
+
+      if (!ocrWordHintsRef.current) {
+        ocrWordHintsRef.current = await extractOcrWordHints(img, 6000);
+      }
+
+      const res = await api.aiRedactScreenshot(
+        screenshotId,
+        instruction,
+        ocrWordHintsRef.current
+      );
+
+      const aiRegions: RedactRegion[] = res.targets.map((t) => ({
+        x: t.x,
+        y: t.y,
+        w: t.w,
+        h: t.h,
+        source: 'ai',
+        label: t.label,
+      }));
+
+      // Apply strictly the user-requested AI regions (clearing unrelated auto bars)
+      setRedactBars(false);
+      setAutoRedactBoxes(aiRegions);
+      setAiRedactSummary(res.summary);
+      await rebuildRedactedPreview(img, aiRegions, manualRedactBoxes, false);
+      triggerInkWipeOverlay(aiRegions);
+      setIsRedactedMode(true);
+    } catch (err: unknown) {
+      console.error('AI targeted redact error:', err);
+      setRedactError(
+        err instanceof Error ? err.message : 'Could not run AI targeted redaction.'
+      );
+    } finally {
+      setIsAiRedacting(false);
+    }
+  };
+
+  const handleClearAllMasks = async () => {
+    if (!loadedRedactImgRef.current) return;
+    setRedactBars(false);
+    setAutoRedactBoxes([]);
+    setManualRedactBoxes([]);
+    setAiRedactSummary(null);
+    try {
+      await rebuildRedactedPreview(loadedRedactImgRef.current, [], [], false);
+    } catch (err) {
+      console.error('Clear masks error:', err);
+    }
+  };
+
   const handleToggleRedact = async () => {
-    if (isRedacting) return;
+    if (isRedacting || isAiRedacting) return;
     if (isRedactedMode) {
       setIsRedactedMode(false);
       setDragRect(null);
@@ -730,9 +804,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
                 draggable={false}
-                className={`w-full select-none object-contain transition-[opacity,transform,max-height] duration-300 ease-out ${
+                className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
-                } ${isRedacting ? 'opacity-95 scale-[0.996]' : 'opacity-100 scale-100'}`}
+                } ${isRedacting || isAiRedacting ? 'opacity-85' : 'opacity-100'}`}
               />
 
               {/* Dragging Preview: Frosted Obsidian Precision Lens */}
@@ -753,18 +827,18 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               )}
 
-              {/* Auto-Redaction Wipe: Matte Ink Curtain Reveal Across Detected Boxes */}
+              {/* Localized Target Animation: Soft Blur Mist Condensing Into Matte Ink */}
               {autoInkMasks.map((mask) => (
                 <div
                   key={mask.id}
-                  className="pointer-events-none absolute z-[17] rounded-[6px] bg-[#0B1220] border border-white/15"
+                  className="pointer-events-none absolute z-[17] rounded-[6px] bg-[#0B1220]/90 backdrop-blur-[8px] border border-white/20"
                   style={{
                     left: `${mask.left}px`,
                     top: `${mask.top}px`,
                     width: `${mask.width}px`,
                     height: `${mask.height}px`,
-                    animation: `redactInkWipe 420ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
-                    willChange: 'clip-path, opacity',
+                    animation: `redactInkCondense 420ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
+                    willChange: 'transform, opacity',
                   }}
                 />
               ))}
@@ -795,50 +869,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               ))}
 
-              {/* Editorial Black-Ink Marker Passes While Redacting */}
-              {isRedacting && (
-                <div className="pointer-events-none absolute inset-0 z-[16] overflow-hidden">
-                  <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#0B1220]/90 border border-white/15 px-2.5 py-0.5 text-[9px] font-bold tracking-[0.16em] uppercase text-white shadow-xs">
-                    <span className="flex flex-col gap-[2px] w-2.5">
-                      <span
-                        className="block h-[2px] w-full rounded-full bg-white"
-                        style={{
-                          transformOrigin: 'left center',
-                          animation: 'redactGlyphBar 900ms cubic-bezier(0.22, 1, 0.36, 1) infinite',
-                        }}
-                      />
-                      <span
-                        className="block h-[2px] w-2/3 rounded-full bg-white/75"
-                        style={{
-                          transformOrigin: 'left center',
-                          animation: 'redactGlyphBar 900ms cubic-bezier(0.22, 1, 0.36, 1) 180ms infinite',
-                        }}
-                      />
-                    </span>
-                    <span>Redacting</span>
-                  </div>
-
-                  {[
-                    { top: '22%', left: '16%', width: '44%', delay: '0ms' },
-                    { top: '40%', left: '24%', width: '56%', delay: '170ms' },
-                    { top: '58%', left: '14%', width: '48%', delay: '340ms' },
-                    { top: '75%', left: '32%', width: '34%', delay: '510ms' },
-                  ].map((stroke, idx) => (
-                    <div
-                      key={idx}
-                      className="absolute h-3.5 rounded-[5px] bg-[#0B1220] border border-white/15 shadow-xs"
-                      style={{
-                        top: stroke.top,
-                        left: stroke.left,
-                        width: stroke.width,
-                        animation: `redactMarkerPass 1.15s cubic-bezier(0.22, 1, 0.36, 1) ${stroke.delay} infinite`,
-                        willChange: 'clip-path, opacity',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
               {/* Plump Liquid Glass Inner Stroke Overlay */}
               <div className="liquid-card-inner-stroke" />
 
@@ -855,30 +885,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleRedact}
-                  disabled={isRedacting}
+                  disabled={isRedacting || isAiRedacting}
                   className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
-                    isRedactedMode || isRedacting
+                    isRedactedMode || isRedacting || isAiRedacting
                       ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
                       : 'liquid-category-badge text-[#172B4D]'
                   }`}
                 >
-                  {isRedacting ? (
-                    <span className="flex flex-col gap-[2px] w-2.5">
-                      <span
-                        className="block h-[2px] w-full rounded-full bg-white"
-                        style={{
-                          transformOrigin: 'left center',
-                          animation: 'redactGlyphBar 800ms cubic-bezier(0.22, 1, 0.36, 1) infinite',
-                        }}
-                      />
-                      <span
-                        className="block h-[2px] w-2/3 rounded-full bg-white/75"
-                        style={{
-                          transformOrigin: 'left center',
-                          animation: 'redactGlyphBar 800ms cubic-bezier(0.22, 1, 0.36, 1) 160ms infinite',
-                        }}
-                      />
-                    </span>
+                  {isRedacting || isAiRedacting ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-white/85" />
                   ) : (
                     <Shield
                       className={`h-3 w-3 stroke-[2.2] ${
@@ -886,7 +901,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       }`}
                     />
                   )}
-                  <span>{isRedacting ? 'Redacting' : isRedactedMode ? 'Redacted' : 'Redact'}</span>
+                  <span>
+                    {isAiRedacting
+                      ? 'AI Redacting…'
+                      : isRedacting
+                      ? 'Redacting…'
+                      : isRedactedMode
+                      ? 'Redacted'
+                      : 'Redact'}
+                  </span>
                 </button>
 
                 <button
@@ -914,12 +937,14 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             )}
 
             {isRedactedMode && redactedResult && (
-              <div className="rounded-[16px] bg-slate-900/5 border border-white px-3 py-2 text-[11px] space-y-2">
+              <div className="rounded-[18px] bg-slate-900/5 border border-white px-3 py-2.5 text-[11px] space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-[#172B4D]">
-                    {redactedResult.redactedCount > 0
+                  <span className="font-semibold text-[#172B4D] truncate">
+                    {aiRedactSummary
+                      ? aiRedactSummary
+                      : redactedResult.redactedCount > 0
                       ? `${redactedResult.redactedCount} region${redactedResult.redactedCount === 1 ? '' : 's'} masked`
-                      : 'No auto-matches — tap or drag image to mask'}
+                      : 'No auto-matches — use AI prompt or drag on image'}
                   </span>
                   <button
                     type="button"
@@ -930,32 +955,87 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <span>Share</span>
                   </button>
                 </div>
+
+                {/* AI Prompt Targeted Redaction */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRunAiRedact();
+                  }}
+                  className="flex items-center gap-1.5"
+                >
+                  <input
+                    type="text"
+                    value={aiRedactPrompt}
+                    onChange={(e) => setAiRedactPrompt(e.target.value)}
+                    placeholder='AI redact: e.g. "redact only the time" or "blur faces"'
+                    className="flex-1 min-w-0 rounded-full bg-white border border-slate-200/80 px-3 py-1.5 text-[11px] text-[#172B4D] placeholder:text-slate-400 focus:outline-none focus:border-[#3478F6]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isAiRedacting || isRedacting || !aiRedactPrompt.trim()}
+                    className="shrink-0 rounded-full bg-[#0B1220] text-white px-3 py-1.5 text-[10.5px] font-semibold disabled:opacity-45 active:scale-[0.97] transition-[opacity,transform] duration-150 ease-out cursor-pointer"
+                  >
+                    {isAiRedacting ? 'Applying…' : 'Apply'}
+                  </button>
+                </form>
+
+                {/* Quick AI Targets + Mask Controls */}
                 <div className="flex flex-wrap items-center gap-1.5">
+                  {(['Time', 'Prices', 'Names', 'Face'] as const).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      disabled={isAiRedacting || isRedacting}
+                      onClick={() => handleRunAiRedact(`Redact only ${preset.toLowerCase()}`)}
+                      className="rounded-full bg-white/90 hover:bg-white text-slate-700 border border-slate-200/80 px-2.5 py-0.5 text-[10px] font-medium active:scale-[0.97] cursor-pointer disabled:opacity-50"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+
                   <button
                     type="button"
                     onClick={handleToggleStatusBars}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold border cursor-pointer transition-all ${
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold border cursor-pointer transition-[background-color,color] duration-150 ${
                       redactBars
                         ? 'bg-[#172B4D] text-white border-[#172B4D]'
                         : 'bg-white text-slate-600 border-slate-200'
                     }`}
                   >
-                    {redactBars ? 'Status Bars Masked' : '+ Mask Status Bars'}
+                    {redactBars ? 'Status Bars Masked' : '+ Status Bars'}
                   </button>
+
+                  {aiRedactSummary && (
+                    <button
+                      type="button"
+                      disabled={isRedacting || isAiRedacting}
+                      onClick={() => runPrivacyRedaction(false)}
+                      className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-600 border-slate-200 cursor-pointer active:scale-95"
+                    >
+                      Auto All
+                    </button>
+                  )}
+
                   {manualRedactBoxes.length > 0 && (
                     <button
                       type="button"
                       onClick={handleUndoManualRedact}
-                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-600 border-slate-200 cursor-pointer active:scale-95 transition-all"
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-600 border-slate-200 cursor-pointer active:scale-95"
                     >
                       <Undo2 className="h-2.5 w-2.5" />
                       <span>Undo</span>
                     </button>
                   )}
+
                   {redactedResult.redactedCount > 0 && (
-                    <span className="text-[10px] text-slate-500 ml-auto">
-                      Drag on image to add mask
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleClearAllMasks}
+                      className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold border bg-white text-slate-500 border-slate-200 cursor-pointer active:scale-95 ml-auto"
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
               </div>
