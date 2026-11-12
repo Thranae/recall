@@ -1118,15 +1118,19 @@ function normalizeBox2dToRegion(
   const isNormalizedUnit = nums.every((n) => n >= 0 && n <= 1.01) && nums.some((n) => n > 0 && n < 1);
   const scale = isNormalizedUnit ? 1 : 1000;
 
-  const ymin = Math.max(0, Math.min(1, nums[0] / scale));
-  const xmin = Math.max(0, Math.min(1, nums[1] / scale));
-  const ymax = Math.max(0, Math.min(1, nums[2] / scale));
-  const xmax = Math.max(0, Math.min(1, nums[3] / scale));
+  // Add 1.2% horizontal and 0.6% vertical safety margin so numbers, colons, and edge serifs are never clipped
+  const marginX = 0.012;
+  const marginY = 0.006;
+
+  const ymin = Math.max(0, Math.min(1, nums[0] / scale - marginY));
+  const xmin = Math.max(0, Math.min(1, nums[1] / scale - marginX));
+  const ymax = Math.max(0, Math.min(1, nums[2] / scale + marginY));
+  const xmax = Math.max(0, Math.min(1, nums[3] / scale + marginX));
 
   const w = xmax - xmin;
   const h = ymax - ymin;
   if (w <= 0.004 || h <= 0.004) return null;
-  if (w > 0.94 && h > 0.94) return null;
+  if (w > 0.96 && h > 0.96) return null;
 
   return {
     x: xmin,
@@ -1294,6 +1298,7 @@ DETECTION KNOWLEDGE:
 - Battery / Status bar: "battery" / "battery percentage" / "charge" includes the battery glyph and numeric level (e.g. "53", "53%", "100%") typically in the top status bar corner (ymin 10..60, xmin 780..980).
 - Network / Wifi: "wifi" / "signal" / "network" / "speed" includes Wi-Fi/VoWiFi icon or label, signal bars, 5G/4G/LTE, or data speed ("62.7 KB/s").
 - Time / Clock: "time" includes status bar clock (e.g. "10:20", "9:41") and timestamps (exclude battery, dates, signal, names).
+- Complete Text & Digit Enclosure: When masking time (e.g. "10:20", "9:41 PM"), numbers, or words, you MUST completely enclose the ENTIRE sequence—including the very first digit, all inner colons/slashes/dots, and the final digit/AM/PM. Never leave even a single number, serif, or colon unmasked.
 - People & Chat: "face", "avatar" / "profile photo", "name" / "username" / "@handle", or specific requested message bubbles/calls.
 - Numbers & Links: "price", "amount", "balance", "phone", "email", "otp", "url" / "link".
 - Prefer tightly cropped OCR box coordinates when readable tokens are provided below.

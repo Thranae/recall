@@ -451,13 +451,15 @@ function drawPrivacyMask(
   w: number,
   h: number
 ) {
-  const padX = Math.max(6, Math.round(Math.min(w, h) * 0.22));
-  const padY = Math.max(4, Math.round(Math.min(w, h) * 0.18));
+  // Generous safety margin so numbers, letters, colons, and edge serifs are 100% masked
+  const padX = Math.max(10, Math.round(Math.max(w * 0.08, Math.min(w, h) * 0.28) + 4));
+  const padY = Math.max(7, Math.round(Math.max(h * 0.14, Math.min(w, h) * 0.22) + 3));
   const rx = Math.max(0, Math.round(x - padX));
   const ry = Math.max(0, Math.round(y - padY));
-  const rw = Math.max(10, Math.min(canvasWidth - rx, Math.round(w + padX * 2)));
-  const rh = Math.max(10, Math.min(canvasHeight - ry, Math.round(h + padY * 2)));
-  const radius = Math.min(8, Math.max(3, Math.round(Math.min(rw, rh) / 5)));
+  const rw = Math.max(16, Math.min(canvasWidth - rx, Math.round(w + padX * 2)));
+  const rh = Math.max(14, Math.min(canvasHeight - ry, Math.round(h + padY * 2)));
+  // Keep corner radius small (1..4px) so curved corners never shave off outer digits
+  const radius = Math.min(4, Math.max(1, Math.round(Math.min(rw, rh) / 8)));
 
   // 100% opaque solid redaction fill so underlying text/details are completely invisible
   ctx.save();
