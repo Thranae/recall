@@ -250,6 +250,146 @@ html, body {
   }
 }
 
+@keyframes redactCurtainSweep {
+  0% {
+    transform: translate3d(0, -110%, 0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.92;
+  }
+  82% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate3d(0, 420%, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes redactPillMarkerStroke {
+  0% {
+    transform: scaleX(0);
+    opacity: 0.35;
+  }
+  25% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  72% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0);
+    opacity: 0.35;
+  }
+}
+
+@keyframes redactCurtainWipe {
+  0% {
+    transform: scaleX(0.04);
+    opacity: 0.95;
+  }
+  58% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  78% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@keyframes aiVisionSweep {
+  0% {
+    transform: translate3d(0, -110%, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 430%, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes aiBracketPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(0.985);
+    opacity: 1;
+  }
+}
+
+@keyframes aiIrisRing {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@keyframes aiTargetLockFrame {
+  0% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  24% {
+    transform: scale(0.97);
+    opacity: 1;
+  }
+  58% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes aiSurgicalInkWipe {
+  0%, 28% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  32% {
+    transform: scaleX(0.04);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  84% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   @keyframes splashAuraPulse {
     0%, 100% { opacity: 0.65; }
@@ -294,6 +434,30 @@ html, body {
   }
   @keyframes navbarDotHop {
     0%, 100% { transform: scale(1); }
+  }
+  @keyframes redactCurtainSweep {
+    0%, 100% { opacity: 0.25; }
+  }
+  @keyframes redactPillMarkerStroke {
+    0%, 100% { transform: scaleX(1); }
+  }
+  @keyframes redactCurtainWipe {
+    0%, 100% { opacity: 0; }
+  }
+  @keyframes aiVisionSweep {
+    0%, 100% { opacity: 0.25; }
+  }
+  @keyframes aiBracketPulse {
+    0%, 100% { opacity: 0.85; }
+  }
+  @keyframes aiIrisRing {
+    0%, 100% { opacity: 0.4; }
+  }
+  @keyframes aiTargetLockFrame {
+    0%, 100% { opacity: 0; }
+  }
+  @keyframes aiSurgicalInkWipe {
+    0%, 100% { opacity: 0; }
   }
 }
 

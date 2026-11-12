@@ -102,7 +102,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [redactError, setRedactError] = useState<string | null>(null);
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [autoInkMasks, setAutoInkMasks] = useState<
-    Array<{ id: string; left: number; top: number; width: number; height: number; delayMs: number }>
+    Array<{ id: string; left: number; top: number; width: number; height: number; delayMs: number; mode: 'standard' | 'ai' }>
   >([]);
   const [manualInkMasks, setManualInkMasks] = useState<
     Array<{ id: string; left: number; top: number; width: number; height: number }>
@@ -252,19 +252,34 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     };
   };
 
-  const triggerInkWipeOverlay = (regions: RedactRegion[]) => {
+  const triggerInkWipeOverlay = (regions: RedactRegion[], mode: 'standard' | 'ai' = 'standard') => {
+    animTimersRef.current.forEach((id) => window.clearTimeout(id));
+    animTimersRef.current = [];
+
     const bounds = getRenderedImageBounds();
-    if (!bounds || regions.length === 0) return;
+    if (!bounds || regions.length === 0) {
+      setIsRedactedMode(true);
+      return;
+    }
+
     const wipeBatch = regions.slice(0, 18).map((box, idx) => ({
-      id: `auto-${Date.now()}-${idx}`,
+      id: `${mode}-${Date.now()}-${idx}`,
       ...toOverlayRect(box, bounds),
-      delayMs: Math.min(idx * 34, 200),
+      delayMs: Math.min(idx * (mode === 'ai' ? 55 : 32), 200),
+      mode,
     }));
     setAutoInkMasks(wipeBatch);
-    const timerId = window.setTimeout(() => {
+
+    const commitDelayMs = mode === 'ai' ? 430 : 240;
+    const clearDelayMs = mode === 'ai' ? 880 : 680;
+
+    const commitTimerId = window.setTimeout(() => {
+      setIsRedactedMode(true);
+    }, commitDelayMs);
+    const clearTimerId = window.setTimeout(() => {
       setAutoInkMasks([]);
-    }, 680);
-    animTimersRef.current.push(timerId);
+    }, clearDelayMs);
+    animTimersRef.current.push(commitTimerId, clearTimerId);
   };
 
   const runPrivacyRedaction = async (includeBars: boolean) => {
@@ -291,8 +306,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       setAutoRedactBoxes(detected);
       setAiRedactSummary(null);
       await rebuildRedactedPreview(img, detected, manualRedactBoxes, includeBars);
-      triggerInkWipeOverlay([...getStatusBarRegions(includeBars, includeBars), ...detected]);
-      setIsRedactedMode(true);
+      triggerInkWipeOverlay([...getStatusBarRegions(includeBars, includeBars), ...detected], 'standard');
     } catch (err: unknown) {
       console.error('Redaction error:', err);
       const message =
@@ -341,8 +355,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       setAutoRedactBoxes(aiRegions);
       setAiRedactSummary(res.summary);
       await rebuildRedactedPreview(img, aiRegions, manualRedactBoxes, false);
-      triggerInkWipeOverlay(aiRegions);
-      setIsRedactedMode(true);
+      triggerInkWipeOverlay(aiRegions, 'ai');
     } catch (err: unknown) {
       console.error('AI targeted redact error:', err);
       setRedactError(
@@ -354,6 +367,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   const handleClearAllMasks = async () => {
+    animTimersRef.current.forEach((id) => window.clearTimeout(id));
+    animTimersRef.current = [];
+    setAutoInkMasks([]);
     if (!loadedRedactImgRef.current) return;
     setRedactBars(false);
     setAutoRedactBoxes([]);
@@ -369,18 +385,23 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const handleToggleRedact = async () => {
     if (isRedacting || isAiRedacting) return;
     if (isRedactedMode) {
+      animTimersRef.current.forEach((id) => window.clearTimeout(id));
+      animTimersRef.current = [];
+      setAutoInkMasks([]);
       setIsRedactedMode(false);
       setDragRect(null);
       return;
     }
     if (redactedResult) {
       setRedactError(null);
-      triggerInkWipeOverlay([
-        ...getStatusBarRegions(redactBars, redactBars),
-        ...autoRedactBoxes,
-        ...manualRedactBoxes,
-      ]);
-      setIsRedactedMode(true);
+      triggerInkWipeOverlay(
+        [
+          ...getStatusBarRegions(redactBars, redactBars),
+          ...autoRedactBoxes,
+          ...manualRedactBoxes,
+        ],
+        aiRedactSummary && autoRedactBoxes.some((b) => b.source === 'ai') ? 'ai' : 'standard'
+      );
       return;
     }
     await runPrivacyRedaction(redactBars);
@@ -609,10 +630,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   useEffect(() => {
     if (!screenshotId || !data) return;
 
-    if (data.screenshot.processing_status === 'processing') {
+    if (data.screenshot.processing_status === 'queued' || data.screenshot.processing_status === 'processing') {
       pollIntervalRef.current = setInterval(() => {
         api.getScreenshotDetails(screenshotId).then((res) => {
-          if (res.screenshot.processing_status !== 'processing') {
+          if (res.screenshot.processing_status !== 'queued' && res.screenshot.processing_status !== 'processing') {
             setData(res);
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
             onUpdated();
@@ -806,8 +827,90 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 draggable={false}
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded ? 'max-h-[70vh]' : 'max-h-56'
-                } ${isRedacting || isAiRedacting ? 'opacity-85' : 'opacity-100'}`}
+                } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'}`}
               />
+
+              {/* Standard Redact Pass: Tactile Marker-Ink Sweep & Live Censorship HUD */}
+              {isRedacting && (
+                <div className="pointer-events-none absolute inset-0 z-[15] overflow-hidden bg-[#0B1220]/16 backdrop-blur-[1px]">
+                  <div
+                    className="absolute inset-x-0 top-0 h-[28%]"
+                    style={{
+                      background:
+                        'linear-gradient(to bottom, rgba(11,18,32,0) 0%, rgba(11,18,32,0.22) 55%, rgba(226,232,240,0.52) 96%, rgba(255,255,255,0.85) 100%)',
+                      animation: 'redactCurtainSweep 1.35s cubic-bezier(0.37, 0, 0.63, 1) infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  />
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center px-3">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0B1220]/90 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+                      <span className="relative flex h-3.5 w-5 flex-col justify-center gap-[3px]">
+                        <span className="h-[2px] w-full rounded-full bg-white/30" />
+                        <span className="h-[2px] w-3.5 rounded-full bg-white/30" />
+                        <span
+                          className="absolute inset-x-0 top-1/2 h-[5px] -translate-y-1/2 rounded-[2px] bg-white"
+                          style={{
+                            transformOrigin: 'left center',
+                            animation: 'redactPillMarkerStroke 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite',
+                          }}
+                        />
+                      </span>
+                      <span>Masking sensitive lines…</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Targeted Redact Pass: Visual Reading Sweep + Focus Reticule */}
+              {isAiRedacting && (
+                <div
+                  className="pointer-events-none absolute inset-0 z-[15] overflow-hidden"
+                  style={{
+                    background:
+                      'radial-gradient(circle at 50% 45%, rgba(52,120,246,0.12) 0%, rgba(11,18,32,0.28) 100%)',
+                  }}
+                >
+                  <div
+                    className="absolute inset-x-0 top-0 h-[26%]"
+                    style={{
+                      background:
+                        'linear-gradient(to bottom, rgba(52,120,246,0) 0%, rgba(52,120,246,0.18) 65%, rgba(147,197,253,0.78) 97%, rgba(255,255,255,0.95) 100%)',
+                      animation: 'aiVisionSweep 1.45s cubic-bezier(0.37, 0, 0.63, 1) infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  />
+                  <div
+                    className="absolute inset-3"
+                    style={{
+                      animation: 'aiBracketPulse 1.3s ease-in-out infinite',
+                      willChange: 'transform, opacity',
+                    }}
+                  >
+                    <span className="absolute top-0 left-0 h-3 w-3 rounded-tl-[4px] border-t-2 border-l-2 border-[#60A5FA]/85" />
+                    <span className="absolute top-0 right-0 h-3 w-3 rounded-tr-[4px] border-t-2 border-r-2 border-[#60A5FA]/85" />
+                    <span className="absolute bottom-0 left-0 h-3 w-3 rounded-bl-[4px] border-b-2 border-l-2 border-[#60A5FA]/85" />
+                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-br-[4px] border-b-2 border-r-2 border-[#60A5FA]/85" />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center px-3">
+                    <div className="inline-flex max-w-[90%] items-center gap-2 rounded-full border border-[#60A5FA]/40 bg-[#0B1220]/92 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+                      <span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                        <span
+                          className="absolute inset-0 rounded-full border border-[#60A5FA]"
+                          style={{
+                            animation: 'aiIrisRing 1.3s cubic-bezier(0.22, 1, 0.36, 1) infinite',
+                          }}
+                        />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#60A5FA]" />
+                      </span>
+                      <span className="truncate">
+                        {aiRedactPrompt.trim()
+                          ? `AI locating “${aiRedactPrompt.trim()}”…`
+                          : 'AI locating target…'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Dragging Preview: Frosted Obsidian Precision Lens */}
               {dragRect && (
@@ -827,21 +930,53 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               )}
 
-              {/* Localized Target Animation: Soft Blur Mist Condensing Into Matte Ink */}
-              {autoInkMasks.map((mask) => (
-                <div
-                  key={mask.id}
-                  className="pointer-events-none absolute z-[17] rounded-[6px] bg-[#0B1220]/90 backdrop-blur-[8px] border border-white/20"
-                  style={{
-                    left: `${mask.left}px`,
-                    top: `${mask.top}px`,
-                    width: `${mask.width}px`,
-                    height: `${mask.height}px`,
-                    animation: `redactInkCondense 420ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
-                    willChange: 'transform, opacity',
-                  }}
-                />
-              ))}
+              {/* Completion Animations: Marker Wipe (Standard) vs Target Lock -> Ink Seal (AI) */}
+              {autoInkMasks.map((mask) =>
+                mask.mode === 'ai' ? (
+                  <div
+                    key={mask.id}
+                    className="pointer-events-none absolute z-[17]"
+                    style={{
+                      left: `${mask.left}px`,
+                      top: `${mask.top}px`,
+                      width: `${mask.width}px`,
+                      height: `${mask.height}px`,
+                    }}
+                  >
+                    <div
+                      className="absolute -inset-[2px] rounded-[6px] border border-[#60A5FA]"
+                      style={{
+                        boxShadow:
+                          '0 0 0 1px rgba(52,120,246,0.55), 0 0 14px rgba(52,120,246,0.45)',
+                        animation: `aiTargetLockFrame 540ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
+                        willChange: 'transform, opacity',
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 rounded-[5px] border-r-2 border-[#93C5FD] bg-[#0B1220]"
+                      style={{
+                        transformOrigin: 'left center',
+                        animation: `aiSurgicalInkWipe 680ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
+                        willChange: 'transform, opacity',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    key={mask.id}
+                    className="pointer-events-none absolute z-[17] rounded-[5px] border-r-2 border-white/85 bg-[#0B1220] ring-1 ring-white/25"
+                    style={{
+                      left: `${mask.left}px`,
+                      top: `${mask.top}px`,
+                      width: `${mask.width}px`,
+                      height: `${mask.height}px`,
+                      transformOrigin: 'left center',
+                      animation: `redactCurtainWipe 480ms cubic-bezier(0.22, 1, 0.36, 1) ${mask.delayMs}ms both`,
+                      willChange: 'transform, opacity',
+                    }}
+                  />
+                )
+              )}
 
               {/* Manual-Redaction Release: Matte Ink Seal + Subtle Oblique Glint */}
               {manualInkMasks.map((mask) => (

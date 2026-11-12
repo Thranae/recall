@@ -173,18 +173,100 @@ export const api = {
     removeAuthToken();
   },
 
-  // Screenshots (Upload files concurrently in small chunks to avoid request size limits while maintaining high speed)
+  // Screenshots (Compress oversized photos client-side & upload concurrently in batches of 5 for near-instant uploads)
+  async optimizeImageForUpload(file: File): Promise<File> {
+    const MIN_COMPRESS_BYTES = 450 * 1024;
+    if (
+      file.size < MIN_COMPRESS_BYTES ||
+      /\.(gif|svg|heic|heif)$/i.test(file.name) ||
+      file.type === 'image/gif' ||
+      file.type === 'image/svg+xml'
+    ) {
+      return file;
+    }
+
+    try {
+      const MAX_DIM = 1600;
+      let width = 0;
+      let height = 0;
+      let drawSource: CanvasImageSource | null = null;
+      let objectUrl: string | null = null;
+      let bitmap: ImageBitmap | null = null;
+
+      if (typeof createImageBitmap === 'function') {
+        bitmap = await createImageBitmap(file);
+        width = bitmap.width;
+        height = bitmap.height;
+        drawSource = bitmap;
+      } else {
+        objectUrl = URL.createObjectURL(file);
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const el = new Image();
+          el.onload = () => resolve(el);
+          el.onerror = reject;
+          el.src = objectUrl!;
+        });
+        width = img.naturalWidth || img.width;
+        height = img.naturalHeight || img.height;
+        drawSource = img;
+      }
+
+      if (!width || !height || !drawSource) {
+        if (bitmap) bitmap.close();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        return file;
+      }
+
+      const scale = Math.min(1, MAX_DIM / Math.max(width, height));
+      const targetW = Math.max(1, Math.round(width * scale));
+      const targetH = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        if (bitmap) bitmap.close();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        return file;
+      }
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, targetW, targetH);
+      ctx.drawImage(drawSource, 0, 0, targetW, targetH);
+
+      if (bitmap) bitmap.close();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.84)
+      );
+      if (!blob || blob.size >= file.size * 0.9) {
+        return file;
+      }
+
+      const baseName = file.name.replace(/\.[^/.]+$/, '') || 'screenshot';
+      return new File([blob], `${baseName}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: file.lastModified,
+      });
+    } catch {
+      return file;
+    }
+  },
+
   async uploadScreenshots(files: File[]): Promise<{ message: string; screenshots: any[] }> {
     const allScreenshots: any[] = [];
     const errors: string[] = [];
 
-    // Parallel chunking (3 at a time) for fast instant upload
-    const CHUNK_SIZE = 3;
+    // Parallel client optimization + upload chunking (5 at a time) for sub-second perceived upload
+    const CHUNK_SIZE = 5;
     for (let i = 0; i < files.length; i += CHUNK_SIZE) {
       const chunk = files.slice(i, i + CHUNK_SIZE);
       await Promise.all(
-        chunk.map(async (file) => {
+        chunk.map(async (rawFile) => {
           try {
+            const file = await this.optimizeImageForUpload(rawFile);
             const formData = new FormData();
             formData.append('screenshots', file);
             const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
@@ -195,7 +277,7 @@ export const api = {
               allScreenshots.push(...res.screenshots);
             }
           } catch (err: any) {
-            errors.push(`${file.name}: ${err.message || 'failed'}`);
+            errors.push(`${rawFile.name}: ${err.message || 'failed'}`);
           }
         })
       );

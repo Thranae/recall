@@ -80,39 +80,49 @@ export const App: React.FC = () => {
     }
   }, [user, fetchScreenshots]);
 
-  // Periodic poll & background AI indexing while items are actively processing
+  // Fast background AI indexing loop while newly uploaded items are queued or processing
   useEffect(() => {
     const hasPending = screenshots.some(
       (s) => s.processing_status === 'queued' || s.processing_status === 'processing'
     );
     if (!hasPending || !user) return;
 
-    // Trigger processing of next item immediately without blocking UI
-    api.processPendingScreenshots()
-      .then((res) => {
-        if (res.processed) {
-          fetchScreenshots();
+    let cancelled = false;
+    let isTicking = false;
+
+    const drainNext = async () => {
+      if (cancelled || isTicking) return;
+      isTicking = true;
+      try {
+        while (!cancelled) {
+          const res = await api.processPendingScreenshots();
+          if (cancelled) break;
+          await fetchScreenshots();
+          if (!res.processed) break;
         }
-      })
-      .catch(() => {});
+      } catch {
+        if (!cancelled) {
+          api
+            .getScreenshots()
+            .then((res) => {
+              if (!cancelled) setScreenshots(res.screenshots);
+            })
+            .catch(() => {});
+        }
+      } finally {
+        isTicking = false;
+      }
+    };
 
+    void drainNext();
     const interval = setInterval(() => {
-      api.processPendingScreenshots()
-        .then(() => {
-          api
-            .getScreenshots()
-            .then((res) => setScreenshots(res.screenshots))
-            .catch(() => {});
-        })
-        .catch(() => {
-          api
-            .getScreenshots()
-            .then((res) => setScreenshots(res.screenshots))
-            .catch(() => {});
-        });
-    }, 2500);
+      void drainNext();
+    }, 1800);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [screenshots, user, fetchScreenshots]);
 
   // Execute Search

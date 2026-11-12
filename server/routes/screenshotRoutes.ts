@@ -166,7 +166,7 @@ router.post(
           now,
           now,
           initialCategory,
-          'processing',
+          'queued',
           null,
           '',
           '',
@@ -182,30 +182,13 @@ router.post(
           filename: effectiveFilename,
           storage_key: storageKey,
           category: initialCategory,
-          status: 'processing',
+          status: 'queued',
         });
       }
 
-      // Execute multimodal vision analysis immediately so results are ready without serverless freeze delay
-      for (const item of createdScreenshots) {
-        try {
-          const matchFile = files.find(f => path.join(userId, f.filename).replace(/\\/g, '/') === item.storage_key);
-          let base64 = null;
-          if (matchFile?.path && fs.existsSync(matchFile.path)) {
-            base64 = fs.readFileSync(matchFile.path).toString('base64');
-          }
-          await processScreenshotDirectly(
-            item.id,
-            userId,
-            item.storage_key,
-            matchFile?.mimetype || 'image/jpeg',
-            item.filename,
-            base64
-          );
-          item.status = 'ready';
-        } catch (procErr) {
-          console.warn(`Immediate processing notice for ${item.id}:`, procErr);
-          // Fall back to queuing for persistent worker
+      // Queue background AI vision indexing without blocking the upload HTTP response
+      if (!isVercel) {
+        for (const item of createdScreenshots) {
           try {
             const matchFile = files.find(f => path.join(userId, f.filename).replace(/\\/g, '/') === item.storage_key);
             enqueueScreenshotJob({
@@ -220,7 +203,7 @@ router.post(
       }
 
       res.status(201).json({
-        message: `Successfully uploaded ${createdScreenshots.length} screenshots. Background analysis completed.`,
+        message: `Uploaded ${createdScreenshots.length} screenshot${createdScreenshots.length === 1 ? '' : 's'}. AI indexing running in background.`,
         screenshots: createdScreenshots,
       });
     } catch (err: any) {
@@ -703,20 +686,25 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
     const userId = req.user!.id;
     const userEmail = req.user?.email;
 
+    const staleProcessingCutoff = new Date(Date.now() - 20_000).toISOString();
     const getPending = db.prepare(`
-      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data, processing_status
       FROM screenshots
       WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
-        AND processing_status IN ('queued', 'processing')
-      ORDER BY uploaded_at ASC
+        AND (processing_status = 'queued' OR (processing_status = 'processing' AND updated_at <= ?))
+      ORDER BY CASE WHEN processing_status = 'queued' THEN 0 ELSE 1 END, uploaded_at ASC
       LIMIT 1
     `);
-    const pending = (await getPending.get(userId, userEmail || userId)) as any;
+    const pending = (await getPending.get(userId, userEmail || userId, staleProcessingCutoff)) as any;
 
     if (!pending) {
       res.json({ processed: false, message: 'No pending screenshots' });
       return;
     }
+
+    await db.prepare(
+      "UPDATE screenshots SET processing_status = 'processing', updated_at = ? WHERE id = ?"
+    ).run(new Date().toISOString(), pending.id);
 
     const fullPath = path.join(UPLOADS_BASE, pending.storage_key);
     const analysis = await analyzeScreenshot(fullPath, pending.mime_type, pending.original_filename, pending.image_data);
