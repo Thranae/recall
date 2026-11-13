@@ -140,8 +140,11 @@ export const App: React.FC = () => {
       const res = await api.search(query, searchCategory);
       setSearchResults(res);
     } catch (err) {
-      console.error('Search failed:', err);
-      alert('Search request failed. Please check connectivity.');
+      console.warn('Search failed:', err);
+      // Avoid modal alert() during live typing debounced search
+      if (e) {
+        alert('Search request failed. Please check connectivity.');
+      }
     } finally {
       setIsSearching(false);
     }

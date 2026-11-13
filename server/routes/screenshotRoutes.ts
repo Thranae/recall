@@ -561,12 +561,16 @@ router.get('/image/:id', authMiddleware, async (req: AuthRequest, res: Response)
 router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
+    const userEmail = req.user?.email;
     const { id } = req.params;
     const { name, original_filename, category, visual_description, tags } = req.body;
     const newFilename = (name || original_filename || '').trim() || null;
 
-    const getScreenshot = db.prepare('SELECT id FROM screenshots WHERE id = ? AND user_id = ?');
-    const existing = await getScreenshot.get(id, userId);
+    const getScreenshot = db.prepare(`
+      SELECT id, user_id FROM screenshots 
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `);
+    const existing = await getScreenshot.get(id, userId, userEmail || userId);
 
     if (!existing) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
@@ -581,7 +585,7 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
         visual_description = COALESCE(?, visual_description),
         tags = COALESCE(?, tags),
         updated_at = ?
-      WHERE id = ? AND user_id = ?
+      WHERE id = ?
     `);
 
     await updateStmt.run(
@@ -590,8 +594,7 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
       visual_description || null,
       tags ? JSON.stringify(tags) : null,
       new Date().toISOString(),
-      id,
-      userId
+      id
     );
 
     res.json({ message: 'Metadata updated successfully', original_filename: newFilename });
@@ -605,10 +608,14 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
+    const userEmail = req.user?.email;
     const { id } = req.params;
 
-    const getScreenshot = db.prepare('SELECT storage_key FROM screenshots WHERE id = ? AND user_id = ?');
-    const row = (await getScreenshot.get(id, userId)) as any;
+    const getScreenshot = db.prepare(`
+      SELECT storage_key FROM screenshots 
+      WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+    `);
+    const row = (await getScreenshot.get(id, userId, userEmail || userId)) as any;
 
     if (!row) {
       res.status(404).json({ error: 'Screenshot not found or access denied' });
