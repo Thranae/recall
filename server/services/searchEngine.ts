@@ -172,7 +172,12 @@ function scoreVisualAndTextMatch(
   const coverage = totalWeight / keywords.length;
   const qClean = keywords.join(' ');
   const exactPhraseBonus =
-    keywords.length >= 2 && (combinedVisual.includes(qClean) || ocrLower.includes(qClean) || combinedVisual.includes(rawQuery.toLowerCase()))
+    keywords.length >= 2 &&
+    (combinedVisual.includes(qClean) ||
+      ocrLower.includes(qClean) ||
+      filenameLower.includes(qClean) ||
+      combinedVisual.includes(rawQuery.toLowerCase()) ||
+      filenameLower.includes(rawQuery.toLowerCase()))
       ? 0.08
       : 0;
 

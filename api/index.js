@@ -69549,7 +69549,8 @@ router2.patch("/:id/metadata", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { category, visual_description, tags } = req.body;
+    const { name: name2, original_filename, category, visual_description, tags } = req.body;
+    const newFilename = (name2 || original_filename || "").trim() || null;
     const getScreenshot = db.prepare("SELECT id FROM screenshots WHERE id = ? AND user_id = ?");
     const existing = await getScreenshot.get(id, userId);
     if (!existing) {
@@ -69559,6 +69560,7 @@ router2.patch("/:id/metadata", authMiddleware, async (req, res) => {
     const updateStmt = db.prepare(`
       UPDATE screenshots 
       SET 
+        original_filename = COALESCE(?, original_filename),
         category = COALESCE(?, category),
         visual_description = COALESCE(?, visual_description),
         tags = COALESCE(?, tags),
@@ -69566,6 +69568,7 @@ router2.patch("/:id/metadata", authMiddleware, async (req, res) => {
       WHERE id = ? AND user_id = ?
     `);
     await updateStmt.run(
+      newFilename,
       category || null,
       visual_description || null,
       tags ? JSON.stringify(tags) : null,
@@ -69573,7 +69576,7 @@ router2.patch("/:id/metadata", authMiddleware, async (req, res) => {
       id,
       userId
     );
-    res.json({ message: "Metadata updated successfully" });
+    res.json({ message: "Metadata updated successfully", original_filename: newFilename });
   } catch (err) {
     console.error("Update metadata error:", err);
     res.status(500).json({ error: "Failed to update metadata" });
@@ -70155,7 +70158,7 @@ function scoreVisualAndTextMatch(keywords, rawQuery, sc) {
   }
   const coverage = totalWeight / keywords.length;
   const qClean = keywords.join(" ");
-  const exactPhraseBonus = keywords.length >= 2 && (combinedVisual.includes(qClean) || ocrLower.includes(qClean) || combinedVisual.includes(rawQuery.toLowerCase())) ? 0.08 : 0;
+  const exactPhraseBonus = keywords.length >= 2 && (combinedVisual.includes(qClean) || ocrLower.includes(qClean) || filenameLower.includes(qClean) || combinedVisual.includes(rawQuery.toLowerCase()) || filenameLower.includes(rawQuery.toLowerCase())) ? 0.08 : 0;
   const score = Math.min(0.97, 0.56 + coverage * 0.35 + exactPhraseBonus);
   for (const tag of parsedTags) {
     if (matchedTagSet.size >= 4) break;

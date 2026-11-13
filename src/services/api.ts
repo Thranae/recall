@@ -378,11 +378,15 @@ export const api = {
     return `${getApiBase()}/screenshots/image/${id}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   },
 
-  async updateMetadata(id: string, updates: { category?: string; visual_description?: string; tags?: string[] }): Promise<void> {
+  async updateMetadata(id: string, updates: { original_filename?: string; name?: string; category?: string; visual_description?: string; tags?: string[] }): Promise<void> {
     await request(`/screenshots/${id}/metadata`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
+  },
+
+  async renameScreenshot(id: string, name: string): Promise<void> {
+    await this.updateMetadata(id, { original_filename: name });
   },
 
   async deleteScreenshot(id: string): Promise<void> {

@@ -29,6 +29,7 @@ import {
   Layers,
   Zap,
   Undo2,
+  Pencil,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
@@ -112,6 +113,17 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [redactedResult, setRedactedResult] = useState<{ dataUrl: string; blob: Blob; redactedCount: number } | null>(null);
   const loadedRedactImgRef = useRef<HTMLImageElement | null>(null);
   const ocrWordHintsRef = useRef<AiRedactWordHint[] | null>(null);
+
+  // Screenshot Renaming State
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  useEffect(() => {
+    if (data?.screenshot?.original_filename) {
+      setNewName(data.screenshot.original_filename);
+    }
+  }, [data?.screenshot?.original_filename]);
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
   const animTimersRef = useRef<number[]>([]);
@@ -771,6 +783,30 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
   };
 
+  const handleSaveName = async () => {
+    if (!data || !screenshotId || !newName.trim() || isSavingName) return;
+    const trimmed = newName.trim();
+    if (trimmed === data.screenshot.original_filename) {
+      setIsEditingName(false);
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      await api.renameScreenshot(screenshotId, trimmed);
+      setData({
+        ...data,
+        screenshot: { ...data.screenshot, original_filename: trimmed },
+      });
+      setIsEditingName(false);
+      onUpdated();
+    } catch (err) {
+      console.error('Failed to rename screenshot:', err);
+      alert('Failed to rename screenshot');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   const handleCategoryChange = async (newCat: string) => {
     if (!data) return;
     try {
@@ -871,6 +907,70 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               <X className="h-4 w-4 stroke-[2]" />
             </button>
           </div>
+        </div>
+
+        {/* Screenshot Title Bar with Inline Renaming */}
+        <div className="border-b border-white/60 bg-white/45 px-5 py-2.5 backdrop-blur-xs">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName();
+                  if (e.key === 'Escape') setIsEditingName(false);
+                }}
+                autoFocus
+                placeholder="Screenshot name..."
+                className="flex-1 rounded-xl bg-white border border-[#3478F6] px-3 py-1.5 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/20"
+              />
+              <button
+                type="button"
+                onClick={handleSaveName}
+                disabled={isSavingName || !newName.trim()}
+                className="flex h-7 px-3 items-center justify-center rounded-full bg-[#3478F6] hover:bg-blue-600 text-white text-[11px] font-bold active:scale-95 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isSavingName ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingName(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 active:scale-90 transition-all cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div
+                onClick={() => {
+                  setNewName(data?.screenshot.original_filename || '');
+                  setIsEditingName(true);
+                }}
+                role="button"
+                tabIndex={0}
+                title="Tap to rename"
+                className="group flex items-center gap-1.5 cursor-pointer max-w-[80%] rounded-lg py-0.5 hover:opacity-90 active:scale-[0.99] transition-all"
+              >
+                <h3 className="text-sm font-bold text-[#172B4D] truncate group-hover:text-[#3478F6] transition-colors">
+                  {data?.screenshot.original_filename || 'Untitled Screenshot'}
+                </h3>
+                <Pencil className="h-3 w-3 text-slate-400 group-hover:text-[#3478F6] transition-colors shrink-0" />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewName(data?.screenshot.original_filename || '');
+                  setIsEditingName(true);
+                }}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold text-[#3478F6] bg-blue-50/80 border border-blue-200/50 hover:bg-blue-100/80 active:scale-95 transition-all cursor-pointer"
+              >
+                <Pencil className="h-2.5 w-2.5 stroke-[2.3]" />
+                <span>Rename</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Content */}

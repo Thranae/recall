@@ -13,6 +13,7 @@ import {
   Loader2,
   ArrowRight,
   CheckSquare,
+  Pencil,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, VaultInsightsSummary } from '../types';
@@ -60,6 +61,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Single Screenshot Renaming State
+  const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Synchronize deletedIds cleanup when screenshots list updates from parent
   useEffect(() => {
@@ -131,6 +137,37 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       setSelectedIds(new Set(visibleIds));
     }
   }, [filteredScreenshots, selectedIds]);
+
+  const handleOpenRename = useCallback(() => {
+    if (selectedIds.size !== 1) return;
+    const targetId = Array.from(selectedIds)[0];
+    const targetScreenshot = screenshots.find((s) => s.id === targetId);
+    if (!targetScreenshot) return;
+    setRenameTarget({ id: targetId, name: targetScreenshot.original_filename });
+    setRenameInput(targetScreenshot.original_filename);
+  }, [selectedIds, screenshots]);
+
+  const handleSaveRename = async () => {
+    if (!renameTarget || !renameInput.trim() || isRenaming) return;
+    const trimmed = renameInput.trim();
+    if (trimmed === renameTarget.name) {
+      setRenameTarget(null);
+      return;
+    }
+    setIsRenaming(true);
+    try {
+      await api.renameScreenshot(renameTarget.id, trimmed);
+      setRenameTarget(null);
+      setIsSelectionMode(false);
+      setSelectedIds(new Set());
+      onRefresh?.();
+    } catch (err) {
+      console.error('Failed to rename screenshot:', err);
+      alert('Failed to rename screenshot');
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const handleExitSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
@@ -559,6 +596,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {selectedIds.size === 1 && (
+                      <button
+                        type="button"
+                        onClick={handleOpenRename}
+                        className="flex items-center gap-1 rounded-full bg-blue-50/80 border border-blue-200/60 px-2.5 py-1.5 text-xs font-semibold text-[#3478F6] hover:bg-blue-100/80 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <Pencil className="h-3 w-3 stroke-[2.3]" />
+                        <span>Rename</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleExitSelectionMode}
@@ -584,6 +631,67 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               )}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. Rename Screenshot Modal */}
+      <AnimatePresence>
+        {renameTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              className="w-full max-w-sm rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
+            >
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#172B4D]">Rename Screenshot</h3>
+                <p className="text-xs text-slate-500">
+                  Give this screenshot a descriptive name so you can search and find it easily anytime.
+                </p>
+              </div>
+
+              <input
+                type="text"
+                value={renameInput}
+                onChange={(e) => setRenameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveRename();
+                  if (e.key === 'Escape') setRenameTarget(null);
+                }}
+                autoFocus
+                placeholder="e.g. Flight Ticket to Tokyo..."
+                className="w-full rounded-xl bg-white border border-[#3478F6] px-3.5 py-2 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/25"
+              />
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setRenameTarget(null)}
+                  disabled={isRenaming}
+                  className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveRename}
+                  disabled={isRenaming || !renameInput.trim()}
+                  className="flex items-center gap-1.5 rounded-full bg-[#3478F6] hover:bg-blue-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isRenaming ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

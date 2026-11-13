@@ -562,7 +562,8 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-    const { category, visual_description, tags } = req.body;
+    const { name, original_filename, category, visual_description, tags } = req.body;
+    const newFilename = (name || original_filename || '').trim() || null;
 
     const getScreenshot = db.prepare('SELECT id FROM screenshots WHERE id = ? AND user_id = ?');
     const existing = await getScreenshot.get(id, userId);
@@ -575,6 +576,7 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
     const updateStmt = db.prepare(`
       UPDATE screenshots 
       SET 
+        original_filename = COALESCE(?, original_filename),
         category = COALESCE(?, category),
         visual_description = COALESCE(?, visual_description),
         tags = COALESCE(?, tags),
@@ -583,6 +585,7 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
     `);
 
     await updateStmt.run(
+      newFilename,
       category || null,
       visual_description || null,
       tags ? JSON.stringify(tags) : null,
@@ -591,7 +594,7 @@ router.patch('/:id/metadata', authMiddleware, async (req: AuthRequest, res: Resp
       userId
     );
 
-    res.json({ message: 'Metadata updated successfully' });
+    res.json({ message: 'Metadata updated successfully', original_filename: newFilename });
   } catch (err: any) {
     console.error('Update metadata error:', err);
     res.status(500).json({ error: 'Failed to update metadata' });
