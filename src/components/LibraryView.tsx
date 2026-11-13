@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SlidersHorizontal,
@@ -14,6 +14,7 @@ import {
   ArrowRight,
   CheckSquare,
   Pencil,
+  RotateCcw,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, VaultInsightsSummary } from '../types';
@@ -61,7 +62,31 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete Confirmation Popup & 7-Second Undo State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    ids: string[];
+    count: number;
+    timer: ReturnType<typeof setTimeout>;
+    interval: ReturnType<typeof setInterval>;
+    expiresAt: number;
+  } | null>(null);
+  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(7);
+  const pendingDeleteRef = useRef<typeof pendingDelete>(null);
+  pendingDeleteRef.current = pendingDelete;
+
+  // Flush any pending background deletion on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingDeleteRef.current) {
+        const { ids, timer, interval } = pendingDeleteRef.current;
+        clearTimeout(timer);
+        clearInterval(interval);
+        void Promise.all(ids.map((id) => api.deleteScreenshot(id)));
+      }
+    };
+  }, []);
 
   // Single Screenshot Renaming State
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
@@ -193,34 +218,84 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     setSelectedIds(new Set());
   }, []);
 
-  const handleConfirmDelete = async () => {
-    if (selectedIds.size === 0 || isDeleting) return;
+  const handleConfirmDelete = () => {
+    if (selectedIds.size === 0) return;
 
     const idsToDelete = Array.from(selectedIds);
-    setIsDeleting(true);
-
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      try {
-        navigator.vibrate(12);
-      } catch {}
-    }
-
-    // 1. Immediately trigger the subtle exit animation on the selected cards
-    setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
-
-    // 2. Immediately dismiss selection mode so UI cleanly transitions back
+    setShowDeleteConfirm(false);
     setIsSelectionMode(false);
     setSelectedIds(new Set());
 
-    try {
-      await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
-    } catch (err) {
-      console.error('Failed to batch delete screenshots:', err);
-    } finally {
-      setIsDeleting(false);
-      onRefresh?.();
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(14);
+      } catch {}
     }
+
+    // Flush any previous pending deletion to server immediately
+    if (pendingDeleteRef.current) {
+      const prev = pendingDeleteRef.current;
+      clearTimeout(prev.timer);
+      clearInterval(prev.interval);
+      void Promise.all(prev.ids.map((id) => api.deleteScreenshot(id)));
+    }
+
+    // 1. Immediately hide selected items with the exit animation
+    setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+
+    // 2. Start 7-second undo window
+    const durationMs = 7000;
+    const expiresAt = Date.now() + durationMs;
+    setUndoSecondsRemaining(7);
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setUndoSecondsRemaining(remaining);
+    }, 200);
+
+    const timer = setTimeout(async () => {
+      clearInterval(interval);
+      setPendingDelete(null);
+      try {
+        await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
+      } catch (err) {
+        console.error('Failed to commit delete:', err);
+      } finally {
+        onRefresh?.();
+      }
+    }, durationMs);
+
+    setPendingDelete({
+      ids: idsToDelete,
+      count: idsToDelete.length,
+      timer,
+      interval,
+      expiresAt,
+    });
   };
+
+  const handleUndoDelete = useCallback(() => {
+    if (!pendingDeleteRef.current) return;
+    const { ids, timer, interval } = pendingDeleteRef.current;
+    clearTimeout(timer);
+    clearInterval(interval);
+    setPendingDelete(null);
+
+    // Restore items into view
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        next.delete(id);
+      }
+      return next;
+    });
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(10);
+      } catch {}
+    }
+  }, []);
 
   const handleToggleInsights = async () => {
     const next = !showInsights;
@@ -608,17 +683,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={handleConfirmDelete}
-                    disabled={selectedIds.size === 0 || isDeleting}
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={selectedIds.size === 0}
                     className={`plump-liquid-rose-btn flex items-center gap-1 h-7.5 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer ${
                       selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed saturate-50' : ''
                     }`}
                   >
-                    {isDeleting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
-                    )}
+                    <Trash2 className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
                     <span className="leading-none whitespace-nowrap">
                       Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
                     </span>
@@ -695,6 +766,117 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* 6. Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              className="w-full max-w-sm rounded-[32px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
+            >
+              <div className="flex items-start gap-3">
+                <div className="plump-liquid-rose-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm">
+                  <Trash2 className="h-5 w-5 stroke-[2.4] text-white" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <h3 className="text-[14px] font-bold text-[#172B4D] leading-snug">
+                    Delete {selectedIds.size === 1 ? 'this screenshot' : `${selectedIds.size} screenshots`}?
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                    {selectedIds.size === 1
+                      ? 'This screenshot will be removed from your vault. You can undo this within 7 seconds.'
+                      : `These ${selectedIds.size} screenshots will be removed from your vault. You can undo this within 7 seconds.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="plump-liquid-rose-btn flex items-center gap-1.5 rounded-full px-4.5 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5 stroke-[2.4]" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 7. 7-Second Floating Undo Banner */}
+      <AnimatePresence>
+        {pendingDelete && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+            style={{ bottom: 'calc(86px + env(safe-area-inset-bottom, 0px))' }}
+            className="fixed inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto select-none"
+          >
+            <div className="relative overflow-hidden rounded-[26px] nav-glass-bar px-3.5 py-2.5 shadow-[0_16px_40px_rgba(23,43,77,0.22)] border border-white/95 flex items-center justify-between gap-2.5">
+              {/* Top Specular Hairline */}
+              <div
+                className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+                }}
+              />
+
+              {/* 7-Second Animated Countdown Progress Bar at Bottom of Pill */}
+              <div className="pointer-events-none absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-200/50 overflow-hidden">
+                <motion.div
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: 7, ease: 'linear' }}
+                  className="h-full bg-gradient-to-r from-[#3478F6] to-[#5392FF]"
+                />
+              </div>
+
+              {/* Left Info: Trash Icon + Text */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="plump-liquid-rose-btn flex h-7 w-7 items-center justify-center rounded-full shrink-0">
+                  <Trash2 className="h-3.5 w-3.5 stroke-[2.4] text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11.5px] font-bold text-[#172B4D] leading-tight truncate">
+                    Deleted {pendingDelete.count} {pendingDelete.count === 1 ? 'screenshot' : 'screenshots'}
+                  </p>
+                  <p className="text-[10px] font-semibold text-slate-500 leading-none">
+                    Undo available for {undoSecondsRemaining}s
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Actions: Plumpy Liquid Glass Undo Button */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleUndoDelete}
+                  className="plump-liquid-blue-btn flex items-center gap-1 h-7.5 px-3 rounded-full text-[11px] font-bold text-white cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 stroke-[2.4]" />
+                  <span>Undo ({undoSecondsRemaining}s)</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

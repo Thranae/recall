@@ -118,6 +118,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (data?.screenshot?.original_filename) {
@@ -769,10 +770,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this screenshot?')) return;
     setIsDeleting(true);
     try {
       await api.deleteScreenshot(screenshotId);
+      setShowDeleteConfirm(false);
       onDeleted();
       onClose();
     } catch (err) {
@@ -888,7 +889,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             {/* Delete button */}
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isDeleting}
               title="Delete screenshot"
               aria-label="Delete screenshot"
@@ -1970,6 +1971,51 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-[32px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="plump-liquid-rose-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm">
+                <Trash2 className="h-5 w-5 stroke-[2.4] text-white" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <h3 className="text-[14px] font-bold text-[#172B4D] leading-snug">
+                  Delete this screenshot?
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                  This screenshot and all its transcribed chat messages and extracted stats will be permanently removed.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="plump-liquid-rose-btn flex items-center gap-1.5 rounded-full px-4.5 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 stroke-[2.4]" />
+                )}
+                <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
