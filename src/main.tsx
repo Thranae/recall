@@ -12,6 +12,15 @@ if (Capacitor.isNativePlatform()) {
   SplashScreen.hide()
 }
 
+// Prevent unwanted native Android/browser context menus and callout popups on long press
+window.addEventListener('contextmenu', (e) => {
+  const target = e.target as HTMLElement | null
+  if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+    return
+  }
+  e.preventDefault()
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

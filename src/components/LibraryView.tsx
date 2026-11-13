@@ -60,7 +60,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Single Screenshot Renaming State
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
@@ -172,7 +171,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const handleExitSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
     setSelectedIds(new Set());
-    setShowDeleteConfirm(false);
   }, []);
 
   const handleConfirmDelete = async () => {
@@ -183,12 +181,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try {
-        navigator.vibrate([20, 40, 20]);
+        navigator.vibrate(12);
       } catch {}
     }
 
-    // Immediately trigger exit animation for deleted cards
+    // 1. Immediately trigger the subtle exit animation on the selected cards
     setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+
+    // 2. Immediately dismiss selection mode so UI cleanly transitions back
+    setIsSelectionMode(false);
+    setSelectedIds(new Set());
 
     try {
       await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
@@ -196,9 +198,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       console.error('Failed to batch delete screenshots:', err);
     } finally {
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
-      setIsSelectionMode(false);
-      setSelectedIds(new Set());
       onRefresh?.();
     }
   };
@@ -478,57 +477,59 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </button>
         </div>
       ) : (
-        <motion.div layout className="grid grid-cols-2 gap-3.5">
-          <AnimatePresence mode="popLayout">
-            {filteredScreenshots.map((s) => (
-              <motion.div
-                key={s.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{
-                  opacity: 0,
-                  scale: 0.88,
-                  filter: 'blur(2px)',
-                  transition: {
-                    duration: 0.22,
-                    ease: [0.23, 1, 0.32, 1],
-                  },
-                }}
-                transition={{
-                  layout: {
-                    type: 'spring',
-                    stiffness: 360,
-                    damping: 32,
-                  },
-                }}
-                className="w-full"
-              >
-                <ScreenshotCard
-                  screenshot={s}
-                  onClick={() => onSelectScreenshot(s.id)}
-                  isSelectionMode={isSelectionMode}
-                  isSelected={selectedIds.has(s.id)}
-                  onToggleSelect={() => handleToggleSelect(s.id)}
-                  onLongPress={() => handleCardLongPress(s.id)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="relative w-full">
+          <div className="grid grid-cols-2 gap-3.5 relative">
+            <AnimatePresence mode="popLayout">
+              {filteredScreenshots.map((s) => (
+                <motion.div
+                  key={s.id}
+                  layout="position"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.90,
+                    transition: {
+                      duration: 0.20,
+                      ease: [0.32, 0.72, 0, 1],
+                    },
+                  }}
+                  transition={{
+                    layout: {
+                      type: 'spring',
+                      stiffness: 380,
+                      damping: 32,
+                      mass: 0.8,
+                    },
+                  }}
+                  className="w-full"
+                >
+                  <ScreenshotCard
+                    screenshot={s}
+                    onClick={() => onSelectScreenshot(s.id)}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedIds.has(s.id)}
+                    onToggleSelect={() => handleToggleSelect(s.id)}
+                    onLongPress={() => handleCardLongPress(s.id)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
       )}
 
-      {/* 4. Floating Multi-Select & Relatable Deletion Action Bar */}
+      {/* 4. Minimal Floating Multi-Select Action Bar */}
       <AnimatePresence>
         {isSelectionMode && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.94 }}
+            initial={{ opacity: 0, y: 30, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-            className="fixed bottom-22 inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto"
+            exit={{ opacity: 0, y: 30, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+            className="fixed bottom-22 inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto select-none"
           >
-            <div className="relative overflow-hidden rounded-[26px] bg-white/92 backdrop-blur-2xl border border-white/95 p-3 shadow-[0_18px_40px_rgba(23,43,77,0.18)]">
+            <div className="relative overflow-hidden rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_rgba(23,43,77,0.16)]">
               {/* Top Specular Hairline */}
               <div
                 className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10"
@@ -538,97 +539,60 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 }}
               />
 
-              {showDeleteConfirm ? (
-                /* Confirmation Bar */
-                <div className="flex items-center justify-between gap-3 px-1">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-[#172B4D]">
-                      Delete {selectedIds.size} {selectedIds.size === 1 ? 'screenshot' : 'screenshots'}?
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-medium">This cannot be undone</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={isDeleting}
-                      className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmDelete}
-                      disabled={isDeleting}
-                      className="flex items-center gap-1.5 rounded-full bg-rose-500 hover:bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Deleting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="h-3.5 w-3.5 stroke-[2.3]" />
-                          <span>Delete</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-[#3478F6] text-white text-[11px] font-bold font-mono shadow-xs">
+                    {selectedIds.size}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAll}
+                    className="text-[11.5px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer"
+                  >
+                    {filteredScreenshots.length > 0 &&
+                    selectedIds.size === filteredScreenshots.length
+                      ? 'Deselect All'
+                      : 'Select All'}
+                  </button>
                 </div>
-              ) : (
-                /* Normal Selection Action Bar */
-                <div className="flex items-center justify-between gap-2 px-1">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-[#3478F6] text-white text-[11px] font-bold font-mono shadow-xs">
-                      {selectedIds.size}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleToggleSelectAll}
-                      className="text-[11.5px] font-semibold text-[#3478F6] hover:text-blue-700 active:scale-95 transition-all cursor-pointer"
-                    >
-                      {filteredScreenshots.length > 0 &&
-                      selectedIds.size === filteredScreenshots.length
-                        ? 'Deselect All'
-                        : 'Select All'}
-                    </button>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {selectedIds.size === 1 && (
-                      <button
-                        type="button"
-                        onClick={handleOpenRename}
-                        className="flex items-center gap-1 rounded-full bg-blue-50/80 border border-blue-200/60 px-2.5 py-1.5 text-xs font-semibold text-[#3478F6] hover:bg-blue-100/80 active:scale-95 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <Pencil className="h-3 w-3 stroke-[2.3]" />
-                        <span>Rename</span>
-                      </button>
-                    )}
+                <div className="flex items-center gap-1.5">
+                  {selectedIds.size === 1 && (
                     <button
                       type="button"
-                      onClick={handleExitSelectionMode}
-                      className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                      onClick={handleOpenRename}
+                      className="flex items-center gap-1 rounded-full bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 text-xs font-semibold text-slate-700 active:scale-95 transition-all cursor-pointer"
                     >
-                      Cancel
+                      <Pencil className="h-3 w-3 stroke-[2.2] text-[#3478F6]" />
+                      <span>Rename</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(true)}
-                      disabled={selectedIds.size === 0}
-                      className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer ${
-                        selectedIds.size === 0
-                          ? 'bg-rose-300 opacity-60 cursor-not-allowed'
-                          : 'bg-rose-500 hover:bg-rose-600'
-                      }`}
-                    >
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleExitSelectionMode}
+                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Done
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    disabled={selectedIds.size === 0 || isDeleting}
+                    className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer ${
+                      selectedIds.size === 0
+                        ? 'bg-rose-300 opacity-60 cursor-not-allowed'
+                        : 'bg-rose-500 hover:bg-rose-600'
+                    }`}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
                       <Trash2 className="h-3.5 w-3.5 stroke-[2.3]" />
-                      <span>Delete ({selectedIds.size})</span>
-                    </button>
-                  </div>
+                    )}
+                    <span>Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </motion.div>
         )}

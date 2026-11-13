@@ -60,11 +60,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       isLongPressRef.current = true;
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
-          navigator.vibrate(25);
+          navigator.vibrate(12);
         } catch {}
       }
       onLongPress?.();
-    }, 450);
+    }, 360);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -83,6 +83,12 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
     clearLongPressTimer();
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     if (isLongPressRef.current) {
       isLongPressRef.current = false;
@@ -96,7 +102,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       e.stopPropagation();
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
-          navigator.vibrate(15);
+          navigator.vibrate(10);
         } catch {}
       }
       onToggleSelect?.();
@@ -151,6 +157,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onContextMenu={handleContextMenu}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -163,19 +170,25 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           }
         }
       }}
-      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 select-none cursor-pointer ${
+      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer ${
         isSelected
-          ? 'ring-2 ring-[#3478F6] ring-offset-2 ring-offset-[#F3F7FC] scale-[0.98]'
+          ? 'ring-2 ring-[#3478F6] ring-offset-2 ring-offset-[#F3F7FC]'
           : 'active:scale-[0.98]'
       }`}
-      style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'pan-y' }}
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'pan-y',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      }}
     >
       {/* Full Card Plump Liquid Glass Inner Stroke Overlay */}
       <div className="liquid-card-inner-stroke" />
 
       {/* Selected Card Soft Wash Tint */}
       {isSelected && (
-        <div className="pointer-events-none absolute inset-0 z-20 bg-[#3478F6]/10 rounded-[22px] transition-opacity duration-150" />
+        <div className="pointer-events-none absolute inset-0 z-20 bg-[#3478F6]/10 rounded-[22px]" />
       )}
 
       {/* Thumbnail Aspect Container */}
@@ -206,7 +219,13 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
             alt={screenshot.original_filename}
             loading="lazy"
             onError={handleImageError}
-            className="h-full w-full object-cover"
+            draggable={false}
+            className="h-full w-full object-cover pointer-events-none select-none"
+            style={{
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none',
+            }}
           />
         )}
 
@@ -260,7 +279,6 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
           {!isSelectionMode && screenshot.processing_status !== 'ready' && (
             <span
-              title={`Status: ${screenshot.processing_status}`}
               className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full liquid-glass-badge p-0 shadow-xs text-amber-600"
             >
               {screenshot.processing_status === 'processing' ? (

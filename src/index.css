@@ -13,10 +13,17 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   touch-action: manipulation;
 }
 
+* {
+  -webkit-touch-callout: none;
+}
+
 html, body {
+  -webkit-user-select: none;
+  user-select: none;
   background-color: var(--theme-bg-base);
   color: var(--theme-text-primary);
   min-height: 100%;
@@ -25,6 +32,11 @@ html, body {
   padding: 0;
   overscroll-behavior-y: none;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 #root {
