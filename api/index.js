@@ -70096,13 +70096,17 @@ function getSynonymsForTerm(term) {
   const base2 = VISUAL_CONCEPT_SYNONYMS[lower] || [lower];
   return Array.from(/* @__PURE__ */ new Set([lower, ...base2]));
 }
-function checkFilenameRelevance(originalFilename, rawQuery, keywords) {
+function checkFilenameRelevance(originalFilename, rawQuery, keywords = []) {
   if (!originalFilename) return { isMatch: false, score: 0, matchType: "text_keyword", explanation: "" };
   const nameClean = originalFilename.toLowerCase();
   const nameBase = nameClean.replace(/\.[a-z0-9]+$/i, "").trim();
-  const qClean = rawQuery.toLowerCase().trim();
-  const qKeywords = keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
-  if (nameBase === qClean || nameClean === qClean) {
+  const qClean = (rawQuery || "").toLowerCase().trim();
+  const qKeywords = Array.isArray(keywords) && keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
+  const normName = nameBase.replace(/[_-]+/g, " ").trim();
+  const normQ = qClean.replace(/[_-]+/g, " ").trim();
+  const significantKeywords = qKeywords.filter((k) => !STOP_WORDS.has(k) && k.length > 1);
+  const targetKeywords = significantKeywords.length > 0 ? significantKeywords : qKeywords;
+  if (nameBase === qClean || nameClean === qClean || normName === normQ) {
     return {
       isMatch: true,
       score: 1,
@@ -70110,7 +70114,15 @@ function checkFilenameRelevance(originalFilename, rawQuery, keywords) {
       explanation: `Exact title match: "${originalFilename}".`
     };
   }
-  if (nameBase.includes(qClean) || nameClean.includes(qClean)) {
+  let matchingWordsCount = 0;
+  for (const kw of targetKeywords) {
+    const wordRe = new RegExp(`(^|\\s)${escapeRegExp(kw)}(\\s|$)`, "i");
+    if (wordRe.test(normName)) {
+      matchingWordsCount++;
+    }
+  }
+  const phraseRe = new RegExp(`(^|\\s)${escapeRegExp(normQ)}(\\s|$)`, "i");
+  if (phraseRe.test(normName)) {
     return {
       isMatch: true,
       score: 0.995,
@@ -70118,36 +70130,12 @@ function checkFilenameRelevance(originalFilename, rawQuery, keywords) {
       explanation: `Direct title match: contains "${rawQuery}".`
     };
   }
-  if (qClean.includes(nameBase) && nameBase.length >= 3) {
+  if (targetKeywords.length > 0 && matchingWordsCount === targetKeywords.length) {
     return {
       isMatch: true,
       score: 0.992,
       matchType: "exact_filename",
-      explanation: `Direct title match: named "${originalFilename}".`
-    };
-  }
-  if (qKeywords.length > 0 && qKeywords.every((kw) => nameClean.includes(kw))) {
-    return {
-      isMatch: true,
-      score: 0.988,
-      matchType: "exact_filename",
-      explanation: `Title matches all search terms: "${originalFilename}".`
-    };
-  }
-  let matchingWordsCount = 0;
-  for (const kw of qKeywords) {
-    const wordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
-    if (wordRe.test(nameBase)) {
-      matchingWordsCount++;
-    }
-  }
-  if (matchingWordsCount > 0) {
-    const ratio = matchingWordsCount / qKeywords.length;
-    return {
-      isMatch: true,
-      score: 0.93 + ratio * 0.05,
-      matchType: "exact_phrase",
-      explanation: `Title contains keyword: "${originalFilename}".`
+      explanation: `Title matches search terms: "${originalFilename}".`
     };
   }
   return { isMatch: false, score: 0, matchType: "text_keyword", explanation: "" };

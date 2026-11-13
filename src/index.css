@@ -1028,6 +1028,9 @@ input, textarea {
 .plump-glass-pill,
 .plump-liquid-blue-btn,
 .plump-liquid-rose-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1035,6 +1038,7 @@ input, textarea {
   flex-shrink: 0 !important;
   line-height: 1 !important;
   vertical-align: middle !important;
+  box-sizing: border-box !important;
 }
 
 .plump-liquid-badge *,

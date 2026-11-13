@@ -30,6 +30,7 @@ export const App: React.FC = () => {
   const [libraryFilterQuery, setLibraryFilterQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [hasActiveUndo, setHasActiveUndo] = useState(false);
 
   // Search State
   const [query, setQuery] = useState('');
@@ -325,6 +326,7 @@ export const App: React.FC = () => {
             filterQuery={libraryFilterQuery}
             onFilterChange={setLibraryFilterQuery}
             onSelectionModeChange={setIsSelectionMode}
+            onActiveUndoChange={setHasActiveUndo}
             onQuickSearch={(q) => {
               setSearchCategory('all');
               setQuery(q);
@@ -363,6 +365,7 @@ export const App: React.FC = () => {
         selectedCategory={selectedCategory}
         onSelectTab={(tab, category) => {
           setIsSelectionMode(false);
+          setHasActiveUndo(false);
           setCurrentTab(tab);
           if (category) {
             setSelectedCategory(category);
@@ -370,7 +373,7 @@ export const App: React.FC = () => {
         }}
         onOpenUpload={() => setIsUploadOpen(true)}
         screenshotCount={screenshots.length}
-        visible={!isSelectionMode}
+        visible={!isSelectionMode && !hasActiveUndo}
       />
 
       {/* Upload Mobile Sheet */}

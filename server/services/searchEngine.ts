@@ -98,7 +98,7 @@ function getSynonymsForTerm(term: string): string[] {
 export function checkFilenameRelevance(
   originalFilename: string,
   rawQuery: string,
-  keywords: string[]
+  keywords: string[] = []
 ): {
   isMatch: boolean;
   score: number;
@@ -109,11 +109,17 @@ export function checkFilenameRelevance(
 
   const nameClean = originalFilename.toLowerCase();
   const nameBase = nameClean.replace(/\.[a-z0-9]+$/i, '').trim();
-  const qClean = rawQuery.toLowerCase().trim();
-  const qKeywords = keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
+  const qClean = (rawQuery || '').toLowerCase().trim();
+  const qKeywords = Array.isArray(keywords) && keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
 
-  // 1. Exact full title match (with or without file extension)
-  if (nameBase === qClean || nameClean === qClean) {
+  const normName = nameBase.replace(/[_-]+/g, ' ').trim();
+  const normQ = qClean.replace(/[_-]+/g, ' ').trim();
+
+  const significantKeywords = qKeywords.filter((k) => !STOP_WORDS.has(k) && k.length > 1);
+  const targetKeywords = significantKeywords.length > 0 ? significantKeywords : qKeywords;
+
+  // 1. Exact full title match (with or without file extension or separators)
+  if (nameBase === qClean || nameClean === qClean || normName === normQ) {
     return {
       isMatch: true,
       score: 1.0,
@@ -122,8 +128,18 @@ export function checkFilenameRelevance(
     };
   }
 
-  // 2. Query is an exact phrase inside the title (e.g. title "Tokyo Flight Ticket", query "flight ticket")
-  if (nameBase.includes(qClean) || nameClean.includes(qClean)) {
+  // Count matching words
+  let matchingWordsCount = 0;
+  for (const kw of targetKeywords) {
+    const wordRe = new RegExp(`(^|\\s)${escapeRegExp(kw)}(\\s|$)`, 'i');
+    if (wordRe.test(normName)) {
+      matchingWordsCount++;
+    }
+  }
+
+  // 2. Query is an exact whole-phrase inside the title (e.g. query "flight ticket", title "Tokyo Flight Ticket")
+  const phraseRe = new RegExp(`(^|\\s)${escapeRegExp(normQ)}(\\s|$)`, 'i');
+  if (phraseRe.test(normName)) {
     return {
       isMatch: true,
       score: 0.995,
@@ -132,42 +148,13 @@ export function checkFilenameRelevance(
     };
   }
 
-  // 3. Title is contained inside the query (e.g. title "Wifi Password", query "find my wifi password")
-  if (qClean.includes(nameBase) && nameBase.length >= 3) {
+  // 3. ALL target query keywords match in the title (e.g. query "find my wifi password" -> title "Wifi Password")
+  if (targetKeywords.length > 0 && matchingWordsCount === targetKeywords.length) {
     return {
       isMatch: true,
       score: 0.992,
       matchType: 'exact_filename',
-      explanation: `Direct title match: named "${originalFilename}".`,
-    };
-  }
-
-  // 4. All query keywords are in the title (e.g. query "tokyo ticket", title "Tokyo Flight Ticket")
-  if (qKeywords.length > 0 && qKeywords.every((kw) => nameClean.includes(kw))) {
-    return {
-      isMatch: true,
-      score: 0.988,
-      matchType: 'exact_filename',
-      explanation: `Title matches all search terms: "${originalFilename}".`,
-    };
-  }
-
-  // 5. Significant word overlap (at least 1 whole word matches in title)
-  let matchingWordsCount = 0;
-  for (const kw of qKeywords) {
-    const wordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, 'i');
-    if (wordRe.test(nameBase)) {
-      matchingWordsCount++;
-    }
-  }
-
-  if (matchingWordsCount > 0) {
-    const ratio = matchingWordsCount / qKeywords.length;
-    return {
-      isMatch: true,
-      score: 0.93 + ratio * 0.05,
-      matchType: 'exact_phrase',
-      explanation: `Title contains keyword: "${originalFilename}".`,
+      explanation: `Title matches search terms: "${originalFilename}".`,
     };
   }
 

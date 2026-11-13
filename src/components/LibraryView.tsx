@@ -31,6 +31,7 @@ interface LibraryViewProps {
   onFilterChange?: (q: string) => void;
   onQuickSearch?: (query: string) => void;
   onSelectionModeChange?: (active: boolean) => void;
+  onActiveUndoChange?: (hasActiveUndo: boolean) => void;
 }
 
 const CATEGORIES = [
@@ -52,6 +53,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onFilterChange,
   onQuickSearch,
   onSelectionModeChange,
+  onActiveUndoChange,
 }) => {
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
@@ -62,6 +64,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // Delete Confirmation Popup & 7-Second Undo State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -79,6 +82,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   // Flush any pending background deletion on unmount
   useEffect(() => {
     return () => {
+      onActiveUndoChange?.(false);
       if (pendingDeleteRef.current) {
         const { ids, timer, interval } = pendingDeleteRef.current;
         clearTimeout(timer);
@@ -86,7 +90,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         void Promise.all(ids.map((id) => api.deleteScreenshot(id)));
       }
     };
-  }, []);
+  }, [onActiveUndoChange]);
 
   // Single Screenshot Renaming State
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
@@ -97,6 +101,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   useEffect(() => {
     onSelectionModeChange?.(isSelectionMode);
   }, [isSelectionMode, onSelectionModeChange]);
+
+  // Notify parent of active undo status so bottom nav stays hidden during undo window
+  useEffect(() => {
+    onActiveUndoChange?.(!!pendingDelete);
+  }, [pendingDelete, onActiveUndoChange]);
 
   // Synchronize deletedIds cleanup when screenshots list updates from parent
   useEffect(() => {
@@ -222,13 +231,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     if (selectedIds.size === 0) return;
 
     const idsToDelete = Array.from(selectedIds);
+
+    // 1. Instantly dismiss the confirmation modal so user directly sees the gallery
     setShowDeleteConfirm(false);
-    setIsSelectionMode(false);
-    setSelectedIds(new Set());
+
+    // 2. Mark cards as actively deleting so user visibly sees the deleting recoil and rose glow
+    setDeletingIds(new Set(idsToDelete));
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try {
-        navigator.vibrate(14);
+        navigator.vibrate([16, 32, 16]);
       } catch {}
     }
 
@@ -240,38 +252,45 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       void Promise.all(prev.ids.map((id) => api.deleteScreenshot(id)));
     }
 
-    // 1. Immediately hide selected items with the exit animation
-    setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+    // 3. Give 200ms for user to visibly see the cards react, then unmount with fluid exit animation
+    setTimeout(() => {
+      setIsSelectionMode(false);
+      setSelectedIds(new Set());
+      setDeletingIds(new Set());
 
-    // 2. Start 7-second undo window
-    const durationMs = 7000;
-    const expiresAt = Date.now() + durationMs;
-    setUndoSecondsRemaining(7);
+      // Immediately hide selected items with the exit animation
+      setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
 
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      setUndoSecondsRemaining(remaining);
+      // 4. Start 7-second undo window
+      const durationMs = 7000;
+      const expiresAt = Date.now() + durationMs;
+      setUndoSecondsRemaining(7);
+
+      const interval = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+        setUndoSecondsRemaining(remaining);
+      }, 200);
+
+      const timer = setTimeout(async () => {
+        clearInterval(interval);
+        setPendingDelete(null);
+        try {
+          await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
+        } catch (err) {
+          console.error('Failed to commit delete:', err);
+        } finally {
+          onRefresh?.();
+        }
+      }, durationMs);
+
+      setPendingDelete({
+        ids: idsToDelete,
+        count: idsToDelete.length,
+        timer,
+        interval,
+        expiresAt,
+      });
     }, 200);
-
-    const timer = setTimeout(async () => {
-      clearInterval(interval);
-      setPendingDelete(null);
-      try {
-        await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
-      } catch (err) {
-        console.error('Failed to commit delete:', err);
-      } finally {
-        onRefresh?.();
-      }
-    }, durationMs);
-
-    setPendingDelete({
-      ids: idsToDelete,
-      count: idsToDelete.length,
-      timer,
-      interval,
-      expiresAt,
-    });
   };
 
   const handleUndoDelete = useCallback(() => {
@@ -583,11 +602,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
                   exit={{
                     opacity: 0,
-                    scale: 0.86,
-                    y: 12,
+                    scale: 0.8,
+                    y: 16,
                     filter: 'blur(8px)',
                     transition: {
-                      duration: 0.32,
+                      duration: 0.36,
                       ease: [0.32, 0.72, 0, 1],
                     },
                   }}
@@ -599,7 +618,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       mass: 0.8,
                     },
                     default: {
-                      duration: 0.28,
+                      duration: 0.3,
                       ease: [0.32, 0.72, 0, 1],
                     },
                   }}
@@ -614,6 +633,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     onClick={() => onSelectScreenshot(s.id)}
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(s.id)}
+                    isDeleting={deletingIds.has(s.id)}
                     onToggleSelect={() => handleToggleSelect(s.id)}
                     onLongPress={() => handleCardLongPress(s.id)}
                   />
@@ -662,13 +682,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
                 {/* Left Side: Plump Liquid Badge + Select All Pill */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="plump-liquid-badge flex h-7 min-w-7 px-1.5 items-center justify-center rounded-full text-white text-[11px] font-bold font-mono shrink-0 select-none">
+                  <span className="plump-liquid-badge flex h-8 min-w-8 px-2 items-center justify-center rounded-full text-white text-[11px] font-bold font-mono shrink-0 select-none">
                     {selectedIds.size}
                   </span>
                   <button
                     type="button"
                     onClick={handleToggleSelectAll}
-                    className="plump-glass-pill flex items-center gap-1 h-7.5 px-2 rounded-full text-[11px] font-bold text-[#3478F6] whitespace-nowrap shrink-0 cursor-pointer"
+                    className="plump-glass-pill flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-bold text-[#3478F6] whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <CheckSquare className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
                     <span className="leading-none whitespace-nowrap">
@@ -685,7 +705,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     <button
                       type="button"
                       onClick={handleOpenRename}
-                      className="plump-liquid-blue-btn flex items-center gap-1 h-7.5 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer"
+                      className="plump-liquid-blue-btn flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer"
                     >
                       <Pencil className="h-3 w-3 stroke-[2.4] shrink-0" />
                       <span className="leading-none whitespace-nowrap">Rename</span>
@@ -695,19 +715,19 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={selectedIds.size === 0}
-                    className={`plump-liquid-rose-btn flex items-center gap-1 h-7.5 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer ${
+                    className={`plump-liquid-rose-btn flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer ${
                       selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed saturate-50' : ''
                     }`}
                   >
                     <Trash2 className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
                     <span className="leading-none whitespace-nowrap">
-                      Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+                      Delete{selectedIds.size > 1 ? ` (${selectedIds.size})` : ''}
                     </span>
                   </button>
                   <button
                     type="button"
                     onClick={handleExitSelectionMode}
-                    className="plump-glass-pill flex items-center justify-center h-7.5 px-2.5 rounded-full text-[11px] font-bold text-[#172B4D] whitespace-nowrap shrink-0 cursor-pointer"
+                    className="plump-glass-pill flex items-center justify-center h-8 px-3 rounded-full text-[11px] font-bold text-[#172B4D] whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <span className="leading-none whitespace-nowrap">Done</span>
                   </button>
@@ -791,13 +811,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 14 }}
-              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ duration: 0.15 }}
               className="w-full max-w-sm rounded-[32px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
             >
               <div className="flex items-start gap-3">
@@ -842,58 +863,74 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <AnimatePresence>
         {pendingDelete && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.94 }}
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-            style={{ bottom: 'calc(86px + env(safe-area-inset-bottom, 0px))' }}
-            className="fixed inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto select-none"
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            className="fixed bottom-0 inset-x-0 z-50 pointer-events-none select-none"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
-            <div className="relative overflow-hidden rounded-[26px] nav-glass-bar px-3.5 py-2.5 shadow-[0_16px_40px_rgba(23,43,77,0.22)] border border-white/95 flex items-center justify-between gap-2.5">
-              {/* Top Specular Hairline */}
-              <div
-                className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
-                style={{
-                  background:
-                    'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
-                }}
-              />
+            {/* Subtle Cloudy Footer Blur under Undo Bar matching bottom dock */}
+            <div
+              className="absolute inset-x-0 bottom-0 pointer-events-none -z-10"
+              style={{
+                height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
+                background:
+                  'linear-gradient(to top, rgba(243, 247, 252, 0.94) 0%, rgba(235, 243, 253, 0.45) 45%, transparent 100%)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+              }}
+            />
 
-              {/* 7-Second Animated Countdown Progress Bar at Bottom of Pill */}
-              <div className="pointer-events-none absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-200/50 overflow-hidden">
-                <motion.div
-                  initial={{ width: '100%' }}
-                  animate={{ width: '0%' }}
-                  transition={{ duration: 7, ease: 'linear' }}
-                  className="h-full bg-gradient-to-r from-[#3478F6] to-[#5392FF]"
+            <div className="max-w-md mx-auto px-4 pb-3">
+              <div className="pointer-events-auto relative overflow-hidden rounded-[40px] nav-glass-bar px-3.5 py-2 shadow-[0_16px_40px_rgba(23,43,77,0.20)] border border-white/95 flex items-center justify-between gap-2.5">
+                {/* Top Specular Hairline */}
+                <div
+                  className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+                  }}
                 />
-              </div>
 
-              {/* Left Info: Trash Icon + Text */}
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="plump-liquid-rose-btn flex h-7 w-7 items-center justify-center rounded-full shrink-0">
-                  <Trash2 className="h-3.5 w-3.5 stroke-[2.4] text-white" />
+                {/* 7-Second Animated Countdown Progress Bar at Bottom of Pill */}
+                <div className="pointer-events-none absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-200/50 overflow-hidden">
+                  <motion.div
+                    initial={{ width: '100%' }}
+                    animate={{ width: '0%' }}
+                    transition={{ duration: 7, ease: 'linear' }}
+                    className="h-full bg-gradient-to-r from-[#3478F6] to-[#5392FF]"
+                  />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-bold text-[#172B4D] leading-tight truncate">
-                    Deleted {pendingDelete.count} {pendingDelete.count === 1 ? 'screenshot' : 'screenshots'}
-                  </p>
-                  <p className="text-[10px] font-semibold text-slate-500 leading-none">
-                    Undo available for {undoSecondsRemaining}s
-                  </p>
-                </div>
-              </div>
 
-              {/* Right Actions: Plumpy Liquid Glass Undo Button */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleUndoDelete}
-                  className="plump-liquid-blue-btn flex items-center gap-1 h-7.5 px-3 rounded-full text-[11px] font-bold text-white cursor-pointer"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 stroke-[2.4]" />
-                  <span>Undo ({undoSecondsRemaining}s)</span>
-                </button>
+                {/* Left Info: Trash Icon + Text */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="plump-liquid-rose-btn flex h-8 w-8 items-center justify-center rounded-full shrink-0">
+                    <Trash2 className="h-4 w-4 stroke-[2.4] text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#172B4D] leading-tight truncate">
+                      Deleted {pendingDelete.count} {pendingDelete.count === 1 ? 'screenshot' : 'screenshots'}
+                    </p>
+                    <p className="text-[10px] font-semibold text-slate-500 leading-none mt-0.5">
+                      Undo available for {undoSecondsRemaining}s
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Actions: Plumpy Liquid Glass Undo Button */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleUndoDelete}
+                    className="plump-liquid-blue-btn flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-bold text-white cursor-pointer active:scale-95"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 stroke-[2.4]" />
+                    <span className="whitespace-nowrap">Undo ({undoSecondsRemaining}s)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

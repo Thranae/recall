@@ -9,6 +9,7 @@ import {
   AlertCircle,
   RefreshCw,
   Check,
+  Trash2,
 } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
@@ -19,6 +20,7 @@ interface ScreenshotCardProps {
   onClick: () => void;
   isSelectionMode?: boolean;
   isSelected?: boolean;
+  isDeleting?: boolean;
   onToggleSelect?: () => void;
   onLongPress?: () => void;
 }
@@ -29,6 +31,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   onClick,
   isSelectionMode = false,
   isSelected = false,
+  isDeleting = false,
   onToggleSelect,
   onLongPress,
 }) => {
@@ -170,8 +173,10 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           }
         }
       }}
-      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer ${
-        isSelected
+      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer transition-all duration-200 ${
+        isDeleting
+          ? 'scale-[0.95] ring-2 ring-rose-500 shadow-[0_0_24px_rgba(244,63,94,0.35)]'
+          : isSelected
           ? 'ring-2 ring-[#3478F6] ring-offset-2 ring-offset-[#F3F7FC]'
           : 'active:scale-[0.98]'
       }`}
@@ -186,8 +191,13 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       {/* Full Card Plump Liquid Glass Inner Stroke Overlay */}
       <div className="liquid-card-inner-stroke" />
 
+      {/* Deleting Card Soft Rose Wash Tint */}
+      {isDeleting && (
+        <div className="pointer-events-none absolute inset-0 z-20 bg-rose-500/18 rounded-[22px] transition-all duration-200" />
+      )}
+
       {/* Selected Card Soft Wash Tint */}
-      {isSelected && (
+      {!isDeleting && isSelected && (
         <div className="pointer-events-none absolute inset-0 z-20 bg-[#3478F6]/10 rounded-[22px]" />
       )}
 
@@ -252,20 +262,26 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
         {isSelectionMode && (
           <div
             className="absolute top-2.5 right-2.5 z-30 transition-transform duration-200 pointer-events-none"
-            style={{ transform: isSelected ? 'scale(1.05)' : 'scale(1)' }}
+            style={{ transform: isDeleting || isSelected ? 'scale(1.05)' : 'scale(1)' }}
           >
             <div
               className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-200 shadow-md ${
-                isSelected
+                isDeleting
+                  ? 'bg-rose-500 text-white ring-2 ring-white'
+                  : isSelected
                   ? 'bg-[#3478F6] text-white ring-2 ring-white'
                   : 'bg-black/35 backdrop-blur-md border-[1.5px] border-white/90 text-transparent'
               }`}
             >
-              <Check
-                className={`h-3.5 w-3.5 stroke-[3] text-white transition-all duration-150 ${
-                  isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
-                }`}
-              />
+              {isDeleting ? (
+                <Trash2 className="h-3.5 w-3.5 stroke-[2.4] text-white" />
+              ) : (
+                <Check
+                  className={`h-3.5 w-3.5 stroke-[3] text-white transition-all duration-150 ${
+                    isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
+                  }`}
+                />
+              )}
             </div>
           </div>
         )}
