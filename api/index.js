@@ -69067,6 +69067,251 @@ async function ensureWebCompatibleImage(buffer, mimeType, filename) {
   };
 }
 
+// server/services/duplicateDetector.ts
+var geminiApiKey2 = process.env.GEMINI_API_KEY || "";
+var genAI3 = geminiApiKey2 ? new GoogleGenerativeAI(geminiApiKey2) : null;
+var AI_VERIFICATION_MODELS = [
+  "gemini-flash-lite-latest",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-flash-latest"
+];
+function cleanSubstantiveOcr(text) {
+  if (!text) return [];
+  const cleaned = text.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:am|pm)?\b/gi, " ").replace(/\b\d{1,3}%\b/g, " ").replace(/\b\d+(?:\.\d+)?\s*(?:kb|mb|gb)\/s\b/gi, " ").replace(/\b(?:5g\+?|4g|lte|vowifi|volte|wifi)\b/gi, " ").replace(/\bseen\s+\d+\w*\s+ago\b/gi, " ").replace(/\bsearch\s+google\s+or\s+type\b/gi, " ").replace(/[^\w\s]/g, " ").toLowerCase();
+  return cleaned.split(/\s+/).filter((w) => w.length > 2 && !/^\d+$/.test(w));
+}
+function computeTokenJaccard(tokensA, tokensB) {
+  if (tokensA.length === 0 || tokensB.length === 0) return 0;
+  const setA = new Set(tokensA);
+  const setB = new Set(tokensB);
+  let intersection = 0;
+  for (const t of setA) {
+    if (setB.has(t)) intersection++;
+  }
+  const union = (/* @__PURE__ */ new Set([...tokensA, ...tokensB])).size;
+  return union > 0 ? intersection / union : 0;
+}
+function computeBigramDice(textA, textB) {
+  const strA = textA.toLowerCase().replace(/\s+/g, "");
+  const strB = textB.toLowerCase().replace(/\s+/g, "");
+  if (!strA || !strB) return 0;
+  if (strA === strB) return 1;
+  if (strA.length < 2 || strB.length < 2) return 0;
+  const getBigrams = (str) => {
+    const map2 = /* @__PURE__ */ new Map();
+    for (let i = 0; i < str.length - 1; i++) {
+      const bg = str.slice(i, i + 2);
+      map2.set(bg, (map2.get(bg) || 0) + 1);
+    }
+    return map2;
+  };
+  const bgA = getBigrams(strA);
+  const bgB = getBigrams(strB);
+  let intersection = 0;
+  for (const [bg, countA] of bgA.entries()) {
+    if (bgB.has(bg)) {
+      intersection += Math.min(countA, bgB.get(bg));
+    }
+  }
+  const total = strA.length - 1 + (strB.length - 1);
+  return total > 0 ? 2 * intersection / total : 0;
+}
+function isBurstFilename(nameA, nameB) {
+  if (!nameA || !nameB) return false;
+  if (nameA === nameB) return true;
+  const matchA = nameA.match(/^(.*?)(\d+)(\.[a-z0-9]+)$/i);
+  const matchB = nameB.match(/^(.*?)(\d+)(\.[a-z0-9]+)$/i);
+  if (!matchA || !matchB) return false;
+  if (matchA[1] !== matchB[1] || matchA[3].toLowerCase() !== matchB[3].toLowerCase()) return false;
+  const numA = parseInt(matchA[2], 10);
+  const numB = parseInt(matchB[2], 10);
+  if (isNaN(numA) || isNaN(numB)) return false;
+  return Math.abs(numA - numB) <= 5;
+}
+function parseTags(raw) {
+  if (Array.isArray(raw)) return raw.map((t) => String(t).toLowerCase());
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map((t) => String(t).toLowerCase());
+    } catch {
+      return raw.toLowerCase().split(/[,\s]+/).filter(Boolean);
+    }
+  }
+  return [];
+}
+function parseEmbedding(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+    }
+  }
+  return [];
+}
+async function verifyWithAi(a, b) {
+  if (!genAI3) return null;
+  const prompt = `You are RECALL's expert screenshot and photo duplicate verifier.
+Compare these two screenshots and determine if they are duplicate or near-duplicate captures of the same content/moment (e.g. identical screenshot, sequential burst captures of the exact same scene, or same chat conversation with minor clock drift).
+
+Screenshot 1:
+- Filename: "${a.original_filename}"
+- Category: "${a.category}"
+- Substantive OCR: "${(a.ocr_text || "").replace(/\s+/g, " ").slice(0, 350)}"
+- Visual Description: "${(a.visual_description || "").slice(0, 350)}"
+- Tags: ${parseTags(a.tags).slice(0, 15).join(", ")}
+
+Screenshot 2:
+- Filename: "${b.original_filename}"
+- Category: "${b.category}"
+- Substantive OCR: "${(b.ocr_text || "").replace(/\s+/g, " ").slice(0, 350)}"
+- Visual Description: "${(b.visual_description || "").slice(0, 350)}"
+- Tags: ${parseTags(b.tags).slice(0, 15).join(", ")}
+
+Respond ONLY with valid JSON in this exact structure:
+{
+  "is_duplicate": boolean,
+  "confidence": number,
+  "reason": "concise one-sentence explanation"
+}`;
+  for (const modelName of AI_VERIFICATION_MODELS) {
+    try {
+      const model = genAI3.getGenerativeModel({ model: modelName });
+      const timeoutPromise = new Promise(
+        (_, reject) => setTimeout(() => reject(new Error("AI verification timeout")), 2200)
+      );
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        timeoutPromise
+      ]);
+      const text = result.response.text();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (typeof parsed.is_duplicate === "boolean" && typeof parsed.confidence === "number") {
+          return {
+            is_duplicate: parsed.is_duplicate,
+            confidence: parsed.confidence,
+            reason: String(parsed.reason || "Verified near-duplicate by AI")
+          };
+        }
+      }
+    } catch {
+    }
+  }
+  return null;
+}
+async function detectDuplicateGroups(screenshots, options = {}) {
+  const { enableAiVerification = true } = options;
+  const items = screenshots.map((s) => {
+    const tags = parseTags(s.tags);
+    const embedding = parseEmbedding(s.text_embedding);
+    const ocrTokens = cleanSubstantiveOcr(s.ocr_text || "");
+    const cleanOcrStr = ocrTokens.join(" ");
+    const descWords = (s.visual_description || "").toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+    return {
+      ...s,
+      parsedTags: tags,
+      embedding,
+      ocrTokens,
+      cleanOcrStr,
+      descWords
+    };
+  });
+  const claimed = /* @__PURE__ */ new Set();
+  const duplicate_groups = [];
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i];
+    if (claimed.has(a.id)) continue;
+    const dupsForA = [];
+    for (let j = i + 1; j < items.length; j++) {
+      const b = items[j];
+      if (claimed.has(b.id)) continue;
+      let isDup = false;
+      let reason = "";
+      let confidence = 0;
+      const sameSize = a.file_size > 0 && a.file_size === b.file_size;
+      const sameFilename = a.original_filename && a.original_filename === b.original_filename;
+      const sameImageBytes = Boolean(a.image_data) && Boolean(b.image_data) && a.image_data === b.image_data;
+      if (sameImageBytes) {
+        isDup = true;
+        confidence = 1;
+        reason = "Exact identical image file (binary hash match)";
+      } else if (sameSize && sameFilename) {
+        isDup = true;
+        confidence = 1;
+        reason = "Identical file size and filename";
+      }
+      if (!isDup && a.ocrTokens.length >= 5 && b.ocrTokens.length >= 5) {
+        const jaccard = computeTokenJaccard(a.ocrTokens, b.ocrTokens);
+        const dice = computeBigramDice(a.cleanOcrStr, b.cleanOcrStr);
+        const textSim = Math.max(jaccard, dice);
+        if (textSim >= 0.82) {
+          isDup = true;
+          confidence = Math.min(0.99, textSim);
+          reason = `${Math.round(textSim * 100)}% text & dialogue match`;
+        }
+      }
+      const isBurst = isBurstFilename(a.original_filename, b.original_filename);
+      const embSim = a.embedding.length > 0 && b.embedding.length > 0 ? computeCosineSimilarity(a.embedding, b.embedding) : 0;
+      const tagSim = computeTokenJaccard(a.parsedTags, b.parsedTags);
+      const descSim = computeTokenJaccard(a.descWords, b.descWords);
+      if (!isDup && isBurst) {
+        if (embSim >= 0.9 || tagSim >= 0.55 && embSim >= 0.85 || descSim >= 0.6) {
+          isDup = true;
+          confidence = Math.min(0.98, Math.max(embSim, descSim, 0.92));
+          reason = `Burst shot sequence (${Math.round(confidence * 100)}% visual match)`;
+        }
+      }
+      if (!isDup && a.category === b.category && a.category !== "other") {
+        if (embSim >= 0.94 && tagSim >= 0.65 && descSim >= 0.65) {
+          isDup = true;
+          confidence = Math.min(0.96, embSim);
+          reason = `Visual duplicate (${Math.round(embSim * 100)}% visual scene match)`;
+        }
+      }
+      if (!isDup && enableAiVerification && genAI3 && (embSim >= 0.86 || a.ocrTokens.length >= 6 && b.ocrTokens.length >= 6 && computeTokenJaccard(a.ocrTokens, b.ocrTokens) >= 0.7)) {
+        try {
+          const aiCheck = await verifyWithAi(a, b);
+          if (aiCheck && aiCheck.is_duplicate && aiCheck.confidence >= 0.8) {
+            isDup = true;
+            confidence = aiCheck.confidence;
+            reason = aiCheck.reason;
+          }
+        } catch {
+        }
+      }
+      if (isDup) {
+        dupsForA.push({
+          id: b.id,
+          original_filename: b.original_filename,
+          file_size: b.file_size,
+          uploaded_at: b.uploaded_at,
+          reason,
+          confidence
+        });
+        claimed.add(b.id);
+      }
+    }
+    if (dupsForA.length > 0) {
+      claimed.add(a.id);
+      duplicate_groups.push({
+        keep: {
+          id: a.id,
+          original_filename: a.original_filename,
+          file_size: a.file_size,
+          uploaded_at: a.uploaded_at
+        },
+        duplicates: dupsForA
+      });
+    }
+  }
+  return duplicate_groups;
+}
+
 // server/routes/screenshotRoutes.ts
 var router2 = (0, import_express2.Router)();
 var isVercel = Boolean(process.env.VERCEL);
@@ -69355,53 +69600,7 @@ router2.get("/insights/summary", authMiddleware, async (req, res) => {
         chicken_dinners++;
       }
     }
-    const claimed = /* @__PURE__ */ new Set();
-    const duplicate_groups = [];
-    for (let i = 0; i < parsedItems.length; i++) {
-      const a = parsedItems[i];
-      if (claimed.has(a.id)) continue;
-      const dupsForA = [];
-      for (let j = i + 1; j < parsedItems.length; j++) {
-        const b = parsedItems[j];
-        if (claimed.has(b.id)) continue;
-        const sameSize = a.file_size > 0 && a.file_size === b.file_size;
-        const aOcr = (a.ocr_text || "").trim();
-        const bOcr = (b.ocr_text || "").trim();
-        const sameOcr = aOcr.length > 16 && aOcr === bOcr;
-        const embSim = computeCosineSimilarity(a.embedding, b.embedding);
-        if (sameSize && (sameOcr || a.original_filename === b.original_filename)) {
-          dupsForA.push({
-            id: b.id,
-            original_filename: b.original_filename,
-            file_size: b.file_size,
-            uploaded_at: b.uploaded_at,
-            reason: "Identical file size & content"
-          });
-          claimed.add(b.id);
-        } else if (embSim >= 0.95 && a.category === b.category && aOcr === bOcr && (a.visual_description || "") === (b.visual_description || "") && (a.visual_description || "").length > 12) {
-          dupsForA.push({
-            id: b.id,
-            original_filename: b.original_filename,
-            file_size: b.file_size,
-            uploaded_at: b.uploaded_at,
-            reason: `${Math.round(embSim * 100)}% visual match`
-          });
-          claimed.add(b.id);
-        }
-      }
-      if (dupsForA.length > 0) {
-        claimed.add(a.id);
-        duplicate_groups.push({
-          keep: {
-            id: a.id,
-            original_filename: a.original_filename,
-            file_size: a.file_size,
-            uploaded_at: a.uploaded_at
-          },
-          duplicates: dupsForA
-        });
-      }
-    }
+    const duplicate_groups = await detectDuplicateGroups(parsedItems, { enableAiVerification: true });
     res.json({
       total: rows.length,
       category_counts,
@@ -69418,6 +69617,45 @@ router2.get("/insights/summary", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Insights summary error:", err);
     res.status(500).json({ error: "Failed to compute vault insights" });
+  }
+});
+router2.post("/duplicates/clean", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user?.email || userId;
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "No duplicate IDs provided for cleanup" });
+      return;
+    }
+    let deletedCount = 0;
+    for (const id of ids) {
+      const getScreenshot = db.prepare(`
+        SELECT storage_key FROM screenshots 
+        WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      `);
+      const row = await getScreenshot.get(id, userId, userEmail);
+      if (!row) continue;
+      await db.prepare("DELETE FROM screenshots WHERE id = ?").run(id);
+      await db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?").run(id);
+      await db.prepare("DELETE FROM game_results WHERE screenshot_id = ?").run(id);
+      try {
+        await db.prepare("DELETE FROM screenshots_fts WHERE screenshot_id = ?").run(id);
+      } catch {
+      }
+      if (row.storage_key) {
+        try {
+          const filePath = path5.join(UPLOADS_BASE, row.storage_key);
+          if (fs7.existsSync(filePath)) fs7.unlinkSync(filePath);
+        } catch {
+        }
+      }
+      deletedCount++;
+    }
+    res.json({ success: true, deleted: deletedCount });
+  } catch (err) {
+    console.error("Batch clean duplicates error:", err);
+    res.status(500).json({ error: "Failed to clean duplicate screenshots" });
   }
 });
 router2.get("/:id", authMiddleware, async (req, res) => {
@@ -69939,8 +70177,14 @@ router2.get("/:id/similar", authMiddleware, async (req, res) => {
       });
       const descSim = targetWords.size > 0 ? wordOverlap / targetWords.size : 0;
       const catBonus = r.category === target.category ? 0.08 : 0;
+      const targetTokens = cleanSubstantiveOcr(target.ocr_text || "");
+      const candTokens = cleanSubstantiveOcr(r.ocr_text || "");
+      const textSim = targetTokens.length >= 5 && candTokens.length >= 5 ? Math.max(
+        computeTokenJaccard(targetTokens, candTokens),
+        computeBigramDice(targetTokens.join(" "), candTokens.join(" "))
+      ) : 0;
       const similarity = Math.min(0.99, embSim * 0.45 + tagJaccard * 0.35 + descSim * 0.2 + catBonus);
-      const is_duplicate = target.file_size > 0 && r.file_size === target.file_size && (target.ocr_text || "") === (r.ocr_text || "") || similarity >= 0.92;
+      const is_duplicate = target.file_size > 0 && r.file_size === target.file_size && target.original_filename === r.original_filename || textSim >= 0.82 || embSim >= 0.92 && tagJaccard >= 0.6 && r.category === target.category || similarity >= 0.9;
       return {
         screenshot: {
           ...r,

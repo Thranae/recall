@@ -134,6 +134,12 @@ export const api = {
 
   getVaultInsights: () =>
     request<import('../types').VaultInsightsSummary>('/screenshots/insights/summary'),
+
+  cleanDuplicates: (ids: string[]) =>
+    request<{ success: boolean; deleted: number }>('/screenshots/duplicates/clean', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
   // Auth
   async login(email: string, password: string): Promise<{ token: string; user: User }> {
     const data = await request<{ token: string; user: User }>('/auth/login', {

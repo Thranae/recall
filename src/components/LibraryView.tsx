@@ -333,9 +333,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     setCleaningDuplicates(true);
     try {
       const idsToDelete = insights.duplicate_groups.flatMap((g) => g.duplicates.map((d) => d.id));
-      for (const id of idsToDelete) {
-        await api.deleteScreenshot(id);
-      }
+      await api.cleanDuplicates(idsToDelete);
       const refreshed = await api.getVaultInsights();
       setInsights(refreshed);
       onRefresh?.();

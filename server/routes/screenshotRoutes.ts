@@ -8,6 +8,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/processingQueue';
 import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/embeddings';
 import { ensureWebCompatibleImage, isHeicFormat, detectImageMimeType } from '../utils/imageConverter';
+import { detectDuplicateGroups, cleanSubstantiveOcr, computeTokenJaccard, computeBigramDice } from '../services/duplicateDetector';
 
 const router = Router();
 
@@ -336,62 +337,8 @@ router.get('/insights/summary', authMiddleware, async (req: AuthRequest, res: Re
       }
     }
 
-    // Detect near-duplicate candidates (keeps newest item in each group)
-    const claimed = new Set<string>();
-    const duplicate_groups: Array<{
-      keep: { id: string; original_filename: string; file_size: number; uploaded_at: string };
-      duplicates: Array<{ id: string; original_filename: string; file_size: number; uploaded_at: string; reason: string }>;
-    }> = [];
-
-    for (let i = 0; i < parsedItems.length; i++) {
-      const a = parsedItems[i];
-      if (claimed.has(a.id)) continue;
-
-      const dupsForA: Array<{ id: string; original_filename: string; file_size: number; uploaded_at: string; reason: string }> = [];
-      for (let j = i + 1; j < parsedItems.length; j++) {
-        const b = parsedItems[j];
-        if (claimed.has(b.id)) continue;
-
-        const sameSize = a.file_size > 0 && a.file_size === b.file_size;
-        const aOcr = (a.ocr_text || '').trim();
-        const bOcr = (b.ocr_text || '').trim();
-        const sameOcr = aOcr.length > 16 && aOcr === bOcr;
-        const embSim = computeCosineSimilarity(a.embedding, b.embedding);
-
-        if (sameSize && (sameOcr || a.original_filename === b.original_filename)) {
-          dupsForA.push({
-            id: b.id,
-            original_filename: b.original_filename,
-            file_size: b.file_size,
-            uploaded_at: b.uploaded_at,
-            reason: 'Identical file size & content',
-          });
-          claimed.add(b.id);
-        } else if (embSim >= 0.95 && a.category === b.category && aOcr === bOcr && (a.visual_description || '') === (b.visual_description || '') && (a.visual_description || '').length > 12) {
-          dupsForA.push({
-            id: b.id,
-            original_filename: b.original_filename,
-            file_size: b.file_size,
-            uploaded_at: b.uploaded_at,
-            reason: `${Math.round(embSim * 100)}% visual match`,
-          });
-          claimed.add(b.id);
-        }
-      }
-
-      if (dupsForA.length > 0) {
-        claimed.add(a.id);
-        duplicate_groups.push({
-          keep: {
-            id: a.id,
-            original_filename: a.original_filename,
-            file_size: a.file_size,
-            uploaded_at: a.uploaded_at,
-          },
-          duplicates: dupsForA,
-        });
-      }
-    }
+    // High-precision AI-assisted & multi-signal near-duplicate detection
+    const duplicate_groups = await detectDuplicateGroups(parsedItems, { enableAiVerification: true });
 
     res.json({
       total: rows.length,
@@ -409,6 +356,50 @@ router.get('/insights/summary', authMiddleware, async (req: AuthRequest, res: Re
   } catch (err: any) {
     console.error('Insights summary error:', err);
     res.status(500).json({ error: 'Failed to compute vault insights' });
+  }
+});
+
+// 2b. Batch Clean Duplicates
+router.post('/duplicates/clean', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: 'No duplicate IDs provided for cleanup' });
+      return;
+    }
+
+    let deletedCount = 0;
+    for (const id of ids) {
+      const getScreenshot = db.prepare(`
+        SELECT storage_key FROM screenshots 
+        WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      `);
+      const row = (await getScreenshot.get(id, userId, userEmail)) as any;
+      if (!row) continue;
+
+      await db.prepare('DELETE FROM screenshots WHERE id = ?').run(id);
+      await db.prepare('DELETE FROM extracted_messages WHERE screenshot_id = ?').run(id);
+      await db.prepare('DELETE FROM game_results WHERE screenshot_id = ?').run(id);
+      try {
+        await db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?').run(id);
+      } catch {}
+
+      if (row.storage_key) {
+        try {
+          const filePath = path.join(UPLOADS_BASE, row.storage_key);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch {}
+      }
+      deletedCount++;
+    }
+
+    res.json({ success: true, deleted: deletedCount });
+  } catch (err: any) {
+    console.error('Batch clean duplicates error:', err);
+    res.status(500).json({ error: 'Failed to clean duplicate screenshots' });
   }
 });
 
@@ -1019,10 +1010,22 @@ router.get('/:id/similar', authMiddleware, async (req: AuthRequest, res: Respons
         const descSim = targetWords.size > 0 ? wordOverlap / targetWords.size : 0;
         const catBonus = r.category === target.category ? 0.08 : 0;
 
+        const targetTokens = cleanSubstantiveOcr(target.ocr_text || '');
+        const candTokens = cleanSubstantiveOcr(r.ocr_text || '');
+        const textSim =
+          targetTokens.length >= 5 && candTokens.length >= 5
+            ? Math.max(
+                computeTokenJaccard(targetTokens, candTokens),
+                computeBigramDice(targetTokens.join(' '), candTokens.join(' '))
+              )
+            : 0;
+
         const similarity = Math.min(0.99, embSim * 0.45 + tagJaccard * 0.35 + descSim * 0.20 + catBonus);
         const is_duplicate =
-          (target.file_size > 0 && r.file_size === target.file_size && (target.ocr_text || '') === (r.ocr_text || '')) ||
-          similarity >= 0.92;
+          (target.file_size > 0 && r.file_size === target.file_size && target.original_filename === r.original_filename) ||
+          textSim >= 0.82 ||
+          (embSim >= 0.92 && tagJaccard >= 0.60 && r.category === target.category) ||
+          similarity >= 0.90;
 
         return {
           screenshot: {

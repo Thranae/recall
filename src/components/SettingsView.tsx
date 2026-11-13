@@ -55,9 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setIsCleaningDups(true);
     try {
       const ids = dupSummary.duplicate_groups.flatMap((g) => g.duplicates.map((d) => d.id));
-      for (const id of ids) {
-        await api.deleteScreenshot(id);
-      }
+      await api.cleanDuplicates(ids);
       const res = await api.getVaultInsights();
       setDupSummary(res);
       onRefresh?.();
