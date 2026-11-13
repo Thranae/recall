@@ -303,7 +303,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             <button
               type="button"
               onClick={handleExitSelectionMode}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-[#3478F6] bg-blue-50/80 border border-blue-200/60 active:scale-95 transition-all cursor-pointer"
+              className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-[#3478F6] cursor-pointer"
             >
               <span>Done</span>
             </button>
@@ -539,78 +539,94 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
       )}
 
-      {/* 4. Minimal Floating Multi-Select Action Bar */}
+      {/* 4. Floating Plump Liquid Glass Multi-Select Action Dock */}
       <AnimatePresence>
         {isSelectionMode && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.96 }}
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-            style={{ bottom: 'calc(14px + env(safe-area-inset-bottom, 0px))' }}
-            className="fixed inset-x-4 max-w-md mx-auto z-50 pointer-events-auto select-none"
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            className="fixed bottom-0 inset-x-0 z-50 pointer-events-none select-none"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
-            <div className="relative overflow-hidden rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_rgba(23,43,77,0.16)]">
-              {/* Top Specular Hairline */}
-              <div
-                className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10"
-                style={{
-                  background:
-                    'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)',
-                }}
-              />
+            {/* Subtle Cloudy Footer Blur under Selection Bar */}
+            <div
+              className="absolute inset-x-0 bottom-0 pointer-events-none -z-10"
+              style={{
+                height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
+                background:
+                  'linear-gradient(to top, rgba(243, 247, 252, 0.94) 0%, rgba(235, 243, 253, 0.45) 45%, transparent 100%)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
+              }}
+            />
 
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-[#3478F6] text-white text-[11px] font-bold font-mono shadow-xs">
+            <div className="max-w-md mx-auto px-4 pb-3">
+              <div className="pointer-events-auto relative rounded-[40px] nav-glass-bar px-3 py-2.5 shadow-[0_16px_40px_rgba(23,43,77,0.16)] flex items-center justify-between gap-2">
+                {/* Top Specular Hairline */}
+                <div
+                  className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+                  }}
+                />
+
+                {/* Left Side: Plump Liquid Badge + Select All Pill */}
+                <div className="flex items-center gap-1.5">
+                  <span className="plump-liquid-badge flex h-7 min-w-7 px-2 items-center justify-center rounded-full text-white text-[11px] font-bold font-mono">
                     {selectedIds.size}
                   </span>
                   <button
                     type="button"
                     onClick={handleToggleSelectAll}
-                    className="text-[11.5px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer"
+                    className="plump-glass-pill flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold text-[#3478F6] cursor-pointer"
                   >
-                    {filteredScreenshots.length > 0 &&
-                    selectedIds.size === filteredScreenshots.length
-                      ? 'Deselect All'
-                      : 'Select All'}
+                    <CheckSquare className="h-3 w-3 stroke-[2.4]" />
+                    <span>
+                      {filteredScreenshots.length > 0 && selectedIds.size === filteredScreenshots.length
+                        ? 'Deselect'
+                        : 'Select All'}
+                    </span>
                   </button>
                 </div>
 
+                {/* Right Side: Plump Liquid Action Buttons */}
                 <div className="flex items-center gap-1.5">
                   {selectedIds.size === 1 && (
                     <button
                       type="button"
                       onClick={handleOpenRename}
-                      className="flex items-center gap-1 rounded-full bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 text-xs font-semibold text-slate-700 active:scale-95 transition-all cursor-pointer"
+                      className="plump-liquid-blue-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white cursor-pointer"
                     >
-                      <Pencil className="h-3 w-3 stroke-[2.2] text-[#3478F6]" />
+                      <Pencil className="h-3 w-3 stroke-[2.4]" />
                       <span>Rename</span>
                     </button>
                   )}
                   <button
                     type="button"
-                    onClick={handleExitSelectionMode}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
-                  >
-                    Done
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleConfirmDelete}
                     disabled={selectedIds.size === 0 || isDeleting}
-                    className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer ${
-                      selectedIds.size === 0
-                        ? 'bg-rose-300 opacity-60 cursor-not-allowed'
-                        : 'bg-rose-500 hover:bg-rose-600'
+                    className={`plump-liquid-rose-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white cursor-pointer ${
+                      selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed saturate-50' : ''
                     }`}
                   >
                     {isDeleting ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="h-3.5 w-3.5 stroke-[2.3]" />
+                      <Trash2 className="h-3.5 w-3.5 stroke-[2.4]" />
                     )}
                     <span>Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExitSelectionMode}
+                    className="plump-glass-pill flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-bold text-[#172B4D] cursor-pointer"
+                  >
+                    Done
                   </button>
                 </div>
               </div>
@@ -628,7 +644,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              className="w-full max-w-sm rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
+              className="w-full max-w-sm rounded-[32px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
             >
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-[#172B4D]">Rename Screenshot</h3>
@@ -647,7 +663,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 }}
                 autoFocus
                 placeholder="e.g. Flight Ticket to Tokyo..."
-                className="w-full rounded-xl bg-white border border-[#3478F6] px-3.5 py-2 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/25"
+                className="w-full rounded-2xl bg-white border border-[#3478F6]/40 px-3.5 py-2.5 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/25"
               />
 
               <div className="flex items-center justify-end gap-2 pt-1">
@@ -655,7 +671,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   type="button"
                   onClick={() => setRenameTarget(null)}
                   disabled={isRenaming}
-                  className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -663,7 +679,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   type="button"
                   onClick={handleSaveRename}
                   disabled={isRenaming || !renameInput.trim()}
-                  className="flex items-center gap-1.5 rounded-full bg-[#3478F6] hover:bg-blue-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  className="plump-liquid-blue-btn flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {isRenaming ? (
                     <>
