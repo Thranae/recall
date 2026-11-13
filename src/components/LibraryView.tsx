@@ -564,8 +564,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               }}
             />
 
-            <div className="max-w-md mx-auto px-4 pb-3">
-              <div className="pointer-events-auto relative rounded-[40px] nav-glass-bar px-3 py-2.5 shadow-[0_16px_40px_rgba(23,43,77,0.16)] flex items-center justify-between gap-2">
+            <div className="max-w-md mx-auto px-2.5 pb-2.5">
+              <div className="pointer-events-auto relative rounded-[40px] nav-glass-bar px-2.5 py-1.5 shadow-[0_16px_40px_rgba(23,43,77,0.16)] flex items-center justify-between gap-1.5 overflow-hidden">
                 {/* Top Specular Hairline */}
                 <div
                   className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
@@ -576,17 +576,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 />
 
                 {/* Left Side: Plump Liquid Badge + Select All Pill */}
-                <div className="flex items-center gap-1.5">
-                  <span className="plump-liquid-badge flex h-7 min-w-7 px-2 items-center justify-center rounded-full text-white text-[11px] font-bold font-mono">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="plump-liquid-badge flex h-7 min-w-7 px-1.5 items-center justify-center rounded-full text-white text-[11px] font-bold font-mono shrink-0 select-none">
                     {selectedIds.size}
                   </span>
                   <button
                     type="button"
                     onClick={handleToggleSelectAll}
-                    className="plump-glass-pill flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold text-[#3478F6] cursor-pointer"
+                    className="plump-glass-pill flex items-center gap-1 h-7.5 px-2 rounded-full text-[11px] font-bold text-[#3478F6] whitespace-nowrap shrink-0 cursor-pointer"
                   >
-                    <CheckSquare className="h-3 w-3 stroke-[2.4]" />
-                    <span>
+                    <CheckSquare className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
+                    <span className="leading-none whitespace-nowrap">
                       {filteredScreenshots.length > 0 && selectedIds.size === filteredScreenshots.length
                         ? 'Deselect'
                         : 'Select All'}
@@ -595,38 +595,40 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </div>
 
                 {/* Right Side: Plump Liquid Action Buttons */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {selectedIds.size === 1 && (
                     <button
                       type="button"
                       onClick={handleOpenRename}
-                      className="plump-liquid-blue-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white cursor-pointer"
+                      className="plump-liquid-blue-btn flex items-center gap-1 h-7.5 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <Pencil className="h-3 w-3 stroke-[2.4]" />
-                      <span>Rename</span>
+                      <Pencil className="h-3 w-3 stroke-[2.4] shrink-0" />
+                      <span className="leading-none whitespace-nowrap">Rename</span>
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={handleConfirmDelete}
                     disabled={selectedIds.size === 0 || isDeleting}
-                    className={`plump-liquid-rose-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white cursor-pointer ${
+                    className={`plump-liquid-rose-btn flex items-center gap-1 h-7.5 px-2.5 rounded-full text-[11px] font-bold text-white whitespace-nowrap shrink-0 cursor-pointer ${
                       selectedIds.size === 0 ? 'opacity-50 cursor-not-allowed saturate-50' : ''
                     }`}
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
                     ) : (
-                      <Trash2 className="h-3.5 w-3.5 stroke-[2.4]" />
+                      <Trash2 className="h-3.5 w-3.5 stroke-[2.4] shrink-0" />
                     )}
-                    <span>Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}</span>
+                    <span className="leading-none whitespace-nowrap">
+                      Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+                    </span>
                   </button>
                   <button
                     type="button"
                     onClick={handleExitSelectionMode}
-                    className="plump-glass-pill flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-bold text-[#172B4D] cursor-pointer"
+                    className="plump-glass-pill flex items-center justify-center h-7.5 px-2.5 rounded-full text-[11px] font-bold text-[#172B4D] whitespace-nowrap shrink-0 cursor-pointer"
                   >
-                    Done
+                    <span className="leading-none whitespace-nowrap">Done</span>
                   </button>
                 </div>
               </div>

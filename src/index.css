@@ -1024,6 +1024,36 @@ input, textarea {
    13. PLUMPY LIQUID GLASS BUTTONS & BADGES (MULTI-SELECT ACTION BAR)
    ======================================================== */
 
+.plump-liquid-badge,
+.plump-glass-pill,
+.plump-liquid-blue-btn,
+.plump-liquid-rose-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+
+.plump-liquid-badge *,
+.plump-glass-pill *,
+.plump-liquid-blue-btn *,
+.plump-liquid-rose-btn * {
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  position: relative;
+  z-index: 2;
+}
+
+.plump-glass-pill svg,
+.plump-liquid-blue-btn svg,
+.plump-liquid-rose-btn svg {
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
 /* Plumpy Arctic Blue Liquid Badge */
 .plump-liquid-badge {
   position: relative;
