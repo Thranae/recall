@@ -579,23 +579,33 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 <motion.div
                   key={s.id}
                   layout="position"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, scale: 0.92, y: 10, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
                   exit={{
                     opacity: 0,
-                    scale: 0.90,
+                    scale: 0.86,
+                    y: 12,
+                    filter: 'blur(8px)',
                     transition: {
-                      duration: 0.20,
+                      duration: 0.32,
                       ease: [0.32, 0.72, 0, 1],
                     },
                   }}
                   transition={{
                     layout: {
                       type: 'spring',
-                      stiffness: 380,
-                      damping: 32,
+                      stiffness: 280,
+                      damping: 28,
                       mass: 0.8,
                     },
+                    default: {
+                      duration: 0.28,
+                      ease: [0.32, 0.72, 0, 1],
+                    },
+                  }}
+                  style={{
+                    transformOrigin: 'center center',
+                    willChange: 'transform, opacity, filter',
                   }}
                   className="w-full"
                 >
@@ -711,7 +721,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {/* 5. Rename Screenshot Modal */}
       <AnimatePresence>
         {renameTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -765,18 +780,23 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* 6. Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              initial={{ opacity: 0, scale: 0.94, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              exit={{ opacity: 0, scale: 0.94, y: 14 }}
               transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               className="w-full max-w-sm rounded-[32px] bg-white/95 backdrop-blur-2xl border border-white p-5 shadow-2xl space-y-4"
             >
@@ -814,7 +834,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
