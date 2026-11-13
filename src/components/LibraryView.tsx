@@ -66,7 +66,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
-  // Delete Confirmation Popup & 7-Second Undo State
+  // Delete Confirmation Popup & 5-Second Undo State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     ids: string[];
@@ -75,7 +75,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     interval: ReturnType<typeof setInterval>;
     expiresAt: number;
   } | null>(null);
-  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(7);
+  const [undoSecondsRemaining, setUndoSecondsRemaining] = useState(5);
   const pendingDeleteRef = useRef<typeof pendingDelete>(null);
   pendingDeleteRef.current = pendingDelete;
 
@@ -232,10 +232,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
     const idsToDelete = Array.from(selectedIds);
 
-    // 1. Instantly dismiss the confirmation modal so user directly sees the gallery
+    // 1. Instantly dismiss the confirmation modal and multi-select dock so user sees the deleting state directly on cards
     setShowDeleteConfirm(false);
+    setIsSelectionMode(false);
+    setSelectedIds(new Set());
 
-    // 2. Mark cards as actively deleting so user visibly sees the deleting recoil and rose glow
+    // 2. Mark cards as actively deleting so user visibly sees the 5-second iPhone deleting countdown & circular arc
     setDeletingIds(new Set(idsToDelete));
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -252,45 +254,38 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       void Promise.all(prev.ids.map((id) => api.deleteScreenshot(id)));
     }
 
-    // 3. Give 200ms for user to visibly see the cards react, then unmount with fluid exit animation
-    setTimeout(() => {
-      setIsSelectionMode(false);
-      setSelectedIds(new Set());
-      setDeletingIds(new Set());
+    // 3. Start 5-second animated countdown window
+    const durationMs = 5000;
+    const expiresAt = Date.now() + durationMs;
+    setUndoSecondsRemaining(5);
 
-      // Immediately hide selected items with the exit animation
-      setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
-
-      // 4. Start 7-second undo window
-      const durationMs = 7000;
-      const expiresAt = Date.now() + durationMs;
-      setUndoSecondsRemaining(7);
-
-      const interval = setInterval(() => {
-        const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-        setUndoSecondsRemaining(remaining);
-      }, 200);
-
-      const timer = setTimeout(async () => {
-        clearInterval(interval);
-        setPendingDelete(null);
-        try {
-          await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
-        } catch (err) {
-          console.error('Failed to commit delete:', err);
-        } finally {
-          onRefresh?.();
-        }
-      }, durationMs);
-
-      setPendingDelete({
-        ids: idsToDelete,
-        count: idsToDelete.length,
-        timer,
-        interval,
-        expiresAt,
-      });
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setUndoSecondsRemaining(remaining);
     }, 200);
+
+    const timer = setTimeout(async () => {
+      clearInterval(interval);
+      // At 5 seconds: trigger exit dissolution animation and commit deletion
+      setDeletingIds(new Set());
+      setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+      setPendingDelete(null);
+      try {
+        await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
+      } catch (err) {
+        console.error('Failed to commit delete:', err);
+      } finally {
+        onRefresh?.();
+      }
+    }, durationMs);
+
+    setPendingDelete({
+      ids: idsToDelete,
+      count: idsToDelete.length,
+      timer,
+      interval,
+      expiresAt,
+    });
   };
 
   const handleUndoDelete = useCallback(() => {
@@ -300,7 +295,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     clearInterval(interval);
     setPendingDelete(null);
 
-    // Restore items into view
+    // Instantly cancel deleting state and restore items with fluid spring
+    setDeletingIds(new Set());
     setDeletedIds((prev) => {
       const next = new Set(prev);
       for (const id of ids) {
@@ -311,7 +307,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try {
-        navigator.vibrate(10);
+        navigator.vibrate(20);
       } catch {}
     }
   }, []);
@@ -634,6 +630,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(s.id)}
                     isDeleting={deletingIds.has(s.id)}
+                    deleteCountdown={deletingIds.has(s.id) ? undoSecondsRemaining : undefined}
+                    onUndoDelete={handleUndoDelete}
                     onToggleSelect={() => handleToggleSelect(s.id)}
                     onLongPress={() => handleCardLongPress(s.id)}
                   />
@@ -831,8 +829,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed font-medium">
                     {selectedIds.size === 1
-                      ? 'This screenshot will be removed from your vault. You can undo this within 7 seconds.'
-                      : `These ${selectedIds.size} screenshots will be removed from your vault. You can undo this within 7 seconds.`}
+                      ? 'This screenshot will be removed from your vault. You can undo this within 5 seconds.'
+                      : `These ${selectedIds.size} screenshots will be removed from your vault. You can undo this within 5 seconds.`}
                   </p>
                 </div>
               </div>
@@ -859,33 +857,19 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 7. 7-Second Floating Undo Banner */}
+      {/* 7. 5-Second Floating Undo Banner Elevated Above Bottom Dock */}
       <AnimatePresence>
         {pendingDelete && (
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-            className="fixed bottom-0 inset-x-0 z-50 pointer-events-none select-none"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            className="fixed inset-x-0 z-50 pointer-events-none select-none"
+            style={{ bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))' }}
           >
-            {/* Subtle Cloudy Footer Blur under Undo Bar matching bottom dock */}
-            <div
-              className="absolute inset-x-0 bottom-0 pointer-events-none -z-10"
-              style={{
-                height: 'calc(88px + env(safe-area-inset-bottom, 0px))',
-                background:
-                  'linear-gradient(to top, rgba(243, 247, 252, 0.94) 0%, rgba(235, 243, 253, 0.45) 45%, transparent 100%)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                maskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to top, black 40%, transparent 100%)',
-              }}
-            />
-
-            <div className="max-w-md mx-auto px-4 pb-3">
-              <div className="pointer-events-auto relative overflow-hidden rounded-[40px] nav-glass-bar px-3.5 py-2 shadow-[0_16px_40px_rgba(23,43,77,0.20)] border border-white/95 flex items-center justify-between gap-2.5">
+            <div className="max-w-md mx-auto px-4">
+              <div className="pointer-events-auto relative overflow-hidden rounded-[40px] nav-glass-bar px-3.5 py-2 shadow-[0_16px_40px_rgba(23,43,77,0.22)] border border-white/95 flex items-center justify-between gap-2.5">
                 {/* Top Specular Hairline */}
                 <div
                   className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10 rounded-full"
@@ -895,12 +879,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   }}
                 />
 
-                {/* 7-Second Animated Countdown Progress Bar at Bottom of Pill */}
+                {/* 5-Second Animated Countdown Progress Bar at Bottom of Pill */}
                 <div className="pointer-events-none absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-200/50 overflow-hidden">
                   <motion.div
                     initial={{ width: '100%' }}
                     animate={{ width: '0%' }}
-                    transition={{ duration: 7, ease: 'linear' }}
+                    transition={{ duration: 5, ease: 'linear' }}
                     className="h-full bg-gradient-to-r from-[#3478F6] to-[#5392FF]"
                   />
                 </div>

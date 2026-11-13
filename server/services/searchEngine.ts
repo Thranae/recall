@@ -462,7 +462,12 @@ function extractPreciseValue(query: string, sc: any, fallbackHeadline?: string, 
   };
 }
 
-export async function executeHybridSearch(userId: string, rawQuery: string, filters?: SearchFilter): Promise<SearchResponse> {
+export async function executeHybridSearch(
+  userId: string,
+  rawQuery: string,
+  filters?: SearchFilter,
+  userEmail?: string
+): Promise<SearchResponse> {
   const query = rawQuery.trim();
   const intent = parseQueryIntent(query);
   const resultsMap = new Map<string, SearchResultItem>();
@@ -474,11 +479,11 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
       captured_at, uploaded_at, category, processing_status, processing_error,
       ocr_text, visual_description, text_embedding, tags, created_at, updated_at
     FROM screenshots 
-    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = (SELECT email FROM users WHERE id = ?) AND email IS NOT NULL AND email != '')))
+    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
       AND processing_status != 'queued'
     ORDER BY created_at DESC
   `);
-  const userScreenshots = (await getUserScreenshots.all(userId, userId)) as any[];
+  const userScreenshots = (await getUserScreenshots.all(userId, userEmail || userId)) as any[];
 
   if (userScreenshots.length === 0) {
     return {

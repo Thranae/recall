@@ -141,10 +141,17 @@ export const App: React.FC = () => {
       setSearchResults(res);
     } catch (err) {
       console.warn('Search failed:', err);
-      // Avoid modal alert() during live typing debounced search
-      if (e) {
-        alert('Search request failed. Please check connectivity.');
-      }
+      // Clean fallback: clear results gracefully without blocking browser alert modals
+      setSearchResults({
+        query,
+        parsed_intent: {
+          is_conversation_sequence: false,
+          is_game_stat_query: false,
+          is_visual_query: false,
+        },
+        total_results: 0,
+        results: [],
+      });
     } finally {
       setIsSearching(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   MessageSquare,
   Trophy,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Check,
   Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
@@ -21,6 +23,8 @@ interface ScreenshotCardProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   isDeleting?: boolean;
+  deleteCountdown?: number;
+  onUndoDelete?: () => void;
   onToggleSelect?: () => void;
   onLongPress?: () => void;
 }
@@ -32,6 +36,8 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   isSelectionMode = false,
   isSelected = false,
   isDeleting = false,
+  deleteCountdown,
+  onUndoDelete,
   onToggleSelect,
   onLongPress,
 }) => {
@@ -93,6 +99,18 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isDeleting) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(15);
+        } catch {}
+      }
+      onUndoDelete?.();
+      return;
+    }
+
     if (isLongPressRef.current) {
       isLongPressRef.current = false;
       e.preventDefault();
@@ -173,9 +191,9 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           }
         }
       }}
-      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer transition-all duration-200 ${
+      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer transition-all duration-300 ${
         isDeleting
-          ? 'scale-[0.95] ring-2 ring-rose-500 shadow-[0_0_24px_rgba(244,63,94,0.35)]'
+          ? 'scale-[0.96] ring-2 ring-rose-500/80 shadow-[0_0_24px_rgba(244,63,94,0.30)]'
           : isSelected
           ? 'ring-2 ring-[#3478F6] ring-offset-2 ring-offset-[#F3F7FC]'
           : 'active:scale-[0.98]'
@@ -191,14 +209,77 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
       {/* Full Card Plump Liquid Glass Inner Stroke Overlay */}
       <div className="liquid-card-inner-stroke" />
 
-      {/* Deleting Card Soft Rose Wash Tint */}
-      {isDeleting && (
-        <div className="pointer-events-none absolute inset-0 z-20 bg-rose-500/18 rounded-[22px] transition-all duration-200" />
-      )}
-
       {/* Selected Card Soft Wash Tint */}
       {!isDeleting && isSelected && (
         <div className="pointer-events-none absolute inset-0 z-20 bg-[#3478F6]/10 rounded-[22px]" />
+      )}
+
+      {/* 5-Second iPhone-style Aesthetic Deleting Countdown Overlay */}
+      {isDeleting && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.88 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center p-3 text-center bg-slate-950/65 backdrop-blur-md rounded-[22px] select-none cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUndoDelete?.();
+          }}
+        >
+          {/* Apple Circular Countdown Progress Ring */}
+          <div className="relative flex items-center justify-center w-14 h-14">
+            <svg className="w-14 h-14 -rotate-90 transform" viewBox="0 0 56 56">
+              {/* Background Track Circle */}
+              <circle
+                cx="28"
+                cy="28"
+                r="22"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.24)"
+                strokeWidth="3.2"
+              />
+              {/* Animated Progress Arc */}
+              <motion.circle
+                cx="28"
+                cy="28"
+                r="22"
+                fill="none"
+                stroke="#F43F5E"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeDasharray="138.23"
+                initial={{ strokeDashoffset: 0 }}
+                animate={{ strokeDashoffset: 138.23 }}
+                transition={{ duration: 5, ease: 'linear' }}
+              />
+            </svg>
+            {/* Center Seconds Text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-sm font-extrabold text-white tracking-tight leading-none drop-shadow-sm font-mono">
+                {deleteCountdown ?? 5}s
+              </span>
+            </div>
+          </div>
+
+          {/* Deleting Status Text */}
+          <span className="text-[12px] font-bold text-white/95 mt-2 tracking-tight drop-shadow-sm">
+            Deleting...
+          </span>
+
+          {/* Plump Liquid Frosted Undo Pill Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUndoDelete?.();
+            }}
+            className="mt-2.5 flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white bg-white/25 hover:bg-white/35 active:scale-95 transition-all cursor-pointer backdrop-blur-lg border border-white/50 shadow-md"
+          >
+            <RotateCcw className="h-3 w-3 stroke-[2.6]" />
+            <span>Tap to Undo</span>
+          </button>
+        </motion.div>
       )}
 
       {/* Thumbnail Aspect Container */}
@@ -230,7 +311,9 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
             loading="lazy"
             onError={handleImageError}
             draggable={false}
-            className="h-full w-full object-cover pointer-events-none select-none"
+            className={`h-full w-full object-cover pointer-events-none select-none transition-all duration-300 ${
+              isDeleting ? 'grayscale contrast-90 brightness-75 scale-95' : ''
+            }`}
             style={{
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',

@@ -10,6 +10,7 @@ const router = Router();
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
+    const userEmail = req.user?.email;
     const { query, category, minKills, maxKills } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -21,7 +22,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promis
       category: category || 'all',
       minKills,
       maxKills,
-    });
+    }, userEmail);
 
     res.json(searchResponse);
   } catch (err: any) {
@@ -34,6 +35,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promis
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
+    const userEmail = req.user?.email;
     const query = (req.query.q as string) || (req.query.query as string);
     const category = req.query.category as string;
     const minKills = req.query.minKills ? Number(req.query.minKills) : undefined;
@@ -48,7 +50,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response): Promise
       category: category || 'all',
       minKills,
       maxKills,
-    });
+    }, userEmail);
 
     res.json(searchResponse);
   } catch (err: any) {

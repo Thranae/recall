@@ -70361,7 +70361,7 @@ function extractPreciseValue(query, sc, fallbackHeadline, matchedTags) {
     badge: sc.category === "other" ? "IMAGE" : sc.category?.toUpperCase() || "MATCH"
   };
 }
-async function executeHybridSearch(userId, rawQuery, filters) {
+async function executeHybridSearch(userId, rawQuery, filters, userEmail) {
   const query = rawQuery.trim();
   const intent = parseQueryIntent(query);
   const resultsMap = /* @__PURE__ */ new Map();
@@ -70371,11 +70371,11 @@ async function executeHybridSearch(userId, rawQuery, filters) {
       captured_at, uploaded_at, category, processing_status, processing_error,
       ocr_text, visual_description, text_embedding, tags, created_at, updated_at
     FROM screenshots 
-    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = (SELECT email FROM users WHERE id = ?) AND email IS NOT NULL AND email != '')))
+    WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
       AND processing_status != 'queued'
     ORDER BY created_at DESC
   `);
-  const userScreenshots = await getUserScreenshots.all(userId, userId);
+  const userScreenshots = await getUserScreenshots.all(userId, userEmail || userId);
   if (userScreenshots.length === 0) {
     return {
       query,
@@ -70646,6 +70646,7 @@ var router3 = (0, import_express3.Router)();
 router3.post("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user?.email;
     const { query, category, minKills, maxKills } = req.body;
     if (!query || typeof query !== "string" || query.trim().length === 0) {
       res.status(400).json({ error: "Search query string is required" });
@@ -70655,7 +70656,7 @@ router3.post("/", authMiddleware, async (req, res) => {
       category: category || "all",
       minKills,
       maxKills
-    });
+    }, userEmail);
     res.json(searchResponse);
   } catch (err) {
     console.error("Search endpoint error:", err);
@@ -70665,6 +70666,7 @@ router3.post("/", authMiddleware, async (req, res) => {
 router3.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user?.email;
     const query = req.query.q || req.query.query;
     const category = req.query.category;
     const minKills = req.query.minKills ? Number(req.query.minKills) : void 0;
@@ -70677,7 +70679,7 @@ router3.get("/", authMiddleware, async (req, res) => {
       category: category || "all",
       minKills,
       maxKills
-    });
+    }, userEmail);
     res.json(searchResponse);
   } catch (err) {
     console.error("Search endpoint error:", err);
