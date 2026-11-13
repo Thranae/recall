@@ -69477,6 +69477,9 @@ router2.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 router2.get("/image/:id", authMiddleware, async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "*");
   try {
     const userId = req.user.id;
     const userEmail = req.user?.email;
@@ -69524,7 +69527,8 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
           console.warn("Could not persist converted JPEG back to DB:", persistErr);
         }
         res.setHeader("Content-Type", converted.mimeType);
-        res.setHeader("Cache-Control", "private, max-age=86400");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.setHeader("Access-Control-Allow-Origin", "*");
         res.send(converted.buffer);
         return;
       } catch (convErr) {
@@ -69533,7 +69537,8 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
     }
     const contentType = detectImageMimeType(imgBuffer, row.mime_type);
     res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "private, max-age=86400");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.send(imgBuffer);
   } catch (err) {
     console.error("Image streaming error:", err);

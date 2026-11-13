@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SlidersHorizontal,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Loader2,
   ArrowRight,
+  CheckSquare,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, VaultInsightsSummary } from '../types';
@@ -53,6 +54,29 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
 
+  // Multi-Select & Batch Delete State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Synchronize deletedIds cleanup when screenshots list updates from parent
+  useEffect(() => {
+    if (deletedIds.size > 0) {
+      setDeletedIds((prev) => {
+        const serverIds = new Set(screenshots.map((s) => s.id));
+        const next = new Set<string>();
+        for (const id of prev) {
+          if (serverIds.has(id)) {
+            next.add(id);
+          }
+        }
+        return next;
+      });
+    }
+  }, [screenshots, deletedIds.size]);
+
   const chatCount = screenshots.filter((s) => s.category === 'chat').length;
   const otherCount = screenshots.filter((s) => s.category !== 'chat').length;
 
@@ -63,16 +87,84 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       .split(/\s+/)
       .filter((t) => t.length > 0 && !QUICK_FILLER_WORDS.has(t));
 
-    return screenshots.filter((s) => {
-      if (selectedCategory === 'chat' && s.category !== 'chat') return false;
-      if (selectedCategory === 'other' && s.category === 'chat') return false;
-      if (tokens.length > 0) {
-        const haystack = `${s.original_filename || ''} ${s.visual_description || ''} ${(s.tags || []).join(' ')} ${s.ocr_text || ''}`.toLowerCase();
-        return tokens.every((tok) => haystack.includes(tok));
-      }
-      return true;
+    return screenshots
+      .filter((s) => !deletedIds.has(s.id))
+      .filter((s) => {
+        if (selectedCategory === 'chat' && s.category !== 'chat') return false;
+        if (selectedCategory === 'other' && s.category === 'chat') return false;
+        if (tokens.length > 0) {
+          const haystack = `${s.original_filename || ''} ${s.visual_description || ''} ${(s.tags || []).join(' ')} ${s.ocr_text || ''}`.toLowerCase();
+          return tokens.every((tok) => haystack.includes(tok));
+        }
+        return true;
+      });
+  }, [screenshots, selectedCategory, filterQuery, deletedIds]);
+
+  const handleCardLongPress = useCallback((id: string) => {
+    setIsSelectionMode(true);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
     });
-  }, [screenshots, selectedCategory, filterQuery]);
+  }, []);
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    const visibleIds = filteredScreenshots.map((s) => s.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  }, [filteredScreenshots, selectedIds]);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedIds(new Set());
+    setShowDeleteConfirm(false);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (selectedIds.size === 0 || isDeleting) return;
+
+    const idsToDelete = Array.from(selectedIds);
+    setIsDeleting(true);
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate([20, 40, 20]);
+      } catch {}
+    }
+
+    // Immediately trigger exit animation for deleted cards
+    setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+
+    try {
+      await Promise.all(idsToDelete.map((id) => api.deleteScreenshot(id)));
+    } catch (err) {
+      console.error('Failed to batch delete screenshots:', err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      setIsSelectionMode(false);
+      setSelectedIds(new Set());
+      onRefresh?.();
+    }
+  };
 
   const handleToggleInsights = async () => {
     const next = !showInsights;
@@ -151,22 +243,44 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               : 'Other Screenshots'}
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-medium font-mono">
-            {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
-          </span>
-          {screenshots.length > 0 && (
+          {isSelectionMode ? (
             <button
               type="button"
-              onClick={handleToggleInsights}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer ${
-                showInsights
-                  ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'liquid-glass-pill text-[#3478F6]'
-              }`}
+              onClick={handleExitSelectionMode}
+              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-[#3478F6] bg-blue-50/80 border border-blue-200/60 active:scale-95 transition-all cursor-pointer"
             >
-              <BarChart3 className="h-3 w-3 stroke-[2.3]" />
-              <span>Insights</span>
+              <span>Done</span>
             </button>
+          ) : (
+            <>
+              <span className="text-xs text-slate-500 font-medium font-mono">
+                {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
+              </span>
+              {filteredScreenshots.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsSelectionMode(true)}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-[#3478F6] active:scale-95 cursor-pointer"
+                >
+                  <CheckSquare className="h-3 w-3 stroke-[2.3]" />
+                  <span>Select</span>
+                </button>
+              )}
+              {screenshots.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleToggleInsights}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer ${
+                    showInsights
+                      ? 'bg-[#3478F6] text-white shadow-xs'
+                      : 'liquid-glass-pill text-[#3478F6]'
+                  }`}
+                >
+                  <BarChart3 className="h-3 w-3 stroke-[2.3]" />
+                  <span>Insights</span>
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -327,16 +441,151 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3.5">
-          {filteredScreenshots.map((s) => (
-            <ScreenshotCard
-              key={s.id}
-              screenshot={s}
-              onClick={() => onSelectScreenshot(s.id)}
-            />
-          ))}
-        </div>
+        <motion.div layout className="grid grid-cols-2 gap-3.5">
+          <AnimatePresence mode="popLayout">
+            {filteredScreenshots.map((s) => (
+              <motion.div
+                key={s.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.88,
+                  filter: 'blur(2px)',
+                  transition: {
+                    duration: 0.22,
+                    ease: [0.23, 1, 0.32, 1],
+                  },
+                }}
+                transition={{
+                  layout: {
+                    type: 'spring',
+                    stiffness: 360,
+                    damping: 32,
+                  },
+                }}
+                className="w-full"
+              >
+                <ScreenshotCard
+                  screenshot={s}
+                  onClick={() => onSelectScreenshot(s.id)}
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedIds.has(s.id)}
+                  onToggleSelect={() => handleToggleSelect(s.id)}
+                  onLongPress={() => handleCardLongPress(s.id)}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
+
+      {/* 4. Floating Multi-Select & Relatable Deletion Action Bar */}
+      <AnimatePresence>
+        {isSelectionMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            className="fixed bottom-22 inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto"
+          >
+            <div className="relative overflow-hidden rounded-[26px] bg-white/92 backdrop-blur-2xl border border-white/95 p-3 shadow-[0_18px_40px_rgba(23,43,77,0.18)]">
+              {/* Top Specular Hairline */}
+              <div
+                className="pointer-events-none absolute top-0 left-6 right-6 h-px z-10"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)',
+                }}
+              />
+
+              {showDeleteConfirm ? (
+                /* Confirmation Bar */
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[#172B4D]">
+                      Delete {selectedIds.size} {selectedIds.size === 1 ? 'screenshot' : 'screenshots'}?
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-medium">This cannot be undone</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
+                      className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDelete}
+                      disabled={isDeleting}
+                      className="flex items-center gap-1.5 rounded-full bg-rose-500 hover:bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-3.5 w-3.5 stroke-[2.3]" />
+                          <span>Delete</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Normal Selection Action Bar */
+                <div className="flex items-center justify-between gap-2 px-1">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 min-w-6 px-1.5 items-center justify-center rounded-full bg-[#3478F6] text-white text-[11px] font-bold font-mono shadow-xs">
+                      {selectedIds.size}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleSelectAll}
+                      className="text-[11.5px] font-semibold text-[#3478F6] hover:text-blue-700 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {filteredScreenshots.length > 0 &&
+                      selectedIds.size === filteredScreenshots.length
+                        ? 'Deselect All'
+                        : 'Select All'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExitSelectionMode}
+                      className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={selectedIds.size === 0}
+                      className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer ${
+                        selectedIds.size === 0
+                          ? 'bg-rose-300 opacity-60 cursor-not-allowed'
+                          : 'bg-rose-500 hover:bg-rose-600'
+                      }`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 stroke-[2.3]" />
+                      <span>Delete ({selectedIds.size})</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

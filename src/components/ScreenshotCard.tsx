@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
-import { MessageSquare, Trophy, ShoppingBag, FileText, Layers, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import {
+  MessageSquare,
+  Trophy,
+  ShoppingBag,
+  FileText,
+  Layers,
+  Clock,
+  AlertCircle,
+  RefreshCw,
+  Check,
+} from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
 
@@ -7,12 +17,20 @@ interface ScreenshotCardProps {
   screenshot: Screenshot;
   searchResult?: SearchResultItem;
   onClick: () => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  onLongPress?: () => void;
 }
 
 export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   screenshot,
   searchResult,
   onClick,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onLongPress,
 }) => {
   const baseImageUrl = api.getImageUrl(screenshot.id);
   const [retryState, setRetryState] = useState<{ id: string; count: number }>({
@@ -20,6 +38,72 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
     count: 0,
   });
   const [failedId, setFailedId] = useState<string | null>(null);
+
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressRef = useRef(false);
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    isLongPressRef.current = false;
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(25);
+        } catch {}
+      }
+      onLongPress?.();
+    }, 450);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!longPressTimerRef.current) return;
+    const dist = Math.hypot(e.clientX - startPosRef.current.x, e.clientY - startPosRef.current.y);
+    if (dist > 8) {
+      clearLongPressTimer();
+    }
+  };
+
+  const handlePointerUp = () => {
+    clearLongPressTimer();
+  };
+
+  const handlePointerCancel = () => {
+    clearLongPressTimer();
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (isSelectionMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(15);
+        } catch {}
+      }
+      onToggleSelect?.();
+    } else {
+      onClick();
+    }
+  };
 
   const retryCount = retryState.id === screenshot.id ? retryState.count : 0;
   const imgFailed = failedId === screenshot.id;
@@ -62,20 +146,37 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
 
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onClick();
+          if (isSelectionMode) {
+            onToggleSelect?.();
+          } else {
+            onClick();
+          }
         }
       }}
-      className="liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 active:scale-[0.97] select-none cursor-pointer"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] transition-all duration-200 select-none cursor-pointer ${
+        isSelected
+          ? 'ring-2 ring-[#3478F6] ring-offset-2 ring-offset-[#F3F7FC] scale-[0.98]'
+          : 'active:scale-[0.98]'
+      }`}
+      style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'pan-y' }}
     >
       {/* Full Card Plump Liquid Glass Inner Stroke Overlay */}
       <div className="liquid-card-inner-stroke" />
+
+      {/* Selected Card Soft Wash Tint */}
+      {isSelected && (
+        <div className="pointer-events-none absolute inset-0 z-20 bg-[#3478F6]/10 rounded-[22px] transition-opacity duration-150" />
+      )}
 
       {/* Thumbnail Aspect Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100/50">
@@ -128,6 +229,28 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           }}
         />
 
+        {/* Selection Checkbox Badge */}
+        {isSelectionMode && (
+          <div
+            className="absolute top-2.5 right-2.5 z-30 transition-transform duration-200 pointer-events-none"
+            style={{ transform: isSelected ? 'scale(1.05)' : 'scale(1)' }}
+          >
+            <div
+              className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-200 shadow-md ${
+                isSelected
+                  ? 'bg-[#3478F6] text-white ring-2 ring-white'
+                  : 'bg-black/35 backdrop-blur-md border-[1.5px] border-white/90 text-transparent'
+              }`}
+            >
+              <Check
+                className={`h-3.5 w-3.5 stroke-[3] text-white transition-all duration-150 ${
+                  isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
+                }`}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Floating Liquid Glass Category Badge */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
           <span className="liquid-category-badge shadow-xs">
@@ -135,7 +258,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
             <span className="leading-none truncate text-[#172B4D]">{label}</span>
           </span>
 
-          {screenshot.processing_status !== 'ready' && (
+          {!isSelectionMode && screenshot.processing_status !== 'ready' && (
             <span
               title={`Status: ${screenshot.processing_status}`}
               className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full liquid-glass-badge p-0 shadow-xs text-amber-600"
