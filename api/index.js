@@ -70096,6 +70096,62 @@ function getSynonymsForTerm(term) {
   const base2 = VISUAL_CONCEPT_SYNONYMS[lower] || [lower];
   return Array.from(/* @__PURE__ */ new Set([lower, ...base2]));
 }
+function checkFilenameRelevance(originalFilename, rawQuery, keywords) {
+  if (!originalFilename) return { isMatch: false, score: 0, matchType: "text_keyword", explanation: "" };
+  const nameClean = originalFilename.toLowerCase();
+  const nameBase = nameClean.replace(/\.[a-z0-9]+$/i, "").trim();
+  const qClean = rawQuery.toLowerCase().trim();
+  const qKeywords = keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
+  if (nameBase === qClean || nameClean === qClean) {
+    return {
+      isMatch: true,
+      score: 1,
+      matchType: "exact_filename",
+      explanation: `Exact title match: "${originalFilename}".`
+    };
+  }
+  if (nameBase.includes(qClean) || nameClean.includes(qClean)) {
+    return {
+      isMatch: true,
+      score: 0.995,
+      matchType: "exact_filename",
+      explanation: `Direct title match: contains "${rawQuery}".`
+    };
+  }
+  if (qClean.includes(nameBase) && nameBase.length >= 3) {
+    return {
+      isMatch: true,
+      score: 0.992,
+      matchType: "exact_filename",
+      explanation: `Direct title match: named "${originalFilename}".`
+    };
+  }
+  if (qKeywords.length > 0 && qKeywords.every((kw) => nameClean.includes(kw))) {
+    return {
+      isMatch: true,
+      score: 0.988,
+      matchType: "exact_filename",
+      explanation: `Title matches all search terms: "${originalFilename}".`
+    };
+  }
+  let matchingWordsCount = 0;
+  for (const kw of qKeywords) {
+    const wordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
+    if (wordRe.test(nameBase)) {
+      matchingWordsCount++;
+    }
+  }
+  if (matchingWordsCount > 0) {
+    const ratio = matchingWordsCount / qKeywords.length;
+    return {
+      isMatch: true,
+      score: 0.93 + ratio * 0.05,
+      matchType: "exact_phrase",
+      explanation: `Title contains keyword: "${originalFilename}".`
+    };
+  }
+  return { isMatch: false, score: 0, matchType: "text_keyword", explanation: "" };
+}
 function scoreVisualAndTextMatch(keywords, rawQuery, sc) {
   const descLower = (sc.visual_description || "").toLowerCase();
   const ocrLower = (sc.ocr_text || "").toLowerCase();
@@ -70333,6 +70389,24 @@ async function executeHybridSearch(userId, rawQuery, filters) {
       results: []
     };
   }
+  for (const sc of userScreenshots) {
+    const fnCheck = checkFilenameRelevance(sc.original_filename, query, intent.keywords);
+    if (fnCheck.isMatch) {
+      resultsMap.set(sc.id, {
+        screenshot: sc,
+        match_score: fnCheck.score,
+        match_type: fnCheck.matchType,
+        match_explanation: fnCheck.explanation,
+        precise_value: {
+          headline: sc.original_filename,
+          detail: `Matched Screenshot Title \xB7 ${sc.category?.toUpperCase() || "IMAGE"}`,
+          badge: "Title Match"
+        },
+        matched_tags: [],
+        confidence: Math.min(1, fnCheck.score)
+      });
+    }
+  }
   if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message) {
     const firstTarget = intent.detected_first_message.toLowerCase();
     const replyTarget = intent.detected_reply_message.toLowerCase();
@@ -70553,7 +70627,14 @@ async function executeHybridSearch(userId, rawQuery, filters) {
   } catch (err) {
     console.warn("Semantic embedding retrieval warning:", err);
   }
-  let rankedResults = Array.from(resultsMap.values()).sort((a, b) => b.match_score - a.match_score);
+  let rankedResults = Array.from(resultsMap.values()).sort((a, b) => {
+    const aFn = checkFilenameRelevance(a.screenshot.original_filename, query, intent.keywords);
+    const bFn = checkFilenameRelevance(b.screenshot.original_filename, query, intent.keywords);
+    if (aFn.isMatch && !bFn.isMatch) return -1;
+    if (!aFn.isMatch && bFn.isMatch) return 1;
+    if (aFn.isMatch && bFn.isMatch && aFn.score !== bFn.score) return bFn.score - aFn.score;
+    return b.match_score - a.match_score;
+  });
   if (filters?.category && filters.category !== "all") {
     rankedResults = rankedResults.filter((r) => r.screenshot.category === filters.category);
   }

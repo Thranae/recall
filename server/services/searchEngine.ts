@@ -95,6 +95,85 @@ function getSynonymsForTerm(term: string): string[] {
   return Array.from(new Set([lower, ...base]));
 }
 
+export function checkFilenameRelevance(
+  originalFilename: string,
+  rawQuery: string,
+  keywords: string[]
+): {
+  isMatch: boolean;
+  score: number;
+  matchType: 'exact_filename' | 'exact_phrase' | 'text_keyword';
+  explanation: string;
+} {
+  if (!originalFilename) return { isMatch: false, score: 0, matchType: 'text_keyword', explanation: '' };
+
+  const nameClean = originalFilename.toLowerCase();
+  const nameBase = nameClean.replace(/\.[a-z0-9]+$/i, '').trim();
+  const qClean = rawQuery.toLowerCase().trim();
+  const qKeywords = keywords.length > 0 ? keywords : qClean.split(/\s+/).filter(Boolean);
+
+  // 1. Exact full title match (with or without file extension)
+  if (nameBase === qClean || nameClean === qClean) {
+    return {
+      isMatch: true,
+      score: 1.0,
+      matchType: 'exact_filename',
+      explanation: `Exact title match: "${originalFilename}".`,
+    };
+  }
+
+  // 2. Query is an exact phrase inside the title (e.g. title "Tokyo Flight Ticket", query "flight ticket")
+  if (nameBase.includes(qClean) || nameClean.includes(qClean)) {
+    return {
+      isMatch: true,
+      score: 0.995,
+      matchType: 'exact_filename',
+      explanation: `Direct title match: contains "${rawQuery}".`,
+    };
+  }
+
+  // 3. Title is contained inside the query (e.g. title "Wifi Password", query "find my wifi password")
+  if (qClean.includes(nameBase) && nameBase.length >= 3) {
+    return {
+      isMatch: true,
+      score: 0.992,
+      matchType: 'exact_filename',
+      explanation: `Direct title match: named "${originalFilename}".`,
+    };
+  }
+
+  // 4. All query keywords are in the title (e.g. query "tokyo ticket", title "Tokyo Flight Ticket")
+  if (qKeywords.length > 0 && qKeywords.every((kw) => nameClean.includes(kw))) {
+    return {
+      isMatch: true,
+      score: 0.988,
+      matchType: 'exact_filename',
+      explanation: `Title matches all search terms: "${originalFilename}".`,
+    };
+  }
+
+  // 5. Significant word overlap (at least 1 whole word matches in title)
+  let matchingWordsCount = 0;
+  for (const kw of qKeywords) {
+    const wordRe = new RegExp(`\\b${escapeRegExp(kw)}\\b`, 'i');
+    if (wordRe.test(nameBase)) {
+      matchingWordsCount++;
+    }
+  }
+
+  if (matchingWordsCount > 0) {
+    const ratio = matchingWordsCount / qKeywords.length;
+    return {
+      isMatch: true,
+      score: 0.93 + ratio * 0.05,
+      matchType: 'exact_phrase',
+      explanation: `Title contains keyword: "${originalFilename}".`,
+    };
+  }
+
+  return { isMatch: false, score: 0, matchType: 'text_keyword', explanation: '' };
+}
+
 function scoreVisualAndTextMatch(
   keywords: string[],
   rawQuery: string,
@@ -424,6 +503,28 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
   }
 
   // --------------------------------------------------------------------------
+  // TRACK 0: EXACT & CUSTOM TITLE MATCH (HIGHEST PRECEDENCE)
+  // --------------------------------------------------------------------------
+  for (const sc of userScreenshots) {
+    const fnCheck = checkFilenameRelevance(sc.original_filename, query, intent.keywords);
+    if (fnCheck.isMatch) {
+      resultsMap.set(sc.id, {
+        screenshot: sc,
+        match_score: fnCheck.score,
+        match_type: fnCheck.matchType,
+        match_explanation: fnCheck.explanation,
+        precise_value: {
+          headline: sc.original_filename,
+          detail: `Matched Screenshot Title · ${sc.category?.toUpperCase() || 'IMAGE'}`,
+          badge: 'Title Match',
+        },
+        matched_tags: [],
+        confidence: Math.min(1.0, fnCheck.score),
+      });
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // TRACK A: CONVERSATION RELATIONSHIP SEARCH (FLAGSHIP CAPABILITY)
   // --------------------------------------------------------------------------
   if (intent.is_conversation_sequence && intent.detected_first_message && intent.detected_reply_message) {
@@ -699,8 +800,15 @@ export async function executeHybridSearch(userId: string, rawQuery: string, filt
     console.warn('Semantic embedding retrieval warning:', err);
   }
 
-  // Convert map to array and sort by match_score descending
-  let rankedResults = Array.from(resultsMap.values()).sort((a, b) => b.match_score - a.match_score);
+  // Convert map to array and sort: exact/custom title matches ALWAYS come first, then by match_score descending
+  let rankedResults = Array.from(resultsMap.values()).sort((a, b) => {
+    const aFn = checkFilenameRelevance(a.screenshot.original_filename, query, intent.keywords);
+    const bFn = checkFilenameRelevance(b.screenshot.original_filename, query, intent.keywords);
+    if (aFn.isMatch && !bFn.isMatch) return -1;
+    if (!aFn.isMatch && bFn.isMatch) return 1;
+    if (aFn.isMatch && bFn.isMatch && aFn.score !== bFn.score) return bFn.score - aFn.score;
+    return b.match_score - a.match_score;
+  });
 
   // Apply optional category filters
   if (filters?.category && filters.category !== 'all') {

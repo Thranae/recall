@@ -29,6 +29,7 @@ interface LibraryViewProps {
   filterQuery?: string;
   onFilterChange?: (q: string) => void;
   onQuickSearch?: (query: string) => void;
+  onSelectionModeChange?: (active: boolean) => void;
 }
 
 const CATEGORIES = [
@@ -49,6 +50,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   filterQuery = '',
   onFilterChange,
   onQuickSearch,
+  onSelectionModeChange,
 }) => {
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
@@ -65,6 +67,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
   const [renameInput, setRenameInput] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+
+  // Notify parent of selection mode changes so bottom navigation hides cleanly
+  useEffect(() => {
+    onSelectionModeChange?.(isSelectionMode);
+  }, [isSelectionMode, onSelectionModeChange]);
 
   // Synchronize deletedIds cleanup when screenshots list updates from parent
   useEffect(() => {
@@ -92,7 +99,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       .split(/\s+/)
       .filter((t) => t.length > 0 && !QUICK_FILLER_WORDS.has(t));
 
-    return screenshots
+    const matched = screenshots
       .filter((s) => !deletedIds.has(s.id))
       .filter((s) => {
         if (selectedCategory === 'chat' && s.category !== 'chat') return false;
@@ -103,6 +110,19 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         }
         return true;
       });
+
+    if (raw.length > 0) {
+      return [...matched].sort((a, b) => {
+        const aName = (a.original_filename || '').toLowerCase();
+        const bName = (b.original_filename || '').toLowerCase();
+        const aScore = aName === raw ? 4 : aName.startsWith(raw) ? 3 : aName.includes(raw) ? 2 : 0;
+        const bScore = bName === raw ? 4 : bName.startsWith(raw) ? 3 : bName.includes(raw) ? 2 : 0;
+        if (aScore !== bScore) return bScore - aScore;
+        return 0;
+      });
+    }
+
+    return matched;
   }, [screenshots, selectedCategory, filterQuery, deletedIds]);
 
   const handleCardLongPress = useCallback((id: string) => {
@@ -527,7 +547,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-            className="fixed bottom-22 inset-x-4 max-w-sm mx-auto z-50 pointer-events-auto select-none"
+            style={{ bottom: 'calc(14px + env(safe-area-inset-bottom, 0px))' }}
+            className="fixed inset-x-4 max-w-md mx-auto z-50 pointer-events-auto select-none"
           >
             <div className="relative overflow-hidden rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white/90 px-3.5 py-2.5 shadow-[0_12px_32px_rgba(23,43,77,0.16)]">
               {/* Top Specular Hairline */}

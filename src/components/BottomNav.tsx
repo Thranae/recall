@@ -9,6 +9,7 @@ interface BottomNavProps {
   onSelectTab: (tab: TabType, category?: string) => void;
   onOpenUpload: () => void;
   screenshotCount: number;
+  visible?: boolean;
 }
 
 type TabItem = {
@@ -31,6 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   selectedCategory = 'all',
   onSelectTab,
   onOpenUpload,
+  visible = true,
 }) => {
   const isActive = (key: string, category?: string) => {
     if (key === 'library' && category === 'chat')
@@ -42,7 +44,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-40 pointer-events-none select-none"
+      className={`fixed bottom-0 inset-x-0 z-40 pointer-events-none select-none transition-all duration-200 ease-out ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Subtle Cloudy Footer Blur under the Bottom Nav Bar (Expo project reference) */}
