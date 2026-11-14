@@ -362,7 +362,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             <button
               key={cat.id}
               type="button"
-              onClick={() => onSelectCategory(cat.id)}
+              onClick={() => {
+                if (isSelected) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  onSelectCategory(cat.id);
+                }
+              }}
               className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
                 isSelected ? 'liquid-filter-chip-active' : ''
               }`}

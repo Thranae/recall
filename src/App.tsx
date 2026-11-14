@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { AuthView } from './components/AuthView';
 import { TopHeader } from './components/TopHeader';
 import { BottomNav, type TabType } from './components/BottomNav';
@@ -45,6 +45,13 @@ export const App: React.FC = () => {
 
   // Check existing session on launch
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+
     api
       .getCurrentUser()
       .then((u) => {
@@ -55,6 +62,21 @@ export const App: React.FC = () => {
         setIsInitializing(false);
       });
   }, []);
+
+  // Instantly reset scroll to top whenever switching modules or category filters
+  useLayoutEffect(() => {
+    const resetScrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    resetScrollToTop();
+
+    // Additional raf guarantees mobile browsers (Chromium/WebKit) do not restore stale scroll after DOM layout
+    const rafId = requestAnimationFrame(resetScrollToTop);
+    return () => cancelAnimationFrame(rafId);
+  }, [currentTab, selectedCategory, searchCategory]);
 
   // Fetch screenshots (Always fetch full library so category chip counts and tabs remain 100% accurate)
   const fetchScreenshots = useCallback(async () => {
@@ -217,6 +239,9 @@ export const App: React.FC = () => {
 
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
   }, []);
 
   const processingCount = screenshots.filter(
@@ -376,10 +401,20 @@ export const App: React.FC = () => {
         onSelectTab={(tab, category) => {
           setIsSelectionMode(false);
           setHasActiveUndo(false);
+
+          // Re-tapping active module smoothly scrolls back to top (native iOS/Android feel)
+          if (currentTab === tab && (!category || selectedCategory === category)) {
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+            return;
+          }
+
           setCurrentTab(tab);
           if (category) {
             setSelectedCategory(category);
           }
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          if (document.documentElement) document.documentElement.scrollTop = 0;
+          if (document.body) document.body.scrollTop = 0;
         }}
         onOpenUpload={() => setIsUploadOpen(true)}
         screenshotCount={screenshots.length}

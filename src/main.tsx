@@ -6,6 +6,13 @@ import { SplashScreen } from '@capacitor/splash-screen'
 import './index.css'
 import App from './App.tsx'
 
+if (typeof window !== 'undefined') {
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual'
+  }
+  window.scrollTo(0, 0)
+}
+
 if (Capacitor.isNativePlatform()) {
   StatusBar.setStyle({ style: Style.Light })
   StatusBar.setBackgroundColor({ color: '#F3F7FC' })

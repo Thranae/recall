@@ -29,20 +29,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [brandPulseSeq, setBrandPulseSeq] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const lastBrandTapRef = useRef(0);
 
   const handleBrandPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const now = performance.now();
-    if (now - lastBrandTapRef.current <= 340) {
-      lastBrandTapRef.current = 0;
-      setBrandPulseSeq((n) => n + 1);
-      if (window.scrollY > 12) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
-      lastBrandTapRef.current = now;
-    }
+    setBrandPulseSeq((n) => n + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
