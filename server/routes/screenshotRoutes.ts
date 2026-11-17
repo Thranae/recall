@@ -9,6 +9,7 @@ import { enqueueScreenshotJob, processScreenshotDirectly } from '../services/pro
 import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/embeddings';
 import { ensureWebCompatibleImage, isHeicFormat, detectImageMimeType } from '../utils/imageConverter';
 import { detectDuplicateGroups, cleanSubstantiveOcr, computeTokenJaccard, computeBigramDice } from '../services/duplicateDetector';
+import { detectThreadGroups, extractVaultDigest, detectClutterCandidates } from '../services/vaultIntelligence';
 
 const router = Router();
 
@@ -400,6 +401,125 @@ router.post('/duplicates/clean', authMiddleware, async (req: AuthRequest, res: R
   } catch (err: any) {
     console.error('Batch clean duplicates error:', err);
     res.status(500).json({ error: 'Failed to clean duplicate screenshots' });
+  }
+});
+
+// 2c. Get Stitched Conversation Threads
+router.get('/threads', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+
+    const screenshots = (await db.prepare(`
+      SELECT 
+        id, user_id, storage_key, original_filename, mime_type, width, height, file_size,
+        captured_at, uploaded_at, category, processing_status, ocr_text, visual_description, created_at
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+        AND processing_status = 'ready'
+      ORDER BY created_at ASC
+    `).all(userId, userEmail)) as any[];
+
+    const messages = (await db.prepare(`
+      SELECT id, screenshot_id, sequence_number, message_text, sender_side, sender_label
+      FROM extracted_messages
+      WHERE user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
+      ORDER BY screenshot_id, sequence_number ASC
+    `).all(userId, userEmail)) as any[];
+
+    const threadGroups = await detectThreadGroups(screenshots, messages);
+    res.json({ threads: threadGroups });
+  } catch (err: any) {
+    console.error('Fetch threads error:', err);
+    res.status(500).json({ error: 'Failed to detect conversation threads' });
+  }
+});
+
+// 2d. Get Proactive Vault Digest (Expiring coupons, upcoming events, pending bills)
+router.get('/digest', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+
+    const screenshots = (await db.prepare(`
+      SELECT 
+        id, original_filename, file_size, uploaded_at, captured_at, category, ocr_text, visual_description, created_at
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+        AND processing_status = 'ready'
+      ORDER BY created_at DESC
+    `).all(userId, userEmail)) as any[];
+
+    const digest = await extractVaultDigest(screenshots);
+    res.json(digest);
+  } catch (err: any) {
+    console.error('Fetch digest error:', err);
+    res.status(500).json({ error: 'Failed to extract vault digest' });
+  }
+});
+
+// 2e. Get Smart Clutter Candidates
+router.get('/clutter', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+
+    const screenshots = (await db.prepare(`
+      SELECT 
+        id, original_filename, file_size, uploaded_at, captured_at, category, ocr_text, visual_description, created_at
+      FROM screenshots
+      WHERE (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      ORDER BY created_at DESC
+    `).all(userId, userEmail)) as any[];
+
+    const clutter = await detectClutterCandidates(screenshots);
+    res.json({ candidates: clutter });
+  } catch (err: any) {
+    console.error('Fetch clutter error:', err);
+    res.status(500).json({ error: 'Failed to detect clutter candidates' });
+  }
+});
+
+// 2f. Batch Purge Clutter Screenshots
+router.post('/clutter/purge', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user?.email || userId;
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: 'No IDs provided for clutter purge' });
+      return;
+    }
+
+    let purgedCount = 0;
+    for (const id of ids) {
+      const row = (await db.prepare(`
+        SELECT storage_key FROM screenshots
+        WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
+      `).get(id, userId, userEmail)) as any;
+
+      if (!row) continue;
+
+      if (row.storage_key) {
+        try {
+          const filePath = path.join(UPLOADS_BASE, row.storage_key);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch {}
+      }
+
+      await db.prepare('DELETE FROM screenshots WHERE id = ?').run(id);
+      try {
+        await db.prepare('DELETE FROM screenshots_fts WHERE screenshot_id = ?').run(id);
+      } catch {}
+
+      purgedCount++;
+    }
+
+    res.json({ success: true, purged: purgedCount });
+  } catch (err: any) {
+    console.error('Clutter purge error:', err);
+    res.status(500).json({ error: 'Failed to purge clutter screenshots' });
   }
 });
 

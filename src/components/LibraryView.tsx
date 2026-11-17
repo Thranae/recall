@@ -17,11 +17,15 @@ import {
   RotateCcw,
   Download,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
-import type { Screenshot, VaultInsightsSummary } from '../types';
+import type { Screenshot, VaultInsightsSummary, ThreadGroup } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
+import { ThreadStitcherModal } from './ThreadStitcherModal';
+import { VaultDigestModal } from './VaultDigestModal';
+import { ClutterSweeperModal } from './ClutterSweeperModal';
 
 interface LibraryViewProps {
   screenshots: Screenshot[];
@@ -62,6 +66,33 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
+
+  // Threads, Digest & Clutter Sweeper States
+  const [threads, setThreads] = useState<ThreadGroup[]>([]);
+  const [selectedThread, setSelectedThread] = useState<ThreadGroup | null>(null);
+  const [isVaultDigestOpen, setIsVaultDigestOpen] = useState(false);
+  const [isClutterSweeperOpen, setIsClutterSweeperOpen] = useState(false);
+
+  const fetchThreads = useCallback(() => {
+    api
+      .getThreads()
+      .then((res) => setThreads(res.threads || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads, screenshots]);
+
+  const threadByScreenshotId = useMemo(() => {
+    const map = new Map<string, ThreadGroup>();
+    for (const t of threads) {
+      for (const id of t.screenshotIds) {
+        map.set(id, t);
+      }
+    }
+    return map;
+  }, [threads]);
 
   // Multi-Select & Batch Delete State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -437,18 +468,40 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </button>
               )}
               {screenshots.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleToggleInsights}
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer ${
-                    showInsights
-                      ? 'bg-[#3478F6] text-white shadow-xs'
-                      : 'liquid-glass-pill text-[#3478F6]'
-                  }`}
-                >
-                  <BarChart3 className="h-3 w-3 stroke-[2.3]" />
-                  <span>Insights</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsVaultDigestOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-amber-700 hover:bg-amber-50 active:scale-95 cursor-pointer shadow-2xs"
+                    title="View Proactive Vault Digest (Coupons, Events, Bills)"
+                  >
+                    <Sparkles className="h-3 w-3 text-amber-500 stroke-[2.3]" />
+                    <span>Digest</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsClutterSweeperOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-rose-700 hover:bg-rose-50 active:scale-95 cursor-pointer shadow-2xs"
+                    title="Smart Declutter Memory Broom"
+                  >
+                    <Trash2 className="h-3 w-3 text-rose-500 stroke-[2.3]" />
+                    <span>Declutter</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleInsights}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer ${
+                      showInsights
+                        ? 'bg-[#3478F6] text-white shadow-xs'
+                        : 'liquid-glass-pill text-[#3478F6]'
+                    }`}
+                  >
+                    <BarChart3 className="h-3 w-3 stroke-[2.3]" />
+                    <span>Insights</span>
+                  </button>
+                </>
               )}
             </>
           )}
@@ -658,6 +711,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                     onUndoDelete={handleUndoDelete}
                     onToggleSelect={() => handleToggleSelect(s.id)}
                     onLongPress={() => handleCardLongPress(s.id)}
+                    threadGroup={threadByScreenshotId.get(s.id)}
+                    onOpenThreadReel={(t) => setSelectedThread(t)}
                   />
                 </motion.div>
               ))}
@@ -994,6 +1049,37 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feature 1: Seamless Conversation Thread Reel Modal */}
+      <ThreadStitcherModal
+        isOpen={Boolean(selectedThread)}
+        thread={selectedThread}
+        onClose={() => setSelectedThread(null)}
+        onSelectScreenshot={(id) => {
+          setSelectedThread(null);
+          onSelectScreenshot(id);
+        }}
+      />
+
+      {/* Feature 3: Proactive Vault Digest Modal */}
+      <VaultDigestModal
+        isOpen={isVaultDigestOpen}
+        onClose={() => setIsVaultDigestOpen(false)}
+        onSelectScreenshot={(id) => {
+          setIsVaultDigestOpen(false);
+          onSelectScreenshot(id);
+        }}
+      />
+
+      {/* Feature 4: Smart Clutter Sweeper Modal */}
+      <ClutterSweeperModal
+        isOpen={isClutterSweeperOpen}
+        onClose={() => setIsClutterSweeperOpen(false)}
+        onPurged={() => {
+          onRefresh?.();
+          fetchThreads();
+        }}
+      />
     </div>
   );
 };

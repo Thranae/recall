@@ -27,6 +27,8 @@ interface ScreenshotCardProps {
   onUndoDelete?: () => void;
   onToggleSelect?: () => void;
   onLongPress?: () => void;
+  threadGroup?: import('../types').ThreadGroup;
+  onOpenThreadReel?: (thread: import('../types').ThreadGroup) => void;
 }
 
 export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
@@ -40,6 +42,8 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
   onUndoDelete,
   onToggleSelect,
   onLongPress,
+  threadGroup,
+  onOpenThreadReel,
 }) => {
   const baseImageUrl = api.getImageUrl(screenshot.id);
   const [retryState, setRetryState] = useState<{ id: string; count: number }>({
@@ -390,6 +394,22 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
             </span>
           )}
         </div>
+
+        {/* Stitched Conversation Thread badge on thumbnail */}
+        {threadGroup && !isSelectionMode && (
+          <div className="absolute bottom-2 left-2 z-10">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenThreadReel?.(threadGroup);
+              }}
+              className="flex items-center gap-1 rounded-full bg-slate-900/85 backdrop-blur-md px-2 py-0.5 text-[9.5px] font-bold text-white border border-white/20 shadow-xs hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
+            >
+              <span>🧵 Thread ({threadGroup.screenshots.length})</span>
+            </button>
+          </div>
+        )}
 
         {/* Search match percentage pill on thumbnail */}
         {searchResult && (

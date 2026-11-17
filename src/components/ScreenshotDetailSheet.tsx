@@ -31,6 +31,7 @@ import {
   Zap,
   Undo2,
   Pencil,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
@@ -52,7 +53,9 @@ import type {
   SimilarMemoryItem,
   SmartCoachResponse,
   AiRedactWordHint,
+  LiveInspectorNode,
 } from '../types';
+import { extractLiveInspectorNodes } from '../utils/visualInspector';
 
 type ScreenshotDetailData = {
   screenshot: Screenshot;
@@ -86,6 +89,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [isInspectorActive, setIsInspectorActive] = useState(true);
+  const [activeInspectorNode, setActiveInspectorNode] = useState<LiveInspectorNode | null>(null);
+  const [inspectorCopied, setInspectorCopied] = useState(false);
   const [qaInput, setQaInput] = useState('');
   const [isAskingImage, setIsAskingImage] = useState(false);
   const [qaResult, setQaResult] = useState<{ question: string; answer: string; provider: string } | null>(null);
@@ -105,14 +111,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [autoRedactBoxes, setAutoRedactBoxes] = useState<RedactRegion[]>([]);
   const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
   const [redactError, setRedactError] = useState<string | null>(null);
-  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!actionFeedback) return;
-    const timer = setTimeout(() => setActionFeedback(null), 3000);
-    return () => clearTimeout(timer);
-  }, [actionFeedback]);
-
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [autoInkMasks, setAutoInkMasks] = useState<
     Array<{ id: string; left: number; top: number; width: number; height: number; delayMs: number; mode: 'standard' | 'ai' }>
@@ -135,6 +133,24 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       setNewName(data.screenshot.original_filename);
     }
   }, [data?.screenshot?.original_filename]);
+
+  const inspectorNodes = useMemo(() => {
+    return extractLiveInspectorNodes(data?.screenshot, data?.messages || []);
+  }, [data?.screenshot, data?.messages]);
+
+  const handleInspectorAction = (node: LiveInspectorNode) => {
+    if (node.href) {
+      window.open(node.href, '_blank');
+      return;
+    }
+    if (node.kind === 'calendar' && data?.screenshot) {
+      triggerCalendarDownload(node.label, node.value, 'See Screenshot');
+      return;
+    }
+    navigator.clipboard.writeText(node.value);
+    setInspectorCopied(true);
+    setTimeout(() => setInspectorCopied(false), 2000);
+  };
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
   const animTimersRef = useRef<number[]>([]);
@@ -686,29 +702,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
   const handleDownload = async (overrideName?: string) => {
     if (!screenshotId && !redactedResult) return;
-    try {
-      const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
-        /\.[a-z0-9]+$/i,
-        ''
-      );
+    const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
+      /\.[a-z0-9]+$/i,
+      ''
+    );
 
-      // 1. If screenshot is in redacted mode or redactedResult exists -> ALWAYS download the redacted image!
-      if (redactedResult?.dataUrl) {
-        const filename = baseName.toLowerCase().startsWith('redacted-') ? `${baseName}.png` : `redacted-${baseName}.png`;
-        await downloadImageFile(redactedResult.dataUrl, filename);
-        setActionFeedback({ type: 'success', message: 'Redacted screenshot saved' });
-        return;
-      }
-
-      // 2. Unredacted screenshot with the active renamed filename
-      const filename = `${baseName}.png`;
-      const url = api.getImageUrl(screenshotId!, filename);
-      await downloadImageFile(url, filename);
-      setActionFeedback({ type: 'success', message: 'Screenshot saved' });
-    } catch (err) {
-      console.error('Download error:', err);
-      setActionFeedback({ type: 'error', message: 'Download failed. Please check permissions.' });
+    // 1. If screenshot is in redacted mode or redactedResult exists -> ALWAYS download the redacted image!
+    if (redactedResult?.dataUrl) {
+      const filename = baseName.toLowerCase().startsWith('redacted-') ? `${baseName}.png` : `redacted-${baseName}.png`;
+      await downloadImageFile(redactedResult.dataUrl, filename);
+      return;
     }
+
+    // 2. Unredacted screenshot with the active renamed filename
+    const filename = `${baseName}.png`;
+    const url = api.getImageUrl(screenshotId!, filename);
+    await downloadImageFile(url, filename);
   };
 
   const handleDownloadRedacted = async () => {
@@ -808,7 +817,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       onUpdated();
     } catch (err) {
       console.error('Re-analysis failed:', err);
-      setActionFeedback({ type: 'error', message: 'Failed to re-analyze screenshot with AI' });
+      alert('Failed to re-analyze screenshot with AI');
     } finally {
       setIsReanalyzing(false);
     }
@@ -823,7 +832,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       onClose();
     } catch (err) {
       console.error('Delete failed:', err);
-      setActionFeedback({ type: 'error', message: 'Failed to delete screenshot' });
+      alert('Failed to delete screenshot');
     } finally {
       setIsDeleting(false);
     }
@@ -886,21 +895,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
       {/* Sheet Modal with Plump Liquid Glass */}
       <div className="liquid-glass-container relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[32px] pb-safe sm:max-h-[88vh] sm:max-w-lg sm:rounded-[32px] shadow-2xl touch-auto overscroll-contain">
-        {/* Floating Action Feedback Toast */}
-        {actionFeedback && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
-            <div
-              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold shadow-lg backdrop-blur-xl border ${
-                actionFeedback.type === 'error'
-                  ? 'bg-rose-500/90 text-white border-rose-300/60 shadow-rose-500/20'
-                  : 'bg-emerald-600/90 text-white border-emerald-300/60 shadow-emerald-500/20'
-              }`}
-            >
-              <span>{actionFeedback.message}</span>
-            </div>
-          </div>
-        )}
-
         {/* Drag Handle */}
         <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
           <div className="h-1.5 w-10 rounded-full bg-slate-300" />
@@ -1282,6 +1276,68 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               ))}
 
+              {/* Live Interactive Visual Inspector Nodes (Apple Visual Look Up) */}
+              {isInspectorActive && !isRedactedMode && !isRedacting && !isAiRedacting && inspectorNodes.map((node) => (
+                <div
+                  key={node.id}
+                  style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                  className="absolute z-[25] -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveInspectorNode(activeInspectorNode?.id === node.id ? null : node);
+                    }}
+                    className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[#3478F6] border border-blue-400 shadow-md backdrop-blur-md active:scale-90 transition-transform cursor-pointer group"
+                    title={node.label}
+                  >
+                    <span className="absolute -inset-1 rounded-full bg-blue-400/35 animate-ping pointer-events-none" />
+                    <Sparkles className="h-3.5 w-3.5 stroke-[2.3] text-[#3478F6] group-hover:rotate-12 transition-transform" />
+                  </button>
+
+                  {/* Inspector Halo Popover */}
+                  {activeInspectorNode?.id === node.id && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute bottom-9 left-1/2 -translate-x-1/2 z-30 w-52 rounded-[22px] bg-white/95 backdrop-blur-2xl p-3 shadow-2xl border border-white space-y-2 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-1">
+                        <span className="text-[10px] font-bold text-[#3478F6] uppercase tracking-wider">
+                          {node.label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveInspectorNode(null)}
+                          className="p-0.5 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs font-bold text-[#172B4D] break-all leading-tight">
+                        {node.detail}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => handleInspectorAction(node)}
+                        className="w-full h-7 rounded-full liquid-btn-primary text-white text-[10.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-xs cursor-pointer"
+                      >
+                        {inspectorCopied ? (
+                          <>
+                            <Check className="h-3 w-3 stroke-[2.4]" />
+                            <span>Done!</span>
+                          </>
+                        ) : (
+                          <span>{node.actionText}</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
               {/* Plump Liquid Glass Inner Stroke Overlay */}
               <div className="liquid-card-inner-stroke" />
 
@@ -1299,37 +1355,57 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   isRedacting || isAiRedacting ? 'opacity-0 scale-[0.97]' : 'opacity-100 scale-100'
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={handleToggleRedact}
-                  disabled={isRedacting || isAiRedacting}
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
-                    isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
-                  } ${
-                    isRedactedMode || isRedacting || isAiRedacting
-                      ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
-                      : 'liquid-category-badge text-[#172B4D]'
-                  }`}
-                >
-                  {isRedacting || isAiRedacting ? (
-                    <Loader2 className="h-3 w-3 animate-spin text-white/85" />
-                  ) : (
-                    <Shield
-                      className={`h-3 w-3 stroke-[2.2] ${
-                        isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleToggleRedact}
+                    disabled={isRedacting || isAiRedacting}
+                    className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
+                      isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
+                    } ${
+                      isRedactedMode || isRedacting || isAiRedacting
+                        ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
+                        : 'liquid-category-badge text-[#172B4D]'
+                    }`}
+                  >
+                    {isRedacting || isAiRedacting ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-white/85" />
+                    ) : (
+                      <Shield
+                        className={`h-3 w-3 stroke-[2.2] ${
+                          isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'
+                        }`}
+                      />
+                    )}
+                    <span>
+                      {isAiRedacting
+                        ? 'AI Redacting…'
+                        : isRedacting
+                        ? 'Redacting…'
+                        : isRedactedMode
+                        ? 'Redacted'
+                        : 'Redact'}
+                    </span>
+                  </button>
+
+                  {inspectorNodes.length > 0 && !isRedactedMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsInspectorActive(!isInspectorActive);
+                        setActiveInspectorNode(null);
+                      }}
+                      className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold transition-all cursor-pointer shadow-xs ${
+                        isInspectorActive
+                          ? 'bg-[#3478F6] text-white shadow-xs'
+                          : 'liquid-category-badge text-[#172B4D]'
                       }`}
-                    />
+                    >
+                      <Sparkles className="h-3 w-3 stroke-[2.2]" />
+                      <span>Live Look Up ({inspectorNodes.length})</span>
+                    </button>
                   )}
-                  <span>
-                    {isAiRedacting
-                      ? 'AI Redacting…'
-                      : isRedacting
-                      ? 'Redacting…'
-                      : isRedactedMode
-                      ? 'Redacted'
-                      : 'Redact'}
-                  </span>
-                </button>
+                </div>
 
                 {!isImageExpanded && (
                   <button
@@ -2079,18 +2155,16 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           )}
         </div>
 
-        {/* Bottom Actions (Hidden when editing name so keyboard does not push button over content) */}
-        {!isEditingName && (
-          <div className="border-t border-white/70 px-5 py-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full h-11 rounded-full liquid-btn-primary text-xs font-bold text-white active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-sm"
-            >
-              Done
-            </button>
-          </div>
-        )}
+        {/* Bottom Actions */}
+        <div className="border-t border-white/70 px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full h-11 rounded-full liquid-btn-primary text-xs font-bold text-white active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-sm"
+          >
+            Done
+          </button>
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}

@@ -169,3 +169,76 @@ export interface VaultInsightsSummary {
   duplicate_count: number;
 }
 
+export interface ThreadGroup {
+  threadId: string;
+  title: string;
+  screenshotIds: string[];
+  screenshots: Screenshot[];
+  messageCount: number;
+  startedAt: string;
+  lastAt: string;
+}
+
+export interface DigestDiscountItem {
+  id: string;
+  screenshotId: string;
+  code: string;
+  brand: string;
+  discountText: string;
+  expiryHint?: string;
+  urgency: 'urgent' | 'active' | 'expired';
+  originalFilename: string;
+}
+
+export interface DigestEventItem {
+  id: string;
+  screenshotId: string;
+  title: string;
+  dateStr: string;
+  location?: string;
+  bookingRef?: string;
+  isUpcoming: boolean;
+  originalFilename: string;
+}
+
+export interface DigestBillItem {
+  id: string;
+  screenshotId: string;
+  biller: string;
+  amount: string;
+  dueDate?: string;
+  isPending: boolean;
+  originalFilename: string;
+}
+
+export interface VaultDigestResponse {
+  discounts: DigestDiscountItem[];
+  events: DigestEventItem[];
+  bills: DigestBillItem[];
+  total_insights: number;
+}
+
+export interface ClutterCandidate {
+  id: string;
+  screenshotId: string;
+  screenshot: Screenshot;
+  category: 'otp' | 'past_event' | 'temp_receipt' | 'low_utility';
+  title: string;
+  reason: string;
+  snippet: string;
+  ageDays: number;
+  confidence: number;
+}
+
+export interface LiveInspectorNode {
+  id: string;
+  x: number; // percentage (0 - 100)
+  y: number; // percentage (0 - 100)
+  kind: 'otp' | 'phone' | 'email' | 'url' | 'calendar' | 'upi' | 'discount' | 'entity';
+  label: string;
+  detail: string;
+  actionText: string;
+  value: string;
+  href?: string;
+}
+
