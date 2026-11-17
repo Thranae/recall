@@ -4,7 +4,6 @@ import {
   Download,
   Layers,
   MessageSquare,
-  Sparkles,
   Loader2,
   Check,
 } from 'lucide-react';
@@ -251,7 +250,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                   >
                     {/* Part overlay watermark badge */}
                     <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10.5px] font-bold text-white border border-white/20 shadow-xs pointer-events-none">
-                      <Sparkles className="h-3 w-3 text-[#3478F6]" />
+                      <Layers className="h-3 w-3 text-[#3478F6]" />
                       <span>Part {idx + 1} of {thread.screenshots.length}</span>
                     </div>
 

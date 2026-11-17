@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
-  Sparkles,
+  Layers,
   Tag,
   Calendar,
   CreditCard,
@@ -175,7 +175,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
           ) : totalCount === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-50 text-[#3478F6] border border-blue-100 shadow-xs">
-                <Sparkles className="h-6 w-6 stroke-[2]" />
+                <Layers className="h-6 w-6 stroke-[2]" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-800">No active deadlines detected</h4>

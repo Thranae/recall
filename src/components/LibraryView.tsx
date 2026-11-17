@@ -17,7 +17,6 @@ import {
   RotateCcw,
   Download,
   X,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
@@ -434,36 +433,39 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         })}
       </div>
 
-      {/* 2. Library Status Strip */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="font-bold text-[#172B4D] text-[15px] tracking-tight">
-          {selectedCategory === 'all'
-            ? 'All Screenshots'
-            : selectedCategory === 'chat'
-              ? 'Conversations'
-              : 'Other Screenshots'}
-        </h2>
-        <div className="flex items-center gap-2">
+      {/* 2. Library Status Strip & Action Pills */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 pt-1 pb-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="font-bold text-[#172B4D] text-[17px] tracking-tight whitespace-nowrap">
+            {selectedCategory === 'all'
+              ? 'All Screenshots'
+              : selectedCategory === 'chat'
+                ? 'Conversations'
+                : 'Other Screenshots'}
+          </h2>
+          <span className="liquid-category-badge px-2.5 py-0.5 text-[11px] font-bold font-mono text-[#3478F6] shrink-0">
+            {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
           {isSelectionMode ? (
             <button
               type="button"
               onClick={handleExitSelectionMode}
-              className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-[#3478F6] cursor-pointer"
+              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3.5 h-8 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-all"
             >
               <span>Done</span>
             </button>
           ) : (
             <>
-              <span className="text-xs text-slate-500 font-medium font-mono">
-                {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
-              </span>
               {filteredScreenshots.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setIsSelectionMode(true)}
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-[#3478F6] active:scale-95 cursor-pointer"
+                  className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-all"
                 >
-                  <CheckSquare className="h-3 w-3 stroke-[2.3]" />
+                  <CheckSquare className="h-3.5 w-3.5 stroke-[2.3]" />
                   <span>Select</span>
                 </button>
               )}
@@ -472,33 +474,33 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsVaultDigestOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-amber-700 hover:bg-amber-50 active:scale-95 cursor-pointer shadow-2xs"
+                    className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-all"
                     title="View Proactive Vault Digest (Coupons, Events, Bills)"
                   >
-                    <Sparkles className="h-3 w-3 text-amber-500 stroke-[2.3]" />
+                    <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.3]" />
                     <span>Digest</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsClutterSweeperOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold liquid-glass-pill text-rose-700 hover:bg-rose-50 active:scale-95 cursor-pointer shadow-2xs"
+                    className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-all"
                     title="Smart Declutter Memory Broom"
                   >
-                    <Trash2 className="h-3 w-3 text-rose-500 stroke-[2.3]" />
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.3]" />
                     <span>Declutter</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleToggleInsights}
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold transition-all active:scale-95 cursor-pointer ${
+                    className={`plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
                       showInsights
-                        ? 'bg-[#3478F6] text-white shadow-xs'
-                        : 'liquid-glass-pill text-[#3478F6]'
+                        ? '!bg-[#3478F6] !text-white shadow-xs'
+                        : 'text-[#3478F6]'
                     }`}
                   >
-                    <BarChart3 className="h-3 w-3 stroke-[2.3]" />
+                    <BarChart3 className="h-3.5 w-3.5 stroke-[2.3]" />
                     <span>Insights</span>
                   </button>
                 </>

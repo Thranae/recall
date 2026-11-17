@@ -472,19 +472,19 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           )}
         </div>
       ) : (
-        <div className="p-3">
-          <p className="truncate text-[12.5px] font-bold text-[#172B4D] leading-snug">
+        <div className="p-3 min-w-0 overflow-hidden">
+          <p className="truncate block w-full text-[12.5px] font-bold text-[#172B4D] leading-snug">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-            <span className="font-mono">
+          <div className="mt-1 flex items-center justify-between gap-1 text-[11px] text-slate-500 min-w-0">
+            <span className="font-mono shrink-0">
               {new Date(screenshot.created_at).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate max-w-[50%] font-semibold text-[#3478F6]">
+              <span className="truncate min-w-0 max-w-[50%] font-semibold text-[#3478F6] text-right">
                 #{tags[0]}
               </span>
             )}

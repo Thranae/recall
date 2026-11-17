@@ -30,7 +30,6 @@ import {
   Zap,
   Undo2,
   Pencil,
-  Sparkles,
   Bot,
   Volume2,
   VolumeX,
@@ -189,7 +188,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
-  const [isInspectorActive, setIsInspectorActive] = useState(true);
   const [activeInspectorNode, setActiveInspectorNode] = useState<LiveInspectorNode | null>(null);
   const [inspectorCopied, setInspectorCopied] = useState(false);
 
@@ -841,12 +839,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   };
 
   const CHAT_PROMPT_SUGGESTIONS = [
-    '✨ Summarize what is happening here',
-    '🔍 Extract all text, numbers & codes',
-    '💡 Explain context & key takeaways',
-    '💰 Find any prices, totals, or dates',
-    '👥 Who is talking or visible here?',
-    '📋 What are the next action items?',
+    'Summarize what is happening here',
+    'Extract all text, numbers & codes',
+    'Explain context & key takeaways',
+    'Find any prices, totals, or dates',
+    'Who is talking or visible here?',
+    'What are the next action items?',
   ];
 
   const handleSpeakMessage = (id: string, text: string) => {
@@ -1469,68 +1467,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </div>
               ))}
 
-              {/* Live Interactive Visual Inspector Nodes (Apple Visual Look Up) */}
-              {isInspectorActive && !isRedactedMode && !isRedacting && !isAiRedacting && inspectorNodes.map((node) => (
-                <div
-                  key={node.id}
-                  style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                  className="absolute z-[25] -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
-                >
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveInspectorNode(activeInspectorNode?.id === node.id ? null : node);
-                    }}
-                    className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[#3478F6] border border-blue-400 shadow-md backdrop-blur-md active:scale-90 transition-transform cursor-pointer group"
-                    title={node.label}
-                  >
-                    <span className="absolute -inset-1 rounded-full bg-blue-400/35 animate-ping pointer-events-none" />
-                    <Sparkles className="h-3.5 w-3.5 stroke-[2.3] text-[#3478F6] group-hover:rotate-12 transition-transform" />
-                  </button>
-
-                  {/* Inspector Halo Popover */}
-                  {activeInspectorNode?.id === node.id && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute bottom-9 left-1/2 -translate-x-1/2 z-30 w-52 rounded-[22px] bg-white/95 backdrop-blur-2xl p-3 shadow-2xl border border-white space-y-2 text-left"
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="text-[10px] font-bold text-[#3478F6] uppercase tracking-wider">
-                          {node.label}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setActiveInspectorNode(null)}
-                          className="p-0.5 text-slate-400 hover:text-slate-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-
-                      <p className="text-xs font-bold text-[#172B4D] break-all leading-tight">
-                        {node.detail}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={() => handleInspectorAction(node)}
-                        className="w-full h-7 rounded-full liquid-btn-primary text-white text-[10.5px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-xs cursor-pointer"
-                      >
-                        {inspectorCopied ? (
-                          <>
-                            <Check className="h-3 w-3 stroke-[2.4]" />
-                            <span>Done!</span>
-                          </>
-                        ) : (
-                          <span>{node.actionText}</span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
               {/* Plump Liquid Glass Inner Stroke Overlay */}
               <div className="liquid-card-inner-stroke" />
 
@@ -1580,24 +1516,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                         : 'Redact'}
                     </span>
                   </button>
-
-                  {inspectorNodes.length > 0 && !isRedactedMode && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsInspectorActive(!isInspectorActive);
-                        setActiveInspectorNode(null);
-                      }}
-                      className={`pointer-events-auto flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold transition-all cursor-pointer shadow-xs ${
-                        isInspectorActive
-                          ? 'bg-[#3478F6] text-white shadow-xs'
-                          : 'liquid-category-badge text-[#172B4D]'
-                      }`}
-                    >
-                      <Sparkles className="h-3 w-3 stroke-[2.2]" />
-                      <span>Live Look Up ({inspectorNodes.length})</span>
-                    </button>
-                  )}
                 </div>
 
                 {!isImageExpanded && (
@@ -1794,7 +1712,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 activeTab === 'chat' ? 'liquid-filter-chip-active text-white' : 'text-slate-600'
               }`}
             >
-              <Sparkles className="h-3 w-3 shrink-0" />
+              <MessageSquare className="h-3.5 w-3.5 shrink-0" />
               <span>Chat AI</span>
             </button>
             <button
@@ -1841,7 +1759,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   <div className="flex items-center justify-between px-1 py-1 border-b border-white/60">
                     <div className="flex items-center gap-2">
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-[#3478F6] to-[#60a5fa] text-white shadow-2xs">
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <Bot className="h-4 w-4" />
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
@@ -1934,7 +1852,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                             <div className="flex items-center justify-between gap-2 border-b border-slate-100/80 pb-1.5">
                               <div className="flex items-center gap-1.5">
                                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3478F6]/10 text-[#3478F6]">
-                                  <Sparkles className="h-3 w-3" />
+                                  <Bot className="h-3.5 w-3.5" />
                                 </div>
                                 <span className="text-[11px] font-bold text-slate-800">Recall AI</span>
                                 {msg.provider && (
@@ -2104,6 +2022,52 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                   )}
 
+                  {/* Identified Visual Entities & Quick Actions (Zero Clipping) */}
+                  {inspectorNodes.length > 0 && (
+                    <div className="rounded-[20px] liquid-glass-card p-3.5 space-y-2.5 shadow-2xs border border-white/90">
+                      <div className="flex items-center justify-between px-0.5">
+                        <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-slate-800">
+                          <Eye className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <span>Detected Details & Entities ({inspectorNodes.length})</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        {inspectorNodes.map((node) => (
+                          <div
+                            key={node.id}
+                            className="flex items-center justify-between gap-2.5 rounded-[16px] bg-white/85 border border-white px-3.5 py-2.5 text-xs shadow-2xs"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[10px] font-bold text-[#3478F6] uppercase tracking-wide block">
+                                {node.label}
+                              </span>
+                              <p className="text-[12px] font-bold text-[#172B4D] truncate leading-tight mt-0.5">
+                                {node.detail}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveInspectorNode(node);
+                                handleInspectorAction(node);
+                              }}
+                              className="plump-glass-pill shrink-0 px-3.5 h-8 rounded-full text-[11px] font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1.5"
+                            >
+                              {activeInspectorNode?.id === node.id && inspectorCopied ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 stroke-[2.4] text-emerald-600" />
+                                  <span className="text-emerald-600">Copied!</span>
+                                </>
+                              ) : (
+                                <span>{node.actionText}</span>
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Chat Conversation Thread (if chat) */}
                   {data?.messages && data.messages.length > 0 && (
                     <div className="rounded-[20px] liquid-glass-card p-4 space-y-3 shadow-xs">
@@ -2194,7 +2158,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <div className="rounded-[20px] liquid-glass-card p-3.5 space-y-3 shadow-2xs border border-white/90">
                       <div className="flex items-center justify-between gap-2 px-0.5">
                         <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-slate-800">
-                          <Sparkles className="h-3.5 w-3.5 text-[#3478F6]" />
+                          <MessageSquare className="h-3.5 w-3.5 text-[#3478F6]" />
                           <span>Chat with AI</span>
                           {chatMessages.length > 0 && (
                             <span className="rounded-full bg-blue-50 text-[#3478F6] border border-blue-200/60 px-2 py-0.2 text-[9.5px] font-bold">
@@ -2242,7 +2206,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                 <div className="max-w-[95%] rounded-[16px] rounded-bl-[3px] bg-white/90 border border-white p-2.5 space-y-1.5 shadow-2xs">
                                   <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1">
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
-                                      <Sparkles className="h-2.5 w-2.5 text-[#3478F6]" />
+                                      <Bot className="h-3 w-3 text-[#3478F6]" />
                                       <span>Recall AI</span>
                                       {msg.provider && (
                                         <span className="text-[8.5px] font-semibold text-slate-400">
