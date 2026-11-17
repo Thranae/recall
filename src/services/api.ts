@@ -61,19 +61,39 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const apiBase = getApiBase();
-  let res: Response;
-  try {
-    res = await fetch(`${apiBase}${endpoint}`, {
-      ...options,
-      headers,
-    });
-  } catch (netErr) {
-    // Retry once after 350ms on mobile network transient drop
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    res = await fetch(`${apiBase}${endpoint}`, {
-      ...options,
-      headers,
-    });
+  const maxAttempts = 3;
+  let lastError: any = null;
+  let res: Response | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+    try {
+      res = await fetch(`${apiBase}${endpoint}`, {
+        ...options,
+        headers,
+        signal: options.signal || controller.signal,
+      });
+      clearTimeout(timeoutId);
+      break;
+    } catch (netErr: any) {
+      clearTimeout(timeoutId);
+      lastError = netErr;
+      if (attempt < maxAttempts) {
+        // Exponential backoff for flaky mobile connections (500ms, then 1000ms)
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      }
+    }
+  }
+
+  if (!res) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    throw new Error(
+      isOffline
+        ? 'You appear to be offline. Please verify your internet connection.'
+        : lastError?.message || 'Network request failed. Please check connectivity.'
+    );
   }
 
   const contentType = res.headers.get('content-type') || '';
@@ -81,6 +101,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (!res.ok) {
     if (res.status === 401) {
       removeAuthToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('recall:unauthorized'));
+      }
     }
     if (contentType.includes('application/json')) {
       const errorBody = await res.json().catch(() => ({}));

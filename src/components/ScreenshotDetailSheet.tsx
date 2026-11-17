@@ -105,6 +105,14 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [autoRedactBoxes, setAutoRedactBoxes] = useState<RedactRegion[]>([]);
   const [manualRedactBoxes, setManualRedactBoxes] = useState<RedactRegion[]>([]);
   const [redactError, setRedactError] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!actionFeedback) return;
+    const timer = setTimeout(() => setActionFeedback(null), 3000);
+    return () => clearTimeout(timer);
+  }, [actionFeedback]);
+
   const [dragRect, setDragRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [autoInkMasks, setAutoInkMasks] = useState<
     Array<{ id: string; left: number; top: number; width: number; height: number; delayMs: number; mode: 'standard' | 'ai' }>
@@ -678,22 +686,29 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
   const handleDownload = async (overrideName?: string) => {
     if (!screenshotId && !redactedResult) return;
-    const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
-      /\.[a-z0-9]+$/i,
-      ''
-    );
+    try {
+      const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
+        /\.[a-z0-9]+$/i,
+        ''
+      );
 
-    // 1. If screenshot is in redacted mode or redactedResult exists -> ALWAYS download the redacted image!
-    if (redactedResult?.dataUrl) {
-      const filename = baseName.toLowerCase().startsWith('redacted-') ? `${baseName}.png` : `redacted-${baseName}.png`;
-      await downloadImageFile(redactedResult.dataUrl, filename);
-      return;
+      // 1. If screenshot is in redacted mode or redactedResult exists -> ALWAYS download the redacted image!
+      if (redactedResult?.dataUrl) {
+        const filename = baseName.toLowerCase().startsWith('redacted-') ? `${baseName}.png` : `redacted-${baseName}.png`;
+        await downloadImageFile(redactedResult.dataUrl, filename);
+        setActionFeedback({ type: 'success', message: 'Redacted screenshot saved' });
+        return;
+      }
+
+      // 2. Unredacted screenshot with the active renamed filename
+      const filename = `${baseName}.png`;
+      const url = api.getImageUrl(screenshotId!, filename);
+      await downloadImageFile(url, filename);
+      setActionFeedback({ type: 'success', message: 'Screenshot saved' });
+    } catch (err) {
+      console.error('Download error:', err);
+      setActionFeedback({ type: 'error', message: 'Download failed. Please check permissions.' });
     }
-
-    // 2. Unredacted screenshot with the active renamed filename
-    const filename = `${baseName}.png`;
-    const url = api.getImageUrl(screenshotId!, filename);
-    await downloadImageFile(url, filename);
   };
 
   const handleDownloadRedacted = async () => {
@@ -793,7 +808,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       onUpdated();
     } catch (err) {
       console.error('Re-analysis failed:', err);
-      alert('Failed to re-analyze screenshot with AI');
+      setActionFeedback({ type: 'error', message: 'Failed to re-analyze screenshot with AI' });
     } finally {
       setIsReanalyzing(false);
     }
@@ -808,7 +823,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       onClose();
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Failed to delete screenshot');
+      setActionFeedback({ type: 'error', message: 'Failed to delete screenshot' });
     } finally {
       setIsDeleting(false);
     }
@@ -871,6 +886,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
       {/* Sheet Modal with Plump Liquid Glass */}
       <div className="liquid-glass-container relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-[32px] pb-safe sm:max-h-[88vh] sm:max-w-lg sm:rounded-[32px] shadow-2xl touch-auto overscroll-contain">
+        {/* Floating Action Feedback Toast */}
+        {actionFeedback && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
+            <div
+              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold shadow-lg backdrop-blur-xl border ${
+                actionFeedback.type === 'error'
+                  ? 'bg-rose-500/90 text-white border-rose-300/60 shadow-rose-500/20'
+                  : 'bg-emerald-600/90 text-white border-emerald-300/60 shadow-emerald-500/20'
+              }`}
+            >
+              <span>{actionFeedback.message}</span>
+            </div>
+          </div>
+        )}
+
         {/* Drag Handle */}
         <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
           <div className="h-1.5 w-10 rounded-full bg-slate-300" />
@@ -2049,16 +2079,18 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           )}
         </div>
 
-        {/* Bottom Actions */}
-        <div className="border-t border-white/70 px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full h-11 rounded-full liquid-btn-primary text-xs font-bold text-white active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-sm"
-          >
-            Done
-          </button>
-        </div>
+        {/* Bottom Actions (Hidden when editing name so keyboard does not push button over content) */}
+        {!isEditingName && (
+          <div className="border-t border-white/70 px-5 py-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-11 rounded-full liquid-btn-primary text-xs font-bold text-white active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer shadow-sm"
+            >
+              Done
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

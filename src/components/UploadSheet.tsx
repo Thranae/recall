@@ -17,6 +17,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -45,13 +46,14 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
 
   const handleFilesAdded = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    setErrorMessage(null);
     const newFiles = Array.from(files).filter(
       (f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|heif|svg)$/i.test(f.name)
     );
     setSelectedFiles((prev) => {
       const combined = [...prev, ...newFiles];
       if (combined.length > MAX_UPLOAD_LIMIT) {
-        alert(`You can upload up to 50 screenshots at once. Selected the first 50 files.`);
+        setErrorMessage('You can upload up to 50 screenshots at once. Selected the first 50 files.');
         return combined.slice(0, MAX_UPLOAD_LIMIT);
       }
       return combined;
@@ -65,6 +67,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     setIsUploading(true);
+    setErrorMessage(null);
     try {
       await api.uploadScreenshots(selectedFiles);
       setUploadSuccess(true);
@@ -76,7 +79,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
       }, 400);
     } catch (err: any) {
       console.error('Upload failed:', err);
-      alert(err.message || 'Upload failed. Please ensure the files are valid images.');
+      setErrorMessage(err.message || 'Upload failed. Please ensure the files are valid images.');
     } finally {
       setIsUploading(false);
     }
@@ -170,6 +173,19 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
             </motion.div>
           ) : (
             <div className="mt-4 space-y-4">
+              {errorMessage && (
+                <div className="rounded-[18px] bg-rose-50/90 border border-rose-200 px-3.5 py-2.5 text-xs text-rose-700 font-medium flex items-center justify-between gap-2 shadow-2xs">
+                  <span>{errorMessage}</span>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage(null)}
+                    className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Capture Source Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button

@@ -44,7 +44,7 @@ export const App: React.FC = () => {
   const [selectedScreenshotId, setSelectedScreenshotId] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<SearchResultItem | undefined>(undefined);
 
-  // Check existing session on launch
+  // Check existing session on launch & listen for auth invalidation
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if ('scrollRestoration' in window.history) {
@@ -52,6 +52,15 @@ export const App: React.FC = () => {
       }
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
+
+    const handleUnauthorized = () => {
+      setUser(null);
+      setScreenshots([]);
+      setSearchResults(null);
+      setSelectedScreenshotId(null);
+    };
+
+    window.addEventListener('recall:unauthorized', handleUnauthorized);
 
     api
       .getCurrentUser()
@@ -62,6 +71,10 @@ export const App: React.FC = () => {
       .finally(() => {
         setIsInitializing(false);
       });
+
+    return () => {
+      window.removeEventListener('recall:unauthorized', handleUnauthorized);
+    };
   }, []);
 
   // Instantly reset scroll to top whenever switching modules or category filters
@@ -197,6 +210,17 @@ export const App: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [query, searchCategory]);
+
+  // Auto-retry search when reconnecting to network
+  useEffect(() => {
+    const handleOnline = () => {
+      if (searchError && query.trim()) {
+        handleSearch();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [searchError, query]);
 
   const handleClearSearch = () => {
     setQuery('');
