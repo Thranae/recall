@@ -360,7 +360,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             height: '65vw',
             top: '-10%',
             left: '-10%',
-            animation: 'floatWide1 24s ease-in-out infinite',
           }}
         />
         <div
@@ -371,7 +370,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             height: '60vw',
             bottom: '15%',
             right: '-10%',
-            animation: 'floatWide3 28s ease-in-out infinite',
           }}
         />
       </div>

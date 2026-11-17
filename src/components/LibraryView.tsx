@@ -395,9 +395,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   };
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-1 pb-36 space-y-2.5">
-      {/* 1. iOS Segmented Liquid Glass Filter Capsule */}
-      <div className="w-full p-1 rounded-[22px] bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_2px_12px_rgba(23,43,77,0.04)] flex items-center gap-1">
+    <div className="mx-auto w-full max-w-md px-4 pt-1 pb-36 space-y-3">
+      {/* 1. Symmetrical Liquid Glass Filter Chips (3 Individual Chips) */}
+      <div className="grid grid-cols-3 gap-2.5 w-full">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -413,23 +413,24 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try {
+                    navigator.vibrate(8);
+                  } catch {}
+                }
                 if (isSelected) {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                   onSelectCategory(cat.id);
                 }
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[18px] transition-all duration-200 cursor-pointer ${
-                isSelected
-                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] font-bold shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
+              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
+                isSelected ? 'liquid-filter-chip-active' : ''
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-400'}`} />
-              <span className="whitespace-nowrap text-[12px]">{cat.label}</span>
-              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.2 rounded-full font-bold ${
-                isSelected ? 'bg-[#3478F6]/12 text-[#3478F6]' : 'bg-slate-200/50 text-slate-500'
-              }`}>
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
+              <span className="whitespace-nowrap text-[12px] font-semibold">{cat.label}</span>
+              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-[#B9D9FF]/40 text-[#3478F6] font-bold' : 'bg-slate-200/60 text-slate-500 font-semibold'}`}>
                 {count}
               </span>
             </button>
@@ -456,7 +457,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={handleExitSelectionMode}
-            className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3.5 h-7.5 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-all"
+            className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3.5 h-7.5 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-transform"
           >
             <span>Done</span>
           </button>
@@ -465,7 +466,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             <button
               type="button"
               onClick={() => setIsSelectionMode(true)}
-              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-7.5 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-all"
+              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-7.5 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
             >
               <CheckSquare className="h-3.5 w-3.5 stroke-[2.2]" />
               <span>Select</span>
@@ -480,7 +481,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={() => setIsVaultDigestOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-all"
+            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="View Proactive Vault Digest (Coupons, Events, Bills)"
           >
             <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
@@ -490,7 +491,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={() => setIsClutterSweeperOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-all"
+            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="Smart Declutter Memory Broom"
           >
             <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
@@ -500,7 +501,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={handleToggleInsights}
-            className={`plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
+            className={`plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
               showInsights
                 ? '!bg-[#3478F6] !text-white shadow-xs'
                 : 'text-[#3478F6]'
@@ -674,34 +675,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               {filteredScreenshots.map((s) => (
                 <motion.div
                   key={s.id}
-                  layout="position"
-                  initial={{ opacity: 0, scale: 0.92, y: 10, filter: 'blur(6px)' }}
-                  animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={{
                     opacity: 0,
-                    scale: 0.8,
-                    y: 16,
-                    filter: 'blur(8px)',
-                    transition: {
-                      duration: 0.36,
-                      ease: [0.32, 0.72, 0, 1],
-                    },
+                    scale: 0.95,
+                    transition: { duration: 0.12 },
                   }}
                   transition={{
-                    layout: {
-                      type: 'spring',
-                      stiffness: 280,
-                      damping: 28,
-                      mass: 0.8,
-                    },
-                    default: {
-                      duration: 0.3,
-                      ease: [0.32, 0.72, 0, 1],
-                    },
-                  }}
-                  style={{
-                    transformOrigin: 'center center',
-                    willChange: 'transform, opacity, filter',
+                    duration: 0.16,
+                    ease: 'easeOut',
                   }}
                   className="w-full"
                 >

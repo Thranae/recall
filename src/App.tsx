@@ -315,7 +315,6 @@ export const App: React.FC = () => {
             height: '65vw',
             top: '-10%',
             left: '-10%',
-            animation: 'floatWide1 24s ease-in-out infinite',
           }}
         />
         <div
@@ -326,7 +325,6 @@ export const App: React.FC = () => {
             height: '60vw',
             bottom: '15%',
             right: '-10%',
-            animation: 'floatWide3 28s ease-in-out infinite',
           }}
         />
         <div
@@ -337,7 +335,6 @@ export const App: React.FC = () => {
             height: '70vw',
             top: '30%',
             left: '15%',
-            animation: 'floatWide2 26s ease-in-out infinite',
           }}
         />
         <div
@@ -348,7 +345,6 @@ export const App: React.FC = () => {
             height: '60vw',
             bottom: '-10%',
             left: '-10%',
-            animation: 'floatWide4 30s ease-in-out infinite',
           }}
         />
       </div>

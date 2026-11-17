@@ -195,7 +195,7 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           }
         }
       }}
-      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer transition-all duration-300 ${
+      className={`liquid-glass-card relative flex flex-col overflow-hidden rounded-[22px] select-none cursor-pointer transition-transform duration-150 ${
         isDeleting
           ? 'scale-[0.96] ring-2 ring-rose-500/80 shadow-[0_0_24px_rgba(244,63,94,0.30)]'
           : isSelected

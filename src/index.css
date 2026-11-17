@@ -61,31 +61,13 @@ input, textarea {
 /* ========================================================
    SUBTLE AMBIENT AURORA
    ======================================================== */
-@keyframes floatWide1 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(10vw, 8vh, 0) scale(1.12); }
-}
-@keyframes floatWide2 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-10vw, -8vh, 0) scale(1.10); }
-}
-@keyframes floatWide3 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(12vw, -12vh, 0) scale(1.08); }
-}
-@keyframes floatWide4 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-12vw, 10vh, 0) scale(1.06); }
-}
-
 .vision-blob {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
-  will-change: transform;
-  filter: blur(80px);
+  filter: blur(50px);
   z-index: 0;
-  transform: translateZ(0);
+  opacity: 0.85;
 }
 
 @keyframes splashAuraPulse {
@@ -501,9 +483,7 @@ input, textarea {
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1),
     inset 0 -1px 2px 0 rgba(23, 43, 77, 0.04) !important;
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-  will-change: transform, box-shadow;
-  transform: translateZ(0);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .liquid-glass-card:active,
@@ -530,7 +510,6 @@ input, textarea {
   box-shadow: 
     0 20px 48px -8px rgba(23, 43, 77, 0.08),
     inset 0 1.5px 2px 0 rgba(255, 255, 255, 1) !important;
-  transform: translateZ(0);
 }
 
 /* 3. EXPO-STYLE AIRY LIQUID GLASS FILTER CHIPS (NO CONTAINER WRAPPER BORDER) */
@@ -565,7 +544,6 @@ input, textarea {
   user-select: none;
   white-space: nowrap;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
-  transform: translateZ(0);
 }
 
 .liquid-filter-chip:active {
@@ -625,7 +603,6 @@ input, textarea {
   font-weight: 700 !important;
   overflow: hidden;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  transform: translateZ(0);
 }
 
 .ios-liquid-primary::before,
@@ -672,7 +649,6 @@ input, textarea {
     inset 0 -1px 2px rgba(52, 120, 246, 0.08) !important;
   overflow: hidden;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
-  transform: translateZ(0);
 }
 
 .ios-glass-pill:active,
@@ -703,7 +679,6 @@ input, textarea {
     inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
     inset 0 -1px 2px rgba(52, 120, 246, 0.06) !important;
   overflow: hidden;
-  transform: translateZ(0);
 }
 
 /* 7. LIQUID GLASS INPUT (Bright, Translucent, Glossy iOS-inspired with Minimal All-Around Edge Lighting) */
@@ -729,7 +704,6 @@ input, textarea {
   color: #172B4D !important;
   overflow: hidden;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  transform: translateZ(0);
 }
 
 .glass-input::before,
@@ -786,7 +760,6 @@ input, textarea {
     inset 0 2px 3px rgba(255, 255, 255, 1),
     inset 0 6px 22px rgba(255, 255, 255, 0.95),
     inset 0 -2px 6px rgba(52, 120, 246, 0.05) !important;
-  transform: translateZ(0);
 }
 
 /* 9. BOTTOM NAVIGATION BAR — EXPO PLUMP LIQUID GLASS */
@@ -813,7 +786,6 @@ input, textarea {
     inset 0 2px 3px rgba(255, 255, 255, 1),
     inset 0 6px 22px rgba(255, 255, 255, 0.95),
     inset 0 -2px 6px rgba(52, 120, 246, 0.05) !important;
-  transform: translateZ(0);
 }
 
 /* Plump Liquid Glass Pebble for UNSELECTED tab icons (High contrast, clearly visible) */
@@ -839,7 +811,6 @@ input, textarea {
     inset 0 -1px 2px rgba(23, 43, 77, 0.04) !important;
   color: #172B4D !important;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  transform: translateZ(0);
 }
 
 .nav-unselected-icon-pod:active {
@@ -899,7 +870,6 @@ input, textarea {
     0 8px 24px -2px rgba(23, 43, 77, 0.08),
     inset 0 2px 2px #FFFFFF,
     inset 0 4px 12px rgba(255, 255, 255, 0.95) !important;
-  transform: translateZ(0);
 }
 
 .nav-orb-dome {
@@ -922,7 +892,6 @@ input, textarea {
     inset 0 4px 10px rgba(255, 255, 255, 0.40),
     inset 0 -2px 4px rgba(23, 43, 77, 0.35) !important;
   overflow: hidden;
-  transform: translateZ(0);
 }
 
 .nav-orb-dome::before {
@@ -972,7 +941,6 @@ input, textarea {
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
-  transform: translateZ(0);
 }
 
 .liquid-glass-badge::before,
@@ -1095,7 +1063,6 @@ input, textarea {
     inset 0 1.5px 2px rgba(255, 255, 255, 0.8),
     inset 0 -1.5px 2px rgba(0, 0, 0, 0.16) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  transform: translateZ(0);
 }
 
 /* Plumpy Frosted Liquid Glass Pill Button (Select All / Done / Cancel) */
@@ -1120,7 +1087,6 @@ input, textarea {
     inset 0 -1px 2px rgba(52, 120, 246, 0.08) !important;
   overflow: hidden;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
-  transform: translateZ(0);
 }
 
 .plump-glass-pill:active {
@@ -1151,7 +1117,6 @@ input, textarea {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
   overflow: hidden;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
-  transform: translateZ(0);
 }
 
 .plump-liquid-blue-btn::before {
@@ -1195,7 +1160,6 @@ input, textarea {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
   overflow: hidden;
   transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
-  transform: translateZ(0);
 }
 
 .plump-liquid-rose-btn::before {
