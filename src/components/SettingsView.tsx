@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2 } from 'lucide-react';
 import { api } from '../services/api';
+import { isNativePlatform, isFullscreenActive, toggleStatusBar } from '../utils/statusBar';
 import type { User, Screenshot, VaultInsightsSummary } from '../types';
 
 interface SettingsViewProps {
@@ -21,6 +22,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isScanningDups, setIsScanningDups] = useState(false);
   const [dupSummary, setDupSummary] = useState<VaultInsightsSummary | null>(null);
   const [isCleaningDups, setIsCleaningDups] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(isFullscreenActive());
+  const isNative = isNativePlatform();
+
+  useEffect(() => {
+    const handleStatusChange = () => {
+      setIsFullscreen(isFullscreenActive());
+    };
+    document.addEventListener('fullscreenchange', handleStatusChange);
+    window.addEventListener('recall_status_bar_change', handleStatusChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleStatusChange);
+      window.removeEventListener('recall_status_bar_change', handleStatusChange);
+    };
+  }, []);
+
+  const handleToggleFullscreen = async () => {
+    const nextState = await toggleStatusBar();
+    setIsFullscreen(nextState);
+  };
 
   const handleUpgradeVisionIndex = async () => {
     if (isUpgrading) return;
@@ -278,7 +298,60 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </button>
       </div>
 
-      {/* 4. Sign Out Button */}
+      {/* 4. Immersive Fullscreen / Status Bar Display Card */}
+      <div className="liquid-glass-card rounded-[24px] p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] liquid-icon-pod text-[#3478F6]">
+              {isFullscreen ? (
+                <Minimize2 className="h-4.5 w-4.5 stroke-[2.2]" />
+              ) : (
+                <Smartphone className="h-4.5 w-4.5 stroke-[2.2]" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-[#172B4D]">
+                {isNative ? 'Hide Mobile Status Bar' : 'Immersive Fullscreen Mode'}
+              </p>
+              <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5 font-normal">
+                {isNative
+                  ? 'Hide the clock, battery, and network bar for a distraction-free, full-bleed screen experience.'
+                  : 'Hide browser address bars and system headers for an uninterrupted edge-to-edge web experience.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleToggleFullscreen}
+          className={`flex h-10 w-full items-center justify-center gap-2 rounded-full text-xs font-semibold active:scale-[0.98] transition-all cursor-pointer shadow-xs ${
+            isFullscreen
+              ? 'bg-[#3478F6] text-white'
+              : 'liquid-glass-pill text-[#3478F6]'
+          }`}
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 className="h-3.5 w-3.5 stroke-[2.2]" />
+              <span>{isNative ? 'Show Mobile Status Bar' : 'Exit Fullscreen'}</span>
+            </>
+          ) : (
+            <>
+              <Maximize2 className="h-3.5 w-3.5 stroke-[2.2]" />
+              <span>{isNative ? 'Hide Status Bar (Immersive Mode)' : 'Enter Fullscreen Mode'}</span>
+            </>
+          )}
+        </button>
+
+        {!isNative && (
+          <p className="text-[10px] text-slate-400 text-center leading-normal">
+            Tip: You can also tap "Add to Home Screen" in your browser menu to run Recall without browser bars.
+          </p>
+        )}
+      </div>
+
+      {/* 5. Sign Out Button */}
       <button
         type="button"
         onClick={onLogout}

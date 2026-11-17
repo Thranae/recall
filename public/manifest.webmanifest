@@ -1,0 +1,18 @@
+{
+  "name": "Recall • Screenshot Search",
+  "short_name": "Recall",
+  "description": "A private visual search engine for your personal screenshot history.",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#F3F7FC",
+  "theme_color": "#F3F7FC",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -17,6 +17,11 @@ if (Capacitor.isNativePlatform()) {
   StatusBar.setStyle({ style: Style.Light })
   StatusBar.setBackgroundColor({ color: '#F3F7FC' })
   SplashScreen.hide()
+
+  const shouldHide = localStorage.getItem('recall_hide_status_bar') === 'true'
+  if (shouldHide) {
+    StatusBar.hide().catch(() => {})
+  }
 }
 
 // Prevent unwanted native Android/browser context menus and callout popups on long press
