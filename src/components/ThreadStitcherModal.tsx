@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   Download,
@@ -6,8 +6,9 @@ import {
   MessageSquare,
   Loader2,
   Check,
+  ExternalLink,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { ThreadGroup } from '../types';
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
@@ -28,18 +29,77 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   const [viewMode, setViewMode] = useState<'visual' | 'transcript'>('visual');
   const [isExporting, setIsExporting] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
-  const reelContainerRef = useRef<HTMLDivElement>(null);
+  const [activePartIndex, setActivePartIndex] = useState(0);
 
-  if (!isOpen || !thread) return null;
+  const reelContainerRef = useRef<HTMLDivElement>(null);
+  const lastThreadRef = useRef<ThreadGroup | null>(thread);
+
+  if (thread) {
+    lastThreadRef.current = thread;
+  }
+  const activeThread = thread || lastThreadRef.current;
+
+  // Real-time smooth scroll synchronization to highlight current Part pill
+  useEffect(() => {
+    if (!isOpen || !activeThread || viewMode !== 'visual') return;
+    const container = reelContainerRef.current;
+    if (!container) return;
+
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const containerRect = container.getBoundingClientRect();
+          let closestIdx = 0;
+          let minDistance = Infinity;
+
+          activeThread.screenshots.forEach((_, idx) => {
+            const el = document.getElementById(`thread-part-${idx}`);
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            // Distance from container top + sticky bar clearance
+            const dist = Math.abs(rect.top - containerRect.top - 68);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestIdx = idx;
+            }
+          });
+
+          setActivePartIndex(closestIdx);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, [isOpen, activeThread, viewMode]);
+
+  // Jumps to part cleanly within container without jittering outer window
+  const scrollToPart = useCallback((index: number) => {
+    setActivePartIndex(index);
+    const container = reelContainerRef.current;
+    const target = document.getElementById(`thread-part-${index}`);
+    if (container && target) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const currentScroll = container.scrollTop;
+      const targetOffset = targetRect.top - containerRect.top + currentScroll - 64;
+      container.scrollTo({
+        top: Math.max(0, targetOffset),
+        behavior: 'smooth',
+      });
+    }
+  }, []);
 
   const handleExportStitched = async () => {
-    if (!thread.screenshots.length || isExporting) return;
+    if (!activeThread?.screenshots.length || isExporting) return;
     setIsExporting(true);
 
     try {
-      // 1. Load all screenshot images
       const loadedImages = await Promise.all(
-        thread.screenshots.map((sc) => {
+        activeThread.screenshots.map((sc) => {
           return new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
@@ -50,7 +110,6 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
         })
       );
 
-      // 2. Measure dimensions for seamless vertical stitching
       const targetWidth = Math.max(...loadedImages.map((img) => img.naturalWidth || 800));
       let totalHeight = 0;
       const scaledHeights: number[] = [];
@@ -62,7 +121,6 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
         totalHeight += h;
       }
 
-      // Add 80px top header and 40px footer on stitched reel
       const headerH = 120;
       const footerH = 60;
       const canvas = document.createElement('canvas');
@@ -72,11 +130,9 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not initialize canvas context');
 
-      // Draw background
       ctx.fillStyle = '#0B1220';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Stitch Header
       ctx.fillStyle = '#1E293B';
       ctx.fillRect(0, 0, canvas.width, headerH);
       ctx.fillStyle = '#3478F6';
@@ -85,16 +141,18 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
       ctx.fillStyle = '#94A3B8';
       ctx.font = '22px sans-serif';
-      ctx.fillText(`${thread.title} · ${thread.screenshots.length} Screenshots Stitched`, 40, 90);
+      ctx.fillText(
+        `${activeThread.title} · ${activeThread.screenshots.length} Screenshots Stitched`,
+        40,
+        90
+      );
 
-      // Draw images vertically
       let currentY = headerH;
       for (let i = 0; i < loadedImages.length; i++) {
         const img = loadedImages[i];
         const h = scaledHeights[i];
         ctx.drawImage(img, 0, currentY, targetWidth, h);
 
-        // Draw subtle separator line between stitched parts
         if (i < loadedImages.length - 1) {
           ctx.strokeStyle = 'rgba(52, 120, 246, 0.4)';
           ctx.lineWidth = 2;
@@ -107,15 +165,18 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
         currentY += h;
       }
 
-      // Draw Stitch Footer
       ctx.fillStyle = '#0F172A';
       ctx.fillRect(0, currentY, canvas.width, footerH);
       ctx.fillStyle = '#64748B';
       ctx.font = '18px sans-serif';
-      ctx.fillText(`Preserved securely in RECALL Vault · ${new Date().toLocaleDateString()}`, 40, currentY + 38);
+      ctx.fillText(
+        `Preserved securely in RECALL Vault · ${new Date().toLocaleDateString()}`,
+        40,
+        currentY + 38
+      );
 
       const dataUrl = canvas.toDataURL('image/png', 0.95);
-      const cleanTitle = thread.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const cleanTitle = activeThread.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const filename = `stitched-thread-${cleanTitle}.png`;
       await downloadImageFile(dataUrl, filename);
     } catch (err) {
@@ -126,9 +187,10 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   };
 
   const handleCopyTranscript = () => {
+    if (!activeThread) return;
     const lines: string[] = [];
-    lines.push(`--- ${thread.title} ---`);
-    for (const sc of thread.screenshots) {
+    lines.push(`--- ${activeThread.title} ---`);
+    for (const sc of activeThread.screenshots) {
       if (sc.ocr_text) {
         lines.push(`\n[${sc.original_filename}]:\n${sc.ocr_text}`);
       }
@@ -138,201 +200,248 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
     setTimeout(() => setCopiedTranscript(false), 2000);
   };
 
-  const scrollToPart = (index: number) => {
-    const el = document.getElementById(`thread-part-${index}`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-md sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
-      <div className="absolute inset-0" onClick={onClose} />
+    <AnimatePresence>
+      {isOpen && activeThread && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
+          {/* Backdrop dismissal */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0"
+            onClick={onClose}
+          />
 
-      <motion.div
-        initial={{ y: '100%', opacity: 0.8 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="liquid-glass-container relative z-10 flex h-[94dvh] w-full flex-col rounded-t-[32px] sm:max-w-2xl sm:h-[88vh] sm:rounded-[32px] shadow-2xl overflow-hidden touch-auto overscroll-contain"
-      >
-        {/* Drag handle */}
-        <div className="flex w-full justify-center pt-3 pb-1 sm:hidden">
-          <div className="h-1.5 w-10 rounded-full bg-slate-300" />
-        </div>
+          <motion.div
+            initial={{ y: '100%', opacity: 0.9 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="liquid-glass-container relative z-10 flex h-[94dvh] w-full flex-col rounded-t-[32px] sm:max-w-2xl sm:h-[88vh] sm:rounded-[32px] shadow-2xl overflow-hidden touch-auto overscroll-contain"
+          >
+            {/* Specular Top Hairline */}
+            <div
+              className="absolute top-0 inset-x-0 h-px pointer-events-none z-30"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 70%, transparent 100%)',
+              }}
+            />
 
-        {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-white/70 px-5 py-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#3478F6]/10 text-[#3478F6] shrink-0 shadow-2xs">
-              <Layers className="h-4.5 w-4.5 stroke-[2.3]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-bold text-[#172B4D] truncate">
-                  {thread.title}
-                </h3>
-                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] font-bold">
-                  THREAD REEL
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                {thread.screenshots.length} sequential screenshots stitched
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* View Mode Toggle */}
-            <div className="flex items-center rounded-full bg-white/70 p-1 border border-white/80 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('visual')}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
-                  viewMode === 'visual'
-                    ? 'bg-[#3478F6] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Visual Reel
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('transcript')}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
-                  viewMode === 'transcript'
-                    ? 'bg-[#3478F6] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Transcript
-              </button>
+            {/* Drag Handle Indicator */}
+            <div className="flex w-full justify-center pt-2.5 pb-1 sm:hidden">
+              <div className="h-1.5 w-10 rounded-full bg-slate-300/80" />
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:scale-90 transition-all cursor-pointer"
-            >
-              <X className="h-4 w-4 stroke-[2]" />
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div ref={reelContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-          {viewMode === 'visual' ? (
-            <div className="relative mx-auto max-w-md">
-              {/* Floating Quick Navigation Pills (Part Anchors) */}
-              <div className="sticky top-2 z-20 flex justify-center mb-3">
-                <div className="flex items-center gap-1.5 rounded-full bg-slate-900/80 backdrop-blur-md px-3 py-1.5 shadow-md border border-white/20">
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mr-1">
-                    Jump:
-                  </span>
-                  {thread.screenshots.map((sc, idx) => (
-                    <button
-                      key={sc.id}
-                      type="button"
-                      onClick={() => scrollToPart(idx)}
-                      className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-white/10 hover:bg-white/25 text-white transition-all active:scale-95 cursor-pointer"
-                    >
-                      Part {idx + 1}
-                    </button>
-                  ))}
+            {/* 1. Header Bar: Balanced Plump Layout & Mode Switcher */}
+            <header className="flex items-center justify-between border-b border-white/80 px-4 sm:px-5 py-2.5 bg-white/70 backdrop-blur-md shrink-0">
+              {/* Left Title & Status Badge */}
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#3478F6]/10 text-[#3478F6] shrink-0 shadow-2xs">
+                  <Layers className="h-4.5 w-4.5 stroke-[2.3]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-[14px] font-bold text-[#172B4D] truncate leading-tight">
+                      {activeThread.title}
+                    </h3>
+                    <span className="liquid-category-badge !h-5 !px-2 text-[9px] font-extrabold text-[#3478F6] shrink-0">
+                      THREAD
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium truncate pt-0.5">
+                    {activeThread.screenshots.length} connected conversation screenshots
+                  </p>
                 </div>
               </div>
 
-              {/* Continuous Stitched Vertical Reel */}
-              <div className="rounded-[28px] overflow-hidden border-2 border-white/90 shadow-xl bg-slate-950 divide-y divide-blue-500/30">
-                {thread.screenshots.map((sc, idx) => (
-                  <div
-                    key={sc.id}
-                    id={`thread-part-${idx}`}
-                    className="relative group transition-opacity"
+              {/* Right View Mode Toggle & Close Button */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center rounded-full bg-white/80 p-0.5 border border-white/90 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('visual')}
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                      viewMode === 'visual'
+                        ? 'bg-[#3478F6] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    {/* Part overlay watermark badge */}
-                    <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1 text-[10.5px] font-bold text-white border border-white/20 shadow-xs pointer-events-none">
-                      <Layers className="h-3 w-3 text-[#3478F6]" />
-                      <span>Part {idx + 1} of {thread.screenshots.length}</span>
-                    </div>
+                    Reel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('transcript')}
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                      viewMode === 'transcript'
+                        ? 'bg-[#3478F6] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Text
+                  </button>
+                </div>
 
-                    {/* Tap to open individual detail */}
-                    <button
-                      type="button"
-                      onClick={() => onSelectScreenshot?.(sc.id)}
-                      className="absolute top-3 right-3 z-10 rounded-full bg-white/80 hover:bg-white text-slate-800 px-2.5 py-1 text-[10.5px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer opacity-90 hover:opacity-100"
-                    >
-                      Open Detail
-                    </button>
-
-                    <img
-                      src={api.getImageUrl(sc.id)}
-                      alt={sc.original_filename}
-                      loading="lazy"
-                      className="w-full object-contain block"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="mx-auto max-w-md space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-slate-700">Unified Thread Transcript</span>
                 <button
                   type="button"
-                  onClick={handleCopyTranscript}
-                  className="flex items-center gap-1 rounded-full liquid-glass-pill px-3 py-1 text-xs font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-2xs"
+                  onClick={onClose}
+                  aria-label="Close thread viewer"
+                  className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-600 active:scale-90 transition-all cursor-pointer shadow-2xs"
                 >
-                  {copiedTranscript ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <MessageSquare className="h-3.5 w-3.5" />}
-                  <span>{copiedTranscript ? 'Copied!' : 'Copy Text'}</span>
+                  <X className="h-4 w-4 stroke-[2.2]" />
                 </button>
               </div>
+            </header>
 
-              {thread.screenshots.map((sc, idx) => (
-                <div
-                  key={sc.id}
-                  className="liquid-glass-card rounded-[20px] p-4 space-y-2 border border-white/80"
-                >
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                    <span>Part {idx + 1}: {sc.original_filename}</span>
-                    <span className="font-mono text-slate-400">{new Date(sc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {/* 2. Scrollable Body Content */}
+            <div ref={reelContainerRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 overscroll-contain">
+              {viewMode === 'visual' ? (
+                <div className="relative mx-auto max-w-md">
+                  {/* Sticky Plump Liquid Glass Part Navigator */}
+                  <div className="sticky top-0 z-20 pb-3 pt-0.5 pointer-events-none flex justify-center">
+                    <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full plump-glass-pill !bg-white/92 backdrop-blur-xl border border-white/95 shadow-md">
+                      <span className="text-[10px] font-extrabold text-[#3478F6] tracking-wider uppercase pl-2 pr-0.5 shrink-0">
+                        Part
+                      </span>
+                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[260px] sm:max-w-xs py-0.5 px-0.5">
+                        {activeThread.screenshots.map((sc, idx) => {
+                          const isActive = activePartIndex === idx;
+                          return (
+                            <button
+                              key={sc.id}
+                              type="button"
+                              onClick={() => scrollToPart(idx)}
+                              className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 shrink-0 ${
+                                isActive
+                                  ? 'bg-[#3478F6] text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white border border-white/80'
+                              }`}
+                            >
+                              <span>{idx + 1}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap font-mono bg-white/50 p-3 rounded-[14px] border border-white/60">
-                    {sc.ocr_text || 'No transcribed text detected'}
+
+                  {/* Vertical Seamless Stitched Cards */}
+                  <div className="rounded-[28px] overflow-hidden border border-white/90 shadow-xl bg-slate-950 space-y-0">
+                    {activeThread.screenshots.map((sc, idx) => (
+                      <div
+                        key={sc.id}
+                        id={`thread-part-${idx}`}
+                        className="relative min-h-[380px] bg-slate-950 flex flex-col justify-center"
+                      >
+                        {/* Connected Seam Indicator Between Stitched Parts */}
+                        {idx > 0 && (
+                          <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-center -translate-y-1/2 pointer-events-none">
+                            <div className="liquid-category-badge !h-5 !px-2.5 !gap-1.5 shadow-md !text-[9.5px] !font-bold text-[#3478F6] border border-blue-200/50">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#3478F6] animate-pulse" />
+                              <span>Connected Thread</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top Overlay Badges: Left Part Number, Right Detail Launcher */}
+                        <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
+                          <div className="liquid-category-badge !h-7 !px-3 !gap-1.5 shadow-md pointer-events-none">
+                            <Layers className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
+                            <span className="text-[11px] font-bold text-[#172B4D]">
+                              Part {idx + 1} of {activeThread.screenshots.length}
+                            </span>
+                          </div>
+
+                          {onSelectScreenshot && (
+                            <button
+                              type="button"
+                              onClick={() => onSelectScreenshot(sc.id)}
+                              className="liquid-category-badge !h-7 !px-3 !gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
+                              title="Open full screenshot details"
+                            >
+                              <span className="text-[11px] font-bold text-[#3478F6]">Detail</span>
+                              <ExternalLink className="h-3 w-3 text-[#3478F6] stroke-[2.4]" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Screenshot Visual Image (Eager & Async Decoded to prevent layout glitches) */}
+                        <img
+                          src={api.getImageUrl(sc.id)}
+                          alt={sc.original_filename}
+                          decoding="async"
+                          className="w-full h-auto object-contain block select-none"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer Actions */}
-        <div className="border-t border-white/70 px-5 py-3.5 flex items-center justify-between gap-3 bg-white/60 backdrop-blur-md">
-          <div className="text-xs font-bold text-slate-600">
-            {thread.screenshots.length} Screenshots Combined
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleExportStitched}
-              disabled={isExporting}
-              className="flex h-10 items-center gap-2 rounded-full px-5 text-xs font-bold text-white liquid-btn-primary shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Stitching Reel...</span>
-                </>
               ) : (
-                <>
-                  <Download className="h-4 w-4 stroke-[2.3]" />
-                  <span>Export Stitched Reel</span>
-                </>
+                <div className="mx-auto max-w-md space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-bold text-slate-700">Unified Thread Transcript</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyTranscript}
+                      className="flex items-center gap-1 rounded-full liquid-glass-pill px-3 py-1 text-xs font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-2xs"
+                    >
+                      {copiedTranscript ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                      <span>{copiedTranscript ? 'Copied!' : 'Copy Text'}</span>
+                    </button>
+                  </div>
+
+                  {activeThread.screenshots.map((sc, idx) => (
+                    <div
+                      key={sc.id}
+                      className="liquid-glass-card rounded-[22px] p-4 space-y-2 border border-white/90 shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                        <span>Part {idx + 1}: {sc.original_filename}</span>
+                        <span className="font-mono text-slate-400">
+                          {new Date(sc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap font-mono bg-white/60 p-3 rounded-[16px] border border-white/70">
+                        {sc.ocr_text || 'No transcribed text detected'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </button>
-          </div>
+            </div>
+
+            {/* 3. Footer Bar: Plump Glass Actions & Export */}
+            <footer className="border-t border-white/80 px-4 sm:px-5 py-3 flex items-center justify-between gap-3 bg-white/70 backdrop-blur-md shrink-0">
+              <div className="text-xs font-bold text-slate-600 min-w-0 truncate">
+                {activeThread.screenshots.length} Screenshots Combined
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportStitched}
+                  disabled={isExporting}
+                  className="flex h-9.5 items-center gap-2 rounded-full px-4 text-xs font-bold text-white liquid-btn-primary shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Stitching Reel...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 stroke-[2.3]" />
+                      <span>Export Stitched Reel</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </footer>
+          </motion.div>
         </div>
-      </motion.div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };

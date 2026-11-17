@@ -404,9 +404,16 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                 e.stopPropagation();
                 onOpenThreadReel?.(threadGroup);
               }}
-              className="flex items-center gap-1 rounded-full bg-slate-900/85 backdrop-blur-md px-2 py-0.5 text-[9.5px] font-bold text-white border border-white/20 shadow-xs hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
+              className="liquid-category-badge !h-6.5 !px-2.5 !gap-1.5 active:scale-95 transition-transform cursor-pointer shadow-md text-[#172B4D] hover:brightness-105"
+              title={`View conversation thread (${threadGroup.screenshots.length} connected screenshots)`}
             >
-              <span>🧵 Thread ({threadGroup.screenshots.length})</span>
+              <Layers className="h-3 w-3 shrink-0 stroke-[2.3] text-[#3478F6]" />
+              <span className="text-[10px] font-bold tracking-tight text-[#172B4D]">
+                Thread
+              </span>
+              <span className="text-[9px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.2 rounded-full">
+                {threadGroup.screenshots.length}
+              </span>
             </button>
           </div>
         )}
