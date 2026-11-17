@@ -395,9 +395,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   };
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-2 pb-36 space-y-4">
-      {/* 1. Symmetrical Liquid Glass Filter Chips (3 Chips, Generous Width, Full Text Visibility) */}
-      <div className="grid grid-cols-3 gap-2.5 w-full">
+    <div className="mx-auto w-full max-w-md px-4 pt-1 pb-36 space-y-2.5">
+      {/* 1. iOS Segmented Liquid Glass Filter Capsule */}
+      <div className="w-full p-1 rounded-[22px] bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_2px_12px_rgba(23,43,77,0.04)] flex items-center gap-1">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isSelected = selectedCategory === cat.id;
@@ -419,13 +419,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   onSelectCategory(cat.id);
                 }
               }}
-              className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
-                isSelected ? 'liquid-filter-chip-active' : ''
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[18px] transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] font-bold shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
-              <span className="whitespace-nowrap text-[12px] font-semibold">{cat.label}</span>
-              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-[#B9D9FF]/40 text-[#3478F6] font-bold' : 'bg-slate-200/60 text-slate-500 font-semibold'}`}>
+              <Icon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-400'}`} />
+              <span className="whitespace-nowrap text-[12px]">{cat.label}</span>
+              <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.2 rounded-full font-bold ${
+                isSelected ? 'bg-[#3478F6]/12 text-[#3478F6]' : 'bg-slate-200/50 text-slate-500'
+              }`}>
                 {count}
               </span>
             </button>
@@ -433,82 +437,80 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         })}
       </div>
 
-      {/* 2. Library Status Strip & Action Pills */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 pt-1 pb-0.5">
+      {/* 2. Library Status Strip */}
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2 min-w-0">
-          <h2 className="font-bold text-[#172B4D] text-[17px] tracking-tight whitespace-nowrap">
+          <h2 className="font-bold text-[#172B4D] text-[16px] tracking-tight whitespace-nowrap">
             {selectedCategory === 'all'
               ? 'All Screenshots'
               : selectedCategory === 'chat'
                 ? 'Conversations'
                 : 'Other Screenshots'}
           </h2>
-          <span className="liquid-category-badge px-2.5 py-0.5 text-[11px] font-bold font-mono text-[#3478F6] shrink-0">
+          <span className="liquid-category-badge px-2 py-0.5 text-[11px] font-bold font-mono text-[#3478F6] shrink-0">
             {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {isSelectionMode ? (
+        {isSelectionMode ? (
+          <button
+            type="button"
+            onClick={handleExitSelectionMode}
+            className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3.5 h-7.5 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-all"
+          >
+            <span>Done</span>
+          </button>
+        ) : (
+          filteredScreenshots.length > 0 && (
             <button
               type="button"
-              onClick={handleExitSelectionMode}
-              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3.5 h-8 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-all"
+              onClick={() => setIsSelectionMode(true)}
+              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-7.5 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-all"
             >
-              <span>Done</span>
+              <CheckSquare className="h-3.5 w-3.5 stroke-[2.2]" />
+              <span>Select</span>
             </button>
-          ) : (
-            <>
-              {filteredScreenshots.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsSelectionMode(true)}
-                  className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-all"
-                >
-                  <CheckSquare className="h-3.5 w-3.5 stroke-[2.3]" />
-                  <span>Select</span>
-                </button>
-              )}
-              {screenshots.length > 0 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsVaultDigestOpen(true)}
-                    className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-all"
-                    title="View Proactive Vault Digest (Coupons, Events, Bills)"
-                  >
-                    <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.3]" />
-                    <span>Digest</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsClutterSweeperOpen(true)}
-                    className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-all"
-                    title="Smart Declutter Memory Broom"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.3]" />
-                    <span>Declutter</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleToggleInsights}
-                    className={`plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
-                      showInsights
-                        ? '!bg-[#3478F6] !text-white shadow-xs'
-                        : 'text-[#3478F6]'
-                    }`}
-                  >
-                    <BarChart3 className="h-3.5 w-3.5 stroke-[2.3]" />
-                    <span>Insights</span>
-                  </button>
-                </>
-              )}
-            </>
-          )}
-        </div>
+          )
+        )}
       </div>
+
+      {/* 3. Balanced Liquid Tool Bar (Digest, Declutter, Insights) */}
+      {!isSelectionMode && screenshots.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 px-0.5">
+          <button
+            type="button"
+            onClick={() => setIsVaultDigestOpen(true)}
+            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-all"
+            title="View Proactive Vault Digest (Coupons, Events, Bills)"
+          >
+            <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
+            <span className="truncate">Digest</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsClutterSweeperOpen(true)}
+            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-all"
+            title="Smart Declutter Memory Broom"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
+            <span className="truncate">Declutter</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleInsights}
+            className={`plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
+              showInsights
+                ? '!bg-[#3478F6] !text-white shadow-xs'
+                : 'text-[#3478F6]'
+            }`}
+          >
+            <BarChart3 className="h-3.5 w-3.5 stroke-[2.2] shrink-0" />
+            <span className="truncate">Insights</span>
+          </button>
+        </div>
+      )}
 
       {/* Collapsible Vault Insights & Duplicate Radar Panel */}
       <AnimatePresence>

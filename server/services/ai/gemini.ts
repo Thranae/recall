@@ -338,7 +338,7 @@ async function callGeminiVision(base64Data: string, mimeType: string): Promise<S
 
       const responseText = result.response.text().trim();
       const parsed = safeParseJson(responseText);
-      return normalizeAnalysis(parsed, `Google Gemini (${modelName})`);
+      return normalizeAnalysis(parsed, 'Recall Vision Ensemble');
     } catch (err: any) {
       console.warn(`Gemini ${modelName} returned status ${err.status || err.message?.substring(0, 50)}, falling back...`);
     }
@@ -383,7 +383,7 @@ async function callMistralVision(base64Data: string, mimeType: string): Promise<
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || '';
   const parsed = safeParseJson(content);
-  return normalizeAnalysis(parsed, 'Mistral Pixtral 12B');
+  return normalizeAnalysis(parsed, 'Recall Vision Ensemble');
 }
 
 /**
@@ -425,7 +425,7 @@ async function callOpenRouterVision(base64Data: string, mimeType: string): Promi
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content?.trim() || '';
   const parsed = safeParseJson(content);
-  return normalizeAnalysis(parsed, 'OpenAI GPT-4o-mini (OpenRouter)');
+  return normalizeAnalysis(parsed, 'Recall Vision Ensemble');
 }
 
 /**
@@ -468,7 +468,7 @@ Return a VALID JSON object matching:
   const groqData: any = await res.json();
   const content = groqData.choices?.[0]?.message?.content?.trim() || '';
   const parsed = safeParseJson(content);
-  return normalizeAnalysis({ ...parsed, ocr_text: ocrText }, 'Groq LPU (GPT-OSS-120B)');
+  return normalizeAnalysis({ ...parsed, ocr_text: ocrText }, 'Recall Vision Ensemble');
 }
 
 function resolveCleanImagePayload(
@@ -596,15 +596,17 @@ export async function answerImageQuestion(
         `\n`
       : '';
 
-  const qaPrompt = `You are RECALL's conversational AI assistant chatting directly with the user about THIS specific screenshot/image ("${originalFilename}").
-You behave like modern multimodal assistants (ChatGPT and Google Gemini): perceptive, friendly, articulate, highly accurate, and helpful.
-You have direct visual inspection of this image, including any text, UI components, chats, numbers, items, and design.
+  const qaPrompt = `You are Recall AI, an intelligent, perceptive, and highly accurate visual memory assistant chatting directly with the user about THIS specific screenshot ("${originalFilename}").
 
-Guidelines:
-- Answer thoroughly, clearly, and directly based on what is visible in the image and prior conversation context.
-- When explaining complex content, use clean Markdown formatting (bold keywords, bullet points, numbered steps, code blocks, or tables if relevant).
-- If the user asks follow-up questions (e.g. "who said that?", "what else?", "explain that third line", "how much was the total?"), resolve references using previous turns and the image.
-- Avoid robotic disclaimers; be crisp, insightful, and natural.
+STRICT IDENTITY RULES:
+- You are Recall AI. NEVER disclose, name, or mention any third-party AI provider, model, API, company, or architecture (do NOT mention Gemini, ChatGPT, OpenAI, Google, Anthropic, Mistral, Groq, Llama, Pixtral, Claude, etc.).
+- If asked about your identity or what model is powering you, simply state: "I am Recall AI, your intelligent visual memory assistant."
+
+ACCURACY & PRECISION GUIDELINES:
+- Provide direct, highly accurate, and precise information based solely on what is visible in the image and prior conversation context.
+- Be specific: cite exact dates, timestamps, currency numbers, prices, item counts, phone numbers, URLs, usernames, codes, and verbatim text quotes.
+- Format responses cleanly with structured Markdown: use concise paragraphs, bullet points for lists, and bold keywords for readability.
+- Keep your answers clean, well-aligned, structured, and free of conversational fluff, filler words, or unnecessary disclaimers.
 ${historyText}
 Current User Message: "${question}"`;
 
@@ -622,7 +624,7 @@ Current User Message: "${question}"`;
                 { inlineData: { data: base64Data, mimeType: resolvedMime } },
               ]);
               const text = result.response.text().trim();
-              if (text) return { answer: text, provider: `Gemini (${modelName})` };
+              if (text) return { answer: text, provider: 'Recall AI' };
             } catch {}
           }
           throw new Error('Gemini QA failed');
@@ -655,7 +657,7 @@ Current User Message: "${question}"`;
           const data: any = await res.json();
           const answer = data.choices?.[0]?.message?.content?.trim();
           if (!answer) throw new Error('Empty Mistral QA answer');
-          return { answer, provider: 'Mistral Pixtral 12B' };
+          return { answer, provider: 'Recall AI' };
         })()
       );
     }
@@ -690,7 +692,7 @@ Current User Message: "${question}"`;
           const data: any = await res.json();
           const answer = data.choices?.[0]?.message?.content?.trim();
           if (!answer) throw new Error('Empty OpenRouter QA answer');
-          return { answer, provider: 'GPT-4o-mini' };
+          return { answer, provider: 'Recall AI' };
         })()
       );
     }
@@ -726,14 +728,14 @@ Current User Message: "${question}"`;
       if (res.ok) {
         const data: any = await res.json();
         const answer = data.choices?.[0]?.message?.content?.trim();
-        if (answer) return { answer, provider: 'Groq LPU Context' };
+        if (answer) return { answer, provider: 'Recall AI' };
       }
     } catch {}
   }
 
   return {
-    answer: storedContext.visual_description || 'Could not reach AI vision providers at the moment. Try clicking Re-Analyze above.',
-    provider: 'Cached Summary',
+    answer: storedContext.visual_description || 'Could not reach Vision AI at the moment. Try clicking Re-Analyze above.',
+    provider: 'Recall AI',
   };
 }
 
@@ -814,7 +816,7 @@ ${evidenceBlock}`;
         return {
           answer: parsed.answer,
           cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
-          provider: 'Groq LPU',
+          provider: 'Recall AI',
         };
       })()
     );
@@ -846,7 +848,7 @@ ${evidenceBlock}`;
         return {
           answer: parsed.answer,
           cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
-          provider: 'GPT-4o-mini',
+          provider: 'Recall AI',
         };
       })()
     );
@@ -865,7 +867,7 @@ ${evidenceBlock}`;
         return {
           answer: parsed.answer,
           cited_ids: Array.isArray(parsed.cited_ids) ? parsed.cited_ids : [topMatches[0].id],
-          provider: 'Gemini Flash',
+          provider: 'Recall AI',
         };
       })()
     );
@@ -882,7 +884,7 @@ ${evidenceBlock}`;
   return {
     answer: `Found ${topMatches.length} matching item${topMatches.length === 1 ? '' : 's'}. Top match is ${lead.filename}: ${lead.visual_description || lead.ocr_text?.substring(0, 120) || 'Visual match detected.'}`,
     cited_ids: [lead.id],
-    provider: 'Recall Index',
+    provider: 'Recall AI',
   };
 }
 
@@ -1014,7 +1016,7 @@ Return ONLY valid JSON:
         });
         if (!res.ok) throw new Error('Groq coach failed');
         const data: any = await res.json();
-        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'Groq LPU');
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'Recall AI');
       })()
     );
   }
@@ -1040,7 +1042,7 @@ Return ONLY valid JSON:
         });
         if (!res.ok) throw new Error('OpenRouter coach failed');
         const data: any = await res.json();
-        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'GPT-4o-mini');
+        return mapCoachResult(safeParseJson(data.choices?.[0]?.message?.content || '{}'), 'Recall AI');
       })()
     );
   }
@@ -1053,7 +1055,7 @@ Return ONLY valid JSON:
           generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
         });
         const result = await model.generateContent(coachPrompt);
-        return mapCoachResult(safeParseJson(result.response.text().trim()), 'Gemini Flash');
+        return mapCoachResult(safeParseJson(result.response.text().trim()), 'Recall AI');
       })()
     );
   }
@@ -1368,7 +1370,7 @@ ${hintsSection}`;
     const payload: any = await res.json();
     const rawText = payload?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     const parsed = safeParseJson(rawText.trim());
-    return parseAiRedactResponse(parsed, `Gemini (${modelName})`);
+    return parseAiRedactResponse(parsed, 'Recall AI');
   };
 
   const callMistralVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
@@ -1396,7 +1398,7 @@ ${hintsSection}`;
     if (!res.ok) throw new Error(`Mistral ${modelName} status ${res.status}`);
     const data: any = await res.json();
     const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-    return parseAiRedactResponse(parsed, `Mistral (${modelName})`);
+    return parseAiRedactResponse(parsed, 'Recall AI');
   };
 
   const callOpenRouterVision = async (modelName: string, timeoutMs: number): Promise<AiRedactResult> => {
@@ -1429,7 +1431,7 @@ ${hintsSection}`;
     if (!res.ok) throw new Error(`OpenRouter ${modelName} status ${res.status}`);
     const data: any = await res.json();
     const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-    return parseAiRedactResponse(parsed, `OpenRouter (${modelName})`);
+    return parseAiRedactResponse(parsed, 'Recall AI');
   };
 
   const callGroqSemanticOcrMatch = async (): Promise<AiRedactResult | null> => {
@@ -1457,7 +1459,7 @@ ${hintsSection}`;
       if (!res.ok) return null;
       const data: any = await res.json();
       const parsed = safeParseJson(data.choices?.[0]?.message?.content || '{}');
-      return parseAiRedactResponse(parsed, 'Groq LPU Semantic Matcher');
+      return parseAiRedactResponse(parsed, 'Recall AI');
     } catch (err) {
       console.warn('Groq semantic OCR match failed:', err);
       return null;

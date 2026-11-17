@@ -1119,8 +1119,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               type="button"
               onClick={handleReanalyze}
               disabled={isReanalyzing || loading}
-              title="Re-analyze image with Gemini Vision AI"
-              aria-label="Re-analyze image with Gemini Vision AI"
+              title="Re-analyze image with Vision AI"
+              aria-label="Re-analyze image with Vision AI"
               className="flex h-8 items-center gap-1.5 rounded-full liquid-glass-pill px-2.5 text-[11px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 text-[#3478F6] ${isReanalyzing ? 'animate-spin' : ''}`} />
@@ -1751,7 +1751,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           ) : (
             <div>
               {/* ========================================================= */}
-              {/* TAB 0: CONVERSATIONAL AI CHAT (ChatGPT / Gemini style)   */}
+              {/* TAB 0: CONVERSATIONAL AI CHAT (Direct Vision Chat)       */}
               {/* ========================================================= */}
               {activeTab === 'chat' && (
                 <div className="flex flex-col space-y-3">
@@ -1765,10 +1765,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                         <div className="flex items-center gap-1.5">
                           <span className="text-[12px] font-bold text-slate-800">Recall Vision AI</span>
                           <span className="rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-1.5 py-0.2 text-[8.5px] font-semibold">
-                            Gemini Vision Active
+                            Active
                           </span>
                         </div>
-                        <p className="text-[9.5px] text-slate-500 font-medium">Multimodal conversational assistant</p>
+                        <p className="text-[9.5px] text-slate-500 font-medium">Visual memory lens & intelligent assistant</p>
                       </div>
                     </div>
 
@@ -1806,7 +1806,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                 Chat with AI about this screenshot
                               </h4>
                               <p className="text-[11px] text-slate-500 font-medium">
-                                Visual memory lens powered by Gemini Multimodal Vision
+                                Visual memory lens & intelligent assistant
                               </p>
                             </div>
                           </div>
@@ -1855,11 +1855,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                   <Bot className="h-3.5 w-3.5" />
                                 </div>
                                 <span className="text-[11px] font-bold text-slate-800">Recall AI</span>
-                                {msg.provider && (
-                                  <span className="rounded-full bg-slate-100 px-1.5 py-0.2 text-[9px] font-semibold text-slate-500">
-                                    {msg.provider}
-                                  </span>
-                                )}
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
@@ -1906,7 +1901,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                           <Loader2 className="h-3 w-3 animate-spin" />
                         </div>
                         <span className="text-[11.5px] font-semibold text-slate-600">
-                          Thinking with Gemini Vision...
+                          Thinking...
                         </span>
                         <div className="flex items-center gap-1 pl-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#3478F6] animate-pulse" />
@@ -2208,11 +2203,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
                                       <Bot className="h-3 w-3 text-[#3478F6]" />
                                       <span>Recall AI</span>
-                                      {msg.provider && (
-                                        <span className="text-[8.5px] font-semibold text-slate-400">
-                                          ({msg.provider})
-                                        </span>
-                                      )}
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <button
@@ -2282,7 +2272,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       {isChatting && (
                         <div className="flex items-center gap-2 px-1 text-[11px] font-medium text-slate-500">
                           <Loader2 className="h-3 w-3 animate-spin text-[#3478F6]" />
-                          <span>Thinking with Gemini Vision...</span>
+                          <span>Thinking...</span>
                         </div>
                       )}
 
@@ -2533,7 +2523,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                     <div className="flex items-center justify-between text-slate-700">
                       <span className="text-[11px] text-slate-500">Recognition Model</span>
-                      <span className="font-semibold text-[11px] text-[#3478F6]">Multi-AI Ensemble (Gemini + Mistral + GPT-4o)</span>
+                      <span className="font-semibold text-[11px] text-[#3478F6]">Recall Vision Ensemble</span>
                     </div>
                   </div>
 
