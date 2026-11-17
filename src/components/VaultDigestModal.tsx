@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Layers,
@@ -62,8 +63,10 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
   const bills = data?.bills || [];
   const totalCount = discounts.length + events.length + bills.length;
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-md sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
       <div className="absolute inset-0" onClick={onClose} />
 
       <motion.div
@@ -366,6 +369,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
           )}
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -12,6 +12,7 @@ interface TopHeaderProps {
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
   onSearchSubmit?: (q: string) => void;
+  visible?: boolean;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -24,6 +25,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   searchQuery = '',
   onSearchChange,
   onSearchSubmit,
+  visible = true,
 }) => {
   const [isLocalSpinning, setIsLocalSpinning] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -81,7 +83,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <div
-      className="fixed top-0 inset-x-0 z-30 pointer-events-none select-none"
+      className={`fixed top-0 inset-x-0 z-30 pointer-events-none select-none transition-all duration-200 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      }`}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {/* Subtle Cloudy Header Blur under the Top Nav Bar (Expo Project reference) */}

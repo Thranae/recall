@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Download,
@@ -7,6 +8,7 @@ import {
   Loader2,
   Check,
   ExternalLink,
+  ArrowLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ThreadGroup } from '../types';
@@ -200,10 +202,12 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
     setTimeout(() => setCopiedTranscript(false), 2000);
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && activeThread && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
+        <div className="fixed inset-0 z-[70] flex flex-col justify-end bg-black/60 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 touch-none overscroll-none">
           {/* Backdrop dismissal */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -219,7 +223,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="liquid-glass-container relative z-10 flex h-[94dvh] w-full flex-col rounded-t-[32px] sm:max-w-2xl sm:h-[88vh] sm:rounded-[32px] shadow-2xl overflow-hidden touch-auto overscroll-contain"
+            className="liquid-glass-container relative z-10 flex h-full sm:h-[88vh] w-full flex-col rounded-t-[32px] sm:max-w-2xl sm:rounded-[32px] shadow-2xl overflow-hidden touch-auto overscroll-contain bg-[#F3F7FC]"
           >
             {/* Specular Top Hairline */}
             <div
@@ -230,18 +234,24 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
               }}
             />
 
-            {/* Drag Handle Indicator */}
-            <div className="flex w-full justify-center pt-2.5 pb-1 sm:hidden">
-              <div className="h-1.5 w-10 rounded-full bg-slate-300/80" />
-            </div>
-
-            {/* 1. Header Bar: Balanced Plump Layout & Mode Switcher */}
-            <header className="flex items-center justify-between border-b border-white/80 px-4 sm:px-5 py-2.5 bg-white/70 backdrop-blur-md shrink-0">
+            {/* 1. Header Bar: Full Safe-Area Padding & Symmetrical Justification */}
+            <header
+              className="relative z-20 flex items-center justify-between border-b border-white/80 px-4 sm:px-5 py-2.5 bg-white/85 backdrop-blur-xl shrink-0 shadow-2xs"
+              style={{
+                paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
+              }}
+            >
               {/* Left Title & Status Badge */}
               <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#3478F6]/10 text-[#3478F6] shrink-0 shadow-2xs">
-                  <Layers className="h-4.5 w-4.5 stroke-[2.3]" />
-                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Back to library"
+                  className="flex h-8.5 w-8.5 items-center justify-center rounded-full liquid-glass-pill text-slate-700 active:scale-90 transition-all cursor-pointer shadow-2xs shrink-0"
+                >
+                  <ArrowLeft className="h-4.5 w-4.5 stroke-[2.3]" />
+                </button>
+
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-[14px] font-bold text-[#172B4D] truncate leading-tight">
@@ -300,8 +310,8 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
               {viewMode === 'visual' ? (
                 <div className="relative mx-auto max-w-md">
                   {/* Sticky Plump Liquid Glass Part Navigator */}
-                  <div className="sticky top-0 z-20 pb-3 pt-0.5 pointer-events-none flex justify-center">
-                    <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full plump-glass-pill !bg-white/92 backdrop-blur-xl border border-white/95 shadow-md">
+                  <div className="sticky top-0 z-20 pb-3 pt-1 pointer-events-none flex justify-center">
+                    <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full plump-glass-pill !bg-white/95 backdrop-blur-xl border border-white/95 shadow-md">
                       <span className="text-[10px] font-extrabold text-[#3478F6] tracking-wider uppercase pl-2 pr-0.5 shrink-0">
                         Part
                       </span>
@@ -412,8 +422,13 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
               )}
             </div>
 
-            {/* 3. Footer Bar: Plump Glass Actions & Export */}
-            <footer className="border-t border-white/80 px-4 sm:px-5 py-3 flex items-center justify-between gap-3 bg-white/70 backdrop-blur-md shrink-0">
+            {/* 3. Footer Bar: Plump Glass Actions & Safe Area Padding */}
+            <footer
+              className="border-t border-white/80 px-4 sm:px-5 py-3 flex items-center justify-between gap-3 bg-white/85 backdrop-blur-xl shrink-0"
+              style={{
+                paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
+              }}
+            >
               <div className="text-xs font-bold text-slate-600 min-w-0 truncate">
                 {activeThread.screenshots.length} Screenshots Combined
               </div>
@@ -442,6 +457,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

@@ -38,6 +38,7 @@ interface LibraryViewProps {
   onQuickSearch?: (query: string) => void;
   onSelectionModeChange?: (active: boolean) => void;
   onActiveUndoChange?: (hasActiveUndo: boolean) => void;
+  onModalStateChange?: (isOpen: boolean) => void;
 }
 
 const CATEGORIES = [
@@ -60,6 +61,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onQuickSearch,
   onSelectionModeChange,
   onActiveUndoChange,
+  onModalStateChange,
 }) => {
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
@@ -146,6 +148,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   useEffect(() => {
     onActiveUndoChange?.(!!pendingDelete);
   }, [pendingDelete, onActiveUndoChange]);
+
+  // Notify parent of modal open state so top and bottom navbars hide cleanly
+  const isAnyModalOpen = Boolean(selectedThread) || isVaultDigestOpen || isClutterSweeperOpen;
+  useEffect(() => {
+    onModalStateChange?.(isAnyModalOpen);
+  }, [isAnyModalOpen, onModalStateChange]);
 
   // Synchronize deletedIds cleanup when screenshots list updates from parent
   useEffect(() => {

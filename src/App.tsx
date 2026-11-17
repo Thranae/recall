@@ -43,6 +43,9 @@ export const App: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedScreenshotId, setSelectedScreenshotId] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<SearchResultItem | undefined>(undefined);
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+
+  const isAnyModalActive = isLibraryModalOpen || Boolean(selectedScreenshotId) || isUploadOpen;
 
   // Check existing session on launch & listen for auth invalidation
   useEffect(() => {
@@ -358,6 +361,7 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
         showSearch={currentTab !== 'search'}
         searchQuery={libraryFilterQuery}
+        visible={!isAnyModalActive}
         onSearchChange={(q) => {
           setLibraryFilterQuery(q);
           if (q.trim() && currentTab !== 'library') {
@@ -388,6 +392,7 @@ export const App: React.FC = () => {
             onFilterChange={setLibraryFilterQuery}
             onSelectionModeChange={setIsSelectionMode}
             onActiveUndoChange={setHasActiveUndo}
+            onModalStateChange={setIsLibraryModalOpen}
             onQuickSearch={(q) => {
               setSearchCategory('all');
               setQuery(q);
@@ -446,7 +451,7 @@ export const App: React.FC = () => {
         }}
         onOpenUpload={() => setIsUploadOpen(true)}
         screenshotCount={screenshots.length}
-        visible={!isSelectionMode && !hasActiveUndo}
+        visible={!isSelectionMode && !hasActiveUndo && !isAnyModalActive}
       />
 
       {/* Upload Mobile Sheet */}
