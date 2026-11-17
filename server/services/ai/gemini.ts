@@ -571,8 +571,9 @@ export async function analyzeScreenshot(
 }
 
 /**
- * Interactive Visual Q&A ("Memory Lens"):
- * Inspects a single image directly with the multimodal vision ensemble to answer follow-up user questions.
+ * Interactive Visual Q&A & Conversational AI Chat ("Memory Lens"):
+ * Chats directly with multimodal vision models (Gemini, Mistral Pixtral, GPT-4o-mini)
+ * about a specific image, supporting multi-turn conversation history.
  */
 export async function answerImageQuestion(
   filePath: string,
@@ -580,15 +581,32 @@ export async function answerImageQuestion(
   originalFilename: string,
   fallbackBase64: string | null | undefined,
   storedContext: { visual_description?: string; ocr_text?: string; tags?: string[] },
-  question: string
+  question: string,
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>
 ): Promise<{ answer: string; provider: string }> {
   const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
 
-  const qaPrompt = `You are RECALL's visual intelligence assistant answering a user's question about THIS specific image ("${originalFilename}").
-Answer directly, accurately, and concisely (2-4 crisp sentences) based strictly on what is visible in the image.
-If the user asks about people (boy, girl, man, woman), clothing, colors, objects, numbers, or text, inspect carefully and state exact details.
+  const historyText =
+    history && history.length > 0
+      ? `\nPrior conversation history about this image:\n` +
+        history
+          .slice(-8)
+          .map((h) => `${h.role === 'user' ? 'User' : 'Assistant (Recall AI)'}: ${h.text}`)
+          .join('\n') +
+        `\n`
+      : '';
 
-User Question: "${question}"`;
+  const qaPrompt = `You are RECALL's conversational AI assistant chatting directly with the user about THIS specific screenshot/image ("${originalFilename}").
+You behave like modern multimodal assistants (ChatGPT and Google Gemini): perceptive, friendly, articulate, highly accurate, and helpful.
+You have direct visual inspection of this image, including any text, UI components, chats, numbers, items, and design.
+
+Guidelines:
+- Answer thoroughly, clearly, and directly based on what is visible in the image and prior conversation context.
+- When explaining complex content, use clean Markdown formatting (bold keywords, bullet points, numbered steps, code blocks, or tables if relevant).
+- If the user asks follow-up questions (e.g. "who said that?", "what else?", "explain that third line", "how much was the total?"), resolve references using previous turns and the image.
+- Avoid robotic disclaimers; be crisp, insightful, and natural.
+${historyText}
+Current User Message: "${question}"`;
 
   if (base64Data) {
     const tasks: Promise<{ answer: string; provider: string }>[] = [];
@@ -629,7 +647,7 @@ User Question: "${question}"`;
                   ],
                 },
               ],
-              max_tokens: 450,
+              max_tokens: 800,
               temperature: 0.2,
             }),
           });
@@ -664,7 +682,7 @@ User Question: "${question}"`;
                   ],
                 },
               ],
-              max_tokens: 450,
+              max_tokens: 800,
               temperature: 0.2,
             }),
           });
@@ -698,10 +716,10 @@ User Question: "${question}"`;
           messages: [
             {
               role: 'user',
-              content: `Based on this indexed image metadata for "${originalFilename}":\n${contextText}\n\nAnswer concisely: "${question}"`,
+              content: `Based on this indexed image metadata for "${originalFilename}":\n${contextText}\n${historyText}\nAnswer concisely and helpfully: "${question}"`,
             },
           ],
-          max_tokens: 300,
+          max_tokens: 600,
           temperature: 0.2,
         }),
       });
@@ -718,6 +736,8 @@ User Question: "${question}"`;
     provider: 'Cached Summary',
   };
 }
+
+export const chatWithImage = answerImageQuestion;
 
 /**
  * Cross-Gallery Answer Synthesis ("Ask Recall AI"):

@@ -116,10 +116,24 @@ export const api = {
       body: JSON.stringify({ query, category }),
     }),
 
-  askScreenshot: (id: string, question: string) =>
+  askScreenshot: (
+    id: string,
+    question: string,
+    history?: Array<{ role: 'user' | 'assistant'; text: string }>
+  ) =>
     request<import('../types').ImageQuestionResponse>(`/screenshots/${encodeURIComponent(id)}/ask`, {
       method: 'POST',
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, history }),
+    }),
+
+  chatScreenshot: (
+    id: string,
+    messages: Array<{ role: 'user' | 'assistant'; text: string }>,
+    question?: string
+  ) =>
+    request<import('../types').ImageQuestionResponse>(`/screenshots/${encodeURIComponent(id)}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ messages, question }),
     }),
 
   aiRedactScreenshot: (

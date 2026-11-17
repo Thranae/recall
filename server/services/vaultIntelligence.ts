@@ -336,3 +336,4 @@ export async function detectClutterCandidates(userScreenshots: any[]): Promise<C
 
   return candidates.sort((a, b) => b.ageDays - a.ageDays);
 }
+

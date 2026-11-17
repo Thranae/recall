@@ -52630,13 +52630,23 @@ async function analyzeScreenshot(filePath, mimeType, originalFilename, fallbackB
     game_result: heuristic.game_result
   };
 }
-async function answerImageQuestion(filePath, mimeType, originalFilename, fallbackBase64, storedContext, question) {
+async function answerImageQuestion(filePath, mimeType, originalFilename, fallbackBase64, storedContext, question, history) {
   const { base64Data, resolvedMime } = resolveCleanImagePayload(filePath, mimeType, originalFilename, fallbackBase64);
-  const qaPrompt = `You are RECALL's visual intelligence assistant answering a user's question about THIS specific image ("${originalFilename}").
-Answer directly, accurately, and concisely (2-4 crisp sentences) based strictly on what is visible in the image.
-If the user asks about people (boy, girl, man, woman), clothing, colors, objects, numbers, or text, inspect carefully and state exact details.
+  const historyText = history && history.length > 0 ? `
+Prior conversation history about this image:
+` + history.slice(-8).map((h) => `${h.role === "user" ? "User" : "Assistant (Recall AI)"}: ${h.text}`).join("\n") + `
+` : "";
+  const qaPrompt = `You are RECALL's conversational AI assistant chatting directly with the user about THIS specific screenshot/image ("${originalFilename}").
+You behave like modern multimodal assistants (ChatGPT and Google Gemini): perceptive, friendly, articulate, highly accurate, and helpful.
+You have direct visual inspection of this image, including any text, UI components, chats, numbers, items, and design.
 
-User Question: "${question}"`;
+Guidelines:
+- Answer thoroughly, clearly, and directly based on what is visible in the image and prior conversation context.
+- When explaining complex content, use clean Markdown formatting (bold keywords, bullet points, numbered steps, code blocks, or tables if relevant).
+- If the user asks follow-up questions (e.g. "who said that?", "what else?", "explain that third line", "how much was the total?"), resolve references using previous turns and the image.
+- Avoid robotic disclaimers; be crisp, insightful, and natural.
+${historyText}
+Current User Message: "${question}"`;
   if (base64Data) {
     const tasks = [];
     if (genAI && geminiApiKey) {
@@ -52675,7 +52685,7 @@ User Question: "${question}"`;
                   ]
                 }
               ],
-              max_tokens: 450,
+              max_tokens: 800,
               temperature: 0.2
             })
           });
@@ -52709,7 +52719,7 @@ User Question: "${question}"`;
                   ]
                 }
               ],
-              max_tokens: 450,
+              max_tokens: 800,
               temperature: 0.2
             })
           });
@@ -52744,11 +52754,11 @@ Tags: ${(storedContext.tags || []).join(", ")}`;
               role: "user",
               content: `Based on this indexed image metadata for "${originalFilename}":
 ${contextText}
-
-Answer concisely: "${question}"`
+${historyText}
+Answer concisely and helpfully: "${question}"`
             }
           ],
-          max_tokens: 300,
+          max_tokens: 600,
           temperature: 0.2
         })
       });
@@ -70347,13 +70357,37 @@ router2.post("/process-pending", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Failed to process pending screenshot" });
   }
 });
-router2.post("/:id/ask", authMiddleware, async (req, res) => {
+var handleImageChat = async (req, res) => {
   try {
     const userId = req.user.id;
     const userEmail = req.user.email || "";
-    const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    let question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    let history = [];
+    if (Array.isArray(req.body?.messages) && req.body.messages.length > 0) {
+      const validMsgs = req.body.messages.filter((m) => m && typeof m.text === "string" && m.text.trim());
+      if (!question && validMsgs.length > 0) {
+        const lastMsg = validMsgs[validMsgs.length - 1];
+        if (lastMsg.role === "user") {
+          question = lastMsg.text.trim();
+          history = validMsgs.slice(0, -1).map((m) => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            text: m.text.trim()
+          }));
+        }
+      } else {
+        history = validMsgs.map((m) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          text: m.text.trim()
+        }));
+      }
+    } else if (Array.isArray(req.body?.history)) {
+      history = req.body.history.map((m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        text: String(m.text || m.content || "").trim()
+      })).filter((m) => m.text);
+    }
     if (!question) {
-      res.status(400).json({ error: "Question is required" });
+      res.status(400).json({ error: "Question or message is required" });
       return;
     }
     const row = await db.prepare(`
@@ -70386,7 +70420,8 @@ router2.post("/:id/ask", authMiddleware, async (req, res) => {
         ocr_text: row.ocr_text || "",
         tags: parsedTags
       },
-      question
+      question,
+      history
     );
     res.json({
       screenshot_id: row.id,
@@ -70395,10 +70430,12 @@ router2.post("/:id/ask", authMiddleware, async (req, res) => {
       provider: result.provider
     });
   } catch (err) {
-    console.error("Image Q&A error:", err);
-    res.status(500).json({ error: "Failed to answer question about this image", details: err.message });
+    console.error("Image AI Chat error:", err);
+    res.status(500).json({ error: "Failed to chat with AI about this image", details: err.message });
   }
-});
+};
+router2.post("/:id/ask", authMiddleware, handleImageChat);
+router2.post("/:id/chat", authMiddleware, handleImageChat);
 router2.post("/:id/ai-redact", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;

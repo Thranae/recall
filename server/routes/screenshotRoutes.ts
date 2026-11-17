@@ -937,15 +937,43 @@ router.post('/process-pending', authMiddleware, async (req: AuthRequest, res: Re
   }
 });
 
-// Memory Lens: Visual Q&A directly on a specific photo or screenshot
-router.post('/:id/ask', authMiddleware, async (req: AuthRequest, res) => {
+// Conversational AI Chat / Visual Q&A on a specific photo or screenshot ("Memory Lens")
+const handleImageChat = async (req: AuthRequest, res: any) => {
   try {
     const userId = req.user!.id;
     const userEmail = req.user!.email || '';
-    const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+
+    let question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+    let history: Array<{ role: 'user' | 'assistant'; text: string }> = [];
+
+    if (Array.isArray(req.body?.messages) && req.body.messages.length > 0) {
+      const validMsgs = req.body.messages.filter((m: any) => m && typeof m.text === 'string' && m.text.trim());
+      if (!question && validMsgs.length > 0) {
+        const lastMsg = validMsgs[validMsgs.length - 1];
+        if (lastMsg.role === 'user') {
+          question = lastMsg.text.trim();
+          history = validMsgs.slice(0, -1).map((m: any) => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            text: m.text.trim(),
+          }));
+        }
+      } else {
+        history = validMsgs.map((m: any) => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          text: m.text.trim(),
+        }));
+      }
+    } else if (Array.isArray(req.body?.history)) {
+      history = req.body.history
+        .map((m: any) => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          text: String(m.text || m.content || '').trim(),
+        }))
+        .filter((m: any) => m.text);
+    }
 
     if (!question) {
-      res.status(400).json({ error: 'Question is required' });
+      res.status(400).json({ error: 'Question or message is required' });
       return;
     }
 
@@ -981,7 +1009,8 @@ router.post('/:id/ask', authMiddleware, async (req: AuthRequest, res) => {
         ocr_text: row.ocr_text || '',
         tags: parsedTags,
       },
-      question
+      question,
+      history
     );
 
     res.json({
@@ -991,10 +1020,13 @@ router.post('/:id/ask', authMiddleware, async (req: AuthRequest, res) => {
       provider: result.provider,
     });
   } catch (err: any) {
-    console.error('Image Q&A error:', err);
-    res.status(500).json({ error: 'Failed to answer question about this image', details: err.message });
+    console.error('Image AI Chat error:', err);
+    res.status(500).json({ error: 'Failed to chat with AI about this image', details: err.message });
   }
-});
+};
+
+router.post('/:id/ask', authMiddleware, handleImageChat);
+router.post('/:id/chat', authMiddleware, handleImageChat);
 
 // Prompt-Guided AI Redaction: Locates exact coordinates matching the user's redaction instruction
 router.post('/:id/ai-redact', authMiddleware, async (req: AuthRequest, res) => {

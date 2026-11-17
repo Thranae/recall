@@ -103,6 +103,15 @@ export interface ImageQuestionResponse {
   provider: string;
 }
 
+export interface ScreenshotChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: number;
+  provider?: string;
+  isError?: boolean;
+}
+
 export interface AiRedactWordHint {
   text: string;
   box_2d: [number, number, number, number];
