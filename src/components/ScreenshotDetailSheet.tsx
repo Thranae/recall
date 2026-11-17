@@ -15,7 +15,6 @@ import {
   Eye,
   HardDrive,
   CheckCircle2,
-  Send,
   MapPin,
   Phone,
   Mail,
@@ -31,13 +30,11 @@ import {
   Undo2,
   Pencil,
   Bot,
-  Volume2,
-  VolumeX,
-  RotateCcw,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
 import { downloadImageFile } from '../utils/fileDownload';
+import { ScreenshotChatModal } from './ScreenshotChatModal';
 import {
   loadUntaintedImage,
   detectSensitiveRegions,
@@ -76,102 +73,6 @@ interface ScreenshotDetailSheetProps {
   onSelectRelated?: (id: string) => void;
 }
 
-function renderInlineStyles(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.substring(lastIndex, match.index));
-    }
-    const token = match[0];
-    if (token.startsWith('**') && token.endsWith('**')) {
-      parts.push(
-        <strong key={`b_${match.index}`} className="font-bold text-slate-900">
-          {token.slice(2, -2)}
-        </strong>
-      );
-    } else if (token.startsWith('`') && token.endsWith('`')) {
-      parts.push(
-        <code
-          key={`c_${match.index}`}
-          className="rounded-md bg-slate-100/90 border border-slate-200/80 px-1 py-0.5 text-[11px] font-mono text-[#3478F6]"
-        >
-          {token.slice(1, -1)}
-        </code>
-      );
-    }
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : text;
-}
-
-function renderFormattedAiText(text: string) {
-  const lines = text.split('\n');
-  return (
-    <div className="space-y-1.5 text-[12.5px] leading-relaxed">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-1" />;
-
-        if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-          const bulletContent = trimmed.substring(2);
-          return (
-            <div key={idx} className="flex items-start gap-1.5 pl-1">
-              <span className="text-[#3478F6] font-bold text-[13px] leading-tight">•</span>
-              <div className="flex-1 font-medium text-slate-800">
-                {renderInlineStyles(bulletContent)}
-              </div>
-            </div>
-          );
-        }
-
-        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
-        if (numMatch) {
-          return (
-            <div key={idx} className="flex items-start gap-1.5 pl-1">
-              <span className="text-[#3478F6] font-bold text-[11px] leading-tight min-w-[14px]">
-                {numMatch[1]}.
-              </span>
-              <div className="flex-1 font-medium text-slate-800">
-                {renderInlineStyles(numMatch[2])}
-              </div>
-            </div>
-          );
-        }
-
-        if (trimmed.startsWith('### ')) {
-          return (
-            <h4 key={idx} className="text-[12.5px] font-bold text-slate-900 pt-1">
-              {renderInlineStyles(trimmed.substring(4))}
-            </h4>
-          );
-        }
-        if (trimmed.startsWith('## ')) {
-          return (
-            <h3 key={idx} className="text-[13px] font-bold text-slate-900 pt-1.5">
-              {renderInlineStyles(trimmed.substring(3))}
-            </h3>
-          );
-        }
-
-        return (
-          <p key={idx} className="font-medium text-slate-800">
-            {renderInlineStyles(trimmed)}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   screenshotId,
   searchResult,
@@ -184,7 +85,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [data, setData] = useState<ScreenshotDetailData | null>(null);
   const [loading, setLoading] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'content' | 'chat' | 'ocr' | 'info'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'ocr' | 'info'>('content');
+  const [isFullScreenChatOpen, setIsFullScreenChatOpen] = useState(false);
+  const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>(undefined);
   const [copiedOcr, setCopiedOcr] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
@@ -193,13 +96,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
   // Conversational AI Chat State
   const [chatMessages, setChatMessages] = useState<ScreenshotChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatting, setIsChatting] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
-  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
-  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
-  const chatScrollRef = useRef<HTMLDivElement | null>(null);
-  const chatInputRef = useRef<HTMLInputElement | null>(null);
 
   const [copiedActionId, setCopiedActionId] = useState<string | null>(null);
   const [similarItems, setSimilarItems] = useState<SimilarMemoryItem[]>([]);
@@ -295,10 +191,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
   useEffect(() => {
     setChatMessages([]);
-    setChatInput('');
-    setChatError(null);
-    setCopiedMsgId(null);
-    setSpeakingMsgId(null);
+    setIsFullScreenChatOpen(false);
+    setInitialChatPrompt(undefined);
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -847,96 +741,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     'What are the next action items?',
   ];
 
-  const handleSpeakMessage = (id: string, text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (speakingMsgId === id) {
-      window.speechSynthesis.cancel();
-      setSpeakingMsgId(null);
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*#`_]/g, '');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.onend = () => setSpeakingMsgId(null);
-    utterance.onerror = () => setSpeakingMsgId(null);
-    setSpeakingMsgId(id);
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const handleCopyMessage = (id: string, text: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopiedMsgId(id);
-      setTimeout(() => {
-        setCopiedMsgId((prev) => (prev === id ? null : prev));
-      }, 2000);
-    }
-  };
-
-  const handleSendMessage = async (customPrompt?: string) => {
-    if (!data?.screenshot?.id || isChatting) return;
-    const messageText = (customPrompt ?? chatInput).trim();
-    if (!messageText) return;
-
-    const userMsgId = 'user_' + Date.now();
-    const newUserMsg: ScreenshotChatMessage = {
-      id: userMsgId,
-      role: 'user',
-      text: messageText,
-      timestamp: Date.now(),
-    };
-
-    const nextMessages = [...chatMessages, newUserMsg];
-    setChatMessages(nextMessages);
-    setChatInput('');
-    setIsChatting(true);
-    setChatError(null);
-
-    setTimeout(() => {
-      chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
-    }, 50);
-
-    try {
-      const historyPayload = chatMessages.map((m) => ({
-        role: m.role,
-        text: m.text,
-      }));
-
-      const res = await api.askScreenshot(data.screenshot.id, messageText, historyPayload);
-
-      const aiMsgId = 'ai_' + Date.now();
-      const newAiMsg: ScreenshotChatMessage = {
-        id: aiMsgId,
-        role: 'assistant',
-        text: res.answer,
-        provider: res.provider,
-        timestamp: Date.now(),
-      };
-
-      setChatMessages((prev) => [...prev, newAiMsg]);
-
-      setTimeout(() => {
-        chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
-      }, 50);
-    } catch (err: any) {
-      console.error('Chat error:', err);
-      const errText = err.message || 'Could not inspect this image right now.';
-      setChatError(errText);
-    } finally {
-      setIsChatting(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   // Auto-poll if screenshot is still in processing state
   useEffect(() => {
     if (!screenshotId || !data) return;
@@ -1101,6 +905,26 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Full-Screen Chat AI Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setInitialChatPrompt(undefined);
+                setIsFullScreenChatOpen(true);
+              }}
+              title="Chat with Recall AI in Full Screen"
+              aria-label="Chat with Recall AI in Full Screen"
+              className="flex h-8 items-center gap-1.5 rounded-full liquid-btn-primary px-3 text-[11px] font-bold text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+            >
+              <MessageSquare className="h-3.5 w-3.5 stroke-[2.3]" />
+              <span>Chat AI</span>
+              {chatMessages.length > 0 && (
+                <span className="bg-white/25 px-1.5 py-0.2 rounded-full text-[9px] font-bold font-mono">
+                  {chatMessages.length}
+                </span>
+              )}
+            </button>
+
             {isImageExpanded && (
               <button
                 type="button"
@@ -1287,8 +1111,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded
                     ? 'max-h-[48dvh] sm:max-h-[56vh]'
-                    : activeTab === 'chat'
-                    ? 'max-h-36 sm:max-h-44'
                     : 'max-h-56'
                 } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'}`}
               />
@@ -1703,23 +1525,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
           )}
 
-          {/* Symmetrical Liquid Glass Filter Tabs Grid */}
-          <div className="grid grid-cols-4 gap-1.5 w-full">
-            <button
-              type="button"
-              onClick={() => setActiveTab('chat')}
-              className={`liquid-filter-chip w-full flex items-center justify-center gap-1 text-[11px] font-bold ${
-                activeTab === 'chat' ? 'liquid-filter-chip-active text-white' : 'text-slate-600'
-              }`}
-            >
-              <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-              <span>Chat AI</span>
-            </button>
+          {/* Symmetrical 3-Tab Segmented Capsule */}
+          <div className="grid grid-cols-3 gap-1.5 w-full p-1 rounded-[22px] bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_2px_10px_rgba(23,43,77,0.04)]">
             <button
               type="button"
               onClick={() => setActiveTab('content')}
-              className={`liquid-filter-chip w-full flex items-center justify-center text-[11px] font-bold ${
-                activeTab === 'content' ? 'liquid-filter-chip-active text-white' : 'text-slate-600'
+              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
+                activeTab === 'content'
+                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
               }`}
             >
               Content
@@ -1727,8 +1541,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('ocr')}
-              className={`liquid-filter-chip w-full flex items-center justify-center text-[11px] font-bold ${
-                activeTab === 'ocr' ? 'liquid-filter-chip-active text-white' : 'text-slate-600'
+              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
+                activeTab === 'ocr'
+                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
               }`}
             >
               Text
@@ -1736,8 +1552,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('info')}
-              className={`liquid-filter-chip w-full flex items-center justify-center text-[11px] font-bold ${
-                activeTab === 'info' ? 'liquid-filter-chip-active text-white' : 'text-slate-600'
+              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
+                activeTab === 'info'
+                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
               }`}
             >
               Info
@@ -1750,206 +1568,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
           ) : (
             <div>
-              {/* ========================================================= */}
-              {/* TAB 0: CONVERSATIONAL AI CHAT (Direct Vision Chat)       */}
-              {/* ========================================================= */}
-              {activeTab === 'chat' && (
-                <div className="flex flex-col space-y-3">
-                  {/* Chat Top Banner */}
-                  <div className="flex items-center justify-between px-1 py-1 border-b border-white/60">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-[#3478F6] to-[#60a5fa] text-white shadow-2xs">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[12px] font-bold text-slate-800">Recall Vision AI</span>
-                          <span className="rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-1.5 py-0.2 text-[8.5px] font-semibold">
-                            Active
-                          </span>
-                        </div>
-                        <p className="text-[9.5px] text-slate-500 font-medium">Visual memory lens & intelligent assistant</p>
-                      </div>
-                    </div>
-
-                    {chatMessages.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setChatMessages([]);
-                          setChatError(null);
-                        }}
-                        title="Restart conversation"
-                        className="flex items-center gap-1 rounded-full bg-white/75 hover:bg-white border border-white px-2.5 py-1 text-[10px] font-bold text-slate-600 active:scale-95 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <RotateCcw className="h-3 w-3 text-slate-500" />
-                        <span>Restart</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Scrollable Conversation Stream */}
-                  <div
-                    ref={chatScrollRef}
-                    className="space-y-3 max-h-[50dvh] sm:max-h-[46vh] overflow-y-auto pr-1 overscroll-contain"
-                  >
-                    {/* Welcome Card & Starter Prompts when no messages */}
-                    {chatMessages.length === 0 && (
-                      <div className="space-y-3 py-1">
-                        <div className="rounded-[22px] liquid-glass-card p-4 space-y-2 border border-white/90 shadow-2xs">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3478F6] to-[#0052cc] text-white shadow-sm">
-                              <Bot className="h-4.5 w-4.5" />
-                            </div>
-                            <div>
-                              <h4 className="text-[13px] font-bold text-slate-900 leading-tight">
-                                Chat with AI about this screenshot
-                              </h4>
-                              <p className="text-[11px] text-slate-500 font-medium">
-                                Visual memory lens & intelligent assistant
-                              </p>
-                            </div>
-                          </div>
-                          <p className="text-[11.5px] text-slate-600 leading-relaxed font-normal pt-1">
-                            Ask anything about people, clothing, conversations, numbers, prices, or hidden details. I remember our turns as we chat.
-                          </p>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                            Suggested Prompts
-                          </p>
-                          <div className="grid grid-cols-1 gap-1.5">
-                            {CHAT_PROMPT_SUGGESTIONS.map((prompt) => (
-                              <button
-                                key={prompt}
-                                type="button"
-                                disabled={isChatting}
-                                onClick={() => handleSendMessage(prompt)}
-                                className="w-full text-left rounded-[16px] bg-white/80 hover:bg-white border border-white/90 px-3.5 py-2 text-[11px] font-semibold text-slate-700 active:scale-[0.99] transition-all cursor-pointer shadow-2xs flex items-center justify-between group"
-                              >
-                                <span className="truncate">{prompt}</span>
-                                <Send className="h-3 w-3 text-slate-400 group-hover:text-[#3478F6] transition-colors shrink-0" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Chat Bubble Thread */}
-                    {chatMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-1`}
-                      >
-                        {msg.role === 'user' ? (
-                          <div className="max-w-[85%] rounded-[20px] rounded-br-[4px] bg-gradient-to-r from-[#3478F6] to-[#2563EB] px-3.5 py-2.5 text-[12px] font-medium text-white shadow-sm leading-relaxed">
-                            {msg.text}
-                          </div>
-                        ) : (
-                          <div className="max-w-[94%] rounded-[20px] rounded-bl-[4px] liquid-glass-card border border-white/90 p-3.5 space-y-2 shadow-2xs">
-                            <div className="flex items-center justify-between gap-2 border-b border-slate-100/80 pb-1.5">
-                              <div className="flex items-center gap-1.5">
-                                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3478F6]/10 text-[#3478F6]">
-                                  <Bot className="h-3.5 w-3.5" />
-                                </div>
-                                <span className="text-[11px] font-bold text-slate-800">Recall AI</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSpeakMessage(msg.id, msg.text)}
-                                  title={speakingMsgId === msg.id ? 'Stop speaking' : 'Read aloud'}
-                                  className={`flex h-6 w-6 items-center justify-center rounded-full active:scale-90 transition-all cursor-pointer ${
-                                    speakingMsgId === msg.id
-                                      ? 'bg-[#3478F6] text-white shadow-2xs'
-                                      : 'bg-white/70 hover:bg-white text-slate-500'
-                                  }`}
-                                >
-                                  {speakingMsgId === msg.id ? (
-                                    <VolumeX className="h-3 w-3" />
-                                  ) : (
-                                    <Volume2 className="h-3 w-3" />
-                                  )}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyMessage(msg.id, msg.text)}
-                                  title="Copy response"
-                                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/70 hover:bg-white text-slate-500 active:scale-90 transition-all cursor-pointer"
-                                >
-                                  {copiedMsgId === msg.id ? (
-                                    <Check className="h-3 w-3 text-emerald-600 stroke-[2.5]" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            {renderFormattedAiText(msg.text)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Thinking Indicator */}
-                    {isChatting && (
-                      <div className="flex items-center gap-2 rounded-[18px] liquid-glass-card border border-white/90 px-3.5 py-2.5 max-w-[75%] shadow-2xs">
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3478F6]/10 text-[#3478F6]">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        </div>
-                        <span className="text-[11.5px] font-semibold text-slate-600">
-                          Thinking...
-                        </span>
-                        <div className="flex items-center gap-1 pl-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#3478F6] animate-pulse" />
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#3478F6] animate-pulse delay-100" />
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#3478F6] animate-pulse delay-200" />
-                        </div>
-                      </div>
-                    )}
-
-                    {chatError && (
-                      <div className="rounded-[14px] bg-rose-50 border border-rose-200 px-3 py-2 text-[11px] font-medium text-rose-700">
-                        {chatError}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Sticky Liquid Chat Input Bar */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }}
-                    className="flex items-center gap-2 rounded-full bg-white/95 border border-white px-3 py-1.5 shadow-sm backdrop-blur-md"
-                  >
-                    <input
-                      ref={chatInputRef}
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Chat with AI about this screenshot..."
-                      disabled={isChatting}
-                      className="w-full bg-transparent text-[11.5px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isChatting || !chatInput.trim()}
-                      aria-label="Send message"
-                      className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-[#3478F6] text-white disabled:opacity-40 active:scale-90 transition-all cursor-pointer shadow-xs"
-                    >
-                      {isChatting ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Send className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </form>
-                </div>
-              )}
 
               {/* ========================================================= */}
               {/* TAB 1: VISUAL CONTENT & UNDERSTANDING                     */}
@@ -2148,136 +1766,93 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                   )}
 
-                  {/* Interactive AI Chat Thread on this Screenshot */}
+                  {/* Dedicated Full-Screen Recall AI Chat Launcher Card */}
                   {data?.screenshot?.id && (
-                    <div className="rounded-[20px] liquid-glass-card p-3.5 space-y-3 shadow-2xs border border-white/90">
+                    <div className="rounded-[22px] liquid-glass-card p-4 space-y-3 shadow-2xs border border-white/90">
                       <div className="flex items-center justify-between gap-2 px-0.5">
-                        <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-slate-800">
-                          <MessageSquare className="h-3.5 w-3.5 text-[#3478F6]" />
-                          <span>Chat with AI</span>
-                          {chatMessages.length > 0 && (
-                            <span className="rounded-full bg-blue-50 text-[#3478F6] border border-blue-200/60 px-2 py-0.2 text-[9.5px] font-bold">
-                              {chatMessages.length} turn{chatMessages.length === 1 ? '' : 's'}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3478F6] to-[#0052cc] text-white shadow-2xs">
+                            <Bot className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[12.5px] font-bold text-slate-800">Chat with Recall AI</span>
+                              <span className="rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-1.5 py-0.2 text-[8.5px] font-bold">
+                                Active
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-medium">Full-screen visual intelligence</p>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('chat')}
-                          className="flex items-center gap-1 rounded-full bg-white/80 hover:bg-white border border-white px-2.5 py-0.5 text-[10px] font-bold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
-                        >
-                          <span>Full Chat</span>
-                          <span>→</span>
-                        </button>
+
+                        {chatMessages.length > 0 && (
+                          <span className="rounded-full bg-blue-50 text-[#3478F6] border border-blue-200/60 px-2.5 py-0.5 text-[9.5px] font-bold">
+                            {chatMessages.length} turn{chatMessages.length === 1 ? '' : 's'}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Quick starter prompts if no messages yet */}
-                      {chatMessages.length === 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {CHAT_PROMPT_SUGGESTIONS.slice(0, 3).map((prompt) => (
-                            <button
-                              key={prompt}
-                              type="button"
-                              disabled={isChatting}
-                              onClick={() => handleSendMessage(prompt)}
-                              className="rounded-full bg-white/75 hover:bg-white border border-white px-2.5 py-1 text-[10px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
-                            >
-                              {prompt}
-                            </button>
-                          ))}
+                      {chatMessages.length > 0 ? (
+                        <div className="space-y-2.5">
+                          <div className="text-[11.5px] text-slate-600 bg-white/75 p-3 rounded-[16px] border border-white/90 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                              <span>LATEST RESPONSE</span>
+                              <span className="text-[#3478F6]">Recall AI</span>
+                            </div>
+                            <p className="line-clamp-2 text-slate-800 font-medium">
+                              {chatMessages[chatMessages.length - 1].text}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInitialChatPrompt(undefined);
+                              setIsFullScreenChatOpen(true);
+                            }}
+                            className="w-full h-10.5 rounded-full liquid-btn-primary text-xs font-bold text-white flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98 transition-all"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5 stroke-[2.3]" />
+                            <span>Continue Full-Screen Chat</span>
+                            <Maximize2 className="h-3 w-3 opacity-75" />
+                          </button>
                         </div>
                       ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                          {chatMessages.slice(-2).map((msg) => (
-                            <div
-                              key={msg.id}
-                              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-1`}
-                            >
-                              {msg.role === 'user' ? (
-                                <div className="max-w-[85%] rounded-[16px] rounded-br-[3px] bg-[#3478F6] px-3 py-1.5 text-[11px] font-medium text-white shadow-2xs">
-                                  {msg.text}
-                                </div>
-                              ) : (
-                                <div className="max-w-[95%] rounded-[16px] rounded-bl-[3px] bg-white/90 border border-white p-2.5 space-y-1.5 shadow-2xs">
-                                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1">
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
-                                      <Bot className="h-3 w-3 text-[#3478F6]" />
-                                      <span>Recall AI</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleSpeakMessage(msg.id, msg.text)}
-                                        title="Read aloud"
-                                        className="p-1 rounded-full text-slate-400 hover:text-slate-600 active:scale-90"
-                                      >
-                                        {speakingMsgId === msg.id ? (
-                                          <VolumeX className="h-3 w-3 text-[#3478F6]" />
-                                        ) : (
-                                          <Volume2 className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCopyMessage(msg.id, msg.text)}
-                                        title="Copy response"
-                                        className="p-1 rounded-full text-slate-400 hover:text-slate-600 active:scale-90"
-                                      >
-                                        {copiedMsgId === msg.id ? (
-                                          <Check className="h-3 w-3 text-emerald-600 stroke-[2.5]" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  {renderFormattedAiText(msg.text)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          <p className="text-[11.5px] text-slate-600 leading-relaxed font-normal">
+                            Ask anything about people, clothing, conversations, numbers, prices, or hidden details inside this image.
+                          </p>
+
+                          <div className="flex flex-wrap gap-1.5">
+                            {CHAT_PROMPT_SUGGESTIONS.slice(0, 3).map((prompt) => (
+                              <button
+                                key={prompt}
+                                type="button"
+                                onClick={() => {
+                                  setInitialChatPrompt(prompt);
+                                  setIsFullScreenChatOpen(true);
+                                }}
+                                className="rounded-full bg-white/80 hover:bg-white border border-white px-2.5 py-1 text-[10px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                              >
+                                <span>{prompt}</span>
+                                <span>→</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInitialChatPrompt(undefined);
+                              setIsFullScreenChatOpen(true);
+                            }}
+                            className="w-full h-10.5 rounded-full liquid-btn-primary text-xs font-bold text-white flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98 transition-all"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5 stroke-[2.3]" />
+                            <span>Open Full-Screen Chat</span>
+                            <Maximize2 className="h-3 w-3 opacity-75" />
+                          </button>
                         </div>
-                      )}
-
-                      {/* Chat Input */}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }}
-                        className="flex items-center gap-1.5 rounded-full bg-white/90 border border-white px-3 py-1.5 shadow-2xs"
-                      >
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="Chat with AI about what's inside..."
-                          disabled={isChatting}
-                          className="w-full bg-transparent text-[11.5px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                        />
-                        <button
-                          type="submit"
-                          disabled={isChatting || !chatInput.trim()}
-                          aria-label="Send message"
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3478F6] text-white disabled:opacity-40 active:scale-90 transition-all cursor-pointer shadow-xs"
-                        >
-                          {isChatting ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Send className="h-3 w-3" />
-                          )}
-                        </button>
-                      </form>
-
-                      {isChatting && (
-                        <div className="flex items-center gap-2 px-1 text-[11px] font-medium text-slate-500">
-                          <Loader2 className="h-3 w-3 animate-spin text-[#3478F6]" />
-                          <span>Thinking...</span>
-                        </div>
-                      )}
-
-                      {chatError && (
-                        <p className="text-[11px] font-medium text-rose-600 px-1">{chatError}</p>
                       )}
                     </div>
                   )}
@@ -2590,7 +2165,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        {!isEditingName && activeTab !== 'chat' && (
+        {!isEditingName && (
           <div className="border-t border-white/70 px-5 py-3">
             <button
               type="button"
@@ -2646,6 +2221,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full-Screen Recall AI Chat Modal */}
+      {data?.screenshot && (
+        <ScreenshotChatModal
+          isOpen={isFullScreenChatOpen}
+          onClose={() => {
+            setIsFullScreenChatOpen(false);
+            setInitialChatPrompt(undefined);
+          }}
+          screenshot={data.screenshot}
+          chatMessages={chatMessages}
+          setChatMessages={setChatMessages}
+          initialPrompt={initialChatPrompt}
+        />
       )}
     </div>
   );
