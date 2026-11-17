@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
+import { downloadImageFile } from '../utils/fileDownload';
 import {
   loadUntaintedImage,
   detectSensitiveRegions,
@@ -675,45 +676,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     document.body.removeChild(link);
   };
 
-  const handleDownloadRedacted = () => {
+  const handleDownloadRedacted = async () => {
     if (!redactedResult) return;
     const baseName = (data?.screenshot?.original_filename || screenshotId || 'image').replace(
       /\.[a-z0-9]+$/i,
       ''
     );
     const filename = `redacted-${baseName}.png`;
-    const link = document.createElement('a');
-    link.href = redactedResult.dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await downloadImageFile(redactedResult.dataUrl, filename);
   };
 
   const handleDownloadScreenshot = async () => {
     if (!screenshotId) return;
     const filename = data?.screenshot?.original_filename || `screenshot-${screenshotId}.png`;
-    try {
-      const url = api.getImageUrl(screenshotId);
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch {
-      const link = document.createElement('a');
-      link.href = api.getImageUrl(screenshotId);
-      link.download = filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    const url = api.getImageUrl(screenshotId);
+    await downloadImageFile(url, filename);
   };
 
   const handleAskImage = async (customQuestion?: string) => {
@@ -954,47 +931,72 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Screenshot Title Bar with Inline Renaming */}
-        <div className="border-b border-white/60 bg-white/45 px-5 py-2.5 backdrop-blur-xs">
+        <div className="border-b border-white/60 bg-white/50 px-4 py-3 backdrop-blur-md">
           {isEditingName ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveName();
-                  if (e.key === 'Escape') setIsEditingName(false);
-                }}
-                autoFocus
-                placeholder="Screenshot name..."
-                className="flex-1 rounded-xl bg-white border border-[#3478F6] px-3 py-1.5 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/20"
-              />
-              <button
-                type="button"
-                onClick={() => handleSaveName(false)}
-                disabled={isSavingName || !newName.trim()}
-                className="flex h-7 px-3 items-center justify-center rounded-full bg-[#3478F6] hover:bg-blue-600 text-white text-[11px] font-bold active:scale-95 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-              >
-                {isSavingName ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSaveName(true)}
-                disabled={isSavingName || !newName.trim()}
-                className="flex h-7 px-2.5 items-center justify-center gap-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold active:scale-95 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                title="Save renamed screenshot and download immediately"
-              >
-                <Download className="h-3 w-3 stroke-[2.4]" />
-                <span className="hidden sm:inline">Save & </span>
-                <span>Download</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditingName(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 active:scale-90 transition-all cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+            <div className="space-y-2.5">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName(false);
+                    if (e.key === 'Escape') setIsEditingName(false);
+                  }}
+                  autoFocus
+                  placeholder="Screenshot name..."
+                  className="w-full h-10 rounded-[18px] liquid-glass-input px-3.5 pr-8 text-xs font-bold text-[#172B4D] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]/30 transition-all shadow-inner"
+                />
+                {newName && (
+                  <button
+                    type="button"
+                    onClick={() => setNewName('')}
+                    className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600 active:scale-90 transition-transform cursor-pointer"
+                    aria-label="Clear input"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(false)}
+                  className="flex h-8.5 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold text-slate-600 liquid-glass-pill hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5 stroke-[2.2]" />
+                  <span>Cancel</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveName(false)}
+                    disabled={isSavingName || !newName.trim()}
+                    className="flex h-8.5 items-center justify-center rounded-full px-4 text-xs font-bold text-[#3478F6] liquid-glass-pill hover:bg-blue-50/70 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {isSavingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span>Save</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveName(true)}
+                    disabled={isSavingName || !newName.trim()}
+                    className="flex h-8.5 items-center gap-1.5 rounded-full px-4 text-xs font-bold text-white liquid-btn-primary shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                    title="Save renamed screenshot and download immediately"
+                  >
+                    {isSavingName ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Download className="h-3.5 w-3.5 stroke-[2.3]" />
+                        <span>Save & Download</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2">
@@ -1006,7 +1008,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 role="button"
                 tabIndex={0}
                 title="Tap to rename"
-                className="group flex items-center gap-1.5 cursor-pointer min-w-0 flex-1 rounded-lg py-0.5 hover:opacity-90 active:scale-[0.99] transition-all"
+                className="group flex items-center gap-1.5 cursor-pointer min-w-0 flex-1 rounded-xl py-1 px-1.5 -ml-1.5 hover:bg-white/50 active:scale-[0.99] transition-all"
               >
                 <h3 className="text-sm font-bold text-[#172B4D] truncate group-hover:text-[#3478F6] transition-colors">
                   {data?.screenshot.original_filename || 'Untitled Screenshot'}
@@ -1017,10 +1019,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <button
                   type="button"
                   onClick={handleDownloadScreenshot}
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-2xs"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#172B4D] liquid-glass-pill hover:text-[#3478F6] active:scale-95 transition-all cursor-pointer"
                   title="Download screenshot"
                 >
-                  <Download className="h-3 w-3 text-[#3478F6] stroke-[2.4]" />
+                  <Download className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
                   <span>Download</span>
                 </button>
                 <button
@@ -1029,9 +1031,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     setNewName(data?.screenshot.original_filename || '');
                     setIsEditingName(true);
                   }}
-                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold text-[#3478F6] bg-blue-50/80 border border-blue-200/50 hover:bg-blue-100/80 active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#3478F6] liquid-glass-pill hover:bg-blue-50/70 active:scale-95 transition-all cursor-pointer"
                 >
-                  <Pencil className="h-2.5 w-2.5 stroke-[2.3]" />
+                  <Pencil className="h-3 w-3 stroke-[2.3]" />
                   <span>Rename</span>
                 </button>
               </div>
@@ -1343,19 +1345,19 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <button
                       type="button"
                       onClick={handleDownloadRedacted}
-                      className="inline-flex items-center gap-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 text-[10.5px] font-bold active:scale-95 cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/60 shadow-2xs active:scale-95 cursor-pointer transition-all"
                       title="Download redacted screenshot"
                     >
-                      <Download className="h-3 w-3 stroke-[2.4]" />
+                      <Download className="h-3.5 w-3.5 stroke-[2.3]" />
                       <span>Download</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleShareRedacted}
-                      className="inline-flex items-center gap-1 rounded-full bg-[#3478F6] hover:bg-blue-600 text-white px-2.5 py-1 text-[10.5px] font-bold active:scale-95 cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold text-white liquid-btn-primary shadow-xs active:scale-95 cursor-pointer transition-all"
                       title="Share redacted screenshot"
                     >
-                      <Share2 className="h-3 w-3 stroke-[2.4]" />
+                      <Share2 className="h-3.5 w-3.5 stroke-[2.3]" />
                       <span>Share</span>
                     </button>
                   </div>

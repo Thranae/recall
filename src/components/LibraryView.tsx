@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { downloadImageFile } from '../utils/fileDownload';
 import type { Screenshot, VaultInsightsSummary } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
 
@@ -210,27 +211,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   }, [selectedIds, screenshots]);
 
   const handleDownloadFile = async (id: string, filename: string) => {
-    try {
-      const url = api.getImageUrl(id);
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch {
-      const link = document.createElement('a');
-      link.href = api.getImageUrl(id);
-      link.download = filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    const url = api.getImageUrl(id);
+    await downloadImageFile(url, filename);
   };
 
   const handleSaveRename = async (shouldDownload = false) => {
@@ -803,12 +785,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 value={renameInput}
                 onChange={(e) => setRenameInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveRename();
+                  if (e.key === 'Enter') handleSaveRename(false);
                   if (e.key === 'Escape') setRenameTarget(null);
                 }}
                 autoFocus
                 placeholder="e.g. Flight Ticket to Tokyo..."
-                className="w-full rounded-2xl bg-white border border-[#3478F6]/40 px-3.5 py-2.5 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/25"
+                className="w-full rounded-[18px] liquid-glass-input px-3.5 py-2.5 text-xs font-bold text-[#172B4D] placeholder:text-slate-400 shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/30 transition-all"
               />
 
               <div className="flex items-center justify-end gap-2 pt-1 flex-wrap">
