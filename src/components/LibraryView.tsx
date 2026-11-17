@@ -671,39 +671,22 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       ) : (
         <div className="relative w-full">
           <div className="grid grid-cols-2 gap-3.5 relative">
-            <AnimatePresence mode="popLayout">
-              {filteredScreenshots.map((s) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.95,
-                    transition: { duration: 0.12 },
-                  }}
-                  transition={{
-                    duration: 0.16,
-                    ease: 'easeOut',
-                  }}
-                  className="w-full"
-                >
-                  <ScreenshotCard
-                    screenshot={s}
-                    onClick={() => onSelectScreenshot(s.id)}
-                    isSelectionMode={isSelectionMode}
-                    isSelected={selectedIds.has(s.id)}
-                    isDeleting={deletingIds.has(s.id)}
-                    deleteCountdown={deletingIds.has(s.id) ? undoSecondsRemaining : undefined}
-                    onUndoDelete={handleUndoDelete}
-                    onToggleSelect={() => handleToggleSelect(s.id)}
-                    onLongPress={() => handleCardLongPress(s.id)}
-                    threadGroup={threadByScreenshotId.get(s.id)}
-                    onOpenThreadReel={(t) => setSelectedThread(t)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {filteredScreenshots.map((s) => (
+              <ScreenshotCard
+                key={s.id}
+                screenshot={s}
+                onClick={() => onSelectScreenshot(s.id)}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.has(s.id)}
+                isDeleting={deletingIds.has(s.id)}
+                deleteCountdown={deletingIds.has(s.id) ? undoSecondsRemaining : undefined}
+                onUndoDelete={handleUndoDelete}
+                onToggleSelect={() => handleToggleSelect(s.id)}
+                onLongPress={() => handleCardLongPress(s.id)}
+                threadGroup={threadByScreenshotId.get(s.id)}
+                onOpenThreadReel={(t) => setSelectedThread(t)}
+              />
+            ))}
           </div>
         </div>
       )}

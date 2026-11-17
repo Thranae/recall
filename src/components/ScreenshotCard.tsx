@@ -31,7 +31,7 @@ interface ScreenshotCardProps {
   onOpenThreadReel?: (thread: import('../types').ThreadGroup) => void;
 }
 
-export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
+const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
   screenshot,
   searchResult,
   onClick,
@@ -312,11 +312,11 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
           <img
             src={imageUrl}
             alt={screenshot.original_filename}
-            loading="lazy"
+            decoding="async"
             onError={handleImageError}
             draggable={false}
-            className={`h-full w-full object-cover pointer-events-none select-none transition-all duration-300 ${
-              isDeleting ? 'grayscale contrast-90 brightness-75 scale-95' : ''
+            className={`h-full w-full object-cover pointer-events-none select-none ${
+              isDeleting ? 'grayscale contrast-90 brightness-75 scale-95 transition-all duration-300' : ''
             }`}
             style={{
               WebkitTouchCallout: 'none',
@@ -494,3 +494,5 @@ export const ScreenshotCard: React.FC<ScreenshotCardProps> = ({
     </div>
   );
 };
+
+export const ScreenshotCard = React.memo(ScreenshotCardComponent);

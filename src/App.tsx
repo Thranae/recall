@@ -77,7 +77,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Instantly reset scroll to top whenever switching modules or category filters
+  // Instantly reset scroll to top whenever switching modules
   useLayoutEffect(() => {
     const resetScrollToTop = () => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -90,7 +90,7 @@ export const App: React.FC = () => {
     // Additional raf guarantees mobile browsers (Chromium/WebKit) do not restore stale scroll after DOM layout
     const rafId = requestAnimationFrame(resetScrollToTop);
     return () => cancelAnimationFrame(rafId);
-  }, [currentTab, selectedCategory, searchCategory]);
+  }, [currentTab]);
 
   // Fetch screenshots (Always fetch full library so category chip counts and tabs remain 100% accurate)
   const fetchScreenshots = useCallback(async () => {
