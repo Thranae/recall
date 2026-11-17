@@ -1820,7 +1820,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                       ) : (
                         <div className="space-y-3">
                           <p className="text-[11.5px] text-slate-600 leading-relaxed font-normal">
-                            Ask anything about people, clothing, conversations, numbers, prices, or hidden details inside this image.
+                            Ask anything about this screenshot or any topic in the world (definitions, recipes, code, facts).
                           </p>
 
                           <div className="flex flex-wrap gap-1.5">

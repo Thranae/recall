@@ -408,13 +408,13 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
                         Chat with Recall AI
                       </h3>
                       <p className="text-[11px] text-slate-500 font-medium pt-0.5">
-                        Direct visual intelligence about this screenshot
+                        Visual intelligence & universal AI assistant
                       </p>
                     </div>
                   </div>
 
                   <p className="text-[12px] text-slate-600 leading-relaxed font-normal">
-                    Ask anything about conversations, dates, prices, people, codes, or hidden details inside this image. Answers are precise, direct, and retain context throughout our conversation.
+                    Ask anything about this screenshot—or any topic in the world (definitions, recipes, code, facts). Answers are fast, intelligent, and precise.
                   </p>
                 </div>
 
@@ -553,7 +553,7 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Chat with AI about this screenshot..."
+                  placeholder="Ask about this screenshot or anything else..."
                   disabled={isChatting}
                   className="w-full h-11 rounded-full liquid-glass-input pl-4 pr-11 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3478F6]/30 shadow-inner"
                 />

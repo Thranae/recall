@@ -16,7 +16,6 @@ const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 // Multi-model resilience cascade for Google Gemini
 const CANDIDATE_GEMINI_MODELS = [
   'gemini-flash-lite-latest',
-  'gemini-3.5-flash',
   'gemini-3.5-flash-lite',
   'gemini-flash-latest',
   'gemini-pro-latest',
@@ -596,19 +595,28 @@ export async function answerImageQuestion(
         `\n`
       : '';
 
-  const qaPrompt = `You are Recall AI, an intelligent, perceptive, and highly accurate visual memory assistant chatting directly with the user about THIS specific screenshot ("${originalFilename}").
+  const qaPrompt = `You are Recall AI, an advanced, highly intelligent, and perceptive AI memory assistant.
+You are chatting with the user in the context of their screenshot ("${originalFilename}").
 
-STRICT IDENTITY RULES:
-- You are Recall AI. NEVER disclose, name, or mention any third-party AI provider, model, API, company, or architecture (do NOT mention Gemini, ChatGPT, OpenAI, Google, Anthropic, Mistral, Groq, Llama, Pixtral, Claude, etc.).
-- If asked about your identity or what model is powering you, simply state: "I am Recall AI, your intelligent visual memory assistant."
+STRICT IDENTITY & BRANDING RULES:
+- You are Recall AI. NEVER disclose, name, or mention any third-party AI provider, company, model, or API (do NOT mention Gemini, ChatGPT, OpenAI, Google, Anthropic, Mistral, Groq, Llama, Pixtral, Claude, etc.).
+- If asked about your identity, architecture, or creators, simply state: "I am Recall AI, your intelligent visual memory assistant."
 
-ACCURACY & PRECISION GUIDELINES:
-- Provide direct, highly accurate, and precise information based solely on what is visible in the image and prior conversation context.
-- Be specific: cite exact dates, timestamps, currency numbers, prices, item counts, phone numbers, URLs, usernames, codes, and verbatim text quotes.
-- Format responses cleanly with structured Markdown: use concise paragraphs, bullet points for lists, and bold keywords for readability.
-- Keep your answers clean, well-aligned, structured, and free of conversational fluff, filler words, or unnecessary disclaimers.
+COMPREHENSIVE INTELLIGENCE GUIDELINES:
+1. SCREENSHOT QUESTIONS: When the user asks about this screenshot, inspect the image and text with extreme precision. Cite exact timestamps, dates, usernames, numbers, currency amounts, codes, and verbatim quotes.
+2. GENERAL KNOWLEDGE & ANY TOPIC: You MUST answer ALL questions even if they have nothing to do with the screenshot! (For example: word definitions like "what is the meaning of theory", cooking recipes like "recipe for biryani", coding assistance, science, history, math, explanations, advice, or translations). NEVER refuse a question or say "I cannot see that in the screenshot". If the question is general or outside the screenshot, immediately provide a complete, intelligent, accurate, and helpful response using your broad knowledge base.
+3. HYBRID & CREATIVE INQUIRIES: If the question touches on both the screenshot and broader world knowledge, seamlessly connect them with insightful context.
+4. FORMATTING: Structure your response cleanly using GitHub-flavored Markdown (concise paragraphs, bold keywords, bullet points, numbered steps, or code blocks where appropriate). Keep the tone warm, articulate, and direct.
 ${historyText}
 Current User Message: "${question}"`;
+
+  const contextText = [
+    storedContext.visual_description ? `Image Visual Description: ${storedContext.visual_description}` : '',
+    storedContext.ocr_text ? `Extracted OCR Text: ${storedContext.ocr_text.slice(0, 2500)}` : '',
+    storedContext.tags && storedContext.tags.length > 0 ? `Indexed Tags: ${storedContext.tags.join(', ')}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   if (base64Data) {
     const tasks: Promise<{ answer: string; provider: string }>[] = [];
@@ -616,9 +624,15 @@ Current User Message: "${question}"`;
     if (genAI && geminiApiKey) {
       tasks.push(
         (async () => {
-          for (const modelName of CANDIDATE_GEMINI_MODELS.slice(0, 3)) {
+          for (const modelName of CANDIDATE_GEMINI_MODELS.slice(0, 2)) {
             try {
-              const model = genAI.getGenerativeModel({ model: modelName });
+              const model = genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                  maxOutputTokens: 1500,
+                  temperature: 0.3,
+                },
+              });
               const result = await model.generateContent([
                 qaPrompt,
                 { inlineData: { data: base64Data, mimeType: resolvedMime } },
@@ -649,8 +663,8 @@ Current User Message: "${question}"`;
                   ],
                 },
               ],
-              max_tokens: 800,
-              temperature: 0.2,
+              max_tokens: 1500,
+              temperature: 0.3,
             }),
           });
           if (!res.ok) throw new Error('Mistral QA failed');
@@ -684,8 +698,8 @@ Current User Message: "${question}"`;
                   ],
                 },
               ],
-              max_tokens: 800,
-              temperature: 0.2,
+              max_tokens: 1500,
+              temperature: 0.3,
             }),
           });
           if (!res.ok) throw new Error('OpenRouter QA failed');
@@ -706,10 +720,13 @@ Current User Message: "${question}"`;
     }
   }
 
-  // Fallback to Groq LPU using extracted metadata
+  // Fallback to Groq LPU using extracted metadata and universal intelligence
   if (groqApiKey) {
     try {
-      const contextText = `Visual Description: ${storedContext.visual_description || 'N/A'}\nOCR Text: ${storedContext.ocr_text || 'None'}\nTags: ${(storedContext.tags || []).join(', ')}`;
+      const groqUserContent = contextText
+        ? `${qaPrompt}\n\n[Indexed Screenshot Context]:\n${contextText}`
+        : qaPrompt;
+
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
@@ -718,11 +735,11 @@ Current User Message: "${question}"`;
           messages: [
             {
               role: 'user',
-              content: `Based on this indexed image metadata for "${originalFilename}":\n${contextText}\n${historyText}\nAnswer concisely and helpfully: "${question}"`,
+              content: groqUserContent,
             },
           ],
-          max_tokens: 600,
-          temperature: 0.2,
+          max_tokens: 1500,
+          temperature: 0.3,
         }),
       });
       if (res.ok) {
