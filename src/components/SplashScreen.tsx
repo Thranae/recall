@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RecallEmblem } from './RecallEmblem';
-import { ChevronRight } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -69,19 +68,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     return clearAllTimers;
   }, [effectiveDuration, variant]);
 
-  const handleSkip = () => {
-    if (isExiting || completedRef.current) return;
-    timersRef.current.forEach((id) => window.clearTimeout(id));
-    timersRef.current = [];
-    setExitDurationMs(220);
-    setIsExiting(true);
-    const tDone = window.setTimeout(() => {
-      if (completedRef.current) return;
-      completedRef.current = true;
-      onCompleteRef.current();
-    }, 230);
-    timersRef.current.push(tDone);
-  };
 
   const getLaunchSlotStyle = (slot: 1 | 2 | 3): React.CSSProperties => {
     const isActive = phase === slot;
@@ -176,17 +162,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         )}
       </div>
 
-      {/* Top Subtle Skip Action */}
-      <div className="w-full flex justify-end relative z-10">
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="flex items-center gap-1 rounded-full px-3 py-1 bg-white/80 hover:bg-white border border-white/90 text-[11px] font-medium text-slate-500 hover:text-slate-800 shadow-2xs transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] cursor-pointer"
-        >
-          <span>Skip</span>
-          <ChevronRight className="h-3 w-3 stroke-[2]" />
-        </button>
-      </div>
+      {/* Top Spacer for Optical Balance with Bottom Indicator */}
+      <div className="h-8 w-full relative z-10" />
 
       {/* Center Stage */}
       {variant === 'launch' ? (
