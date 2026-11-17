@@ -15,6 +15,8 @@ import {
   CheckSquare,
   Pencil,
   RotateCcw,
+  Download,
+  X,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, VaultInsightsSummary } from '../types';
@@ -96,6 +98,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
   const [renameInput, setRenameInput] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
+  const [renameSuccessInfo, setRenameSuccessInfo] = useState<{ id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    if (!renameSuccessInfo) return;
+    const timer = setTimeout(() => setRenameSuccessInfo(null), 6000);
+    return () => clearTimeout(timer);
+  }, [renameSuccessInfo]);
 
   // Notify parent of selection mode changes so bottom navigation hides cleanly
   useEffect(() => {
@@ -200,23 +209,49 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     setRenameInput(targetScreenshot.original_filename);
   }, [selectedIds, screenshots]);
 
-  const handleSaveRename = async () => {
+  const handleDownloadFile = async (id: string, filename: string) => {
+    try {
+      const url = api.getImageUrl(id);
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      const link = document.createElement('a');
+      link.href = api.getImageUrl(id);
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleSaveRename = async (shouldDownload = false) => {
     if (!renameTarget || !renameInput.trim() || isRenaming) return;
     const trimmed = renameInput.trim();
-    if (trimmed === renameTarget.name) {
-      setRenameTarget(null);
-      return;
-    }
+    const targetId = renameTarget.id;
     setIsRenaming(true);
     try {
-      await api.renameScreenshot(renameTarget.id, trimmed);
+      if (trimmed !== renameTarget.name) {
+        await api.renameScreenshot(targetId, trimmed);
+      }
+      setRenameSuccessInfo({ id: targetId, name: trimmed });
       setRenameTarget(null);
       setIsSelectionMode(false);
       setSelectedIds(new Set());
       onRefresh?.();
+      if (shouldDownload) {
+        await handleDownloadFile(targetId, trimmed);
+      }
     } catch (err) {
       console.error('Failed to rename screenshot:', err);
-      alert('Failed to rename screenshot');
     } finally {
       setIsRenaming(false);
     }
@@ -776,7 +811,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 className="w-full rounded-2xl bg-white border border-[#3478F6]/40 px-3.5 py-2.5 text-xs font-bold text-[#172B4D] shadow-inner focus:outline-none focus:ring-2 focus:ring-[#3478F6]/25"
               />
 
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="flex items-center justify-end gap-2 pt-1 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setRenameTarget(null)}
@@ -787,9 +822,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveRename}
+                  onClick={() => handleSaveRename(false)}
+                  disabled={isRenaming || !renameInput.trim()}
+                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-[#3478F6] border border-[#3478F6]/30 hover:bg-blue-50/60 cursor-pointer disabled:opacity-50"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveRename(true)}
                   disabled={isRenaming || !renameInput.trim()}
                   className="plump-liquid-blue-btn flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer disabled:opacity-50"
+                  title="Save renamed screenshot and download immediately"
                 >
                   {isRenaming ? (
                     <>
@@ -797,11 +841,52 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Save</span>
+                    <>
+                      <Download className="h-3.5 w-3.5 stroke-[2.3]" />
+                      <span>Save & Download</span>
+                    </>
                   )}
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 5b. Floating Success Pill with Download Option */}
+      <AnimatePresence>
+        {renameSuccessInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 max-w-sm w-[92%] flex items-center justify-between gap-3 px-4 py-2.5 rounded-full bg-white/95 backdrop-blur-xl border border-blue-200/60 shadow-lg text-xs"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="font-semibold text-slate-800 truncate">
+                Renamed to <strong className="text-[#3478F6]">{renameSuccessInfo.name}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleDownloadFile(renameSuccessInfo.id, renameSuccessInfo.name)}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white bg-[#3478F6] hover:bg-blue-600 active:scale-95 transition-all shadow-2xs cursor-pointer"
+              >
+                <Download className="h-3 w-3 stroke-[2.4]" />
+                <span>Download</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRenameSuccessInfo(null)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+                aria-label="Dismiss"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

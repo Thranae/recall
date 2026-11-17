@@ -61,3 +61,4 @@ export async function toggleStatusBar(): Promise<boolean> {
   const current = isFullscreenActive();
   return setStatusBarHidden(!current);
 }
+

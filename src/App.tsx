@@ -37,6 +37,7 @@ export const App: React.FC = () => {
   const [searchCategory, setSearchCategory] = useState('all');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Modals / Sheets
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -154,16 +155,19 @@ export const App: React.FC = () => {
     if (e) e.preventDefault();
     if (!query.trim()) {
       setSearchResults(null);
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
+    setSearchError(null);
     try {
       const res = await api.search(query, searchCategory);
       setSearchResults(res);
-    } catch (err) {
+      setSearchError(null);
+    } catch (err: any) {
       console.warn('Search failed:', err);
-      // Clean fallback: clear results gracefully without blocking browser alert modals
+      setSearchError(err?.message || 'Search request failed. Please check connectivity.');
       setSearchResults({
         query,
         parsed_intent: {
@@ -183,6 +187,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!query.trim()) {
       setSearchResults(null);
+      setSearchError(null);
       return;
     }
 
@@ -196,6 +201,7 @@ export const App: React.FC = () => {
   const handleClearSearch = () => {
     setQuery('');
     setSearchResults(null);
+    setSearchError(null);
   };
 
   const handleOpenDetail = (id: string, searchItem?: SearchResultItem) => {
@@ -380,6 +386,8 @@ export const App: React.FC = () => {
             onSelectCategory={setSearchCategory}
             isSearching={isSearching}
             searchResults={searchResults}
+            searchError={searchError}
+            onRetrySearch={() => handleSearch()}
             onSelectScreenshot={(id, res) => handleOpenDetail(id, res)}
           />
         )}

@@ -31,6 +31,8 @@ interface SearchViewProps {
   onSelectCategory: (cat: string) => void;
   isSearching: boolean;
   searchResults: SearchResponse | null;
+  searchError?: string | null;
+  onRetrySearch?: () => void;
   onSelectScreenshot: (id: string, searchResult?: SearchResultItem) => void;
 }
 
@@ -76,6 +78,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
   onSelectCategory,
   isSearching,
   searchResults,
+  searchError,
+  onRetrySearch,
   onSelectScreenshot,
 }) => {
   const [isAskingAi, setIsAskingAi] = React.useState(false);
@@ -355,6 +359,24 @@ export const SearchView: React.FC<SearchViewProps> = ({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="flex items-center justify-between gap-3 rounded-[20px] bg-rose-50/90 border border-rose-200/80 px-4 py-3 text-xs text-rose-700 shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+            <span className="font-semibold">{searchError}</span>
+          </div>
+          {onRetrySearch && (
+            <button
+              type="button"
+              onClick={onRetrySearch}
+              className="shrink-0 rounded-full bg-white px-3 py-1 font-bold text-rose-600 border border-rose-200/80 hover:bg-rose-50 active:scale-95 transition-all shadow-2xs cursor-pointer"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 

@@ -61,14 +61,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const apiBase = getApiBase();
-  const res = await fetch(`${apiBase}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (netErr) {
+    // Retry once after 350ms on mobile network transient drop
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    res = await fetch(`${apiBase}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  }
 
   const contentType = res.headers.get('content-type') || '';
 
   if (!res.ok) {
+    if (res.status === 401) {
+      removeAuthToken();
+    }
     if (contentType.includes('application/json')) {
       const errorBody = await res.json().catch(() => ({}));
       const err = new Error(errorBody.error || `Request failed with status ${res.status}`);
