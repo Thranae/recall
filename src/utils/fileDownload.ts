@@ -28,20 +28,20 @@ export async function downloadImageFile(urlOrDataUrl: string, rawFilename: strin
         });
       }
 
-      // Write to device cache or documents
+      // Write to device public documents or cache
       let writeRes;
       try {
         writeRes = await Filesystem.writeFile({
           path: filename,
           data: base64Data,
-          directory: Directory.Cache,
+          directory: Directory.Documents,
           recursive: true,
         });
       } catch {
         writeRes = await Filesystem.writeFile({
           path: filename,
           data: base64Data,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           recursive: true,
         });
       }
@@ -62,8 +62,11 @@ export async function downloadImageFile(urlOrDataUrl: string, rawFilename: strin
 
       // Also trigger Android WebView DownloadListener for direct Downloads folder enqueue
       if (!urlOrDataUrl.startsWith('data:')) {
+        const finalUrl = urlOrDataUrl.includes('?')
+          ? (urlOrDataUrl.includes('filename=') ? urlOrDataUrl : `${urlOrDataUrl}&filename=${encodeURIComponent(filename)}`)
+          : `${urlOrDataUrl}?filename=${encodeURIComponent(filename)}`;
         const link = document.createElement('a');
-        link.href = urlOrDataUrl;
+        link.href = finalUrl;
         link.download = filename;
         link.target = '_blank';
         document.body.appendChild(link);
@@ -111,3 +114,4 @@ export async function downloadImageFile(urlOrDataUrl: string, rawFilename: strin
     return false;
   }
 }
+

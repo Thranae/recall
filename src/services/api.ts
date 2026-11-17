@@ -392,9 +392,13 @@ export const api = {
     }>(`/screenshots/${id}`);
   },
 
-  getImageUrl(id: string): string {
+  getImageUrl(id: string, filename?: string): string {
     const token = getAuthToken();
-    return `${getApiBase()}/screenshots/image/${id}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    const params = new URLSearchParams();
+    if (token) params.set('token', token);
+    if (filename) params.set('filename', filename);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return `${getApiBase()}/screenshots/image/${id}${qs}`;
   },
 
   async updateMetadata(id: string, updates: { original_filename?: string; name?: string; category?: string; visual_description?: string; tags?: string[] }): Promise<void> {

@@ -211,8 +211,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   }, [selectedIds, screenshots]);
 
   const handleDownloadFile = async (id: string, filename: string) => {
-    const url = api.getImageUrl(id);
-    await downloadImageFile(url, filename);
+    const cleanFilename = filename.endsWith('.png') || filename.endsWith('.jpg') || filename.endsWith('.jpeg') || filename.endsWith('.webp')
+      ? filename
+      : `${filename}.png`;
+    const url = api.getImageUrl(id, cleanFilename);
+    await downloadImageFile(url, cleanFilename);
   };
 
   const handleSaveRename = async (shouldDownload = false) => {

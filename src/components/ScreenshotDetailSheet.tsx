@@ -676,21 +676,32 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     document.body.removeChild(link);
   };
 
-  const handleDownloadRedacted = async () => {
-    if (!redactedResult) return;
-    const baseName = (data?.screenshot?.original_filename || screenshotId || 'image').replace(
+  const handleDownload = async (overrideName?: string) => {
+    if (!screenshotId && !redactedResult) return;
+    const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
       /\.[a-z0-9]+$/i,
       ''
     );
-    const filename = `redacted-${baseName}.png`;
-    await downloadImageFile(redactedResult.dataUrl, filename);
+
+    // 1. If screenshot is in redacted mode or redactedResult exists -> ALWAYS download the redacted image!
+    if (redactedResult?.dataUrl) {
+      const filename = baseName.toLowerCase().startsWith('redacted-') ? `${baseName}.png` : `redacted-${baseName}.png`;
+      await downloadImageFile(redactedResult.dataUrl, filename);
+      return;
+    }
+
+    // 2. Unredacted screenshot with the active renamed filename
+    const filename = `${baseName}.png`;
+    const url = api.getImageUrl(screenshotId!, filename);
+    await downloadImageFile(url, filename);
+  };
+
+  const handleDownloadRedacted = async () => {
+    await handleDownload();
   };
 
   const handleDownloadScreenshot = async () => {
-    if (!screenshotId) return;
-    const filename = data?.screenshot?.original_filename || `screenshot-${screenshotId}.png`;
-    const url = api.getImageUrl(screenshotId);
-    await downloadImageFile(url, filename);
+    await handleDownload();
   };
 
   const handleAskImage = async (customQuestion?: string) => {
@@ -818,11 +829,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
       }
       setIsEditingName(false);
       if (shouldDownload) {
-        await handleDownloadScreenshot();
+        await handleDownload(trimmed);
       }
     } catch (err) {
       console.error('Failed to rename screenshot:', err);
-      alert('Failed to rename screenshot');
     } finally {
       setIsSavingName(false);
     }

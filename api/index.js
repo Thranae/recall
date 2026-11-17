@@ -69723,7 +69723,7 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
     const userEmail = req.user?.email;
     const { id } = req.params;
     const getScreenshot = db.prepare(`
-      SELECT storage_key, mime_type, image_data 
+      SELECT original_filename, storage_key, mime_type, image_data 
       FROM screenshots 
       WHERE id = ? AND (user_id = ? OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != '')))
     `);
@@ -69732,6 +69732,8 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
       res.status(404).json({ error: "Image not found or access denied" });
       return;
     }
+    const requestedFilename = typeof req.query.filename === "string" && req.query.filename.trim() ? req.query.filename.trim() : row.original_filename || `screenshot-${id}.png`;
+    const cleanFilename = requestedFilename.replace(/["\r\n]/g, "");
     const fullPath = path5.join(UPLOADS_BASE, row.storage_key);
     let imgBuffer = null;
     if (fs7.existsSync(fullPath)) {
@@ -69765,6 +69767,7 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
           console.warn("Could not persist converted JPEG back to DB:", persistErr);
         }
         res.setHeader("Content-Type", converted.mimeType);
+        res.setHeader("Content-Disposition", `inline; filename="${cleanFilename}"; filename*=UTF-8''${encodeURIComponent(cleanFilename)}`);
         res.setHeader("Cache-Control", "public, max-age=86400");
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.send(converted.buffer);
@@ -69775,6 +69778,7 @@ router2.get("/image/:id", authMiddleware, async (req, res) => {
     }
     const contentType = detectImageMimeType(imgBuffer, row.mime_type);
     res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${cleanFilename}"; filename*=UTF-8''${encodeURIComponent(cleanFilename)}`);
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.send(imgBuffer);

@@ -65,15 +65,28 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
                     try {
-                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                        request.setMimeType(mimetype);
+                        Uri parsedUri = Uri.parse(url);
+                        String customName = parsedUri.getQueryParameter("filename");
+                        String filename;
+                        if (customName != null && !customName.trim().isEmpty()) {
+                            filename = customName.trim();
+                            if (!filename.contains(".")) {
+                                filename += (mimetype != null && mimetype.contains("png")) ? ".png" : ".jpg";
+                            }
+                        } else {
+                            filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+                        }
+
+                        DownloadManager.Request request = new DownloadManager.Request(parsedUri);
+                        if (mimetype != null && !mimetype.isEmpty()) {
+                            request.setMimeType(mimetype);
+                        }
                         String cookies = CookieManager.getInstance().getCookie(url);
                         if (cookies != null) {
                             request.addRequestHeader("cookie", cookies);
                         }
                         request.addRequestHeader("User-Agent", userAgent);
-                        request.setDescription("Downloading screenshot from Recall...");
-                        String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+                        request.setDescription("Downloading " + filename);
                         request.setTitle(filename);
                         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
