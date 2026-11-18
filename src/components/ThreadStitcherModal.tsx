@@ -257,7 +257,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                     <h3 className="text-[14px] font-bold text-[#172B4D] truncate leading-tight">
                       {activeThread.title}
                     </h3>
-                    <span className="liquid-category-badge !h-5 !px-2 text-[9px] font-extrabold text-[#3478F6] shrink-0">
+                    <span className="liquid-filter-chip liquid-filter-chip-xs !font-extrabold text-[#3478F6] shrink-0">
                       THREAD
                     </span>
                   </div>
@@ -348,7 +348,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                         {/* Connected Seam Indicator Between Stitched Parts */}
                         {idx > 0 && (
                           <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-center -translate-y-1/2 pointer-events-none">
-                            <div className="liquid-category-badge !h-5 !px-2.5 !gap-1.5 shadow-md !text-[9.5px] !font-bold text-[#3478F6] border border-blue-200/50">
+                            <div className="liquid-filter-chip liquid-filter-chip-xs shadow-md !font-bold text-[#3478F6] border border-blue-200/50">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#3478F6] animate-pulse" />
                               <span>Connected Thread</span>
                             </div>
@@ -357,7 +357,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
                         {/* Top Overlay Badges: Left Part Number, Right Detail Launcher */}
                         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-                          <div className="liquid-category-badge !h-7 !px-3 !gap-1.5 shadow-md pointer-events-none">
+                          <div className="liquid-filter-chip liquid-filter-chip-sm shadow-md pointer-events-none">
                             <Layers className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
                             <span className="text-[11px] font-bold text-[#172B4D]">
                               Part {idx + 1} of {activeThread.screenshots.length}
@@ -368,7 +368,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                             <button
                               type="button"
                               onClick={() => onSelectScreenshot(sc.id)}
-                              className="liquid-category-badge !h-7 !px-3 !gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
+                              className="liquid-filter-chip liquid-filter-chip-sm shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
                               title="Open full screenshot details"
                             >
                               <span className="text-[11px] font-bold text-[#3478F6]">Detail</span>

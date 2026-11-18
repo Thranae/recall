@@ -30,6 +30,8 @@ import {
   Undo2,
   Pencil,
   Bot,
+  FileText,
+  Info,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
@@ -898,7 +900,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               Details
             </span>
             {data?.screenshot.category && (
-              <span className="liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold tracking-wider">
+              <span className="liquid-filter-chip liquid-filter-chip-sm font-bold tracking-wider text-[#3478F6]">
                 {data.screenshot.category.toUpperCase()}
               </span>
             )}
@@ -1316,7 +1318,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     } ${
                       isRedactedMode || isRedacting || isAiRedacting
                         ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
-                        : 'liquid-category-badge text-[#172B4D]'
+                        : 'liquid-filter-chip liquid-filter-chip-xs text-[#172B4D]'
                     }`}
                   >
                     {isRedacting || isAiRedacting ? (
@@ -1345,7 +1347,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     type="button"
                     onClick={() => setIsImageExpanded(true)}
                     disabled={isRedacting || isAiRedacting}
-                    className={`flex items-center gap-1 rounded-full liquid-category-badge px-2.5 py-0.5 text-[9.5px] font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
+                    className={`flex items-center gap-1 rounded-full liquid-filter-chip liquid-filter-chip-xs font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
                       isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
                     }`}
                   >
@@ -1525,41 +1527,36 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
           )}
 
-          {/* Symmetrical 3-Tab Segmented Capsule */}
-          <div className="grid grid-cols-3 gap-1.5 w-full p-1 rounded-[22px] bg-white/75 backdrop-blur-xl border border-white/90 shadow-[0_2px_10px_rgba(23,43,77,0.04)]">
-            <button
-              type="button"
-              onClick={() => setActiveTab('content')}
-              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
-                activeTab === 'content'
-                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
-              }`}
-            >
-              Content
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('ocr')}
-              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
-                activeTab === 'ocr'
-                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
-              }`}
-            >
-              Text
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('info')}
-              className={`flex-1 flex items-center justify-center py-2 px-3 rounded-[18px] text-[11.5px] font-bold transition-all duration-200 cursor-pointer ${
-                activeTab === 'info'
-                  ? 'bg-gradient-to-b from-white to-blue-50/70 text-[#3478F6] shadow-[0_2px_8px_rgba(52,120,246,0.14)] border border-blue-200/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
-              }`}
-            >
-              Info
-            </button>
+          {/* Symmetrical 3-Tab Liquid Filter Chips (Same as Library Page) */}
+          <div className="grid grid-cols-3 gap-2.5 w-full">
+            {[
+              { id: 'content', label: 'Content', icon: Eye },
+              { id: 'ocr', label: 'Text', icon: FileText },
+              { id: 'info', label: 'Info', icon: Info },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              const isSelected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                      try {
+                        navigator.vibrate(8);
+                      } catch {}
+                    }
+                    setActiveTab(tab.id as 'content' | 'ocr' | 'info');
+                  }}
+                  className={`liquid-filter-chip w-full flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer ${
+                    isSelected ? 'liquid-filter-chip-active' : ''
+                  }`}
+                >
+                  <TabIcon className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${isSelected ? 'text-[#3478F6]' : 'text-slate-500'}`} />
+                  <span className="whitespace-nowrap text-[12px] font-semibold">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {loading ? (
@@ -1581,7 +1578,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                         <Eye className="h-4 w-4 text-[#3478F6] stroke-[2]" />
                         <span>AI Visual Description</span>
                       </div>
-                      <span className="liquid-category-badge px-2 py-0.5 text-[9px] font-bold text-[#3478F6]">
+                      <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-[#3478F6]">
                         Multimodal Vision
                       </span>
                     </div>
@@ -2069,22 +2066,34 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               {/* ========================================================= */}
               {activeTab === 'info' && (
                 <div className="space-y-3 text-xs">
-                  {/* Category Selector */}
-                  <div className="rounded-[18px] liquid-glass-card p-3.5 space-y-1.5">
+                  {/* Category Selector with Liquid Filter Chips */}
+                  <div className="rounded-[18px] liquid-glass-card p-3.5 space-y-2">
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                       Category Classification
                     </label>
-                    <select
-                      value={data?.screenshot.category || 'other'}
-                      onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full rounded-[14px] bg-white/90 border border-white p-2.5 text-xs text-slate-800 font-semibold focus:outline-none backdrop-blur-xs shadow-2xs"
-                    >
-                      <option value="chat">Chat Conversation</option>
-                      <option value="game">Gaming Stats (BGMI / PUBG / COD)</option>
-                      <option value="product">Product / E-Commerce</option>
-                      <option value="poster_document">Poster / Document / Bill</option>
-                      <option value="other">Other Screenshot</option>
-                    </select>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'chat', label: 'Chat' },
+                        { id: 'game', label: 'Gaming' },
+                        { id: 'product', label: 'Product' },
+                        { id: 'poster_document', label: 'Document' },
+                        { id: 'other', label: 'Other' },
+                      ].map((cat) => {
+                        const isCatSelected = (data?.screenshot.category || 'other') === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleCategoryChange(cat.id)}
+                            className={`liquid-filter-chip liquid-filter-chip-sm cursor-pointer ${
+                              isCatSelected ? 'liquid-filter-chip-active font-bold text-[#3478F6]' : 'text-slate-600 font-semibold'
+                            }`}
+                          >
+                            <span>{cat.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* AI Engine Status Card */}

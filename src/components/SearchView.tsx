@@ -396,17 +396,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
               </span>
 
               {activeResults.parsed_intent.is_conversation_sequence && (
-                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px]">
+                <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-[#3478F6]">
                   Chat Sequence
                 </span>
               )}
               {activeResults.parsed_intent.is_game_stat_query && (
-                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] text-amber-700">
+                <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-amber-700">
                   Game Filter
                 </span>
               )}
               {activeResults.parsed_intent.is_visual_query && (
-                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] text-indigo-700">
+                <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-indigo-700">
                   Visual Subject
                 </span>
               )}
@@ -498,7 +498,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   </span>
                 </div>
                 {activeResults.results[0].precise_value.badge && (
-                  <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] font-bold text-[#3478F6]">
+                  <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-[#3478F6]">
                     {activeResults.results[0].precise_value.badge}
                   </span>
                 )}

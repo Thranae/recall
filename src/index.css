@@ -579,6 +579,20 @@ input, textarea {
   transform: scale(0.96);
 }
 
+.liquid-filter-chip-sm {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  gap: 5px !important;
+}
+
+.liquid-filter-chip-xs {
+  height: 22px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+  gap: 4px !important;
+}
+
 /* 4. ARCTIC ELECTRIC BLUE #3478F6 PRIMARY BUTTON */
 .ios-liquid-primary,
 .primary-liquid-button,

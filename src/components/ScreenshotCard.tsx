@@ -373,23 +373,23 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
           </div>
         )}
 
-        {/* Floating Liquid Glass Category Badge */}
+        {/* Floating Liquid Filter Chip Badge (Same as Library Page) */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-          <span className="liquid-category-badge shadow-xs">
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2] text-[#3478F6]" />
-            <span className="leading-none truncate text-[#172B4D]">{label}</span>
+          <span className="liquid-filter-chip liquid-filter-chip-sm shadow-sm">
+            <CatIcon className="h-3.5 w-3.5 shrink-0 stroke-[2.2] text-[#3478F6]" />
+            <span className="leading-none truncate text-[#172B4D] font-bold">{label}</span>
           </span>
 
           {!isSelectionMode && screenshot.processing_status !== 'ready' && (
             <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full liquid-glass-badge p-0 shadow-xs text-amber-600"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full liquid-filter-chip p-0 shadow-sm text-amber-600 !h-6 !w-6"
             >
               {screenshot.processing_status === 'processing' ? (
-                <Clock className="h-2.5 w-2.5 animate-spin stroke-[2.2]" />
+                <Clock className="h-3 w-3 animate-spin stroke-[2.2]" />
               ) : screenshot.processing_status === 'queued' ? (
-                <Clock className="h-2.5 w-2.5 stroke-[2.2]" />
+                <Clock className="h-3 w-3 stroke-[2.2]" />
               ) : (
-                <AlertCircle className="h-2.5 w-2.5 text-rose-500 stroke-[2.2]" />
+                <AlertCircle className="h-3 w-3 text-rose-500 stroke-[2.2]" />
               )}
             </span>
           )}
@@ -404,14 +404,14 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                 e.stopPropagation();
                 onOpenThreadReel?.(threadGroup);
               }}
-              className="liquid-category-badge !h-6.5 !px-2.5 !gap-1.5 active:scale-95 transition-transform cursor-pointer shadow-md text-[#172B4D] hover:brightness-105"
+              className="liquid-filter-chip liquid-filter-chip-sm active:scale-95 transition-transform cursor-pointer shadow-md text-[#172B4D] hover:brightness-105"
               title={`View conversation thread (${threadGroup.screenshots.length} connected screenshots)`}
             >
-              <Layers className="h-3 w-3 shrink-0 stroke-[2.3] text-[#3478F6]" />
-              <span className="text-[10px] font-bold tracking-tight text-[#172B4D]">
+              <Layers className="h-3.5 w-3.5 shrink-0 stroke-[2.3] text-[#3478F6]" />
+              <span className="text-[11px] font-bold tracking-tight text-[#172B4D]">
                 Thread
               </span>
-              <span className="text-[9px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.2 rounded-full">
+              <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.2 rounded-full">
                 {threadGroup.screenshots.length}
               </span>
             </button>
@@ -421,7 +421,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
         {/* Search match percentage pill on thumbnail */}
         {searchResult && (
           <div className="absolute bottom-2 right-2 z-10">
-            <span className="liquid-category-badge px-2 py-0.5 font-mono text-[9.5px] font-bold text-[#3478F6] shadow-xs">
+            <span className="liquid-filter-chip liquid-filter-chip-sm font-mono text-[10px] font-bold text-[#3478F6] shadow-sm">
               {Math.round(searchResult.match_score * 100)}% match
             </span>
           </div>
@@ -435,7 +435,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
             <div>
               <div className="flex items-center justify-between gap-1 mb-1">
                 {searchResult.precise_value.badge && (
-                  <span className="liquid-category-badge px-2 py-0.5 text-[9px] font-bold tracking-wider text-[#3478F6]">
+                  <span className="liquid-filter-chip liquid-filter-chip-xs font-bold tracking-wider text-[#3478F6]">
                     {searchResult.precise_value.badge}
                   </span>
                 )}
@@ -454,7 +454,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                   {searchResult.matched_tags.slice(0, 3).map((tag, idx) => (
                     <span
                       key={idx}
-                      className="rounded-full bg-white/80 border border-blue-100/80 px-1.5 py-0.5 text-[9px] font-semibold text-[#3478F6]"
+                      className="liquid-filter-chip liquid-filter-chip-xs !font-semibold text-[#3478F6]"
                     >
                       #{tag}
                     </span>
@@ -491,7 +491,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
               })}
             </span>
             {tags.length > 0 && (
-              <span className="truncate min-w-0 max-w-[50%] font-semibold text-[#3478F6] text-right">
+              <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] truncate max-w-[55%] shrink-0">
                 #{tags[0]}
               </span>
             )}

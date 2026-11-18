@@ -44,8 +44,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <div
-      className={`fixed bottom-0 inset-x-0 z-40 pointer-events-none select-none transition-all duration-200 ease-out ${
-        visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      className={`fixed bottom-0 inset-x-0 z-40 select-none transition-all duration-200 ease-out ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none invisible'
       }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >

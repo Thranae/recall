@@ -456,7 +456,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 ? 'Conversations'
                 : 'Other Screenshots'}
           </h2>
-          <span className="liquid-category-badge px-2 py-0.5 text-[11px] font-bold font-mono text-[#3478F6] shrink-0">
+          <span className="liquid-filter-chip liquid-filter-chip-xs font-bold font-mono text-[#3478F6] shrink-0">
             {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
           </span>
         </div>

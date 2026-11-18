@@ -92,7 +92,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
                 <h3 className="text-sm font-bold text-[#172B4D]">
                   Vault Digest
                 </h3>
-                <span className="liquid-category-badge px-2 py-0.5 text-[9.5px] font-bold text-amber-700">
+                <span className="liquid-filter-chip liquid-filter-chip-xs font-bold text-amber-700">
                   PROACTIVE AI
                 </span>
               </div>

@@ -83,8 +83,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <div
-      className={`fixed top-0 inset-x-0 z-30 pointer-events-none select-none transition-all duration-200 ease-out ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      className={`fixed top-0 inset-x-0 z-30 select-none transition-all duration-200 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6 pointer-events-none invisible'
       }`}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
