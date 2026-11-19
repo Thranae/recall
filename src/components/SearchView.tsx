@@ -19,8 +19,9 @@ import {
   Volume2,
 } from 'lucide-react';
 import { api } from '../services/api';
-import type { SearchResponse, SearchResultItem, VaultAnswer } from '../types';
+import type { SearchResponse, SearchResultItem, VaultAnswer, ThreadGroup } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
+import { ThreadStitcherModal } from './ThreadStitcherModal';
 
 interface SearchViewProps {
   query: string;
@@ -89,6 +90,33 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [isListening, setIsListening] = React.useState(false);
   const [isSpeaking, setIsSpeaking] = React.useState(false);
   const recognitionRef = React.useRef<any>(null);
+
+  const [threads, setThreads] = React.useState<ThreadGroup[]>([]);
+  const [selectedThread, setSelectedThread] = React.useState<ThreadGroup | null>(null);
+  const [selectedThreadInitialIndex, setSelectedThreadInitialIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    api
+      .getThreads()
+      .then((res) => {
+        if (res && res.threads) setThreads(res.threads);
+      })
+      .catch(() => {});
+  }, []);
+
+  const threadByScreenshotId = React.useMemo(() => {
+    const map = new Map<string, ThreadGroup>();
+    for (const t of threads) {
+      const ids =
+        t.screenshotIds && t.screenshotIds.length > 0
+          ? t.screenshotIds
+          : t.screenshots?.map((s) => s.id) || [];
+      for (const id of ids) {
+        map.set(id, t);
+      }
+    }
+    return map;
+  }, [threads]);
 
   const speechSupported =
     typeof window !== 'undefined' &&
@@ -530,11 +558,30 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   screenshot={item.screenshot}
                   searchResult={item}
                   onClick={() => onSelectScreenshot(item.screenshot.id, item)}
+                  threadGroup={threadByScreenshotId.get(item.screenshot.id)}
+                  onOpenThreadReel={(t, initialIndex) => {
+                    setSelectedThread(t);
+                    setSelectedThreadInitialIndex(initialIndex ?? 0);
+                  }}
                 />
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {/* Thread Stitcher Reel Modal inside Search */}
+      {selectedThread && (
+        <ThreadStitcherModal
+          isOpen={Boolean(selectedThread)}
+          thread={selectedThread}
+          initialIndex={selectedThreadInitialIndex}
+          onClose={() => setSelectedThread(null)}
+          onSelectScreenshot={(id) => {
+            setSelectedThread(null);
+            onSelectScreenshot(id);
+          }}
+        />
       )}
     </div>
   );

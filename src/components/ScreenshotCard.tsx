@@ -395,41 +395,46 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
           )}
         </div>
 
-        {/* Stitched Conversation Thread sequential badge on thumbnail (Exact Container Pill Style as #badge) */}
-        {threadGroup && !isSelectionMode && (() => {
-          const partIndex = threadGroup.screenshotIds.indexOf(screenshot.id);
-          const partNumber = partIndex >= 0 ? partIndex + 1 : 1;
-          const totalParts = threadGroup.screenshots.length;
+        {/* Bottom Metadata Bar: Thread Badge & Search Match Pill without collisions */}
+        {(threadGroup || searchResult) && !isSelectionMode && (
+          <div className="absolute bottom-2 inset-x-2 flex items-center justify-between gap-1 pointer-events-none z-10">
+            {threadGroup ? (() => {
+              const ids =
+                threadGroup.screenshotIds && threadGroup.screenshotIds.length > 0
+                  ? threadGroup.screenshotIds
+                  : threadGroup.screenshots?.map((s) => s.id) || [];
+              const partIndex = ids.indexOf(screenshot.id);
+              const partNumber = partIndex >= 0 ? partIndex + 1 : 1;
+              const totalParts = threadGroup.screenshots?.length || ids.length || 1;
 
-          return (
-            <div className="absolute bottom-2 left-2 z-10">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenThreadReel?.(threadGroup, partIndex >= 0 ? partIndex : 0);
-                }}
-                className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active active:scale-95 transition-transform cursor-pointer shadow-sm hover:brightness-105 pointer-events-auto"
-                title={`Part ${partNumber} of ${totalParts} in conversation thread`}
-              >
-                <Layers className="h-3 w-3 shrink-0 stroke-[2.3] text-[#3478F6]" />
-                <span className="text-[10px] font-bold tracking-tight text-[#3478F6]">
-                  Thread
-                </span>
-                <span className="text-[9px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-1.5 py-0.2 rounded-full ml-0.5 shadow-2xs">
-                  Part {partNumber}
-                </span>
-              </button>
-            </div>
-          );
-        })()}
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenThreadReel?.(threadGroup, partIndex >= 0 ? partIndex : 0);
+                  }}
+                  className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active active:scale-95 transition-transform cursor-pointer shadow-sm hover:brightness-105 pointer-events-auto max-w-[70%]"
+                  title={`Part ${partNumber} of ${totalParts} in conversation thread`}
+                >
+                  <Layers className="h-3 w-3 shrink-0 stroke-[2.3] text-[#3478F6]" />
+                  <span className="text-[10px] font-bold tracking-tight text-[#3478F6]">
+                    Thread
+                  </span>
+                  <span className="text-[9px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-1.5 py-0.2 rounded-full ml-0.5 shadow-2xs">
+                    Part {partNumber}
+                  </span>
+                </button>
+              );
+            })() : (
+              <span className="pointer-events-none" />
+            )}
 
-        {/* Search match percentage pill on thumbnail */}
-        {searchResult && (
-          <div className="absolute bottom-2 right-2 z-10">
-            <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-mono text-[9.5px] font-bold text-[#3478F6] shadow-sm">
-              {Math.round(searchResult.match_score * 100)}% match
-            </span>
+            {searchResult && (
+              <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-mono text-[9px] font-bold text-[#3478F6] shadow-sm ml-auto pointer-events-auto shrink-0">
+                {Math.round(searchResult.match_score * 100)}%
+              </span>
+            )}
           </div>
         )}
       </div>

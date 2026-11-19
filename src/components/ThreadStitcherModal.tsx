@@ -413,17 +413,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                       {/* Horizontally Auto-Scrolling Number Buttons */}
                       <div
                         ref={partPillsContainerRef}
-                        className="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-3.5 max-w-[260px] xs:max-w-[320px] sm:max-w-[380px]"
-                        style={{
-                          maskImage:
-                            activeThread.screenshots.length > 5
-                              ? 'linear-gradient(to right, transparent 0%, black 8px, black calc(100% - 8px), transparent 100%)'
-                              : undefined,
-                          WebkitMaskImage:
-                            activeThread.screenshots.length > 5
-                              ? 'linear-gradient(to right, transparent 0%, black 8px, black calc(100% - 8px), transparent 100%)'
-                              : undefined,
-                        }}
+                        className="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 px-2 max-w-[280px] xs:max-w-[340px] sm:max-w-[400px]"
                       >
                         {activeThread.screenshots.map((sc, idx) => {
                           const isActive = activePartIndex === idx;
@@ -433,7 +423,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                               id={`thread-part-pill-${idx}`}
                               type="button"
                               onClick={() => scrollToPart(idx)}
-                              className={`min-w-[32px] h-7.5 px-2.5 inline-flex items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 cursor-pointer active:scale-90 shrink-0 ${
+                              className={`min-w-[32px] h-7.5 px-2 inline-flex items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
                                 isActive
                                   ? 'bg-gradient-to-b from-[#4A8CF7] via-[#3478F6] to-[#2060DC] text-white shadow-md shadow-blue-500/30 font-black scale-105 border border-white/70'
                                   : 'text-slate-600 hover:text-slate-900 bg-white/75 hover:bg-white border border-white/90 shadow-2xs'

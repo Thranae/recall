@@ -21,6 +21,7 @@ import { classifyScreenshotPrecisely, type PreciseCategory } from '../utils/clas
 import { ScreenshotCard } from './ScreenshotCard';
 import { AlbumStoryModal } from './AlbumStoryModal';
 import { CreateAlbumModal } from './CreateAlbumModal';
+import { ThreadStitcherModal } from './ThreadStitcherModal';
 
 interface AlbumsViewProps {
   screenshots: Screenshot[];
@@ -86,6 +87,8 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
   // Threads state from API
   const [threads, setThreads] = useState<ThreadGroup[]>([]);
+  const [selectedThread, setSelectedThread] = useState<ThreadGroup | null>(null);
+  const [selectedThreadInitialIndex, setSelectedThreadInitialIndex] = useState(0);
 
   useEffect(() => {
     api
@@ -95,6 +98,20 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       })
       .catch(() => {});
   }, []);
+
+  const threadByScreenshotId = useMemo(() => {
+    const map = new Map<string, ThreadGroup>();
+    for (const t of threads) {
+      const ids =
+        t.screenshotIds && t.screenshotIds.length > 0
+          ? t.screenshotIds
+          : t.screenshots?.map((s) => s.id) || [];
+      for (const id of ids) {
+        map.set(id, t);
+      }
+    }
+    return map;
+  }, [threads]);
 
   // AI-Driven Image Analysis & Deep Categorization for Albums
   const handleAiCurate = async () => {
@@ -812,6 +829,11 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                   key={s.id}
                   screenshot={s}
                   onClick={() => onSelectScreenshot(s.id)}
+                  threadGroup={threadByScreenshotId.get(s.id)}
+                  onOpenThreadReel={(t, initialIndex) => {
+                    setSelectedThread(t);
+                    setSelectedThreadInitialIndex(initialIndex ?? 0);
+                  }}
                 />
               ))}
             </div>
@@ -854,7 +876,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
           {/* Highlights Preview Montage */}
           {highlightsScreenshots.length > 0 && (
-            <div className="absolute right-3 top-3 bottom-3 w-32 opacity-25 overflow-hidden rounded-2xl pointer-events-none flex gap-1 transform rotate-6 scale-110">
+            <div className="absolute right-3 top-3 bottom-3 w-32 opacity-30 overflow-hidden rounded-2xl pointer-events-none flex gap-1.5">
               {highlightsScreenshots.slice(0, 2).map((s) => (
                 <img
                   key={s.id}
@@ -1028,98 +1050,90 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
               return (
                 <div
                   key={album.id}
-                  className="relative group cursor-pointer"
+                  className="relative rounded-[24px] overflow-hidden aspect-[1/1.22] border border-slate-200/90 shadow-sm flex flex-col justify-end bg-slate-900 active:scale-[0.98] transition-transform duration-150 cursor-pointer select-none"
                   onClick={() => setSelectedAlbumId(album.id)}
                 >
-                  {/* Physical 3D Stack Layer 2 (Bottom Angled Photo) */}
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-md rounded-3xl transform rotate-3 translate-y-1.5 -z-10 shadow-xs border border-white/80 transition-transform duration-200 group-hover:rotate-4" />
+                  {/* Full Cover Image Showcase */}
+                  {coverUrl ? (
+                    <div className="absolute inset-0 overflow-hidden bg-slate-900">
+                      <img
+                        src={coverUrl}
+                        alt={album.title}
+                        className="w-full h-full object-cover object-top"
+                        loading="lazy"
+                      />
+                      {/* Subtle Vignette so title and badges stand out without heavy white wash */}
+                      <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/90 via-white/70 to-slate-100 text-slate-300">
+                      <ImageIcon className="w-10 h-10 text-[#3478F6]/40" />
+                    </div>
+                  )}
 
-                  {/* Physical 3D Stack Layer 1 (Middle Angled Photo) */}
-                  <div className="absolute inset-0 bg-white/75 backdrop-blur-md rounded-3xl transform -rotate-2 -translate-y-0.5 -z-10 shadow-xs border border-white/80 transition-transform duration-200 group-hover:-rotate-3" />
+                  {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
+                  <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
+                    <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">
+                      {album.emoji || '📁'}
+                    </span>
+                    <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
+                      {album.screenshotIds.length}
+                    </span>
+                  </div>
 
-                  {/* Main Front Album Card with Full Cover Flow & Linear Blur Liquid Glass Plate */}
-                  <div className="relative rounded-3xl overflow-hidden aspect-[1/1.24] border border-white/95 shadow-lg transition-all duration-300 active:scale-98 group-hover:shadow-xl flex flex-col justify-end bg-white">
-                    {/* Cover Image Area - High Quality Top Showcase */}
-                    {coverUrl ? (
-                      <div className="absolute top-0 inset-x-0 h-[56%] overflow-hidden bg-slate-100">
-                        <img
-                          src={coverUrl}
-                          alt={album.title}
-                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
+                  {/* Sleek, Compact Plumpy Liquid Glass Content Plate (Reduced White Linear Bg) */}
+                  <div
+                    className="relative z-10 px-3 py-2 rounded-b-[24px] flex flex-col gap-1 border-t border-white/60"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(246, 250, 255, 0.86) 100%)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+                    }}
+                  >
+                    {/* Specular Edge Hairline */}
+                    <div
+                      className="absolute top-0 inset-x-4 h-[1px] pointer-events-none"
+                      style={{
+                        background:
+                          'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 75%, transparent 100%)',
+                      }}
+                    />
+
+                    {/* Curated / Category Badge - Compact Filter Chip */}
+                    <div className="flex items-center justify-between">
+                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] shadow-2xs">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: album.accentColor || '#3478F6' }}
                         />
-                        <div
-                          className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
-                          style={{
-                            background:
-                              'linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 40%, #FFFFFF 100%)',
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="absolute top-0 inset-x-0 h-[56%] flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/90 via-white/70 to-slate-100 text-slate-300">
-                        <ImageIcon className="w-10 h-10 text-[#3478F6]/40" />
-                      </div>
-                    )}
-
-                    {/* Solid White Substrate behind plate to completely seal any background text leak */}
-                    <div className="absolute bottom-0 inset-x-0 h-[48%] bg-white pointer-events-none" />
-
-                    {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
-                    <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
-                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">
-                        {album.emoji || '📁'}
-                      </span>
-                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
-                        {album.screenshotIds.length}
+                        <span className="truncate max-w-[100px]">{album.badge || 'Album'}</span>
                       </span>
                     </div>
 
-                    {/* iOS 27 Liquid Glass Linear Blur Plate */}
-                    <div className="liquid-glass-plate relative z-10 p-3 rounded-b-3xl flex flex-col gap-1.5 !bg-white shadow-xs">
-                      {/* Specular Edge Hairline */}
-                      <div
-                        className="absolute top-0 inset-x-4 h-[1px] pointer-events-none"
-                        style={{
-                          background:
-                            'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 75%, transparent 100%)',
+                    {/* Album Title - High Contrast Deep Navy */}
+                    <h3 className="font-extrabold text-[12px] text-[#172B4D] tracking-tight truncate leading-snug">
+                      {album.title}
+                    </h3>
+
+                    {/* Action Bar: View Collection + Play Button */}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/50">
+                      <span className="text-[9.5px] font-semibold text-[#4A5D78]">
+                        View collection
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlayAlbumStory(album);
                         }}
-                      />
-
-                      {/* Curated / Category Badge - Exact Filter Chip Style */}
-                      <div className="flex items-center justify-between">
-                        <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] shadow-2xs">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: album.accentColor || '#3478F6' }}
-                          />
-                          <span className="truncate max-w-[100px]">{album.badge || 'Album'}</span>
-                        </span>
-                      </div>
-
-                      {/* Album Title - High Contrast Deep Navy */}
-                      <h3 className="font-extrabold text-[12.5px] text-[#172B4D] tracking-tight truncate leading-snug">
-                        {album.title}
-                      </h3>
-
-                      {/* Action Bar: View Collection + Play Button */}
-                      <div className="mt-0.5 flex items-center justify-between pt-1 border-t border-slate-200/60">
-                        <span className="text-[10px] font-semibold text-[#4A5D78]">
-                          View collection
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlayAlbumStory(album);
-                          }}
-                          className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
-                          title="Play Story Reel"
-                        >
-                          <Play className="w-2.5 h-2.5 fill-[#3478F6] text-[#3478F6]" />
-                          <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Play</span>
-                        </button>
-                      </div>
+                        className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
+                        title="Play Story Reel"
+                      >
+                        <Play className="w-2 h-2 fill-[#3478F6] text-[#3478F6]" />
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider">Play</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1156,6 +1170,20 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
         onCreateAlbum={handleCreateAlbum}
         allScreenshots={screenshots}
       />
+
+      {/* Thread Stitcher Reel Modal inside Album */}
+      {selectedThread && (
+        <ThreadStitcherModal
+          isOpen={Boolean(selectedThread)}
+          thread={selectedThread}
+          initialIndex={selectedThreadInitialIndex}
+          onClose={() => setSelectedThread(null)}
+          onSelectScreenshot={(id) => {
+            setSelectedThread(null);
+            onSelectScreenshot(id);
+          }}
+        />
+      )}
     </div>
   );
 };

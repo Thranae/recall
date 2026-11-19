@@ -37,6 +37,7 @@ import { api } from '../services/api';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
 import { downloadImageFile } from '../utils/fileDownload';
 import { ScreenshotChatModal } from './ScreenshotChatModal';
+import { ThreadStitcherModal } from './ThreadStitcherModal';
 import {
   loadUntaintedImage,
   detectSensitiveRegions,
@@ -56,6 +57,7 @@ import type {
   AiRedactWordHint,
   LiveInspectorNode,
   ScreenshotChatMessage,
+  ThreadGroup,
 } from '../types';
 import { extractLiveInspectorNodes } from '../utils/visualInspector';
 
@@ -134,6 +136,37 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [newName, setNewName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Thread Membership State
+  const [matchedThread, setMatchedThread] = useState<ThreadGroup | null>(null);
+  const [threadPartNumber, setThreadPartNumber] = useState<number>(1);
+  const [isThreadReelOpen, setIsThreadReelOpen] = useState(false);
+
+  useEffect(() => {
+    if (!screenshotId) {
+      setMatchedThread(null);
+      return;
+    }
+    api
+      .getThreads()
+      .then((res) => {
+        const list = res?.threads || [];
+        for (const t of list) {
+          const ids =
+            t.screenshotIds && t.screenshotIds.length > 0
+              ? t.screenshotIds
+              : t.screenshots?.map((s) => s.id) || [];
+          const idx = ids.indexOf(screenshotId);
+          if (idx !== -1) {
+            setMatchedThread(t);
+            setThreadPartNumber(idx + 1);
+            return;
+          }
+        }
+        setMatchedThread(null);
+      })
+      .catch(() => setMatchedThread(null));
+  }, [screenshotId]);
 
   useEffect(() => {
     if (data?.screenshot?.original_filename) {
@@ -942,6 +975,19 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 </span>
               );
             })()}
+
+            {/* Conversation Thread Badge */}
+            {matchedThread && (
+              <button
+                type="button"
+                onClick={() => setIsThreadReelOpen(true)}
+                className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs active:scale-95 transition-all cursor-pointer hover:brightness-105 gap-1 shrink-0"
+                title={`View conversation thread reel (Part ${threadPartNumber} of ${matchedThread.screenshots?.length || matchedThread.screenshotIds?.length || 1})`}
+              >
+                <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
+                <span>Thread Part {threadPartNumber}</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -1336,6 +1382,23 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
+              {/* Floating Thread Part Badge on Screenshot Preview */}
+              {!isRedactedMode && matchedThread && (
+                <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsThreadReelOpen(true);
+                    }}
+                    className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-md active:scale-95 transition-all cursor-pointer hover:brightness-105 gap-1 pointer-events-auto"
+                    title="Open full conversation thread reel"
+                  >
+                    <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.3]" />
+                    <span>Thread Part {threadPartNumber}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Dedicated Interactive Control Dock for Screenshot */}
@@ -2300,6 +2363,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           chatMessages={chatMessages}
           setChatMessages={setChatMessages}
           initialPrompt={initialChatPrompt}
+        />
+      )}
+
+      {/* Thread Stitcher Reel Modal inside Screenshot Detail Sheet */}
+      {isThreadReelOpen && matchedThread && (
+        <ThreadStitcherModal
+          isOpen={isThreadReelOpen}
+          thread={matchedThread}
+          initialIndex={threadPartNumber - 1}
+          onClose={() => setIsThreadReelOpen(false)}
+          onSelectScreenshot={(id) => {
+            setIsThreadReelOpen(false);
+            if (onSelectRelated) {
+              onSelectRelated(id);
+            }
+          }}
         />
       )}
     </div>

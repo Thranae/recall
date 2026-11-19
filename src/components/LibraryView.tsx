@@ -89,7 +89,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const threadByScreenshotId = useMemo(() => {
     const map = new Map<string, ThreadGroup>();
     for (const t of threads) {
-      for (const id of t.screenshotIds) {
+      const ids =
+        t.screenshotIds && t.screenshotIds.length > 0
+          ? t.screenshotIds
+          : t.screenshots?.map((s) => s.id) || [];
+      for (const id of ids) {
         map.set(id, t);
       }
     }
