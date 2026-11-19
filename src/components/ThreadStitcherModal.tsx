@@ -312,8 +312,9 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                     <h3 className="text-[14px] font-bold text-[#172B4D] truncate leading-tight">
                       {activeThread.title}
                     </h3>
-                    <span className="liquid-filter-chip liquid-filter-chip-xs !font-extrabold text-[#3478F6] shrink-0">
-                      THREAD
+                    <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-bold text-[#3478F6] shrink-0 gap-1.5 shadow-sm">
+                      <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.4]" />
+                      <span>Thread</span>
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium truncate pt-0.5">
@@ -447,7 +448,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                         {/* Connected Seam Indicator Between Stitched Parts */}
                         {idx > 0 && (
                           <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-center -translate-y-1/2 pointer-events-none">
-                            <div className="liquid-filter-chip liquid-filter-chip-xs shadow-md !font-bold text-[#3478F6] border border-blue-200/50">
+                            <div className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-md !font-bold text-[#3478F6]">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#3478F6] animate-pulse" />
                               <span>Connected Thread</span>
                             </div>
@@ -456,10 +457,13 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
                         {/* Top Overlay Badges: Left Part Number, Right Detail Launcher */}
                         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-                          <div className="liquid-filter-chip liquid-filter-chip-sm shadow-md pointer-events-none">
+                          <div className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md pointer-events-none">
                             <Layers className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
-                            <span className="text-[11px] font-bold text-[#172B4D]">
-                              Part {idx + 1} of {activeThread.screenshots.length}
+                            <span className="text-[11px] font-bold text-[#3478F6]">
+                              Part
+                            </span>
+                            <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-1.5 py-0.5 rounded-full shadow-2xs">
+                              {idx + 1}/{activeThread.screenshots.length}
                             </span>
                           </div>
 
@@ -467,7 +471,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                             <button
                               type="button"
                               onClick={() => onSelectScreenshot(sc.id)}
-                              className="liquid-filter-chip liquid-filter-chip-sm shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
+                              className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
                               title="Open full screenshot details"
                             >
                               <span className="text-[11px] font-bold text-[#3478F6]">Detail</span>

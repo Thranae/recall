@@ -333,7 +333,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="liquid-filter-chip liquid-filter-chip-xs !font-extrabold uppercase tracking-wider text-[#3478F6] shadow-sm">
+                  <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold capitalize text-[#3478F6] shadow-sm">
                     {currentScreenshot.category || 'other'}
                   </span>
                   {currentScreenshot.created_at && (
@@ -358,7 +358,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
                     e.stopPropagation();
                     onOpenDetail(currentScreenshot.id);
                   }}
-                  className="liquid-filter-chip liquid-filter-chip-sm !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shrink-0 cursor-pointer shadow-md"
+                  className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shrink-0 cursor-pointer shadow-md"
                 >
                   <span>Detail</span>
                   <ExternalLink className="h-3 w-3 stroke-[2.4]" />

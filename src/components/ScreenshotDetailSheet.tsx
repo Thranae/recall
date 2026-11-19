@@ -899,11 +899,17 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <span className="text-[13px] font-bold text-slate-800">
               Details
             </span>
-            {data?.screenshot.category && (
-              <span className="liquid-filter-chip liquid-filter-chip-sm font-bold tracking-wider text-[#3478F6]">
-                {data.screenshot.category.toUpperCase()}
-              </span>
-            )}
+            {data?.screenshot.category && (() => {
+              const cat = data.screenshot.category;
+              const CatIcon = cat === 'chat' ? MessageSquare : cat === 'product' ? ShoppingBag : cat === 'poster_document' ? FileText : Tag;
+              const label = cat === 'chat' ? 'Chat' : cat === 'product' ? 'Product' : cat === 'poster_document' ? 'Document' : 'Other';
+              return (
+                <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active font-bold text-[#3478F6] shadow-sm">
+                  <CatIcon className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.2]" />
+                  <span>{label}</span>
+                </span>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-1.5">

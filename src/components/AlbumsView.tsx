@@ -557,10 +557,10 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="liquid-filter-chip liquid-filter-chip-sm !text-base !h-9 !w-9 !p-0 shadow-md">
+                <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !text-base !h-9 !w-9 !p-0 shadow-md">
                   {currentAlbum.emoji || '📁'}
                 </span>
-                <span className="liquid-filter-chip liquid-filter-chip-sm !font-extrabold text-[#3478F6] shadow-md gap-1.5">
+                <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-extrabold text-[#3478F6] shadow-md gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentAlbum.accentColor || '#3478F6' }} />
                   <span>{currentAlbum.badge || 'Album'}</span>
                 </span>
@@ -833,44 +833,51 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                   onClick={() => setSelectedAlbumId(album.id)}
                 >
                   {/* Physical 3D Stack Layer 2 (Bottom Angled Photo) */}
-                  <div className="absolute inset-0 bg-white/70 rounded-3xl transform rotate-3 translate-y-1.5 -z-10 shadow-xs border border-black/5 transition-transform duration-200 group-hover:rotate-4" />
+                  <div className="absolute inset-0 bg-white/60 backdrop-blur-md rounded-3xl transform rotate-3 translate-y-1.5 -z-10 shadow-xs border border-white/80 transition-transform duration-200 group-hover:rotate-4" />
 
                   {/* Physical 3D Stack Layer 1 (Middle Angled Photo) */}
-                  <div className="absolute inset-0 bg-white/80 rounded-3xl transform -rotate-2 -translate-y-0.5 -z-10 shadow-xs border border-black/5 transition-transform duration-200 group-hover:-rotate-3" />
+                  <div className="absolute inset-0 bg-white/75 backdrop-blur-md rounded-3xl transform -rotate-2 -translate-y-0.5 -z-10 shadow-xs border border-white/80 transition-transform duration-200 group-hover:-rotate-3" />
 
-                  {/* Main Front Album Card */}
-                  <div className="relative rounded-3xl overflow-hidden bg-white/95 border border-white/90 shadow-md transition-all duration-200 active:scale-98 group-hover:shadow-lg flex flex-col">
-                    {/* Cover Image Area */}
-                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 rounded-t-3xl">
-                      {coverUrl ? (
-                        <img
-                          src={coverUrl}
-                          alt={album.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <ImageIcon className="w-10 h-10" />
-                        </div>
-                      )}
-
-                      {/* Top Bar Floating Badges */}
-                      <div className="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none z-10">
-                        <span className="liquid-filter-chip liquid-filter-chip-xs !h-6 !w-6 !p-0 shadow-md pointer-events-auto">
-                          {album.emoji || '📁'}
-                        </span>
-                        <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
-                          {album.screenshotIds.length}
-                        </span>
+                  {/* Main Front Album Card with Full Cover Flow & Linear Blur Liquid Glass Plate */}
+                  <div className="relative rounded-3xl overflow-hidden aspect-[1/1.24] border border-white/95 shadow-lg transition-all duration-300 active:scale-98 group-hover:shadow-xl flex flex-col justify-end bg-gradient-to-b from-slate-100 via-white to-slate-200">
+                    {/* Cover Image Area - Flows behind the linear blur plate */}
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={album.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/90 via-white/70 to-slate-100 text-slate-300">
+                        <ImageIcon className="w-10 h-10 text-[#3478F6]/40" />
                       </div>
+                    )}
+
+                    {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
+                    <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
+                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">
+                        {album.emoji || '📁'}
+                      </span>
+                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
+                        {album.screenshotIds.length}
+                      </span>
                     </div>
 
-                    {/* Dedicated High-Contrast Info Plate Below Image */}
-                    <div className="p-3 bg-white/95 rounded-b-3xl border-t border-slate-100 flex flex-col gap-1.5">
-                      {/* Curated / Category Badge - Plump Liquid Glass Chip */}
+                    {/* iOS 27 Liquid Glass Linear Blur Plate */}
+                    <div className="liquid-glass-plate relative z-10 p-3 rounded-b-3xl flex flex-col gap-1.5">
+                      {/* Specular Edge Hairline */}
+                      <div
+                        className="absolute top-0 inset-x-4 h-[1px] pointer-events-none"
+                        style={{
+                          background:
+                            'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 25%, rgba(255, 255, 255, 1) 75%, transparent 100%)',
+                        }}
+                      />
+
+                      {/* Curated / Category Badge - Exact Filter Chip Style */}
                       <div className="flex items-center justify-between">
-                        <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] shadow-2xs">
+                        <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] shadow-2xs">
                           <span
                             className="w-1.5 h-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: album.accentColor || '#3478F6' }}
@@ -885,7 +892,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                       </h3>
 
                       {/* Action Bar: View Collection + Play Button */}
-                      <div className="mt-1 flex items-center justify-between pt-1.5 border-t border-slate-100">
+                      <div className="mt-0.5 flex items-center justify-between pt-1 border-t border-slate-200/60">
                         <span className="text-[10px] font-semibold text-[#4A5D78]">
                           View collection
                         </span>
@@ -895,7 +902,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                             e.stopPropagation();
                             handlePlayAlbumStory(album);
                           }}
-                          className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
+                          className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
                           title="Play Story Reel"
                         >
                           <Play className="w-2.5 h-2.5 fill-[#3478F6] text-[#3478F6]" />
