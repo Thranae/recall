@@ -416,8 +416,8 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                 <span className="text-[11px] font-bold tracking-tight text-[#3478F6]">
                   Thread
                 </span>
-                <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-1.5 py-0.5 rounded-full ml-0.5 shadow-2xs">
-                  {partNumber}/{totalParts}
+                <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-2 py-0.5 rounded-full ml-0.5 shadow-2xs">
+                  Part {partNumber}
                 </span>
               </button>
             </div>

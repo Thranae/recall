@@ -393,10 +393,10 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                       {/* Left Part Pill Indicator */}
                       <div className="flex items-center gap-1.5 pl-1.5 pr-2 shrink-0 border-r border-blue-200/50">
                         <span className="text-[10px] font-black text-[#3478F6] tracking-wider uppercase">
-                          Part
+                          Viewing
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-[#172B4D] bg-white/85 border border-white/90 px-1.5 py-0.5 rounded-full shadow-2xs">
-                          {activePartIndex + 1}/{activeThread.screenshots.length}
+                        <span className="text-[10px] font-mono font-bold text-[#172B4D] bg-white/85 border border-white/90 px-2 py-0.5 rounded-full shadow-2xs">
+                          Part {activePartIndex + 1}
                         </span>
                       </div>
 
@@ -457,13 +457,10 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
                         {/* Top Overlay Badges: Left Part Number, Right Detail Launcher */}
                         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-                          <div className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md pointer-events-none">
+                          <div className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md pointer-events-none gap-1.5">
                             <Layers className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
                             <span className="text-[11px] font-bold text-[#3478F6]">
-                              Part
-                            </span>
-                            <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/50 px-1.5 py-0.5 rounded-full shadow-2xs">
-                              {idx + 1}/{activeThread.screenshots.length}
+                              Part {idx + 1}
                             </span>
                           </div>
 

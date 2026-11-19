@@ -1103,11 +1103,19 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 src={isRedactedMode && redactedResult ? redactedResult.dataUrl : imageUrl}
                 alt="Screenshot Preview"
                 draggable={false}
+                onClick={() => {
+                  if (!isRedactedMode && !isRedacting && !isAiRedacting) {
+                    setIsImageExpanded(!isImageExpanded);
+                  }
+                }}
                 className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
                   isImageExpanded
-                    ? 'max-h-[48dvh] sm:max-h-[56vh]'
-                    : 'max-h-56'
-                } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'}`}
+                    ? 'max-h-[75dvh] sm:max-h-[80vh]'
+                    : 'max-h-60 sm:max-h-64'
+                } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'} ${
+                  !isRedactedMode ? (isImageExpanded ? 'cursor-zoom-out' : 'cursor-zoom-in') : ''
+                }`}
+                title={!isRedactedMode ? (isImageExpanded ? 'Click to collapse view' : 'Click to expand full view') : undefined}
               />
 
               {/* Standard Redact Pass: Tactile Marker-Ink Sweep & Live Censorship HUD */}
@@ -1296,70 +1304,80 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
-              <div
-                className={`pointer-events-none absolute inset-x-2.5 bottom-2.5 z-20 flex items-center justify-between gap-2 transition-[opacity,transform] duration-200 ease-out ${
-                  isRedacting || isAiRedacting ? 'opacity-0 scale-[0.97]' : 'opacity-100 scale-100'
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleToggleRedact}
-                    disabled={isRedacting || isAiRedacting}
-                    className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-bold active:scale-[0.97] cursor-pointer shadow-xs transition-[background-color,color,transform] duration-200 ease-out ${
-                      isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
-                    } ${
-                      isRedactedMode || isRedacting || isAiRedacting
-                        ? 'h-[21px] bg-[#0B1220] text-white border border-white/35'
-                        : 'liquid-filter-chip liquid-filter-chip-xs text-[#172B4D]'
-                    }`}
-                  >
-                    {isRedacting || isAiRedacting ? (
-                      <Loader2 className="h-3 w-3 animate-spin text-white/85" />
-                    ) : (
-                      <Shield
-                        className={`h-3 w-3 stroke-[2.2] ${
-                          isRedactedMode ? 'text-emerald-300' : 'text-[#3478F6]'
-                        }`}
-                      />
-                    )}
-                    <span>
-                      {isAiRedacting
-                        ? 'AI Redacting…'
-                        : isRedacting
-                        ? 'Redacting…'
-                        : isRedactedMode
-                        ? 'Redacted'
-                        : 'Redact'}
-                    </span>
-                  </button>
-                </div>
-
-                {!isImageExpanded && (
-                  <button
-                    type="button"
-                    onClick={() => setIsImageExpanded(true)}
-                    disabled={isRedacting || isAiRedacting}
-                    className={`flex items-center gap-1 rounded-full liquid-filter-chip liquid-filter-chip-xs font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-xs ${
-                      isRedacting || isAiRedacting ? 'pointer-events-none' : 'pointer-events-auto'
-                    }`}
-                  >
-                    <Maximize2 className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-                    <span>Expand</span>
-                  </button>
-                )}
-              </div>
-
               {isImageExpanded && !(isRedacting || isAiRedacting) && (
                 <button
                   type="button"
                   onClick={() => setIsImageExpanded(false)}
-                  className="pointer-events-auto absolute top-2.5 right-2.5 z-20 flex items-center gap-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-md"
+                  className="pointer-events-auto absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-lg active:scale-95 cursor-pointer font-bold text-[#3478F6]"
+                  title="Collapse full screen preview"
                 >
-                  <Minimize2 className="h-3 w-3 stroke-[2.2] text-[#3478F6]" />
+                  <Minimize2 className="h-3.5 w-3.5 stroke-[2.4] text-[#3478F6]" />
                   <span>Collapse</span>
                 </button>
               )}
+            </div>
+
+            {/* Dedicated Interactive Control Dock for Screenshot */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+              {/* Privacy Redaction Feature Button */}
+              <button
+                type="button"
+                onClick={handleToggleRedact}
+                disabled={isRedacting || isAiRedacting}
+                className={`flex items-center justify-center gap-2 h-10 px-3.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+                  isRedactedMode
+                    ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-2 ring-[#3478F6]/30'
+                    : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
+                }`}
+                title="Mask and redact private info, personal chats or sensitive details"
+              >
+                {isRedacting || isAiRedacting ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-[#3478F6]" />
+                ) : isRedactedMode ? (
+                  <ShieldCheck className="h-4 w-4 stroke-[2.3] text-emerald-400" />
+                ) : (
+                  <Shield className="h-4 w-4 stroke-[2.3] text-[#3478F6]" />
+                )}
+                <span className="truncate">
+                  {isAiRedacting
+                    ? 'AI Redacting…'
+                    : isRedacting
+                    ? 'Redacting…'
+                    : isRedactedMode
+                    ? 'Redacting (Active)'
+                    : 'Privacy Redact'}
+                </span>
+                {!isRedactedMode && !isRedacting && !isAiRedacting && (
+                  <span className="text-[10px] font-mono font-semibold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.5 rounded-full">
+                    Tool
+                  </span>
+                )}
+              </button>
+
+              {/* Full Image Expand / Collapse Feature Button */}
+              <button
+                type="button"
+                onClick={() => setIsImageExpanded(!isImageExpanded)}
+                disabled={isRedacting || isAiRedacting}
+                className={`flex items-center justify-center gap-2 h-10 px-3.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+                  isImageExpanded
+                    ? 'bg-blue-50/80 text-[#3478F6] border border-[#3478F6]/40 shadow-sm'
+                    : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
+                }`}
+                title={isImageExpanded ? 'Collapse to standard view' : 'Expand screenshot to full view'}
+              >
+                {isImageExpanded ? (
+                  <>
+                    <Minimize2 className="h-4 w-4 text-[#3478F6] stroke-[2.3]" />
+                    <span>Collapse View</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="h-4 w-4 text-[#3478F6] stroke-[2.3]" />
+                    <span>Expand Full View</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {redactError && (
