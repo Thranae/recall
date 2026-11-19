@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Loader2,
   Check,
+  Copy,
   ExternalLink,
   ArrowLeft,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   const [viewMode, setViewMode] = useState<'visual' | 'transcript'>('visual');
   const [isExporting, setIsExporting] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
+  const [copiedPartId, setCopiedPartId] = useState<string | null>(null);
   const [activePartIndex, setActivePartIndex] = useState(initialIndex);
 
   const reelContainerRef = useRef<HTMLDivElement>(null);
@@ -245,16 +247,18 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
   const handleCopyTranscript = () => {
     if (!activeThread) return;
-    const lines: string[] = [];
-    lines.push(`--- ${activeThread.title} ---`);
-    for (const sc of activeThread.screenshots) {
-      if (sc.ocr_text) {
-        lines.push(`\n[${sc.original_filename}]:\n${sc.ocr_text}`);
-      }
-    }
-    navigator.clipboard.writeText(lines.join('\n'));
+    const cleanTexts = activeThread.screenshots
+      .map((sc) => sc.ocr_text?.trim())
+      .filter((txt): txt is string => Boolean(txt && txt.length > 0));
+    navigator.clipboard.writeText(cleanTexts.join('\n\n'));
     setCopiedTranscript(true);
     setTimeout(() => setCopiedTranscript(false), 2000);
+  };
+
+  const handleCopyPartText = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPartId(id);
+    setTimeout(() => setCopiedPartId(null), 1800);
   };
 
   if (typeof document === 'undefined') return null;
@@ -508,14 +512,33 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                       className="liquid-glass-card rounded-[22px] p-4 space-y-2 border border-white/90 shadow-2xs"
                     >
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                        <span>Part {idx + 1}: {sc.original_filename}</span>
-                        <span className="font-mono text-slate-400">
-                          {new Date(sc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <span className="font-semibold text-slate-700">Part {idx + 1}: {sc.original_filename}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-slate-400">
+                            {new Date(sc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {sc.ocr_text && (
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPartText(sc.id, sc.ocr_text || '')}
+                              className="p-1 rounded-full hover:bg-black/5 active:scale-90 transition-all cursor-pointer text-[#3478F6]"
+                              title="Copy part text verbatim"
+                            >
+                              {copiedPartId === sc.id ? (
+                                <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[2.2]" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5 stroke-[2]" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap font-mono bg-white/60 p-3 rounded-[16px] border border-white/70">
-                        {sc.ocr_text || 'No transcribed text detected'}
-                      </div>
+                      <pre
+                        className="text-xs text-slate-800 font-medium leading-relaxed whitespace-pre font-mono bg-white/70 p-3 rounded-[16px] border border-white/80 overflow-x-auto select-text shadow-inner"
+                        style={{ tabSize: 2 }}
+                      >
+                        <code>{sc.ocr_text || 'No transcribed text detected'}</code>
+                      </pre>
                     </div>
                   ))}
                 </div>

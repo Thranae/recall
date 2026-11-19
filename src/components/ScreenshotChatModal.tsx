@@ -72,59 +72,105 @@ function renderInlineStyles(text: string): React.ReactNode {
   return parts.length > 0 ? parts : text;
 }
 
+function CodeBlockViewer({ code, language }: { code: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+  return (
+    <div className="relative my-2 rounded-2xl bg-slate-900 text-slate-100 overflow-hidden text-xs shadow-md border border-slate-700/60">
+      <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-800/90 border-b border-slate-700/50 text-[11px] font-mono text-slate-300">
+        <span className="font-semibold text-slate-400">{language || 'code'}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[#60A5FA] hover:text-white transition-colors cursor-pointer active:scale-95 font-medium"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+      <pre className="p-3.5 overflow-x-auto font-mono text-[11.5px] leading-relaxed whitespace-pre select-text" style={{ tabSize: 2 }}>
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
 function renderFormattedAiText(text: string) {
-  const lines = text.split('\n');
+  const segments = text.split(/(```[\s\S]*?```)/g);
   return (
     <div className="space-y-1.5 text-[13px] leading-relaxed">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-1" />;
-
-        if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-          const bulletContent = trimmed.substring(2);
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1">
-              <span className="text-[#3478F6] font-bold text-[14px] leading-tight">•</span>
-              <div className="flex-1 font-medium text-slate-800">
-                {renderInlineStyles(bulletContent)}
-              </div>
-            </div>
-          );
+      {segments.map((seg, sIdx) => {
+        if (seg.startsWith('```') && seg.endsWith('```')) {
+          const inner = seg.slice(3, -3);
+          const firstNewline = inner.indexOf('\n');
+          let lang = '';
+          let code = inner;
+          if (firstNewline !== -1) {
+            lang = inner.slice(0, firstNewline).trim();
+            code = inner.slice(firstNewline + 1);
+          }
+          return <CodeBlockViewer key={sIdx} language={lang} code={code} />;
         }
 
-        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
-        if (numMatch) {
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1">
-              <span className="text-[#3478F6] font-bold text-[12px] leading-tight min-w-[16px]">
-                {numMatch[1]}.
-              </span>
-              <div className="flex-1 font-medium text-slate-800">
-                {renderInlineStyles(numMatch[2])}
-              </div>
-            </div>
-          );
-        }
-
-        if (trimmed.startsWith('### ')) {
-          return (
-            <h4 key={idx} className="text-[13px] font-bold text-slate-900 pt-1">
-              {renderInlineStyles(trimmed.substring(4))}
-            </h4>
-          );
-        }
-        if (trimmed.startsWith('## ')) {
-          return (
-            <h3 key={idx} className="text-[14px] font-bold text-slate-900 pt-1.5">
-              {renderInlineStyles(trimmed.substring(3))}
-            </h3>
-          );
-        }
-
+        const lines = seg.split('\n');
         return (
-          <p key={idx} className="text-slate-700 font-normal">
-            {renderInlineStyles(trimmed)}
-          </p>
+          <React.Fragment key={sIdx}>
+            {lines.map((line, idx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return <div key={idx} className="h-1" />;
+
+              if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                const bulletContent = trimmed.substring(2);
+                return (
+                  <div key={idx} className="flex items-start gap-2 pl-1">
+                    <span className="text-[#3478F6] font-bold text-[14px] leading-tight">•</span>
+                    <div className="flex-1 font-medium text-slate-800">
+                      {renderInlineStyles(bulletContent)}
+                    </div>
+                  </div>
+                );
+              }
+
+              const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+              if (numMatch) {
+                return (
+                  <div key={idx} className="flex items-start gap-2 pl-1">
+                    <span className="text-[#3478F6] font-bold text-[12px] leading-tight min-w-[16px]">
+                      {numMatch[1]}.
+                    </span>
+                    <div className="flex-1 font-medium text-slate-800">
+                      {renderInlineStyles(numMatch[2])}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (trimmed.startsWith('### ')) {
+                return (
+                  <h4 key={idx} className="text-[13px] font-bold text-slate-900 pt-1">
+                    {renderInlineStyles(trimmed.substring(4))}
+                  </h4>
+                );
+              }
+              if (trimmed.startsWith('## ')) {
+                return (
+                  <h3 key={idx} className="text-[14px] font-bold text-slate-900 pt-1.5">
+                    {renderInlineStyles(trimmed.substring(3))}
+                  </h3>
+                );
+              }
+
+              return (
+                <p key={idx} className="text-slate-700 font-normal">
+                  {renderInlineStyles(trimmed)}
+                </p>
+              );
+            })}
+          </React.Fragment>
         );
       })}
     </div>

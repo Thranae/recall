@@ -840,28 +840,28 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
                   {/* Main Front Album Card with Full Cover Flow & Linear Blur Liquid Glass Plate */}
                   <div className="relative rounded-3xl overflow-hidden aspect-[1/1.24] border border-white/95 shadow-lg transition-all duration-300 active:scale-98 group-hover:shadow-xl flex flex-col justify-end bg-gradient-to-b from-slate-100 via-white to-slate-200">
-                    {/* Cover Image Area - Flows behind the linear blur plate */}
+                    {/* Cover Image Area - High Quality Top Showcase */}
                     {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt={album.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      <div className="absolute top-0 inset-x-0 h-[62%] overflow-hidden">
+                        <img
+                          src={coverUrl}
+                          alt={album.title}
+                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div
+                          className="absolute inset-x-0 bottom-0 h-14 pointer-events-none"
+                          style={{
+                            background:
+                              'linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.75) 50%, #FFFFFF 100%)',
+                          }}
+                        />
+                      </div>
                     ) : (
-                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/90 via-white/70 to-slate-100 text-slate-300">
+                      <div className="absolute top-0 inset-x-0 h-[62%] flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/90 via-white/70 to-slate-100 text-slate-300">
                         <ImageIcon className="w-10 h-10 text-[#3478F6]/40" />
                       </div>
                     )}
-
-                    {/* Opaque gradient scrim to dissolve high-contrast screenshot text on lower half */}
-                    <div
-                      className="absolute inset-x-0 bottom-0 h-[56%] pointer-events-none z-0"
-                      style={{
-                        background:
-                          'linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.75) 45%, rgba(255, 255, 255, 0.98) 85%, #FFFFFF 100%)',
-                      }}
-                    />
 
                     {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
                     <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
@@ -874,7 +874,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                     </div>
 
                     {/* iOS 27 Liquid Glass Linear Blur Plate */}
-                    <div className="liquid-glass-plate relative z-10 p-3 rounded-b-3xl flex flex-col gap-1.5">
+                    <div className="liquid-glass-plate relative z-10 p-3 rounded-b-3xl flex flex-col gap-1.5 !bg-white/98 shadow-xs">
                       {/* Specular Edge Hairline */}
                       <div
                         className="absolute top-0 inset-x-4 h-[1px] pointer-events-none"

@@ -93,6 +93,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isFullScreenChatOpen, setIsFullScreenChatOpen] = useState(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>(undefined);
   const [copiedOcr, setCopiedOcr] = useState(false);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [copiedAllFlow, setCopiedAllFlow] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [activeInspectorNode, setActiveInspectorNode] = useState<LiveInspectorNode | null>(null);
@@ -798,6 +800,33 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     setTimeout(() => setCopiedOcr(false), 2000);
   };
 
+  const handleCopySingleMessage = async (msgId: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMsgId(msgId);
+      setTimeout(() => setCopiedMsgId(null), 1800);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
+  };
+
+  const handleCopyConversationFlow = async () => {
+    if (!data?.messages || data.messages.length === 0) return;
+    try {
+      const flowText = data.messages
+        .map((m) => {
+          const sender = m.sender_label || (m.sender_side === 'right' ? 'You' : 'Sender');
+          return `${sender}: ${m.message_text}`;
+        })
+        .join('\n');
+      await navigator.clipboard.writeText(flowText);
+      setCopiedAllFlow(true);
+      setTimeout(() => setCopiedAllFlow(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy flow:', err);
+    }
+  };
+
   const handleReanalyze = async () => {
     if (!screenshotId || isReanalyzing) return;
     setIsReanalyzing(true);
@@ -1111,14 +1140,14 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     setIsImageExpanded(!isImageExpanded);
                   }
                 }}
-                className={`w-full select-none object-contain transition-[opacity,max-height] duration-200 ease-out ${
+                className={`w-full select-none object-contain transition-[opacity,max-height] duration-300 ease-out ${
                   isImageExpanded
-                    ? 'max-h-[75dvh] sm:max-h-[80vh]'
-                    : 'max-h-60 sm:max-h-64'
+                    ? 'max-h-80 sm:max-h-96'
+                    : 'max-h-52 sm:max-h-56'
                 } ${isRedacting || isAiRedacting ? 'opacity-95' : 'opacity-100'} ${
                   !isRedactedMode ? (isImageExpanded ? 'cursor-zoom-out' : 'cursor-zoom-in') : ''
                 }`}
-                title={!isRedactedMode ? (isImageExpanded ? 'Click to collapse view' : 'Click to expand full view') : undefined}
+                title={!isRedactedMode ? (isImageExpanded ? 'Click to collapse view' : 'Click to expand view') : undefined}
               />
 
               {/* Standard Redact Pass: Tactile Marker-Ink Sweep & Live Censorship HUD */}
@@ -1307,77 +1336,61 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
-              {isImageExpanded && !(isRedacting || isAiRedacting) && (
-                <button
-                  type="button"
-                  onClick={() => setIsImageExpanded(false)}
-                  className="pointer-events-auto absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-lg active:scale-95 cursor-pointer font-bold text-[#3478F6]"
-                  title="Collapse full screen preview"
-                >
-                  <Minimize2 className="h-3.5 w-3.5 stroke-[2.4] text-[#3478F6]" />
-                  <span>Collapse</span>
-                </button>
-              )}
             </div>
 
             {/* Dedicated Interactive Control Dock for Screenshot */}
-            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+            <div className="flex items-center justify-between gap-2.5 pt-1">
               {/* Privacy Redaction Feature Button */}
               <button
                 type="button"
                 onClick={handleToggleRedact}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex items-center justify-center gap-2 h-10 px-3.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
                   isRedactedMode
-                    ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-2 ring-[#3478F6]/30'
+                    ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-1 ring-[#3478F6]/40'
                     : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
                 }`}
                 title="Mask and redact private info, personal chats or sensitive details"
               >
                 {isRedacting || isAiRedacting ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-[#3478F6]" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
                 ) : isRedactedMode ? (
-                  <ShieldCheck className="h-4 w-4 stroke-[2.3] text-emerald-400" />
+                  <ShieldCheck className="h-3.5 w-3.5 stroke-[2.3] text-emerald-400" />
                 ) : (
-                  <Shield className="h-4 w-4 stroke-[2.3] text-[#3478F6]" />
+                  <Shield className="h-3.5 w-3.5 stroke-[2.3] text-[#3478F6]" />
                 )}
-                <span className="truncate">
+                <span>
                   {isAiRedacting
-                    ? 'AI Redacting…'
+                    ? 'Redacting…'
                     : isRedacting
                     ? 'Redacting…'
                     : isRedactedMode
-                    ? 'Redacting (Active)'
-                    : 'Privacy Redact'}
+                    ? 'Redacted'
+                    : 'Redact'}
                 </span>
-                {!isRedactedMode && !isRedacting && !isAiRedacting && (
-                  <span className="text-[10px] font-mono font-semibold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.5 rounded-full">
-                    Tool
-                  </span>
-                )}
               </button>
 
-              {/* Full Image Expand / Collapse Feature Button */}
+              {/* Subtle Full Image Expand / Collapse Button */}
               <button
                 type="button"
                 onClick={() => setIsImageExpanded(!isImageExpanded)}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex items-center justify-center gap-2 h-10 px-3.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
                   isImageExpanded
-                    ? 'bg-blue-50/80 text-[#3478F6] border border-[#3478F6]/40 shadow-sm'
+                    ? 'bg-[#EBF3FF] text-[#3478F6] border border-[#3478F6]/30 shadow-2xs'
                     : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
                 }`}
-                title={isImageExpanded ? 'Collapse to standard view' : 'Expand screenshot to full view'}
+                title={isImageExpanded ? 'Collapse to standard view' : 'Subtly expand screenshot preview'}
               >
                 {isImageExpanded ? (
                   <>
-                    <Minimize2 className="h-4 w-4 text-[#3478F6] stroke-[2.3]" />
-                    <span>Collapse View</span>
+                    <Minimize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
+                    <span>Collapse</span>
                   </>
                 ) : (
                   <>
-                    <Maximize2 className="h-4 w-4 text-[#3478F6] stroke-[2.3]" />
-                    <span>Expand Full View</span>
+                    <Maximize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
+                    <span>Expand</span>
                   </>
                 )}
               </button>
@@ -1700,7 +1713,19 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                           <MessageSquare className="h-3.5 w-3.5 text-[#3478F6] stroke-[2]" />
                           <span>Conversation Flow ({data.messages.length})</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">Ordered</span>
+                        <button
+                          type="button"
+                          onClick={handleCopyConversationFlow}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer"
+                          title="Copy entire conversation transcript verbatim"
+                        >
+                          {copiedAllFlow ? (
+                            <Check className="h-3 w-3 text-emerald-600 stroke-[2.2]" />
+                          ) : (
+                            <Copy className="h-3 w-3 stroke-[2]" />
+                          )}
+                          <span>{copiedAllFlow ? 'Copied' : 'Copy Flow'}</span>
+                        </button>
                       </div>
 
                       <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
@@ -1709,22 +1734,36 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                           return (
                             <div
                               key={msg.id}
-                              className={`flex flex-col ${isRight ? 'items-end' : 'items-start'}`}
+                              className={`flex flex-col group ${isRight ? 'items-end' : 'items-start'}`}
                             >
-                              <div className="flex items-center gap-1 mb-0.5 px-1">
+                              <div className="flex items-center gap-1.5 mb-0.5 px-1">
                                 <span className="font-mono text-[9px] text-slate-400">#{msg.sequence_number}</span>
                                 <span className="text-[10px] font-semibold text-slate-600">
                                   {msg.sender_label || (isRight ? 'You' : 'Sender')}
                                 </span>
                               </div>
-                              <div
-                                className={`max-w-[85%] px-3.5 py-2 text-xs font-medium leading-relaxed rounded-[16px] ${
-                                  isRight
-                                    ? 'liquid-btn-primary text-white rounded-tr-xs shadow-xs'
-                                    : 'bg-white/80 border border-white text-slate-800 rounded-tl-xs shadow-2xs'
-                                }`}
-                              >
-                                {msg.message_text}
+                              <div className={`relative max-w-[88%] flex items-start gap-1.5 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <div
+                                  className={`px-3.5 py-2 text-xs font-medium leading-relaxed rounded-[16px] whitespace-pre-wrap select-text ${
+                                    isRight
+                                      ? 'liquid-btn-primary text-white rounded-tr-xs shadow-xs'
+                                      : 'bg-white/85 border border-white text-slate-800 rounded-tl-xs shadow-2xs'
+                                  }`}
+                                >
+                                  {msg.message_text}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopySingleMessage(msg.id, msg.message_text)}
+                                  className="mt-1 p-1 rounded-full opacity-60 hover:opacity-100 hover:bg-black/5 active:scale-90 transition-all cursor-pointer shrink-0"
+                                  title="Copy text verbatim"
+                                >
+                                  {copiedMsgId === msg.id ? (
+                                    <Check className="h-3 w-3 text-emerald-600 stroke-[2.2]" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-slate-400 stroke-[2]" />
+                                  )}
+                                </button>
                               </div>
                             </div>
                           );
@@ -2069,9 +2108,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </button>
                   </div>
 
-                  <div className="rounded-[18px] bg-white/70 border border-white/80 backdrop-blur-md p-3.5 font-mono text-xs text-slate-800 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap select-text shadow-inner">
-                    {data?.screenshot.ocr_text || 'No text detected in this image.'}
-                  </div>
+                  <pre
+                    className="rounded-[18px] bg-white/85 border border-white/90 backdrop-blur-md p-3.5 font-mono text-[11.5px] text-slate-800 leading-relaxed max-h-72 overflow-x-auto overflow-y-auto whitespace-pre select-text shadow-inner"
+                    style={{ tabSize: 2 }}
+                  >
+                    <code>{data?.screenshot.ocr_text || 'No text detected in this image.'}</code>
+                  </pre>
                 </div>
               )}
 
