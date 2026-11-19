@@ -969,40 +969,44 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       </div>
 
       {/* 3. Status Bar & "+ New Album" Button */}
-      <div className="flex items-center justify-between px-5 pt-3 pb-2">
-        <div className="flex items-center gap-2">
-          <h2 className="font-bold text-[#172B4D] text-[16px] tracking-tight">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 px-4 pt-3 pb-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h2 className="font-extrabold text-[#172B4D] text-[15px] tracking-tight truncate whitespace-nowrap">
             {activeFilter === 'all'
               ? 'All Albums'
               : activeFilter === 'smart'
-                ? 'Curated Smart Albums'
-                : 'My Custom Albums'}
+                ? 'Smart Albums'
+                : 'Custom Albums'}
           </h2>
-          <span className="liquid-filter-chip liquid-filter-chip-xs font-bold font-mono text-[#3478F6]">
+          <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold font-mono text-[#3478F6] shrink-0">
             {filteredAlbums.length}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
           {/* AI Curate / Re-Analyze Vault Button */}
           <button
             type="button"
             onClick={handleAiCurate}
             disabled={isAiAnalyzing || screenshots.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
             title="Analyze and cluster vault screenshots with AI Vision"
           >
-            <RefreshCw className={`w-3 h-3 text-[#3478F6] ${isAiAnalyzing ? 'animate-spin' : ''}`} />
-            <span>{isAiAnalyzing ? 'Analyzing...' : 'AI Curate'}</span>
+            <RefreshCw className={`w-3 h-3 text-[#3478F6] shrink-0 ${isAiAnalyzing ? 'animate-spin' : ''}`} />
+            <span className="text-[11px] font-bold whitespace-nowrap select-none">
+              {isAiAnalyzing ? 'Curating…' : 'AI Curate'}
+            </span>
           </button>
 
+          {/* New Album Button */}
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 border border-slate-200/80 text-xs font-bold text-[#3478F6] hover:bg-white active:scale-95 transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+            title="Create New Custom Album"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.6]" />
-            <span>New Album</span>
+            <Plus className="w-3.5 h-3.5 stroke-[2.6] shrink-0 text-[#3478F6]" />
+            <span className="text-[11px] font-bold whitespace-nowrap select-none">New Album</span>
           </button>
         </div>
       </div>
