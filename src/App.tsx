@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthView } from './components/AuthView';
 import { TopHeader } from './components/TopHeader';
 import { BottomNav, type TabType } from './components/BottomNav';
@@ -11,6 +12,7 @@ import { UploadSheet } from './components/UploadSheet';
 import { SplashScreen } from './components/SplashScreen';
 import { SignOutTransition } from './components/SignOutTransition';
 import { api } from './services/api';
+import { backHandler, useBackButton } from './utils/backHandler';
 import type { User, Screenshot, SearchResponse, SearchResultItem } from './types';
 import { Loader2 } from 'lucide-react';
 
@@ -48,6 +50,47 @@ export const App: React.FC = () => {
   const [isAlbumsModalOpen, setIsAlbumsModalOpen] = useState(false);
 
   const isAnyModalActive = isLibraryModalOpen || isAlbumsModalOpen || Boolean(selectedScreenshotId) || isUploadOpen;
+
+  // Back Button Navigation Management
+  const [exitToast, setExitToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    backHandler.setExitToastCallback(setExitToast);
+  }, []);
+
+  useBackButton(
+    'app-screenshot-detail',
+    80,
+    () => {
+      setSelectedScreenshotId(null);
+      setSelectedSearchResult(undefined);
+      return true;
+    },
+    Boolean(selectedScreenshotId)
+  );
+
+  useBackButton(
+    'app-upload-sheet',
+    40,
+    () => {
+      setIsUploadOpen(false);
+      return true;
+    },
+    isUploadOpen
+  );
+
+  useBackButton(
+    'app-tab-navigation',
+    10,
+    () => {
+      if (currentTab !== 'library') {
+        setCurrentTab('library');
+        return true;
+      }
+      return false;
+    },
+    currentTab !== 'library'
+  );
 
   // Check existing session on launch & listen for auth invalidation
   useEffect(() => {
@@ -503,6 +546,24 @@ export const App: React.FC = () => {
           setSelectedScreenshotId(id);
         }}
       />
+
+      {/* Android Hardware Back Press Exit Toast */}
+      <AnimatePresence>
+        {exitToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-x-0 z-[120] flex justify-center pointer-events-none px-4"
+            style={{ bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))' }}
+          >
+            <div className="rounded-full bg-[#172B4D]/90 backdrop-blur-md border border-white/25 text-white text-[12px] font-semibold px-4 py-2 shadow-lg shadow-black/15">
+              {exitToast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
         </div>
       )}
     </>

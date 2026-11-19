@@ -18,6 +18,7 @@ import {
 import type { Screenshot, Album, ThreadGroup } from '../types';
 import { api } from '../services/api';
 import { classifyScreenshotPrecisely, type PreciseCategory } from '../utils/classifier';
+import { useBackButton } from '../utils/backHandler';
 import { ScreenshotCard } from './ScreenshotCard';
 import { AlbumStoryModal } from './AlbumStoryModal';
 import { CreateAlbumModal } from './CreateAlbumModal';
@@ -89,6 +90,49 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   const [threads, setThreads] = useState<ThreadGroup[]>([]);
   const [selectedThread, setSelectedThread] = useState<ThreadGroup | null>(null);
   const [selectedThreadInitialIndex, setSelectedThreadInitialIndex] = useState(0);
+
+  // Back Button Navigation Registration
+  useBackButton(
+    'album-create-modal',
+    75,
+    () => {
+      setIsCreateOpen(false);
+      return true;
+    },
+    isCreateOpen
+  );
+
+  useBackButton(
+    'album-story-modal',
+    75,
+    () => {
+      setIsStoryOpen(false);
+      setStoryTarget(null);
+      return true;
+    },
+    isStoryOpen
+  );
+
+  useBackButton(
+    'album-thread-modal',
+    70,
+    () => {
+      setSelectedThread(null);
+      setSelectedThreadInitialIndex(0);
+      return true;
+    },
+    Boolean(selectedThread)
+  );
+
+  useBackButton(
+    'album-detail-view',
+    50,
+    () => {
+      setSelectedAlbumId(null);
+      return true;
+    },
+    Boolean(selectedAlbumId)
+  );
 
   useEffect(() => {
     api

@@ -37,6 +37,7 @@ import { api } from '../services/api';
 import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
 import { downloadImageFile } from '../utils/fileDownload';
+import { useBackButton } from '../utils/backHandler';
 import { ScreenshotChatModal } from './ScreenshotChatModal';
 import { ThreadStitcherModal } from './ThreadStitcherModal';
 import {
@@ -142,6 +143,68 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [matchedThread, setMatchedThread] = useState<ThreadGroup | null>(null);
   const [threadPartNumber, setThreadPartNumber] = useState<number>(1);
   const [isThreadReelOpen, setIsThreadReelOpen] = useState(false);
+
+  // Back Button Navigation Registration
+  useBackButton(
+    'detail-fullscreen-chat',
+    100,
+    () => {
+      setIsFullScreenChatOpen(false);
+      setInitialChatPrompt(undefined);
+      return true;
+    },
+    isFullScreenChatOpen
+  );
+
+  useBackButton(
+    'detail-thread-reel',
+    100,
+    () => {
+      setIsThreadReelOpen(false);
+      return true;
+    },
+    isThreadReelOpen
+  );
+
+  useBackButton(
+    'detail-delete-confirm',
+    95,
+    () => {
+      setShowDeleteConfirm(false);
+      return true;
+    },
+    showDeleteConfirm
+  );
+
+  useBackButton(
+    'detail-expanded-img',
+    90,
+    () => {
+      setIsImageExpanded(false);
+      return true;
+    },
+    isImageExpanded
+  );
+
+  useBackButton(
+    'detail-redacted-mode',
+    90,
+    () => {
+      setIsRedactedMode(false);
+      return true;
+    },
+    isRedactedMode
+  );
+
+  useBackButton(
+    'detail-edit-name',
+    85,
+    () => {
+      setIsEditingName(false);
+      return true;
+    },
+    isEditingName
+  );
 
   useEffect(() => {
     if (!screenshotId) {

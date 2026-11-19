@@ -21,6 +21,7 @@ import {
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
 import { classifyScreenshotPrecisely } from '../utils/classifier';
+import { useBackButton } from '../utils/backHandler';
 import type { Screenshot, VaultInsightsSummary, ThreadGroup } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
 import { ThreadStitcherModal } from './ThreadStitcherModal';
@@ -377,6 +378,58 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     }
   }, []);
 
+  // Back Button Navigation Registration
+  useBackButton(
+    'lib-thread-reel',
+    70,
+    () => {
+      setSelectedThread(null);
+      setSelectedThreadInitialIndex(0);
+      return true;
+    },
+    Boolean(selectedThread)
+  );
+
+  useBackButton(
+    'lib-vault-digest',
+    70,
+    () => {
+      setIsVaultDigestOpen(false);
+      return true;
+    },
+    isVaultDigestOpen
+  );
+
+  useBackButton(
+    'lib-clutter-sweeper',
+    70,
+    () => {
+      setIsClutterSweeperOpen(false);
+      return true;
+    },
+    isClutterSweeperOpen
+  );
+
+  useBackButton(
+    'lib-insights-panel',
+    65,
+    () => {
+      setShowInsights(false);
+      return true;
+    },
+    showInsights
+  );
+
+  useBackButton(
+    'lib-selection-mode',
+    60,
+    () => {
+      handleExitSelectionMode();
+      return true;
+    },
+    isSelectionMode
+  );
+
   const handleToggleInsights = async () => {
     const next = !showInsights;
     setShowInsights(next);
@@ -453,80 +506,88 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         })}
       </div>
 
-      {/* 2. Library Status Strip */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 min-w-0">
-          <h2 className="font-bold text-[#172B4D] text-[16px] tracking-tight whitespace-nowrap">
+      {/* 2. Library Status & Placed Wisely Action Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 px-1 pt-1 pb-0.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h2 className="font-extrabold text-[#172B4D] text-[15px] tracking-tight truncate whitespace-nowrap">
             {selectedCategory === 'all'
               ? 'All Screenshots'
               : selectedCategory === 'chat'
                 ? 'Conversations'
                 : 'Other Screenshots'}
           </h2>
-          <span className="liquid-filter-chip liquid-filter-chip-xs font-bold font-mono text-[#3478F6] shrink-0">
-            {filteredScreenshots.length} {filteredScreenshots.length === 1 ? 'item' : 'items'}
+          <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold font-mono text-[#3478F6] shrink-0">
+            {filteredScreenshots.length}
           </span>
         </div>
 
-        {isSelectionMode ? (
-          <button
-            type="button"
-            onClick={handleExitSelectionMode}
-            className="plump-glass-pill inline-flex items-center gap-1 rounded-full px-3.5 h-7.5 text-[11px] font-bold text-[#3478F6] cursor-pointer shadow-xs active:scale-95 transition-transform"
-          >
-            <span>Done</span>
-          </button>
-        ) : (
-          filteredScreenshots.length > 0 && (
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {isSelectionMode ? (
             <button
               type="button"
-              onClick={() => setIsSelectionMode(true)}
-              className="plump-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 h-7.5 text-[11px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
+              onClick={handleExitSelectionMode}
+              className="flex items-center gap-1 px-3 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
             >
-              <CheckSquare className="h-3.5 w-3.5 stroke-[2.2]" />
-              <span>Select</span>
+              <CheckSquare className="w-3.5 h-3.5 stroke-[2.4] text-[#3478F6]" />
+              <span className="text-[11px] font-bold whitespace-nowrap select-none">Done</span>
             </button>
-          )
-        )}
-      </div>
+          ) : (
+            <>
+              {screenshots.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsVaultDigestOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-amber-700 hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+                    title="View Proactive Vault Digest (Coupons, Events, Bills)"
+                  >
+                    <Layers className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span className="text-[11px] font-bold whitespace-nowrap select-none">Digest</span>
+                  </button>
 
-      {/* 3. Balanced Liquid Tool Bar (Digest, Declutter, Insights) */}
-      {!isSelectionMode && screenshots.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 px-0.5">
-          <button
-            type="button"
-            onClick={() => setIsVaultDigestOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
-            title="View Proactive Vault Digest (Coupons, Events, Bills)"
-          >
-            <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
-            <span className="truncate">Digest</span>
-          </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsClutterSweeperOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-rose-700 hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+                    title="Smart Declutter Memory Broom"
+                  >
+                    <Trash2 className="w-3 h-3 text-rose-500 shrink-0" />
+                    <span className="text-[11px] font-bold whitespace-nowrap select-none">Clean</span>
+                  </button>
 
-          <button
-            type="button"
-            onClick={() => setIsClutterSweeperOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
-            title="Smart Declutter Memory Broom"
-          >
-            <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
-            <span className="truncate">Declutter</span>
-          </button>
+                  <button
+                    type="button"
+                    onClick={handleToggleInsights}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap ${
+                      showInsights
+                        ? 'liquid-filter-chip-active text-[#3478F6]'
+                        : 'text-indigo-600'
+                    }`}
+                    title="Vault Intelligence & Duplicate Radar"
+                  >
+                    <BarChart3 className="w-3 h-3 shrink-0" />
+                    <span className="text-[11px] font-bold whitespace-nowrap select-none">
+                      {loadingInsights ? '…' : 'Insights'}
+                    </span>
+                  </button>
+                </>
+              )}
 
-          <button
-            type="button"
-            onClick={handleToggleInsights}
-            className={`plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-2 h-8 text-[11px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
-              showInsights
-                ? '!bg-[#3478F6] !text-white shadow-xs'
-                : 'text-[#3478F6]'
-            }`}
-          >
-            <BarChart3 className="h-3.5 w-3.5 stroke-[2.2] shrink-0" />
-            <span className="truncate">Insights</span>
-          </button>
+              {filteredScreenshots.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsSelectionMode(true)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+                  title="Select Multiple Screenshots"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 stroke-[2.4] text-[#3478F6]" />
+                  <span className="text-[11px] font-bold whitespace-nowrap select-none">Select</span>
+                </button>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Collapsible Vault Insights & Duplicate Radar Panel */}
       <AnimatePresence>
