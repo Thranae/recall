@@ -48,12 +48,18 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   }
   const activeThread = thread || lastThreadRef.current;
 
-  // Auto-centers the active part pill within the horizontal strip
+  // Auto-centers the active part pill within the horizontal strip without edge clipping or offsetParent drift
   const centerActivePill = useCallback((idx: number, smooth = true) => {
     const container = partPillsContainerRef.current;
     const btn = document.getElementById(`thread-part-pill-${idx}`);
     if (container && btn) {
-      const targetLeft = btn.offsetLeft - container.clientWidth / 2 + btn.clientWidth / 2;
+      const containerRect = container.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const currentScroll = container.scrollLeft;
+      // Viewport-relative offset guarantees pixel-perfect centering regardless of offsetParent hierarchy
+      const relativeBtnCenter = btnRect.left - containerRect.left + btnRect.width / 2;
+      const containerCenter = containerRect.width / 2;
+      const targetLeft = currentScroll + (relativeBtnCenter - containerCenter);
       container.scrollTo({
         left: Math.max(0, targetLeft),
         behavior: smooth ? 'smooth' : 'auto',
@@ -407,15 +413,15 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                       {/* Horizontally Auto-Scrolling Number Buttons */}
                       <div
                         ref={partPillsContainerRef}
-                        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth max-w-[210px] xs:max-w-[260px] sm:max-w-[320px] py-0.5 px-2"
+                        className="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-3.5 max-w-[260px] xs:max-w-[320px] sm:max-w-[380px]"
                         style={{
                           maskImage:
                             activeThread.screenshots.length > 5
-                              ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                              ? 'linear-gradient(to right, transparent 0%, black 8px, black calc(100% - 8px), transparent 100%)'
                               : undefined,
                           WebkitMaskImage:
                             activeThread.screenshots.length > 5
-                              ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                              ? 'linear-gradient(to right, transparent 0%, black 8px, black calc(100% - 8px), transparent 100%)'
                               : undefined,
                         }}
                       >
@@ -427,13 +433,13 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                               id={`thread-part-pill-${idx}`}
                               type="button"
                               onClick={() => scrollToPart(idx)}
-                              className={`min-w-[29px] h-7 px-2 inline-flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer active:scale-90 shrink-0 ${
+                              className={`min-w-[32px] h-7.5 px-2.5 inline-flex items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 cursor-pointer active:scale-90 shrink-0 ${
                                 isActive
-                                  ? 'bg-gradient-to-b from-[#4A8CF7] via-[#3478F6] to-[#2060DC] text-white shadow-md shadow-blue-500/25 font-black scale-105 border border-white/60'
-                                  : 'text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-white/90 shadow-2xs'
+                                  ? 'bg-gradient-to-b from-[#4A8CF7] via-[#3478F6] to-[#2060DC] text-white shadow-md shadow-blue-500/30 font-black scale-105 border border-white/70'
+                                  : 'text-slate-600 hover:text-slate-900 bg-white/75 hover:bg-white border border-white/90 shadow-2xs'
                               }`}
                             >
-                              <span>{idx + 1}</span>
+                              <span className="leading-none select-none">{idx + 1}</span>
                             </button>
                           );
                         })}
