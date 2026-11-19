@@ -488,11 +488,12 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl p-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+                <span className="liquid-filter-chip liquid-filter-chip-sm !text-base !h-9 !w-9 !p-0 shadow-md">
                   {currentAlbum.emoji || '📁'}
                 </span>
-                <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-white/15 backdrop-blur-md border border-white/20">
-                  {currentAlbum.badge || 'Album'}
+                <span className="liquid-filter-chip liquid-filter-chip-sm !font-extrabold text-[#3478F6] shadow-md gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentAlbum.accentColor || '#3478F6' }} />
+                  <span>{currentAlbum.badge || 'Album'}</span>
                 </span>
               </div>
 
@@ -599,11 +600,11 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
           <div className="relative z-10 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm border border-white/20">
-                <Film className="w-3 h-3 text-amber-300" />
-                Highlights Reel
+              <span className="liquid-filter-chip liquid-filter-chip-xs !font-extrabold text-[#3478F6] shadow-sm">
+                <Film className="w-3 h-3 text-[#3478F6]" />
+                <span>Highlights Reel</span>
               </span>
-              <span className="text-[11px] font-mono text-white/80">
+              <span className="liquid-filter-chip liquid-filter-chip-xs font-mono !font-bold text-[#172B4D] shadow-sm">
                 {highlightsScreenshots.length} moments
               </span>
             </div>
@@ -741,9 +742,9 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                   <div className="absolute inset-0 bg-white/80 rounded-3xl transform -rotate-2 -translate-y-0.5 -z-10 shadow-xs border border-black/5 transition-transform duration-200 group-hover:-rotate-3" />
 
                   {/* Main Front Album Card */}
-                  <div className="relative rounded-3xl overflow-hidden bg-white border border-white/80 shadow-md transition-all duration-200 active:scale-98 group-hover:shadow-lg">
-                    {/* Cover Image */}
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100">
+                  <div className="relative rounded-3xl overflow-hidden bg-white/95 border border-white/90 shadow-md transition-all duration-200 active:scale-98 group-hover:shadow-lg flex flex-col">
+                    {/* Cover Image Area */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 rounded-t-3xl">
                       {coverUrl ? (
                         <img
                           src={coverUrl}
@@ -757,46 +758,52 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                         </div>
                       )}
 
-                      {/* Top Bar Badges */}
-                      <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
-                        <span className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-sm shadow-xs border border-white/60">
+                      {/* Top Bar Floating Badges */}
+                      <div className="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none z-10">
+                        <span className="liquid-filter-chip liquid-filter-chip-xs !h-6 !w-6 !p-0 shadow-md pointer-events-auto">
                           {album.emoji || '📁'}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-mono font-bold text-white border border-white/20">
+                        <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
                           {album.screenshotIds.length}
                         </span>
                       </div>
+                    </div>
 
-                      {/* Frosted Bottom Info Plate */}
-                      <div className="absolute inset-x-0 bottom-0 p-3 pt-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white">
-                        <div className="flex items-center gap-1.5 mb-0.5">
+                    {/* Dedicated High-Contrast Info Plate Below Image */}
+                    <div className="p-3 bg-white/95 rounded-b-3xl border-t border-slate-100 flex flex-col gap-1.5">
+                      {/* Curated / Category Badge - Plump Liquid Glass Chip */}
+                      <div className="flex items-center justify-between">
+                        <span className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] shadow-2xs">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: album.accentColor || '#3478F6' }}
                           />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">
-                            {album.badge || 'Album'}
-                          </span>
-                        </div>
-                        <h3 className="font-extrabold text-xs tracking-tight truncate drop-shadow-sm">
-                          {album.title}
-                        </h3>
+                          <span className="truncate max-w-[100px]">{album.badge || 'Album'}</span>
+                        </span>
+                      </div>
 
-                        {/* Quick Play Trigger Pill */}
-                        <div className="mt-2 flex items-center justify-between pt-1 border-t border-white/15">
-                          <span className="text-[10px] text-white/70">View collection</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlayAlbumStory(album);
-                            }}
-                            className="p-1 rounded-full bg-white/25 hover:bg-white/40 active:scale-90 transition-transform"
-                            title="Play Story Reel"
-                          >
-                            <Play className="w-3 h-3 fill-white text-white" />
-                          </button>
-                        </div>
+                      {/* Album Title - High Contrast Deep Navy */}
+                      <h3 className="font-extrabold text-[12.5px] text-[#172B4D] tracking-tight truncate leading-snug">
+                        {album.title}
+                      </h3>
+
+                      {/* Action Bar: View Collection + Play Button */}
+                      <div className="mt-1 flex items-center justify-between pt-1.5 border-t border-slate-100">
+                        <span className="text-[10px] font-semibold text-[#4A5D78]">
+                          View collection
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayAlbumStory(album);
+                          }}
+                          className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
+                          title="Play Story Reel"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-[#3478F6] text-[#3478F6]" />
+                          <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Play</span>
+                        </button>
                       </div>
                     </div>
                   </div>
