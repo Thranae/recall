@@ -892,14 +892,16 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
   const handleCopyOcr = () => {
     if (!data?.screenshot.ocr_text) return;
-    navigator.clipboard.writeText(data.screenshot.ocr_text);
+    const cleanOcr = data.screenshot.ocr_text.replace(/\\n/g, '\n');
+    navigator.clipboard.writeText(cleanOcr);
     setCopiedOcr(true);
     setTimeout(() => setCopiedOcr(false), 2000);
   };
 
   const handleCopySingleMessage = async (msgId: string, text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      const formatted = text.replace(/\\n/g, '\n');
+      await navigator.clipboard.writeText(formatted);
       setCopiedMsgId(msgId);
       setTimeout(() => setCopiedMsgId(null), 1800);
     } catch (err) {
@@ -910,12 +912,11 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const handleCopyConversationFlow = async () => {
     if (!data?.messages || data.messages.length === 0) return;
     try {
+      // Verbatim copy matching screenshot syntax and paragraph spacing exactly
       const flowText = data.messages
-        .map((m) => {
-          const sender = m.sender_label || (m.sender_side === 'right' ? 'You' : 'Sender');
-          return `${sender}: ${m.message_text}`;
-        })
-        .join('\n');
+        .map((m) => m.message_text.replace(/\\n/g, '\n').trim())
+        .filter(Boolean)
+        .join('\n\n');
       await navigator.clipboard.writeText(flowText);
       setCopiedAllFlow(true);
       setTimeout(() => setCopiedAllFlow(false), 2000);
@@ -1886,7 +1887,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                       : 'bg-white/85 border border-white text-slate-800 rounded-tl-xs shadow-2xs'
                                   }`}
                                 >
-                                  {msg.message_text}
+                                  {msg.message_text.replace(/\\n/g, '\n')}
                                 </div>
                                 <button
                                   type="button"
@@ -2245,10 +2246,10 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   </div>
 
                   <pre
-                    className="rounded-[18px] bg-white/85 border border-white/90 backdrop-blur-md p-3.5 font-mono text-[11.5px] text-slate-800 leading-relaxed max-h-72 overflow-x-auto overflow-y-auto whitespace-pre select-text shadow-inner"
+                    className="rounded-[18px] bg-white/85 border border-white/90 backdrop-blur-md p-3.5 font-mono text-[11.5px] text-slate-800 leading-relaxed max-h-72 overflow-x-auto overflow-y-auto whitespace-pre-wrap select-text shadow-inner"
                     style={{ tabSize: 2 }}
                   >
-                    <code>{data?.screenshot.ocr_text || 'No text detected in this image.'}</code>
+                    <code>{(data?.screenshot.ocr_text || '').replace(/\\n/g, '\n') || 'No text detected in this image.'}</code>
                   </pre>
                 </div>
               )}

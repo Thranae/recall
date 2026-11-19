@@ -116,7 +116,11 @@ CATEGORIZATION RULES:
 PRECISION REQUIREMENT:
 - For any photo containing people, ALWAYS include intuitive everyday words in visual_entities and tags (e.g., if a young male is shown, include BOTH "boy" / "man" / "male" as appropriate; if female, include "girl" / "woman" / "female"; for any dark top, include both "black" and "black shirt" / "black t-shirt" if applicable).
 - Include single-word colors (e.g. "black", "blue", "white") AND combined phrases (e.g. "black shirt") in tags so searching either "black", "boy", or "black shirt" matches accurately.
-- Never write "No text found" in ocr_text; use "" when no text is readable.`;
+- TEXT EXTRACTION & VERBATIM FIDELITY RULES:
+  * "ocr_text" and "message_text" MUST preserve the EXACT verbatim syntax, punctuation, spacing, indentation, line breaks, emojis, and paragraph separations as seen in the original image.
+  * NEVER normalize, strip, or merge original line breaks or paragraph gaps (e.g. keep spaces before commas like "me , I", multiple dots like "......", dashes like "re - enter", colloquial terms like "solurann", abbreviations like "ur", "u r", and all emoji characters).
+  * Do NOT reformat or merge separate paragraphs into a continuous single block. If there are line breaks or blank lines between paragraphs, transcribe them with the identical newlines.
+  * Never write "No text found" in ocr_text; use "" when no text is readable.`;
 
 const PHOTO_VISUAL_SYNONYMS: Record<string, string[]> = {
   boy: ['boy', 'male'],
@@ -193,14 +197,30 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
   // Handle ocr_text whether string, object, or array
   let ocrText = '';
   if (typeof parsed.ocr_text === 'string') {
-    ocrText = parsed.ocr_text;
+    ocrText = parsed.ocr_text.replace(/\\n/g, '\n');
   } else if (parsed.ocr_text && typeof parsed.ocr_text === 'object') {
     ocrText = Object.values(parsed.ocr_text)
-      .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
+      .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v).replace(/\\n/g, '\n')))
       .join('\n');
   }
   if (/^(none|n\/a|no text|no readable text)$/i.test(ocrText.trim())) {
     ocrText = '';
+  }
+
+  // Normalize messages ensuring raw newlines, syntax, and spacing are strictly preserved
+  const normalizedMessages = Array.isArray(parsed.messages)
+    ? parsed.messages.map((m: any, idx: number) => ({
+        sequence_number: typeof m.sequence_number === 'number' ? m.sequence_number : idx + 1,
+        message_text: typeof m.message_text === 'string' ? m.message_text.replace(/\\n/g, '\n') : '',
+        sender_side: m.sender_side === 'right' ? 'right' : m.sender_side === 'left' ? 'left' : 'unknown',
+        sender_label: m.sender_label || null,
+        confidence: typeof m.confidence === 'number' ? m.confidence : 0.95,
+      }))
+    : [];
+
+  // If chat messages exist but ocr_text was omitted, reconstruct verbatim ocr_text preserving exact paragraph spacing
+  if (!ocrText && normalizedMessages.length > 0) {
+    ocrText = normalizedMessages.map(m => m.message_text).join('\n\n');
   }
 
   // Handle visual_description whether string or object
@@ -235,7 +255,7 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
     tags: enrichedTags,
     visual_entities: parsed.visual_entities,
     provider,
-    messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+    messages: normalizedMessages,
     game_result: parsed.game_result
       ? {
           game_name: parsed.game_result.game_name || 'Game',

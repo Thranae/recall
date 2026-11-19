@@ -254,7 +254,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   const handleCopyTranscript = () => {
     if (!activeThread) return;
     const cleanTexts = activeThread.screenshots
-      .map((sc) => sc.ocr_text?.trim())
+      .map((sc) => sc.ocr_text?.replace(/\\n/g, '\n').trim())
       .filter((txt): txt is string => Boolean(txt && txt.length > 0));
     navigator.clipboard.writeText(cleanTexts.join('\n\n'));
     setCopiedTranscript(true);
@@ -262,7 +262,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   };
 
   const handleCopyPartText = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text.replace(/\\n/g, '\n'));
     setCopiedPartId(id);
     setTimeout(() => setCopiedPartId(null), 1800);
   };
