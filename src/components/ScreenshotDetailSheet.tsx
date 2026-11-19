@@ -959,9 +959,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-white/70 px-5 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-bold text-slate-800">
+        <div className="flex items-center justify-between border-b border-white/70 px-4 py-2.5 gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[13px] font-bold text-slate-800 whitespace-nowrap shrink-0">
               Details
             </span>
             {(() => {
@@ -971,7 +971,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
 
               if (!isReady) {
                 return (
-                  <span className="liquid-filter-chip liquid-filter-chip-xs shadow-2xs bg-amber-50 text-amber-700 border border-amber-200/70 font-bold flex items-center gap-1">
+                  <span className="liquid-filter-chip liquid-filter-chip-xs shadow-2xs bg-amber-50 text-amber-700 border border-amber-200/70 font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
                     <Loader2 className="h-3 w-3 animate-spin text-amber-500 stroke-[2.3]" />
                     <span>AI Analyzing…</span>
                   </span>
@@ -981,28 +981,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               const preciseCat = classifyScreenshotPrecisely(currentScreenshot);
               const { badgeText, icon: CatIcon } = getPreciseCategoryMeta(preciseCat);
               return (
-                <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs">
+                <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs whitespace-nowrap shrink-0">
                   <CatIcon className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
                   <span>{badgeText}</span>
                 </span>
               );
             })()}
-
-            {/* Conversation Thread Badge: Only shown after AI has analyzed and verified the conversation */}
-            {(data?.screenshot?.processing_status === 'ready' || initialScreenshot?.processing_status === 'ready') && matchedThread && (
-              <button
-                type="button"
-                onClick={() => setIsThreadReelOpen(true)}
-                className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs active:scale-95 transition-all cursor-pointer hover:brightness-105 gap-1 shrink-0"
-                title={`View conversation thread reel (Part ${threadPartNumber} of ${matchedThread.screenshots?.length || matchedThread.screenshotIds?.length || 1})`}
-              >
-                <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-                <span>Thread Part {threadPartNumber}</span>
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Full-Screen Chat AI Button */}
             <button
               type="button"
@@ -1012,12 +999,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               }}
               title="Chat with Recall AI in Full Screen"
               aria-label="Chat with Recall AI in Full Screen"
-              className="flex h-8 items-center gap-1.5 rounded-full liquid-btn-primary px-3 text-[11px] font-bold text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+              className="flex h-8 items-center gap-1.5 rounded-full liquid-btn-primary px-3 text-[11px] font-bold text-white active:scale-95 transition-all cursor-pointer shadow-xs whitespace-nowrap shrink-0"
             >
-              <MessageSquare className="h-3.5 w-3.5 stroke-[2.3]" />
-              <span>Chat AI</span>
+              <MessageSquare className="h-3.5 w-3.5 stroke-[2.3] shrink-0" />
+              <span className="whitespace-nowrap">Chat AI</span>
               {chatMessages.length > 0 && (
-                <span className="bg-white/25 px-1.5 py-0.2 rounded-full text-[9px] font-bold font-mono">
+                <span className="bg-white/25 px-1.5 py-0.2 rounded-full text-[9px] font-bold font-mono shrink-0">
                   {chatMessages.length}
                 </span>
               )}
@@ -1030,10 +1017,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               disabled={isReanalyzing || loading}
               title="Re-analyze image with Vision AI"
               aria-label="Re-analyze image with Vision AI"
-              className="flex h-8 items-center gap-1.5 rounded-full liquid-glass-pill px-2.5 text-[11px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs"
+              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
             >
-              <RefreshCw className={`h-3.5 w-3.5 text-[#3478F6] ${isReanalyzing ? 'animate-spin' : ''}`} />
-              <span className="hidden xs:inline">{isReanalyzing ? 'Analyzing...' : 'Re-Analyze'}</span>
+              <RefreshCw className={`h-3.5 w-3.5 text-[#3478F6] shrink-0 ${isReanalyzing ? 'animate-spin' : ''}`} />
             </button>
 
             {/* Delete button */}
@@ -1043,7 +1029,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               disabled={isDeleting}
               title="Delete screenshot"
               aria-label="Delete screenshot"
-              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:text-rose-600 active:scale-90 transition-all cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:text-rose-600 active:scale-90 transition-all cursor-pointer shrink-0"
             >
               {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin text-rose-600" /> : <Trash2 className="h-3.5 w-3.5 stroke-[2]" />}
             </button>
@@ -1053,7 +1039,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close details"
-              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:scale-90 transition-all cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-full liquid-glass-pill text-slate-500 active:scale-90 transition-all cursor-pointer shrink-0"
             >
               <X className="h-4 w-4 stroke-[2]" />
             </button>
@@ -1172,7 +1158,37 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-4 py-3.5 space-y-3.5">
+          {/* Conversation Thread Reel Banner: Distinct, non-clashing placement */}
+          {(data?.screenshot?.processing_status === 'ready' || initialScreenshot?.processing_status === 'ready') && matchedThread && (
+            <div className="animate-fadeIn">
+              <button
+                type="button"
+                onClick={() => setIsThreadReelOpen(true)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl liquid-filter-chip liquid-filter-chip-active text-[#3478F6] shadow-2xs active:scale-[0.99] transition-all cursor-pointer hover:brightness-105"
+                title="Tap to open full connected conversation thread reel"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#3478F6]/15 text-[#3478F6]">
+                    <Layers className="h-4 w-4 stroke-[2.4]" />
+                  </span>
+                  <div className="flex flex-col text-left min-w-0">
+                    <span className="text-[12px] font-bold text-[#172B4D] leading-tight truncate">
+                      Conversation Thread
+                    </span>
+                    <span className="text-[10.5px] font-semibold text-[#3478F6] leading-tight">
+                      Part {threadPartNumber} of {matchedThread.screenshots?.length || matchedThread.screenshotIds?.length || 1}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#3478F6]/10 text-[10.5px] font-extrabold text-[#3478F6] shrink-0">
+                  <span>View Reel</span>
+                  <span className="text-xs">→</span>
+                </div>
+              </button>
+            </div>
+          )}
+
           {/* Image Preview with Plump Liquid Glass Frame */}
           <div className="space-y-2">
             <div
@@ -1393,24 +1409,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.95) 75%, transparent 100%)',
                 }}
               />
-
-              {/* Floating Thread Part Badge on Screenshot Preview: Only shown after AI verification */}
-              {!isRedactedMode && (data?.screenshot?.processing_status === 'ready' || initialScreenshot?.processing_status === 'ready') && matchedThread && (
-                <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsThreadReelOpen(true);
-                    }}
-                    className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-md active:scale-95 transition-all cursor-pointer hover:brightness-105 gap-1 pointer-events-auto"
-                    title="Open full conversation thread reel"
-                  >
-                    <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.3]" />
-                    <span>Thread Part {threadPartNumber}</span>
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Dedicated Interactive Control Dock for Screenshot */}
@@ -1420,7 +1418,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 type="button"
                 onClick={handleToggleRedact}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isRedactedMode
                     ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-1 ring-[#3478F6]/40'
                     : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
@@ -1428,13 +1426,13 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 title="Mask and redact private info, personal chats or sensitive details"
               >
                 {isRedacting || isAiRedacting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6]" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#3478F6] shrink-0" />
                 ) : isRedactedMode ? (
-                  <ShieldCheck className="h-3.5 w-3.5 stroke-[2.3] text-emerald-400" />
+                  <ShieldCheck className="h-3.5 w-3.5 stroke-[2.3] text-emerald-400 shrink-0" />
                 ) : (
-                  <Shield className="h-3.5 w-3.5 stroke-[2.3] text-[#3478F6]" />
+                  <Shield className="h-3.5 w-3.5 stroke-[2.3] text-[#3478F6] shrink-0" />
                 )}
-                <span>
+                <span className="whitespace-nowrap">
                   {isAiRedacting
                     ? 'Redacting…'
                     : isRedacting
@@ -1450,7 +1448,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 type="button"
                 onClick={() => setIsImageExpanded(!isImageExpanded)}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isImageExpanded
                     ? 'bg-[#EBF3FF] text-[#3478F6] border border-[#3478F6]/30 shadow-2xs'
                     : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
@@ -1459,13 +1457,13 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               >
                 {isImageExpanded ? (
                   <>
-                    <Minimize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
-                    <span>Collapse</span>
+                    <Minimize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
+                    <span className="whitespace-nowrap">Collapse</span>
                   </>
                 ) : (
                   <>
-                    <Maximize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
-                    <span>Expand</span>
+                    <Maximize2 className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
+                    <span className="whitespace-nowrap">Expand</span>
                   </>
                 )}
               </button>
