@@ -67,6 +67,7 @@ type ScreenshotDetailData = {
 
 interface ScreenshotDetailSheetProps {
   screenshotId: string | null;
+  initialScreenshot?: Screenshot;
   searchResult?: SearchResultItem;
   onClose: () => void;
   onDeleted: () => void;
@@ -77,6 +78,7 @@ interface ScreenshotDetailSheetProps {
 
 export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   screenshotId,
+  initialScreenshot,
   searchResult,
   onClose,
   onDeleted,
@@ -899,13 +901,14 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <span className="text-[13px] font-bold text-slate-800">
               Details
             </span>
-            {data?.screenshot.category && (() => {
-              const cat = data.screenshot.category;
+            {(() => {
+              const cat = data?.screenshot?.category || initialScreenshot?.category;
+              if (!cat) return null;
               const CatIcon = cat === 'chat' ? MessageSquare : cat === 'product' ? ShoppingBag : cat === 'poster_document' ? FileText : Tag;
               const label = cat === 'chat' ? 'Chat' : cat === 'product' ? 'Product' : cat === 'poster_document' ? 'Document' : 'Other';
               return (
-                <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active font-bold text-[#3478F6] shadow-sm">
-                  <CatIcon className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.2]" />
+                <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs">
+                  <CatIcon className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
                   <span>{label}</span>
                 </span>
               );

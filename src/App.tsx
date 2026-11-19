@@ -477,6 +477,7 @@ export const App: React.FC = () => {
       {/* Screenshot Detail Mobile Sheet */}
       <ScreenshotDetailSheet
         screenshotId={selectedScreenshotId}
+        initialScreenshot={screenshots.find((s) => s.id === selectedScreenshotId)}
         searchResult={selectedSearchResult}
         onClose={() => {
           setSelectedScreenshotId(null);

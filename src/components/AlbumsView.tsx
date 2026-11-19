@@ -854,6 +854,15 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                       </div>
                     )}
 
+                    {/* Opaque gradient scrim to dissolve high-contrast screenshot text on lower half */}
+                    <div
+                      className="absolute inset-x-0 bottom-0 h-[56%] pointer-events-none z-0"
+                      style={{
+                        background:
+                          'linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.75) 45%, rgba(255, 255, 255, 0.98) 85%, #FFFFFF 100%)',
+                      }}
+                    />
+
                     {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
                     <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
                       <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">

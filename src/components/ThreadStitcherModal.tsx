@@ -312,8 +312,8 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                     <h3 className="text-[14px] font-bold text-[#172B4D] truncate leading-tight">
                       {activeThread.title}
                     </h3>
-                    <span className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-bold text-[#3478F6] shrink-0 gap-1.5 shadow-sm">
-                      <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.4]" />
+                    <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] shrink-0 gap-1 shadow-2xs">
+                      <Layers className="h-2.5 w-2.5 text-[#3478F6] stroke-[2.4]" />
                       <span>Thread</span>
                     </span>
                   </div>
@@ -457,9 +457,9 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
                         {/* Top Overlay Badges: Left Part Number, Right Detail Launcher */}
                         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-                          <div className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md pointer-events-none gap-1.5">
-                            <Layers className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3] shrink-0" />
-                            <span className="text-[11px] font-bold text-[#3478F6]">
+                          <div className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-md pointer-events-none gap-1">
+                            <Layers className="h-3 w-3 text-[#3478F6] stroke-[2.3] shrink-0" />
+                            <span className="text-[10px] font-bold text-[#3478F6]">
                               Part {idx + 1}
                             </span>
                           </div>
@@ -468,11 +468,11 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                             <button
                               type="button"
                               onClick={() => onSelectScreenshot(sc.id)}
-                              className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto"
+                              className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto gap-1"
                               title="Open full screenshot details"
                             >
-                              <span className="text-[11px] font-bold text-[#3478F6]">Detail</span>
-                              <ExternalLink className="h-3 w-3 text-[#3478F6] stroke-[2.4]" />
+                              <span className="text-[10px] font-bold text-[#3478F6]">Detail</span>
+                              <ExternalLink className="h-2.5 w-2.5 text-[#3478F6] stroke-[2.4]" />
                             </button>
                           )}
                         </div>
