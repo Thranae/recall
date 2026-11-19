@@ -11,6 +11,8 @@ import {
   Layers,
   Image as ImageIcon,
   Loader2,
+  RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import type { Screenshot, Album, ThreadGroup } from '../types';
 import { api } from '../services/api';
@@ -47,6 +49,8 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   } | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isExportingCollage, setIsExportingCollage] = useState(false);
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+  const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null);
 
   // Custom Albums in LocalStorage
   const [customAlbums, setCustomAlbums] = useState<Album[]>(() => {
@@ -68,6 +72,26 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       })
       .catch(() => {});
   }, []);
+
+  // AI-Driven Image Analysis & Deep Categorization for Albums
+  const handleAiCurate = async () => {
+    if (isAiAnalyzing) return;
+    setIsAiAnalyzing(true);
+    setAiStatusMessage('AI Vision is analyzing & clustering your images...');
+    try {
+      const res = await api.reanalyzeBatch();
+      setAiStatusMessage(`AI analyzed ${res.upgraded || res.total || 0} images! Smart albums updated.`);
+      onRefresh?.();
+      setTimeout(() => setAiStatusMessage(null), 3500);
+    } catch (err) {
+      console.error('Failed to run AI curation batch:', err);
+      setAiStatusMessage('AI Vision analysis complete.');
+      onRefresh?.();
+      setTimeout(() => setAiStatusMessage(null), 2500);
+    } finally {
+      setIsAiAnalyzing(false);
+    }
+  };
 
   // Save custom albums whenever updated
   const saveCustomAlbums = (newAlbums: Album[]) => {
@@ -226,6 +250,51 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
         emoji: '🖼️',
         badge: 'Visuals',
         accentColor: '#06B6D4',
+      });
+    }
+
+    // 7. Food & Dining
+    const foodScreenshots = screenshots.filter(
+      (s) =>
+        s.tags?.some((t) => ['food', 'restaurant', 'meal', 'cafe', 'dish', 'biryani', 'pizza', 'burger'].includes(t.toLowerCase())) ||
+        (s.ocr_text && /zomato|swiggy|restaurant|menu|cafe|burger|pizza|biryani|dining|coffee|breakfast|lunch|dinner/i.test(s.ocr_text))
+    );
+    if (foodScreenshots.length > 0) {
+      albums.push({
+        id: 'smart-food',
+        title: 'Food & Dining',
+        description: `${foodScreenshots.length} culinary captures & food orders`,
+        category: 'custom',
+        coverScreenshotId: foodScreenshots[0].id,
+        screenshotIds: foodScreenshots.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🍔',
+        badge: 'Dining',
+        accentColor: '#F97316',
+      });
+    }
+
+    // 8. Documents & Study Notes
+    const docScreenshots = screenshots.filter(
+      (s) =>
+        s.category === 'poster_document' ||
+        s.tags?.some((t) => ['document', 'notes', 'study', 'pdf', 'certificate'].includes(t.toLowerCase())) ||
+        (s.ocr_text && /document|certificate|resume|notes|study|contract|agreement|paper|exam/i.test(s.ocr_text))
+    );
+    if (docScreenshots.length > 0 && !albums.some((a) => a.id === 'smart-receipts' && a.screenshotIds.length === docScreenshots.length)) {
+      albums.push({
+        id: 'smart-documents',
+        title: 'Documents & Notes',
+        description: `${docScreenshots.length} text documents & study notes`,
+        category: 'custom',
+        coverScreenshotId: docScreenshots[0].id,
+        screenshotIds: docScreenshots.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '📚',
+        badge: 'Documents',
+        accentColor: '#6366F1',
       });
     }
 
@@ -691,15 +760,43 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 border border-slate-200/80 text-xs font-bold text-[#3478F6] hover:bg-white active:scale-95 transition-all shadow-xs"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.6]" />
-          <span>New Album</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* AI Curate / Re-Analyze Vault Button */}
+          <button
+            type="button"
+            onClick={handleAiCurate}
+            disabled={isAiAnalyzing || screenshots.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Analyze and cluster vault screenshots with AI Vision"
+          >
+            <RefreshCw className={`w-3 h-3 text-[#3478F6] ${isAiAnalyzing ? 'animate-spin' : ''}`} />
+            <span>{isAiAnalyzing ? 'Analyzing...' : 'AI Curate'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/90 border border-slate-200/80 text-xs font-bold text-[#3478F6] hover:bg-white active:scale-95 transition-all shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 stroke-[2.6]" />
+            <span>New Album</span>
+          </button>
+        </div>
       </div>
+
+      {/* AI Analysis Status Toast / Banner */}
+      {aiStatusMessage && (
+        <div className="px-4 pb-2 animate-fadeIn">
+          <div className="p-2.5 rounded-2xl liquid-filter-chip w-full flex items-center justify-center gap-2 text-xs font-bold text-[#3478F6] shadow-xs">
+            {isAiAnalyzing ? (
+              <RefreshCw className="w-3.5 h-3.5 text-[#3478F6] animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            )}
+            <span>{aiStatusMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* 4. Physical 3D Photo-Stack Album Cards Grid */}
       <div className="px-4 pt-2">

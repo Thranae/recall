@@ -28,7 +28,7 @@ interface ScreenshotCardProps {
   onToggleSelect?: () => void;
   onLongPress?: () => void;
   threadGroup?: import('../types').ThreadGroup;
-  onOpenThreadReel?: (thread: import('../types').ThreadGroup) => void;
+  onOpenThreadReel?: (thread: import('../types').ThreadGroup, initialIndex?: number) => void;
 }
 
 const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
@@ -395,28 +395,34 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
           )}
         </div>
 
-        {/* Stitched Conversation Thread badge on thumbnail */}
-        {threadGroup && !isSelectionMode && (
-          <div className="absolute bottom-2 left-2 z-10">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenThreadReel?.(threadGroup);
-              }}
-              className="liquid-filter-chip liquid-filter-chip-sm active:scale-95 transition-transform cursor-pointer shadow-md text-[#172B4D] hover:brightness-105"
-              title={`View conversation thread (${threadGroup.screenshots.length} connected screenshots)`}
-            >
-              <Layers className="h-3.5 w-3.5 shrink-0 stroke-[2.3] text-[#3478F6]" />
-              <span className="text-[11px] font-bold tracking-tight text-[#172B4D]">
-                Thread
-              </span>
-              <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.2 rounded-full">
-                {threadGroup.screenshots.length}
-              </span>
-            </button>
-          </div>
-        )}
+        {/* Stitched Conversation Thread sequential badge on thumbnail */}
+        {threadGroup && !isSelectionMode && (() => {
+          const partIndex = threadGroup.screenshotIds.indexOf(screenshot.id);
+          const partNumber = partIndex >= 0 ? partIndex + 1 : 1;
+          const totalParts = threadGroup.screenshots.length;
+
+          return (
+            <div className="absolute bottom-2 left-2 z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenThreadReel?.(threadGroup, partIndex >= 0 ? partIndex : 0);
+                }}
+                className="liquid-filter-chip liquid-filter-chip-sm active:scale-95 transition-transform cursor-pointer shadow-md text-[#172B4D] hover:brightness-105 pointer-events-auto"
+                title={`Part ${partNumber} of ${totalParts} in conversation thread`}
+              >
+                <Layers className="h-3.5 w-3.5 shrink-0 stroke-[2.3] text-[#3478F6]" />
+                <span className="text-[11px] font-bold tracking-tight text-[#172B4D]">
+                  Thread
+                </span>
+                <span className="text-[10px] font-mono font-extrabold text-[#3478F6] bg-[#B9D9FF]/40 px-1.5 py-0.2 rounded-full">
+                  {partNumber}/{totalParts}
+                </span>
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Search match percentage pill on thumbnail */}
         {searchResult && (

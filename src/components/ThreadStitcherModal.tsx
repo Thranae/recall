@@ -18,6 +18,7 @@ import { downloadImageFile } from '../utils/fileDownload';
 interface ThreadStitcherModalProps {
   isOpen: boolean;
   thread: ThreadGroup | null;
+  initialIndex?: number;
   onClose: () => void;
   onSelectScreenshot?: (id: string) => void;
 }
@@ -25,17 +26,20 @@ interface ThreadStitcherModalProps {
 export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   isOpen,
   thread,
+  initialIndex = 0,
   onClose,
   onSelectScreenshot,
 }) => {
   const [viewMode, setViewMode] = useState<'visual' | 'transcript'>('visual');
   const [isExporting, setIsExporting] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
-  const [activePartIndex, setActivePartIndex] = useState(0);
+  const [activePartIndex, setActivePartIndex] = useState(initialIndex);
 
   const reelContainerRef = useRef<HTMLDivElement>(null);
   const partPillsContainerRef = useRef<HTMLDivElement>(null);
   const lastThreadRef = useRef<ThreadGroup | null>(thread);
+  const isClickScrollingRef = useRef(false);
+  const clickScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (thread) {
     lastThreadRef.current = thread;
@@ -55,16 +59,45 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
     }
   }, []);
 
-  // Center initial part pill on open
+  // Jumps to part cleanly within container without jittering or fighting scroll listeners
+  const scrollToPart = useCallback((index: number) => {
+    if (clickScrollTimerRef.current) clearTimeout(clickScrollTimerRef.current);
+    isClickScrollingRef.current = true;
+    setActivePartIndex(index);
+    centerActivePill(index, true);
+
+    const container = reelContainerRef.current;
+    const target = document.getElementById(`thread-part-${index}`);
+    if (container && target) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const currentScroll = container.scrollTop;
+      const targetOffset = targetRect.top - containerRect.top + currentScroll - 64;
+      container.scrollTo({
+        top: Math.max(0, targetOffset),
+        behavior: 'smooth',
+      });
+    }
+
+    clickScrollTimerRef.current = setTimeout(() => {
+      isClickScrollingRef.current = false;
+    }, 600);
+  }, [centerActivePill]);
+
+  // Center initial part pill on open or when initialIndex changes
   useEffect(() => {
     if (isOpen) {
-      setActivePartIndex(0);
+      const startIndex = Math.min(Math.max(0, initialIndex), Math.max(0, (activeThread?.screenshots.length || 1) - 1));
+      setActivePartIndex(startIndex);
       const timer = setTimeout(() => {
-        centerActivePill(0, false);
-      }, 60);
+        centerActivePill(startIndex, false);
+        if (startIndex > 0) {
+          scrollToPart(startIndex);
+        }
+      }, 75);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, activeThread?.threadId, centerActivePill]);
+  }, [isOpen, activeThread?.threadId, initialIndex, centerActivePill, scrollToPart]);
 
   // Real-time smooth scroll synchronization: highlights active part & auto-scrolls pill strip
   useEffect(() => {
@@ -76,8 +109,16 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
     let lastIdx = 0;
 
     const onScroll = () => {
+      // If user just tapped a number, ignore intermediate frames to prevent glitching/fighting
+      if (isClickScrollingRef.current) return;
+
       if (!ticking) {
         window.requestAnimationFrame(() => {
+          if (isClickScrollingRef.current) {
+            ticking = false;
+            return;
+          }
+
           const containerRect = container.getBoundingClientRect();
           let closestIdx = 0;
           let minDistance = Infinity;
@@ -108,24 +149,6 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
     container.addEventListener('scroll', onScroll, { passive: true });
     return () => container.removeEventListener('scroll', onScroll);
   }, [isOpen, activeThread, viewMode, centerActivePill]);
-
-  // Jumps to part cleanly within container without jittering outer window
-  const scrollToPart = useCallback((index: number) => {
-    setActivePartIndex(index);
-    centerActivePill(index, true);
-    const container = reelContainerRef.current;
-    const target = document.getElementById(`thread-part-${index}`);
-    if (container && target) {
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const currentScroll = container.scrollTop;
-      const targetOffset = targetRect.top - containerRect.top + currentScroll - 64;
-      container.scrollTo({
-        top: Math.max(0, targetOffset),
-        behavior: 'smooth',
-      });
-    }
-  }, [centerActivePill]);
 
   const handleExportStitched = async () => {
     if (!activeThread?.screenshots.length || isExporting) return;
@@ -341,62 +364,74 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
             <div ref={reelContainerRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 overscroll-contain">
               {viewMode === 'visual' ? (
                 <div className="relative mx-auto max-w-md">
-                  {/* Sticky Plump Liquid Glass Part Navigator with Dynamic Horizontal Progress Scroll */}
+                  {/* Sticky Plump Liquid Glass Part Navigator (True iOS 27 Fluid Aesthetic) */}
                   <div className="sticky top-0 z-20 pb-3 pt-1 pointer-events-none flex justify-center">
-                    <div className="pointer-events-auto relative flex flex-col items-center rounded-full plump-glass-pill !bg-white/95 backdrop-blur-xl border border-white/95 shadow-md overflow-hidden max-w-[94%] xs:max-w-md">
-                      <div className="flex items-center gap-1.5 p-1 w-full justify-between">
-                        <div className="flex items-center gap-1 pl-2.5 pr-1 shrink-0">
-                          <span className="text-[10px] font-extrabold text-[#3478F6] tracking-wider uppercase">
-                            Part
-                          </span>
-                          <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100/90 px-1.5 py-0.5 rounded-full">
-                            {activePartIndex + 1}/{activeThread.screenshots.length}
-                          </span>
-                        </div>
+                    <div
+                      className="pointer-events-auto relative flex items-center rounded-full px-2 py-1.5 shadow-xl max-w-[94%] xs:max-w-md transition-all duration-300"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 250, 255, 0.85) 50%, rgba(230, 242, 255, 0.80) 100%)',
+                        backdropFilter: 'blur(30px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+                        border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                        borderTopColor: '#FFFFFF',
+                        borderBottomColor: 'rgba(52, 120, 246, 0.25)',
+                        boxShadow:
+                          '0 10px 28px -4px rgba(23, 43, 77, 0.12), 0 3px 10px rgba(52, 120, 246, 0.08), inset 0 1.5px 2px #FFFFFF, inset 0 -1.5px 2px rgba(52, 120, 246, 0.12)',
+                      }}
+                    >
+                      {/* Plump Specular Top Arc */}
+                      <div
+                        className="absolute top-0 inset-x-5 h-[1px] rounded-full pointer-events-none"
+                        style={{
+                          background:
+                            'linear-gradient(90deg, transparent 0%, rgba(255,255,255,1) 30%, rgba(255,255,255,1) 70%, transparent 100%)',
+                        }}
+                      />
 
-                        <div
-                          ref={partPillsContainerRef}
-                          className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth max-w-[210px] xs:max-w-[260px] sm:max-w-[320px] py-0.5 px-2"
-                          style={{
-                            maskImage:
-                              activeThread.screenshots.length > 5
-                                ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
-                                : undefined,
-                            WebkitMaskImage:
-                              activeThread.screenshots.length > 5
-                                ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
-                                : undefined,
-                          }}
-                        >
-                          {activeThread.screenshots.map((sc, idx) => {
-                            const isActive = activePartIndex === idx;
-                            return (
-                              <button
-                                key={sc.id}
-                                id={`thread-part-pill-${idx}`}
-                                type="button"
-                                onClick={() => scrollToPart(idx)}
-                                className={`min-w-[28px] h-7 px-2 inline-flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
-                                  isActive
-                                    ? 'bg-[#3478F6] text-white shadow-xs font-extrabold scale-105'
-                                    : 'text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/60'
-                                }`}
-                              >
-                                <span>{idx + 1}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                      {/* Left Part Pill Indicator */}
+                      <div className="flex items-center gap-1.5 pl-1.5 pr-2 shrink-0 border-r border-blue-200/50">
+                        <span className="text-[10px] font-black text-[#3478F6] tracking-wider uppercase">
+                          Part
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-[#172B4D] bg-white/85 border border-white/90 px-1.5 py-0.5 rounded-full shadow-2xs">
+                          {activePartIndex + 1}/{activeThread.screenshots.length}
+                        </span>
                       </div>
 
-                      {/* Integrated Thread Scroll Progress Hairline */}
-                      <div className="w-full h-[2px] bg-slate-200/50 overflow-hidden">
-                        <div
-                          className="h-full bg-[#3478F6] transition-all duration-150 rounded-full"
-                          style={{
-                            width: `${((activePartIndex + 1) / activeThread.screenshots.length) * 100}%`,
-                          }}
-                        />
+                      {/* Horizontally Auto-Scrolling Number Buttons */}
+                      <div
+                        ref={partPillsContainerRef}
+                        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth max-w-[210px] xs:max-w-[260px] sm:max-w-[320px] py-0.5 px-2"
+                        style={{
+                          maskImage:
+                            activeThread.screenshots.length > 5
+                              ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                              : undefined,
+                          WebkitMaskImage:
+                            activeThread.screenshots.length > 5
+                              ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                              : undefined,
+                        }}
+                      >
+                        {activeThread.screenshots.map((sc, idx) => {
+                          const isActive = activePartIndex === idx;
+                          return (
+                            <button
+                              key={sc.id}
+                              id={`thread-part-pill-${idx}`}
+                              type="button"
+                              onClick={() => scrollToPart(idx)}
+                              className={`min-w-[29px] h-7 px-2 inline-flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer active:scale-90 shrink-0 ${
+                                isActive
+                                  ? 'bg-gradient-to-b from-[#4A8CF7] via-[#3478F6] to-[#2060DC] text-white shadow-md shadow-blue-500/25 font-black scale-105 border border-white/60'
+                                  : 'text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-white/90 shadow-2xs'
+                              }`}
+                            >
+                              <span>{idx + 1}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

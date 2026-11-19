@@ -71,6 +71,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   // Threads, Digest & Clutter Sweeper States
   const [threads, setThreads] = useState<ThreadGroup[]>([]);
   const [selectedThread, setSelectedThread] = useState<ThreadGroup | null>(null);
+  const [selectedThreadInitialIndex, setSelectedThreadInitialIndex] = useState(0);
   const [isVaultDigestOpen, setIsVaultDigestOpen] = useState(false);
   const [isClutterSweeperOpen, setIsClutterSweeperOpen] = useState(false);
 
@@ -692,7 +693,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 onToggleSelect={() => handleToggleSelect(s.id)}
                 onLongPress={() => handleCardLongPress(s.id)}
                 threadGroup={threadByScreenshotId.get(s.id)}
-                onOpenThreadReel={(t) => setSelectedThread(t)}
+                onOpenThreadReel={(t, initialIndex) => {
+                  setSelectedThread(t);
+                  setSelectedThreadInitialIndex(initialIndex ?? 0);
+                }}
               />
             ))}
           </div>
@@ -1032,9 +1036,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <ThreadStitcherModal
         isOpen={Boolean(selectedThread)}
         thread={selectedThread}
-        onClose={() => setSelectedThread(null)}
+        initialIndex={selectedThreadInitialIndex}
+        onClose={() => {
+          setSelectedThread(null);
+          setSelectedThreadInitialIndex(0);
+        }}
         onSelectScreenshot={(id) => {
           setSelectedThread(null);
+          setSelectedThreadInitialIndex(0);
           onSelectScreenshot(id);
         }}
       />

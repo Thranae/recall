@@ -927,19 +927,6 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               )}
             </button>
 
-            {isImageExpanded && (
-              <button
-                type="button"
-                onClick={() => setIsImageExpanded(false)}
-                title="Collapse image preview"
-                aria-label="Collapse image preview"
-                className="flex h-8 items-center gap-1 rounded-full bg-[#0B1220] px-2.5 text-[11px] font-semibold text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
-              >
-                <Minimize2 className="h-3 w-3 stroke-[2.2]" />
-                <span>Collapse</span>
-              </button>
-            )}
-
             {/* Re-Analyze with AI Button */}
             <button
               type="button"
@@ -1361,9 +1348,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsImageExpanded(false)}
-                  className="pointer-events-auto absolute top-2.5 right-2.5 z-20 flex items-center gap-1 rounded-full bg-[#0B1220]/85 border border-white/25 px-2.5 py-1 text-[9.5px] font-bold text-white backdrop-blur-md active:scale-95 cursor-pointer shadow-xs"
+                  className="pointer-events-auto absolute top-2.5 right-2.5 z-20 flex items-center gap-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#172B4D] active:scale-95 cursor-pointer shadow-md"
                 >
-                  <Minimize2 className="h-3 w-3 stroke-[2.2]" />
+                  <Minimize2 className="h-3 w-3 stroke-[2.2] text-[#3478F6]" />
                   <span>Collapse</span>
                 </button>
               )}
