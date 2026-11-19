@@ -10,6 +10,7 @@ import { generateTextEmbedding, computeCosineSimilarity } from '../services/ai/e
 import { ensureWebCompatibleImage, isHeicFormat, detectImageMimeType } from '../utils/imageConverter';
 import { detectDuplicateGroups, cleanSubstantiveOcr, computeTokenJaccard, computeBigramDice } from '../services/duplicateDetector';
 import { detectThreadGroups, extractVaultDigest, detectClutterCandidates } from '../services/vaultIntelligence';
+import { classifyImagePrecisely } from '../services/ai/classifier';
 
 const router = Router();
 
@@ -1075,19 +1076,19 @@ router.post('/:id/ai-redact', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Upgrade Vision Index: Batch re-analyze existing screenshots so older photos gain full visual_entities & tags
+// Upgrade Vision Index: Batch re-analyze existing screenshots with AI Vision & assign precise categories
 router.post('/batch/reanalyze-all', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
     const userEmail = req.user!.email || '';
 
     const rows = (await db.prepare(`
-      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data, ocr_text, visual_description, tags, category
       FROM screenshots
       WHERE user_id = ?
          OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
       ORDER BY created_at DESC
-      LIMIT 25
+      LIMIT 100
     `).all(userId, userEmail)) as any[];
 
     let upgraded = 0;
@@ -1095,14 +1096,38 @@ router.post('/batch/reanalyze-all', authMiddleware, async (req: AuthRequest, res
 
     for (const row of rows) {
       try {
-        await processScreenshotDirectly(
-          row.id,
-          row.user_id,
-          row.storage_key,
-          row.mime_type,
-          row.original_filename,
-          row.image_data || undefined
-        );
+        // If image has missing or fallback visual description, run full multimodal AI vision
+        const needsFullVision =
+          !row.visual_description ||
+          row.visual_description.includes('No visual content') ||
+          row.visual_description.includes('filename alone') ||
+          row.processing_status === 'processing';
+
+        if (needsFullVision && row.image_data) {
+          await processScreenshotDirectly(
+            row.id,
+            row.user_id,
+            row.storage_key,
+            row.mime_type,
+            row.original_filename,
+            row.image_data || undefined
+          );
+        } else {
+          // Re-evaluate precise category using all available cues
+          const precise = classifyImagePrecisely({
+            category: row.category,
+            ocr_text: row.ocr_text,
+            visual_description: row.visual_description,
+            tags: row.tags,
+            original_filename: row.original_filename,
+          });
+
+          await db.prepare(`
+            UPDATE screenshots
+            SET category = ?, updated_at = ?
+            WHERE id = ?
+          `).run(precise, new Date().toISOString(), row.id);
+        }
         upgraded++;
       } catch (e) {
         console.warn(`Batch reanalyze skipped ${row.id}:`, e);
@@ -1114,11 +1139,56 @@ router.post('/batch/reanalyze-all', authMiddleware, async (req: AuthRequest, res
       total: rows.length,
       upgraded,
       failed,
-      message: `Upgraded visual recognition index for ${upgraded} of ${rows.length} image(s).`,
+      message: `AI Vision analyzed and precisely categorized ${upgraded} image(s).`,
     });
   } catch (err: any) {
     console.error('Batch reanalyze error:', err);
     res.status(500).json({ error: 'Failed to upgrade vision index', details: err.message });
+  }
+});
+
+// Fast AI Category Sync: Re-computes precise categories for all screenshots based on visual & OCR intelligence
+router.post('/batch/classify-all', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const userEmail = req.user!.email || '';
+
+    const rows = (await db.prepare(`
+      SELECT id, original_filename, category, ocr_text, visual_description, tags
+      FROM screenshots
+      WHERE user_id = ?
+         OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
+      ORDER BY created_at DESC
+    `).all(userId, userEmail)) as any[];
+
+    let updated = 0;
+    for (const row of rows) {
+      const precise = classifyImagePrecisely({
+        category: row.category,
+        ocr_text: row.ocr_text,
+        visual_description: row.visual_description,
+        tags: row.tags,
+        original_filename: row.original_filename,
+      });
+
+      if (precise !== row.category) {
+        await db.prepare('UPDATE screenshots SET category = ?, updated_at = ? WHERE id = ?').run(
+          precise,
+          new Date().toISOString(),
+          row.id
+        );
+        updated++;
+      }
+    }
+
+    res.json({
+      total: rows.length,
+      updated,
+      message: `Precisely classified ${updated} of ${rows.length} image(s).`,
+    });
+  } catch (err: any) {
+    console.error('Batch classify error:', err);
+    res.status(500).json({ error: 'Failed to classify screenshots', details: err.message });
   }
 });
 

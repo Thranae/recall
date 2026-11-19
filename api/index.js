@@ -52191,6 +52191,58 @@ function analyzeScreenshotHeuristics(ocrText, filename) {
   };
 }
 
+// server/services/ai/classifier.ts
+function classifyImagePrecisely(s) {
+  const ocr = (s.ocr_text || "").toLowerCase();
+  const visual = (s.visual_description || "").toLowerCase();
+  let tagsArr = [];
+  if (Array.isArray(s.tags)) {
+    tagsArr = s.tags.map((t) => String(t).toLowerCase());
+  } else if (typeof s.tags === "string") {
+    try {
+      const parsed = JSON.parse(s.tags);
+      if (Array.isArray(parsed)) tagsArr = parsed.map((t) => String(t).toLowerCase());
+    } catch {
+      tagsArr = s.tags.toLowerCase().split(/[\s,]+/);
+    }
+  }
+  const isCodeOrDev = /(?:class\s+\w+|public\s+static|import\s+java|for\s*\(\s*int\s+\w+|return\s+\w+;|int\s+\w+\s*=|ciphertext|decryption|scanner\s+scn)/i.test(ocr) || /(?:authorisation\s+error|access\s+blocked|oauth\s*2\.0|google's\s+oauth|developer\s+console|error\s+details|not\s+comply\s+with\s+google|client_id|redirect_uri)/i.test(ocr) || /(?:console\.log|function\s*\(|def\s+\w+\(|<div|select\s+.*from|git\s+commit|exception\b|syntaxerror|stack\s*trace|terminal|bash|powershell|npm\s+|yarn\s+)/i.test(ocr) || /\b(?:code|programming|source code|developer error|oauth error|stack trace|terminal output|system error|compiler)\b/i.test(visual) || tagsArr.some((t) => ["code", "programming", "developer", "oauth", "error", "java", "python", "javascript", "terminal"].includes(t));
+  if (isCodeOrDev) return "code_dev";
+  const isChat = s.category === "chat" || /\b(?:chat|imessage|whatsapp|telegram|discord|dm|conversation thread|messaging app|chat bubble)\b/i.test(visual) || tagsArr.some((t) => ["chat", "conversation", "messaging", "whatsapp", "imessage", "telegram", "dm", "discord"].includes(t)) || /(?:type a message|online\s*•|last seen|delivered|double tick|✓✓|replying to|audio call|video call)/i.test(ocr);
+  if (isChat) return "chat";
+  const isGame = s.category === "game" || /\b(?:game|scoreboard|gameplay|bgmi|pubg|victory royale|clutch|eliminations)\b/i.test(visual) || tagsArr.some((t) => ["game", "gaming", "bgmi", "pubg", "victory", "kills", "scoreboard"].includes(t)) || /(?:winner winner chicken dinner|chicken dinner|victory royale|kills?\s*:\s*\d+|\b\d+\s*kills\b|booyah)/i.test(ocr);
+  if (isGame) return "game";
+  const isFood = tagsArr.some(
+    (t) => ["croissant", "pastry", "coffee", "iced coffee", "cafe", "restaurant", "bakery", "dessert", "breakfast", "meal", "dish", "food", "beverage", "snack", "dining", "culinary", "pizza", "burger", "biryani"].includes(t)
+  ) || /\b(?:croissant|pastry|coffee|cafe|bakery|restaurant|dining|freshly baked|breakfast|lunch|dinner|meal|beverage|iced coffee|cappuccino|latte)\b/i.test(visual) || /(?:third wave coffee|starbucks|coffee shop|iced coffee|croissant|cappuccino|latte|zomato|swiggy|restaurant|dining|breakfast|lunch|dinner)/i.test(ocr);
+  if (isFood) return "food_dining";
+  const isAnimal = tagsArr.some(
+    (t) => ["fish", "betta", "betta fish", "aquarium", "tank", "pet", "pets", "animal", "animals", "dog", "puppy", "cat", "kitten", "bird", "wildlife"].includes(t)
+  ) || /\b(?:fish|betta|aquarium|fish tank|pet|pets|animal|animals|dog|puppy|cat|kitten|bird|wildlife)\b/i.test(visual);
+  if (isAnimal) return "animals_pets";
+  const isWallpaperArt = tagsArr.some(
+    (t) => ["spider-man", "spiderman", "wallpaper", "digital art", "artwork", "superhero", "tombat", "logo", "graphics", "illustration", "comics", "marvel"].includes(t)
+  ) || /\b(?:wallpaper|digital artwork|digital art|superhero|spider-man|title card|comic|artwork|poster graphics)\b/i.test(visual);
+  if (isWallpaperArt) return "wallpaper_art";
+  const isNature = tagsArr.some(
+    (t) => ["sky", "clouds", "moon", "night sky", "moonlight", "astrophotography", "nature", "landscape", "sunset", "sunrise", "stars", "ocean", "mountain"].includes(t)
+  ) || /\b(?:night sky|sky filled with|moonlight|clouds at night|outdoor night scene|mountain|ocean|landscape|sunset|sunrise)\b/i.test(visual);
+  if (isNature) return "nature_scenery";
+  const isPortraitPeople = tagsArr.some(
+    (t) => ["portrait", "young man", "young woman", "boy", "girl", "man", "woman", "male", "female", "guy", "lady", "person", "people", "selfie", "actor", "simon baker", "patrick jane"].includes(t)
+  ) || /\b(?:portrait of|close-up portrait|young man|young woman|smiling boy|smiling girl|selfie|silhouette of a person)\b/i.test(visual);
+  if (isPortraitPeople) return "portrait_people";
+  const isReceipt = tagsArr.some((t) => ["receipt", "bill", "invoice", "expense", "payment"].includes(t)) || /(?:total amount|invoice #|receipt #|gstin|subtotal|amount paid|tax invoice|paid via|order total|billing address)/i.test(ocr);
+  if (isReceipt) return "receipt_finance";
+  const isTicket = tagsArr.some((t) => ["ticket", "boarding", "flight", "travel", "pass"].includes(t)) || /(?:boarding pass|flight no|gate \w+|seat \w+|pnr\b|e-ticket|train ticket|boarding time)/i.test(ocr);
+  if (isTicket) return "ticket_travel";
+  const isProduct = s.category === "product" || tagsArr.some((t) => ["product", "shopping", "shoes", "gadget", "clothing"].includes(t)) || /(?:add to cart|buy now|in stock|mrp\s*₹?|price\s*[:₹$]|flipkart|amazon|myntra)/i.test(ocr);
+  if (isProduct) return "product_shopping";
+  const isDocument = s.category === "poster_document" || tagsArr.some((t) => ["document", "notes", "study", "pdf", "certificate"].includes(t)) || /(?:certificate|resume|agreement|curriculum|syllabus|chapter|lecture|assignment|contract)/i.test(ocr);
+  if (isDocument) return "poster_document";
+  return s.category || "other";
+}
+
 // server/services/ai/gemini.ts
 var geminiApiKey = process.env.GEMINI_API_KEY || "";
 var mistralApiKey = process.env.MISTRAL_API_KEY || "";
@@ -52209,7 +52261,7 @@ Inspect EVERYTHING in the image with forensic visual and textual accuracy \u2014
 
 Return a VALID JSON object matching this exact structure:
 {
-  "category": "chat" | "game" | "product" | "poster_document" | "other",
+  "category": "chat" | "code_dev" | "food_dining" | "nature_scenery" | "wallpaper_art" | "portrait_people" | "animals_pets" | "receipt_finance" | "ticket_travel" | "product_shopping" | "poster_document" | "game" | "other",
   "confidence": 0.98,
   "ocr_text": "Complete verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, or label visible in the image. Return empty string "" if no text is present in the photo.",
   "visual_description": "Comprehensive 3-5 sentence description. If people are visible, explicitly state who they are (e.g., boy, girl, young man, young woman, child, man, woman, couple, group), their exact clothing & colors (e.g., black shirt, black t-shirt, blue jeans, red dress, white sneakers), accessories (glasses, watch, hat), expression, pose, objects, and setting. If it is an app screenshot, describe the app UI, layout, messages, scores, or prices clearly.",
@@ -52246,10 +52298,18 @@ Return a VALID JSON object matching this exact structure:
 
 CATEGORIZATION RULES:
 1. "chat": Any messaging UI with chat bubbles or conversational thread (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Messenger).
-2. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
-3. "product": Any e-commerce product listing, shopping cart, or storefront page with price/Buy buttons (Amazon, Flipkart, Myntra, Nike, etc.). Note: A normal photo of a person wearing clothes is NOT "product" \u2014 classify real-world portraits/photos as "other".
-4. "poster_document": Any document, PDF, receipt, bill, invoice, ticket, certificate, slide, book page, or event poster.
-5. "other": Real-world photos, portraits, selfies, people (boys, girls, men, women), animals, cars, scenery, wallpapers, web browser UI, or settings.
+2. "code_dev": Any code snippets (Java, Python, JS, C++, HTML, SQL), terminal commands, IDE, API errors, OAuth / authorization error screens ("Access blocked", "Authorisation error", etc.), stack traces, or developer tools.
+3. "food_dining": Food, pastries, bakery, meals, coffee, iced drinks, cafes, restaurant interiors, dining tables, food orders.
+4. "nature_scenery": Outdoor nature, night skies, moon, clouds, sunsets, sunrises, mountains, oceans, landscapes, plants.
+5. "wallpaper_art": Digital art, superhero art (Spider-Man, etc.), wallpapers, illustrations, stylized logos/posters, graphic designs.
+6. "portrait_people": Portraits of people, selfies, faces, fashion, silhouettes of people.
+7. "animals_pets": Fish, betta fish, aquariums, dogs, cats, pets, wildlife.
+8. "receipt_finance": Financial receipts, invoices, bills, transaction receipts, payment summaries.
+9. "ticket_travel": Boarding passes, flight tickets, train passes, movie/event booking passes.
+10. "product_shopping": E-commerce product listings, shopping carts, storefront items with price / Buy buttons.
+11. "poster_document": Official documents, study notes, book pages, PDFs, forms, certificates.
+12. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
+13. "other": Miscellaneous images that do not fit the above.
 
 PRECISION REQUIREMENT:
 - For any photo containing people, ALWAYS include intuitive everyday words in visual_entities and tags (e.g., if a young male is shown, include BOTH "boy" / "man" / "male" as appropriate; if female, include "girl" / "woman" / "female"; for any dark top, include both "black" and "black shirt" / "black t-shirt" if applicable).
@@ -52353,10 +52413,6 @@ function enrichVisualTags(rawTags, visualEntities, visualDescription) {
   return Array.from(tagSet).slice(0, 45);
 }
 function normalizeAnalysis(parsed, provider) {
-  let category = "other";
-  if (["chat", "game", "product", "poster_document", "other"].includes(parsed.category)) {
-    category = parsed.category;
-  }
   let ocrText = "";
   if (typeof parsed.ocr_text === "string") {
     ocrText = parsed.ocr_text;
@@ -52372,24 +52428,17 @@ function normalizeAnalysis(parsed, provider) {
   } else if (parsed.visual_description && typeof parsed.visual_description === "object") {
     visualDescription = Object.entries(parsed.visual_description).map(([k, v]) => `${k}: ${v}`).join(". ");
   }
-  const rawOcrLower = ocrText.toLowerCase();
-  const descLower = visualDescription.toLowerCase();
-  if (category === "other") {
-    if (Array.isArray(parsed.messages) && parsed.messages.length > 0 || descLower.includes("whatsapp") || descLower.includes("imessage") || descLower.includes("telegram") || descLower.includes("chat bubble") || descLower.includes("messaging app") || rawOcrLower.includes("online \u2022") || rawOcrLower.includes("type a message") || rawOcrLower.includes("last seen") || rawOcrLower.includes("double tick") || rawOcrLower.includes("\u2713\u2713") || /\b(delivered|read\s+\d|sent\s+\d)\b/.test(rawOcrLower) && rawOcrLower.length > 10) {
-      category = "chat";
-    } else if (parsed.game_result && typeof parsed.game_result.kills === "number" || rawOcrLower.includes("winner winner") || rawOcrLower.includes("chicken dinner") || rawOcrLower.includes("bgmi") || rawOcrLower.includes("pubg") || rawOcrLower.includes("victory royale") || rawOcrLower.includes("booyah") || /\b(\d+\s*kills?|kills?\s*:\s*\d+)\b/.test(rawOcrLower)) {
-      category = "game";
-    } else if (rawOcrLower.includes("add to cart") || rawOcrLower.includes("buy now") || rawOcrLower.includes("mrp") || descLower.includes("e-commerce") && /[\$₹€£]\s*\d+/.test(rawOcrLower) || (rawOcrLower.includes("flipkart") || rawOcrLower.includes("amazon") || rawOcrLower.includes("myntra"))) {
-      category = "product";
-    } else if (rawOcrLower.includes("invoice") || rawOcrLower.includes("receipt") || rawOcrLower.includes("boarding pass") || rawOcrLower.includes("total amount") || rawOcrLower.includes("certificate")) {
-      category = "poster_document";
-    }
-  }
   const enrichedTags = enrichVisualTags(
     Array.isArray(parsed.tags) ? parsed.tags : [],
     parsed.visual_entities,
     visualDescription
   );
+  const category = classifyImagePrecisely({
+    category: parsed.category,
+    ocr_text: ocrText,
+    visual_description: visualDescription,
+    tags: enrichedTags
+  });
   return {
     category,
     confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.98,
@@ -70492,25 +70541,41 @@ router2.post("/batch/reanalyze-all", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user.email || "";
     const rows = await db.prepare(`
-      SELECT id, user_id, storage_key, mime_type, original_filename, image_data
+      SELECT id, user_id, storage_key, mime_type, original_filename, image_data, ocr_text, visual_description, tags, category
       FROM screenshots
       WHERE user_id = ?
          OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
       ORDER BY created_at DESC
-      LIMIT 25
+      LIMIT 100
     `).all(userId, userEmail);
     let upgraded = 0;
     let failed = 0;
     for (const row of rows) {
       try {
-        await processScreenshotDirectly(
-          row.id,
-          row.user_id,
-          row.storage_key,
-          row.mime_type,
-          row.original_filename,
-          row.image_data || void 0
-        );
+        const needsFullVision = !row.visual_description || row.visual_description.includes("No visual content") || row.visual_description.includes("filename alone") || row.processing_status === "processing";
+        if (needsFullVision && row.image_data) {
+          await processScreenshotDirectly(
+            row.id,
+            row.user_id,
+            row.storage_key,
+            row.mime_type,
+            row.original_filename,
+            row.image_data || void 0
+          );
+        } else {
+          const precise = classifyImagePrecisely({
+            category: row.category,
+            ocr_text: row.ocr_text,
+            visual_description: row.visual_description,
+            tags: row.tags,
+            original_filename: row.original_filename
+          });
+          await db.prepare(`
+            UPDATE screenshots
+            SET category = ?, updated_at = ?
+            WHERE id = ?
+          `).run(precise, (/* @__PURE__ */ new Date()).toISOString(), row.id);
+        }
         upgraded++;
       } catch (e) {
         console.warn(`Batch reanalyze skipped ${row.id}:`, e);
@@ -70521,11 +70586,50 @@ router2.post("/batch/reanalyze-all", authMiddleware, async (req, res) => {
       total: rows.length,
       upgraded,
       failed,
-      message: `Upgraded visual recognition index for ${upgraded} of ${rows.length} image(s).`
+      message: `AI Vision analyzed and precisely categorized ${upgraded} image(s).`
     });
   } catch (err) {
     console.error("Batch reanalyze error:", err);
     res.status(500).json({ error: "Failed to upgrade vision index", details: err.message });
+  }
+});
+router2.post("/batch/classify-all", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email || "";
+    const rows = await db.prepare(`
+      SELECT id, original_filename, category, ocr_text, visual_description, tags
+      FROM screenshots
+      WHERE user_id = ?
+         OR (user_id IN (SELECT id FROM users WHERE email = ? AND email IS NOT NULL AND email != ''))
+      ORDER BY created_at DESC
+    `).all(userId, userEmail);
+    let updated = 0;
+    for (const row of rows) {
+      const precise = classifyImagePrecisely({
+        category: row.category,
+        ocr_text: row.ocr_text,
+        visual_description: row.visual_description,
+        tags: row.tags,
+        original_filename: row.original_filename
+      });
+      if (precise !== row.category) {
+        await db.prepare("UPDATE screenshots SET category = ?, updated_at = ? WHERE id = ?").run(
+          precise,
+          (/* @__PURE__ */ new Date()).toISOString(),
+          row.id
+        );
+        updated++;
+      }
+    }
+    res.json({
+      total: rows.length,
+      updated,
+      message: `Precisely classified ${updated} of ${rows.length} image(s).`
+    });
+  } catch (err) {
+    console.error("Batch classify error:", err);
+    res.status(500).json({ error: "Failed to classify screenshots", details: err.message });
   }
 });
 router2.get("/:id/similar", authMiddleware, async (req, res) => {

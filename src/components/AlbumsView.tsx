@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { Screenshot, Album, ThreadGroup } from '../types';
 import { api } from '../services/api';
+import { classifyScreenshotPrecisely, type PreciseCategory } from '../utils/classifier';
 import { ScreenshotCard } from './ScreenshotCard';
 import { AlbumStoryModal } from './AlbumStoryModal';
 import { CreateAlbumModal } from './CreateAlbumModal';
@@ -109,67 +110,168 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
     onModalStateChange?.(isModalActive);
   }, [isStoryOpen, isCreateOpen, onModalStateChange]);
 
-  // Generate Smart Albums from screenshots
+  // Generate Smart Albums from screenshots using precision AI classification
   const smartAlbums = useMemo<Album[]>(() => {
     const albums: Album[] = [];
 
-    // 1. Conversations & Threads
-    const chatScreenshots = screenshots.filter((s) => s.category === 'chat');
-    if (chatScreenshots.length > 0 || threads.length > 0) {
+    // Bucket all screenshots into their true precise categories
+    const buckets: Record<PreciseCategory, Screenshot[]> = {
+      chat: [],
+      code_dev: [],
+      food_dining: [],
+      nature_scenery: [],
+      wallpaper_art: [],
+      portrait_people: [],
+      animals_pets: [],
+      receipt_finance: [],
+      ticket_travel: [],
+      product_shopping: [],
+      poster_document: [],
+      game: [],
+      other: [],
+    };
+
+    for (const s of screenshots) {
+      const cat = classifyScreenshotPrecisely(s);
+      buckets[cat].push(s);
+    }
+
+    // 1. Conversation Threads & Chats
+    const chatItems = buckets.chat;
+    if (chatItems.length > 0 || threads.length > 0) {
       albums.push({
         id: 'smart-chats',
         title: 'Conversation Threads',
-        description: `${chatScreenshots.length} chat screenshots${
-          threads.length > 0 ? ` (${threads.length} threads)` : ''
-        }`,
+        description: `${chatItems.length} chat conversations${threads.length > 0 ? ` (${threads.length} threads)` : ''}`,
         category: 'chat',
-        coverScreenshotId: chatScreenshots[0]?.id || threads[0]?.screenshots[0]?.id,
-        screenshotIds: chatScreenshots.map((s) => s.id),
+        coverScreenshotId: chatItems[0]?.id || threads[0]?.screenshots[0]?.id,
+        screenshotIds: chatItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
         emoji: '💬',
-        badge: 'AI Curated',
+        badge: 'Conversations',
         accentColor: '#3478F6',
       });
     }
 
-    // 2. Gaming & Scoreboards
-    const gameScreenshots = screenshots.filter((s) => s.category === 'game');
-    if (gameScreenshots.length > 0) {
+    // 2. Coding, Tech & System Errors (Google OAuth error, Java code, terminal, dev tools)
+    const codeItems = buckets.code_dev;
+    if (codeItems.length > 0) {
       albums.push({
-        id: 'smart-gaming',
-        title: 'Gaming & High Scores',
-        description: `${gameScreenshots.length} victory & clutch gameplay moments`,
-        category: 'game',
-        coverScreenshotId: gameScreenshots[0].id,
-        screenshotIds: gameScreenshots.map((s) => s.id),
+        id: 'smart-code-dev',
+        title: 'Code, Tech & Errors',
+        description: `${codeItems.length} code snippets, developer logs & auth errors`,
+        category: 'custom',
+        coverScreenshotId: codeItems[0].id,
+        screenshotIds: codeItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
-        emoji: '🎮',
-        badge: 'AI Curated',
+        emoji: '💻',
+        badge: 'Code & Dev',
+        accentColor: '#4F46E5',
+      });
+    }
+
+    // 3. Food, Dining & Cafes (Croissants, coffee, Third Wave Coffee, restaurant food)
+    const foodItems = buckets.food_dining;
+    if (foodItems.length > 0) {
+      albums.push({
+        id: 'smart-food',
+        title: 'Food & Dining',
+        description: `${foodItems.length} cafe visits, pastries & culinary moments`,
+        category: 'custom',
+        coverScreenshotId: foodItems[0].id,
+        screenshotIds: foodItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🍔',
+        badge: 'Food & Cafe',
+        accentColor: '#F97316',
+      });
+    }
+
+    // 4. Aesthetic & Wallpapers (Spider-Man art, digital art, stylized graphics)
+    const wallpaperItems = buckets.wallpaper_art;
+    if (wallpaperItems.length > 0) {
+      albums.push({
+        id: 'smart-wallpapers',
+        title: 'Aesthetic & Wallpapers',
+        description: `${wallpaperItems.length} digital art, superhero themes & wallpapers`,
+        category: 'visual',
+        coverScreenshotId: wallpaperItems[0].id,
+        screenshotIds: wallpaperItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🖼️',
+        badge: 'Wallpapers',
+        accentColor: '#06B6D4',
+      });
+    }
+
+    // 5. Nature & Scenery (Night sky, moon, clouds, sunsets, landscapes)
+    const natureItems = buckets.nature_scenery;
+    if (natureItems.length > 0) {
+      albums.push({
+        id: 'smart-nature',
+        title: 'Nature & Scenery',
+        description: `${natureItems.length} skies, sunsets, moon & landscapes`,
+        category: 'visual',
+        coverScreenshotId: natureItems[0].id,
+        screenshotIds: natureItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🌌',
+        badge: 'Scenery',
+        accentColor: '#0EA5E9',
+      });
+    }
+
+    // 6. Portraits & People (Simon Baker / Patrick Jane, silhouettes, people)
+    const portraitItems = buckets.portrait_people;
+    if (portraitItems.length > 0) {
+      albums.push({
+        id: 'smart-portraits',
+        title: 'Portraits & People',
+        description: `${portraitItems.length} portraits, people & character captures`,
+        category: 'visual',
+        coverScreenshotId: portraitItems[0].id,
+        screenshotIds: portraitItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '👤',
+        badge: 'Portraits',
         accentColor: '#8B5CF6',
       });
     }
 
-    // 3. Receipts & Expenses Vault
-    const receiptScreenshots = screenshots.filter(
-      (s) =>
-        s.category === 'poster_document' &&
-        (s.ocr_text?.toLowerCase().includes('total') ||
-          s.ocr_text?.toLowerCase().includes('invoice') ||
-          s.ocr_text?.toLowerCase().includes('receipt') ||
-          s.ocr_text?.toLowerCase().includes('paid') ||
-          s.ocr_text?.toLowerCase().includes('order #') ||
-          s.tags?.some((t) => ['receipt', 'bill', 'payment', 'expense', 'invoice'].includes(t.toLowerCase())))
-    );
-    if (receiptScreenshots.length > 0) {
+    // 7. Animals & Pets (Betta fish, aquarium, pets)
+    const animalItems = buckets.animals_pets;
+    if (animalItems.length > 0) {
+      albums.push({
+        id: 'smart-animals',
+        title: 'Pets & Animals',
+        description: `${animalItems.length} aquatic life, pets & creature captures`,
+        category: 'custom',
+        coverScreenshotId: animalItems[0].id,
+        screenshotIds: animalItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🐠',
+        badge: 'Pets & Life',
+        accentColor: '#10B981',
+      });
+    }
+
+    // 8. Receipts & Expenses (Invoices, bills, totals)
+    const receiptItems = buckets.receipt_finance;
+    if (receiptItems.length > 0) {
       albums.push({
         id: 'smart-receipts',
         title: 'Receipts & Expenses',
-        description: `${receiptScreenshots.length} financial slips & payments`,
+        description: `${receiptItems.length} financial slips, bills & payments`,
         category: 'receipt',
-        coverScreenshotId: receiptScreenshots[0].id,
-        screenshotIds: receiptScreenshots.map((s) => s.id),
+        coverScreenshotId: receiptItems[0].id,
+        screenshotIds: receiptItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
         emoji: '🧾',
@@ -178,24 +280,16 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       });
     }
 
-    // 4. Tickets & Travel Passes
-    const ticketScreenshots = screenshots.filter(
-      (s) =>
-        s.ocr_text?.toLowerCase().includes('ticket') ||
-        s.ocr_text?.toLowerCase().includes('boarding') ||
-        s.ocr_text?.toLowerCase().includes('booking') ||
-        s.ocr_text?.toLowerCase().includes('gate') ||
-        s.ocr_text?.toLowerCase().includes('seat') ||
-        s.tags?.some((t) => ['ticket', 'travel', 'flight', 'boarding'].includes(t.toLowerCase()))
-    );
-    if (ticketScreenshots.length > 0) {
+    // 9. Tickets & Travel Passes (Boarding passes, tickets)
+    const ticketItems = buckets.ticket_travel;
+    if (ticketItems.length > 0) {
       albums.push({
         id: 'smart-tickets',
         title: 'Tickets & Travel Passes',
-        description: `${ticketScreenshots.length} bookings, boarding passes & events`,
+        description: `${ticketItems.length} bookings, boarding passes & events`,
         category: 'ticket',
-        coverScreenshotId: ticketScreenshots[0].id,
-        screenshotIds: ticketScreenshots.map((s) => s.id),
+        coverScreenshotId: ticketItems[0].id,
+        screenshotIds: ticketItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
         emoji: '🎫',
@@ -204,23 +298,16 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       });
     }
 
-    // 5. Shopping & Wishlists
-    const shoppingScreenshots = screenshots.filter(
-      (s) =>
-        s.category === 'product' ||
-        s.ocr_text?.toLowerCase().includes('cart') ||
-        s.ocr_text?.toLowerCase().includes('buy now') ||
-        s.ocr_text?.toLowerCase().includes('add to cart') ||
-        s.tags?.some((t) => ['product', 'shopping', 'shoes', 'gadget'].includes(t.toLowerCase()))
-    );
-    if (shoppingScreenshots.length > 0) {
+    // 10. Shopping & Wishlists
+    const shoppingItems = buckets.product_shopping;
+    if (shoppingItems.length > 0) {
       albums.push({
         id: 'smart-shopping',
         title: 'Shopping & Wishlist',
-        description: `${shoppingScreenshots.length} curated products & gear`,
+        description: `${shoppingItems.length} curated products & gear`,
         category: 'product',
-        coverScreenshotId: shoppingScreenshots[0].id,
-        screenshotIds: shoppingScreenshots.map((s) => s.id),
+        coverScreenshotId: shoppingItems[0].id,
+        screenshotIds: shoppingItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
         emoji: '🛍️',
@@ -229,72 +316,57 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       });
     }
 
-    // 6. Aesthetic, Wallpapers & Places
-    const aestheticScreenshots = screenshots.filter(
-      (s) =>
-        s.category === 'other' ||
-        s.tags?.some((t) =>
-          ['building', 'nature', 'photo', 'art', 'sky', 'wallpaper', 'aesthetic', 'city'].includes(t.toLowerCase())
-        )
-    );
-    if (aestheticScreenshots.length > 0) {
-      albums.push({
-        id: 'smart-aesthetic',
-        title: 'Aesthetic & Wallpapers',
-        description: `${aestheticScreenshots.length} architecture, nature & captures`,
-        category: 'visual',
-        coverScreenshotId: aestheticScreenshots[0].id,
-        screenshotIds: aestheticScreenshots.map((s) => s.id),
-        createdAt: new Date().toISOString(),
-        isSmart: true,
-        emoji: '🖼️',
-        badge: 'Visuals',
-        accentColor: '#06B6D4',
-      });
-    }
-
-    // 7. Food & Dining
-    const foodScreenshots = screenshots.filter(
-      (s) =>
-        s.tags?.some((t) => ['food', 'restaurant', 'meal', 'cafe', 'dish', 'biryani', 'pizza', 'burger'].includes(t.toLowerCase())) ||
-        (s.ocr_text && /zomato|swiggy|restaurant|menu|cafe|burger|pizza|biryani|dining|coffee|breakfast|lunch|dinner/i.test(s.ocr_text))
-    );
-    if (foodScreenshots.length > 0) {
-      albums.push({
-        id: 'smart-food',
-        title: 'Food & Dining',
-        description: `${foodScreenshots.length} culinary captures & food orders`,
-        category: 'custom',
-        coverScreenshotId: foodScreenshots[0].id,
-        screenshotIds: foodScreenshots.map((s) => s.id),
-        createdAt: new Date().toISOString(),
-        isSmart: true,
-        emoji: '🍔',
-        badge: 'Dining',
-        accentColor: '#F97316',
-      });
-    }
-
-    // 8. Documents & Study Notes
-    const docScreenshots = screenshots.filter(
-      (s) =>
-        s.category === 'poster_document' ||
-        s.tags?.some((t) => ['document', 'notes', 'study', 'pdf', 'certificate'].includes(t.toLowerCase())) ||
-        (s.ocr_text && /document|certificate|resume|notes|study|contract|agreement|paper|exam/i.test(s.ocr_text))
-    );
-    if (docScreenshots.length > 0 && !albums.some((a) => a.id === 'smart-receipts' && a.screenshotIds.length === docScreenshots.length)) {
+    // 11. Documents & Study Notes
+    const docItems = buckets.poster_document;
+    if (docItems.length > 0) {
       albums.push({
         id: 'smart-documents',
         title: 'Documents & Notes',
-        description: `${docScreenshots.length} text documents & study notes`,
+        description: `${docItems.length} text documents & study notes`,
         category: 'custom',
-        coverScreenshotId: docScreenshots[0].id,
-        screenshotIds: docScreenshots.map((s) => s.id),
+        coverScreenshotId: docItems[0].id,
+        screenshotIds: docItems.map((s) => s.id),
         createdAt: new Date().toISOString(),
         isSmart: true,
         emoji: '📚',
         badge: 'Documents',
         accentColor: '#6366F1',
+      });
+    }
+
+    // 12. Gaming & Scoreboards
+    const gameItems = buckets.game;
+    if (gameItems.length > 0) {
+      albums.push({
+        id: 'smart-gaming',
+        title: 'Gaming & High Scores',
+        description: `${gameItems.length} victory & clutch gameplay moments`,
+        category: 'game',
+        coverScreenshotId: gameItems[0].id,
+        screenshotIds: gameItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '🎮',
+        badge: 'Gaming',
+        accentColor: '#8B5CF6',
+      });
+    }
+
+    // 13. General Captures (ONLY if any unclassified items remain)
+    const otherItems = buckets.other;
+    if (otherItems.length > 0) {
+      albums.push({
+        id: 'smart-other',
+        title: 'Other Captures',
+        description: `${otherItems.length} miscellaneous saved screenshots`,
+        category: 'custom',
+        coverScreenshotId: otherItems[0].id,
+        screenshotIds: otherItems.map((s) => s.id),
+        createdAt: new Date().toISOString(),
+        isSmart: true,
+        emoji: '📁',
+        badge: 'Captures',
+        accentColor: '#64748B',
       });
     }
 

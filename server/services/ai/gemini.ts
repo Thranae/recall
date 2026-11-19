@@ -5,6 +5,7 @@ import {
   analyzeScreenshotHeuristics,
   HeuristicAnalysisResult,
 } from '../ocr/heuristics';
+import { classifyImagePrecisely, PreciseCategory } from './classifier';
 
 const geminiApiKey = process.env.GEMINI_API_KEY || '';
 const mistralApiKey = process.env.MISTRAL_API_KEY || '';
@@ -22,7 +23,7 @@ const CANDIDATE_GEMINI_MODELS = [
 ];
 
 export interface ScreenshotAnalysisPayload {
-  category: 'chat' | 'game' | 'product' | 'poster_document' | 'other';
+  category: PreciseCategory;
   confidence: number;
   ocr_text: string;
   visual_description: string;
@@ -62,7 +63,7 @@ Inspect EVERYTHING in the image with forensic visual and textual accuracy — su
 
 Return a VALID JSON object matching this exact structure:
 {
-  "category": "chat" | "game" | "product" | "poster_document" | "other",
+  "category": "chat" | "code_dev" | "food_dining" | "nature_scenery" | "wallpaper_art" | "portrait_people" | "animals_pets" | "receipt_finance" | "ticket_travel" | "product_shopping" | "poster_document" | "game" | "other",
   "confidence": 0.98,
   "ocr_text": "Complete verbatim transcription of EVERY readable word, number, timestamp, name, price, URL, or label visible in the image. Return empty string \"\" if no text is present in the photo.",
   "visual_description": "Comprehensive 3-5 sentence description. If people are visible, explicitly state who they are (e.g., boy, girl, young man, young woman, child, man, woman, couple, group), their exact clothing & colors (e.g., black shirt, black t-shirt, blue jeans, red dress, white sneakers), accessories (glasses, watch, hat), expression, pose, objects, and setting. If it is an app screenshot, describe the app UI, layout, messages, scores, or prices clearly.",
@@ -99,10 +100,18 @@ Return a VALID JSON object matching this exact structure:
 
 CATEGORIZATION RULES:
 1. "chat": Any messaging UI with chat bubbles or conversational thread (WhatsApp, Telegram, iMessage, Instagram DMs, Discord, SMS, Slack, Messenger).
-2. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
-3. "product": Any e-commerce product listing, shopping cart, or storefront page with price/Buy buttons (Amazon, Flipkart, Myntra, Nike, etc.). Note: A normal photo of a person wearing clothes is NOT "product" — classify real-world portraits/photos as "other".
-4. "poster_document": Any document, PDF, receipt, bill, invoice, ticket, certificate, slide, book page, or event poster.
-5. "other": Real-world photos, portraits, selfies, people (boys, girls, men, women), animals, cars, scenery, wallpapers, web browser UI, or settings.
+2. "code_dev": Any code snippets (Java, Python, JS, C++, HTML, SQL), terminal commands, IDE, API errors, OAuth / authorization error screens ("Access blocked", "Authorisation error", etc.), stack traces, or developer tools.
+3. "food_dining": Food, pastries, bakery, meals, coffee, iced drinks, cafes, restaurant interiors, dining tables, food orders.
+4. "nature_scenery": Outdoor nature, night skies, moon, clouds, sunsets, sunrises, mountains, oceans, landscapes, plants.
+5. "wallpaper_art": Digital art, superhero art (Spider-Man, etc.), wallpapers, illustrations, stylized logos/posters, graphic designs.
+6. "portrait_people": Portraits of people, selfies, faces, fashion, silhouettes of people.
+7. "animals_pets": Fish, betta fish, aquariums, dogs, cats, pets, wildlife.
+8. "receipt_finance": Financial receipts, invoices, bills, transaction receipts, payment summaries.
+9. "ticket_travel": Boarding passes, flight tickets, train passes, movie/event booking passes.
+10. "product_shopping": E-commerce product listings, shopping carts, storefront items with price / Buy buttons.
+11. "poster_document": Official documents, study notes, book pages, PDFs, forms, certificates.
+12. "game": Any video game match scoreboard, victory/defeat banner, kill counter, or in-game HUD.
+13. "other": Miscellaneous images that do not fit the above.
 
 PRECISION REQUIREMENT:
 - For any photo containing people, ALWAYS include intuitive everyday words in visual_entities and tags (e.g., if a young male is shown, include BOTH "boy" / "man" / "male" as appropriate; if female, include "girl" / "woman" / "female"; for any dark top, include both "black" and "black shirt" / "black t-shirt" if applicable).
@@ -181,11 +190,6 @@ function enrichVisualTags(rawTags: string[], visualEntities: any, visualDescript
 }
 
 function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPayload {
-  let category: ScreenshotAnalysisPayload['category'] = 'other';
-  if (['chat', 'game', 'product', 'poster_document', 'other'].includes(parsed.category)) {
-    category = parsed.category;
-  }
-
   // Handle ocr_text whether string, object, or array
   let ocrText = '';
   if (typeof parsed.ocr_text === 'string') {
@@ -209,61 +213,19 @@ function normalizeAnalysis(parsed: any, provider: string): ScreenshotAnalysisPay
       .join('. ');
   }
 
-  const rawOcrLower = ocrText.toLowerCase();
-  const descLower = visualDescription.toLowerCase();
-
-  // Secondary intelligent category validation (strictly using OCR + UI indicators so portraits are never misclassified)
-  if (category === 'other') {
-    if (
-      (Array.isArray(parsed.messages) && parsed.messages.length > 0) ||
-      descLower.includes('whatsapp') ||
-      descLower.includes('imessage') ||
-      descLower.includes('telegram') ||
-      descLower.includes('chat bubble') ||
-      descLower.includes('messaging app') ||
-      rawOcrLower.includes('online •') ||
-      rawOcrLower.includes('type a message') ||
-      rawOcrLower.includes('last seen') ||
-      rawOcrLower.includes('double tick') ||
-      rawOcrLower.includes('✓✓') ||
-      (/\b(delivered|read\s+\d|sent\s+\d)\b/.test(rawOcrLower) && rawOcrLower.length > 10)
-    ) {
-      category = 'chat';
-    } else if (
-      (parsed.game_result && typeof parsed.game_result.kills === 'number') ||
-      rawOcrLower.includes('winner winner') ||
-      rawOcrLower.includes('chicken dinner') ||
-      rawOcrLower.includes('bgmi') ||
-      rawOcrLower.includes('pubg') ||
-      rawOcrLower.includes('victory royale') ||
-      rawOcrLower.includes('booyah') ||
-      /\b(\d+\s*kills?|kills?\s*:\s*\d+)\b/.test(rawOcrLower)
-    ) {
-      category = 'game';
-    } else if (
-      rawOcrLower.includes('add to cart') ||
-      rawOcrLower.includes('buy now') ||
-      rawOcrLower.includes('mrp') ||
-      (descLower.includes('e-commerce') && /[\$₹€£]\s*\d+/.test(rawOcrLower)) ||
-      (rawOcrLower.includes('flipkart') || rawOcrLower.includes('amazon') || rawOcrLower.includes('myntra'))
-    ) {
-      category = 'product';
-    } else if (
-      rawOcrLower.includes('invoice') ||
-      rawOcrLower.includes('receipt') ||
-      rawOcrLower.includes('boarding pass') ||
-      rawOcrLower.includes('total amount') ||
-      rawOcrLower.includes('certificate')
-    ) {
-      category = 'poster_document';
-    }
-  }
-
   const enrichedTags = enrichVisualTags(
     Array.isArray(parsed.tags) ? parsed.tags : [],
     parsed.visual_entities,
     visualDescription
   );
+
+  // Precise AI-Driven Multi-Cluster Classification
+  const category = classifyImagePrecisely({
+    category: parsed.category,
+    ocr_text: ocrText,
+    visual_description: visualDescription,
+    tags: enrichedTags,
+  });
 
   return {
     category,
