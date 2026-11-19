@@ -1,3 +1,19 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  MessageSquare,
+  Trophy,
+  ShoppingBag,
+  FileText,
+  Layers,
+  Code2,
+  Utensils,
+  PawPrint,
+  Palette,
+  Mountain,
+  User,
+  Receipt,
+  Ticket,
+} from 'lucide-react';
 import type { Screenshot } from '../types';
 
 export type PreciseCategory =
@@ -14,6 +30,45 @@ export type PreciseCategory =
   | 'poster_document'
   | 'game'
   | 'other';
+
+export interface CategoryMeta {
+  label: string;
+  badgeText: string;
+  icon: LucideIcon;
+  accentColor: string;
+}
+
+export function getPreciseCategoryMeta(category: string): CategoryMeta {
+  switch (category) {
+    case 'chat':
+      return { label: 'Chat', badgeText: 'Chat', icon: MessageSquare, accentColor: '#3478F6' };
+    case 'code_dev':
+      return { label: 'Code & Dev', badgeText: 'Code', icon: Code2, accentColor: '#6366F1' };
+    case 'game':
+      return { label: 'Game Stats', badgeText: 'Game', icon: Trophy, accentColor: '#F59E0B' };
+    case 'food_dining':
+      return { label: 'Food & Dining', badgeText: 'Food', icon: Utensils, accentColor: '#EC4899' };
+    case 'animals_pets':
+      return { label: 'Animals & Pets', badgeText: 'Pets', icon: PawPrint, accentColor: '#10B981' };
+    case 'wallpaper_art':
+      return { label: 'Art & Wallpaper', badgeText: 'Art', icon: Palette, accentColor: '#8B5CF6' };
+    case 'nature_scenery':
+      return { label: 'Nature & Scenery', badgeText: 'Nature', icon: Mountain, accentColor: '#059669' };
+    case 'portrait_people':
+      return { label: 'People & Portrait', badgeText: 'People', icon: User, accentColor: '#0EA5E9' };
+    case 'receipt_finance':
+      return { label: 'Finance & Bills', badgeText: 'Finance', icon: Receipt, accentColor: '#14B8A6' };
+    case 'ticket_travel':
+      return { label: 'Travel & Tickets', badgeText: 'Travel', icon: Ticket, accentColor: '#F97316' };
+    case 'product_shopping':
+    case 'product':
+      return { label: 'Product & Shop', badgeText: 'Product', icon: ShoppingBag, accentColor: '#E11D48' };
+    case 'poster_document':
+      return { label: 'Document & Notes', badgeText: 'Document', icon: FileText, accentColor: '#475569' };
+    default:
+      return { label: 'Visual', badgeText: 'Visual', icon: Layers, accentColor: '#3478F6' };
+  }
+}
 
 export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
   // If the screenshot already has a precise category set, return it

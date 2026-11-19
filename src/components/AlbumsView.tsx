@@ -171,8 +171,10 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
     };
 
     for (const s of screenshots) {
-      const cat = classifyScreenshotPrecisely(s);
-      buckets[cat].push(s);
+      if (s.processing_status === 'ready') {
+        const cat = classifyScreenshotPrecisely(s);
+        buckets[cat].push(s);
+      }
     }
 
     // 1. Conversation Threads & Chats

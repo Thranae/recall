@@ -33,6 +33,24 @@ export interface GameResult {
   raw_extracted_text: string;
 }
 
+export type ScreenshotCategory =
+  | 'chat'
+  | 'code_dev'
+  | 'food_dining'
+  | 'nature_scenery'
+  | 'wallpaper_art'
+  | 'portrait_people'
+  | 'animals_pets'
+  | 'receipt_finance'
+  | 'ticket_travel'
+  | 'product_shopping'
+  | 'poster_document'
+  | 'game'
+  | 'product'
+  | 'other'
+  | 'unprocessed'
+  | string;
+
 export interface Screenshot {
   id: string;
   user_id: string;
@@ -44,7 +62,7 @@ export interface Screenshot {
   file_size: number;
   captured_at?: string;
   uploaded_at: string;
-  category: 'chat' | 'game' | 'product' | 'poster_document' | 'other';
+  category: ScreenshotCategory;
   processing_status: 'queued' | 'processing' | 'ready' | 'needs_review' | 'failed';
   processing_error?: string;
   ocr_text?: string;

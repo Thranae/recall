@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
+import { classifyScreenshotPrecisely } from '../utils/classifier';
 import type { Screenshot, VaultInsightsSummary, ThreadGroup } from '../types';
 import { ScreenshotCard } from './ScreenshotCard';
 import { ThreadStitcherModal } from './ThreadStitcherModal';
@@ -176,8 +177,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     }
   }, [screenshots, deletedIds.size]);
 
-  const chatCount = screenshots.filter((s) => s.category === 'chat').length;
-  const otherCount = screenshots.filter((s) => s.category !== 'chat').length;
+  const chatCount = screenshots.filter((s) => (s.processing_status === 'ready' ? classifyScreenshotPrecisely(s) : s.category) === 'chat').length;
+  const otherCount = screenshots.filter((s) => (s.processing_status === 'ready' ? classifyScreenshotPrecisely(s) : s.category) !== 'chat').length;
 
   const filteredScreenshots = useMemo(() => {
     const raw = filterQuery.trim().toLowerCase();
@@ -189,8 +190,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     const matched = screenshots
       .filter((s) => !deletedIds.has(s.id))
       .filter((s) => {
-        if (selectedCategory === 'chat' && s.category !== 'chat') return false;
-        if (selectedCategory === 'other' && s.category === 'chat') return false;
+        const sCat = s.processing_status === 'ready' ? classifyScreenshotPrecisely(s) : s.category;
+        if (selectedCategory === 'chat' && sCat !== 'chat') return false;
+        if (selectedCategory === 'other' && sCat === 'chat') return false;
         if (tokens.length > 0) {
           const haystack = `${s.original_filename || ''} ${s.visual_description || ''} ${(s.tags || []).join(' ')} ${s.ocr_text || ''}`.toLowerCase();
           return tokens.every((tok) => haystack.includes(tok));

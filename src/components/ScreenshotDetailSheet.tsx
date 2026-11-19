@@ -34,6 +34,7 @@ import {
   Info,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
 import { downloadImageFile } from '../utils/fileDownload';
 import { ScreenshotChatModal } from './ScreenshotChatModal';
@@ -964,20 +965,31 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               Details
             </span>
             {(() => {
-              const cat = data?.screenshot?.category || initialScreenshot?.category;
-              if (!cat) return null;
-              const CatIcon = cat === 'chat' ? MessageSquare : cat === 'product' ? ShoppingBag : cat === 'poster_document' ? FileText : Tag;
-              const label = cat === 'chat' ? 'Chat' : cat === 'product' ? 'Product' : cat === 'poster_document' ? 'Document' : 'Other';
+              const currentScreenshot = data?.screenshot || initialScreenshot;
+              if (!currentScreenshot) return null;
+              const isReady = currentScreenshot.processing_status === 'ready';
+
+              if (!isReady) {
+                return (
+                  <span className="liquid-filter-chip liquid-filter-chip-xs shadow-2xs bg-amber-50 text-amber-700 border border-amber-200/70 font-bold flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-500 stroke-[2.3]" />
+                    <span>AI Analyzing…</span>
+                  </span>
+                );
+              }
+
+              const preciseCat = classifyScreenshotPrecisely(currentScreenshot);
+              const { badgeText, icon: CatIcon } = getPreciseCategoryMeta(preciseCat);
               return (
                 <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active font-bold text-[#3478F6] shadow-2xs">
                   <CatIcon className="h-3 w-3 text-[#3478F6] stroke-[2.2]" />
-                  <span>{label}</span>
+                  <span>{badgeText}</span>
                 </span>
               );
             })()}
 
-            {/* Conversation Thread Badge */}
-            {matchedThread && (
+            {/* Conversation Thread Badge: Only shown after AI has analyzed and verified the conversation */}
+            {(data?.screenshot?.processing_status === 'ready' || initialScreenshot?.processing_status === 'ready') && matchedThread && (
               <button
                 type="button"
                 onClick={() => setIsThreadReelOpen(true)}
@@ -1382,8 +1394,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }}
               />
 
-              {/* Floating Thread Part Badge on Screenshot Preview */}
-              {!isRedactedMode && matchedThread && (
+              {/* Floating Thread Part Badge on Screenshot Preview: Only shown after AI verification */}
+              {!isRedactedMode && (data?.screenshot?.processing_status === 'ready' || initialScreenshot?.processing_status === 'ready') && matchedThread && (
                 <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
                   <button
                     type="button"
@@ -2193,12 +2205,21 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { id: 'chat', label: 'Chat' },
+                        { id: 'code_dev', label: 'Code & Dev' },
                         { id: 'game', label: 'Gaming' },
-                        { id: 'product', label: 'Product' },
-                        { id: 'poster_document', label: 'Document' },
-                        { id: 'other', label: 'Other' },
+                        { id: 'food_dining', label: 'Food & Dining' },
+                        { id: 'animals_pets', label: 'Pets & Animals' },
+                        { id: 'wallpaper_art', label: 'Art & Wallpaper' },
+                        { id: 'nature_scenery', label: 'Nature' },
+                        { id: 'portrait_people', label: 'People & Portrait' },
+                        { id: 'receipt_finance', label: 'Finance & Bills' },
+                        { id: 'ticket_travel', label: 'Travel & Tickets' },
+                        { id: 'product_shopping', label: 'Shopping & Product' },
+                        { id: 'poster_document', label: 'Document & Notes' },
+                        { id: 'other', label: 'Visual' },
                       ].map((cat) => {
-                        const isCatSelected = (data?.screenshot.category || 'other') === cat.id;
+                        const currentCat = data?.screenshot ? classifyScreenshotPrecisely(data.screenshot) : 'other';
+                        const isCatSelected = (data?.screenshot.category || currentCat) === cat.id;
                         return (
                           <button
                             key={cat.id}

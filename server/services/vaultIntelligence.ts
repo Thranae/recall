@@ -67,7 +67,7 @@ export async function detectThreadGroups(
   allMessages: any[] = []
 ): Promise<ThreadGroup[]> {
   const chatScreenshots = userScreenshots
-    .filter((s) => s.category === 'chat' || (allMessages && allMessages.some((m) => m.screenshot_id === s.id)))
+    .filter((s) => s.processing_status === 'ready' && (s.category === 'chat' || (allMessages && allMessages.some((m) => m.screenshot_id === s.id))))
     .sort((a, b) => {
       const timeA = new Date(a.captured_at || a.created_at || a.uploaded_at).getTime();
       const timeB = new Date(b.captured_at || b.created_at || b.uploaded_at).getTime();

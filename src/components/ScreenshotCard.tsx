@@ -1,20 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  MessageSquare,
-  Trophy,
-  ShoppingBag,
-  FileText,
   Layers,
-  Clock,
   AlertCircle,
   RefreshCw,
   Check,
   Trash2,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
+import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
 
 interface ScreenshotCardProps {
   screenshot: Screenshot;
@@ -157,22 +154,9 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
     }
   };
 
-  const getCategoryDetails = (cat: string) => {
-    switch (cat) {
-      case 'chat':
-        return { label: 'Chat', icon: MessageSquare };
-      case 'game':
-        return { label: 'Game Stats', icon: Trophy };
-      case 'product':
-        return { label: 'Product', icon: ShoppingBag };
-      case 'poster_document':
-        return { label: 'Document', icon: FileText };
-      default:
-        return { label: 'Image', icon: Layers };
-    }
-  };
-
-  const { label, icon: CatIcon } = getCategoryDetails(screenshot.category);
+  const isReady = screenshot.processing_status === 'ready';
+  const preciseCategory = isReady ? classifyScreenshotPrecisely(screenshot) : 'unprocessed';
+  const { badgeText: label, icon: CatIcon } = getPreciseCategoryMeta(preciseCategory);
   const tags = screenshot.tags || [];
 
   return (
@@ -373,32 +357,31 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
           </div>
         )}
 
-        {/* Floating Liquid Filter Chip Badge (Exact Container Pill Style as #badge) */}
+        {/* Floating Liquid Filter Chip Badge: Only given after AI has precisely analyzed the image */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-          <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-sm">
-            <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2] text-[#3478F6]" />
-            <span className="leading-none truncate text-[#3478F6] font-bold text-[10px]">{label}</span>
-          </span>
-
-          {!isSelectionMode && screenshot.processing_status !== 'ready' && (
-            <span
-              className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full liquid-filter-chip p-0 shadow-sm text-amber-600 !h-5.5 !w-5.5"
-            >
-              {screenshot.processing_status === 'processing' ? (
-                <Clock className="h-3 w-3 animate-spin stroke-[2.2]" />
-              ) : screenshot.processing_status === 'queued' ? (
-                <Clock className="h-3 w-3 stroke-[2.2]" />
-              ) : (
-                <AlertCircle className="h-3 w-3 text-rose-500 stroke-[2.2]" />
-              )}
+          {isReady ? (
+            <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-sm">
+              <CatIcon className="h-3 w-3 shrink-0 stroke-[2.2] text-[#3478F6]" />
+              <span className="leading-none truncate text-[#3478F6] font-bold text-[10px]">{label}</span>
+            </span>
+          ) : screenshot.processing_status === 'failed' ? (
+            <span className="liquid-filter-chip liquid-filter-chip-xs shadow-sm bg-rose-50 text-rose-600 border border-rose-200/80 font-bold flex items-center gap-1">
+              <AlertCircle className="h-3 w-3 text-rose-500 stroke-[2.2]" />
+              <span className="text-[9.5px]">Failed</span>
+            </span>
+          ) : (
+            <span className="liquid-filter-chip liquid-filter-chip-xs shadow-sm bg-white/92 text-amber-700 border border-amber-200/70 font-bold flex items-center gap-1 backdrop-blur-md">
+              <Loader2 className="h-2.5 w-2.5 animate-spin text-amber-500 stroke-[2.4]" />
+              <span className="text-[9.5px] font-bold tracking-tight">AI Analyzing…</span>
             </span>
           )}
         </div>
 
         {/* Bottom Metadata Bar: Thread Badge & Search Match Pill without collisions */}
-        {(threadGroup || searchResult) && !isSelectionMode && (
+        {/* Thread badge is ONLY shown after AI analysis confirms conversation thread */}
+        {((isReady && threadGroup) || searchResult) && !isSelectionMode && (
           <div className="absolute bottom-2 inset-x-2 flex items-center justify-between gap-1 pointer-events-none z-10">
-            {threadGroup ? (() => {
+            {isReady && threadGroup ? (() => {
               const ids =
                 threadGroup.screenshotIds && threadGroup.screenshotIds.length > 0
                   ? threadGroup.screenshotIds

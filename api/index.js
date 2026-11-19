@@ -69384,7 +69384,7 @@ async function detectDuplicateGroups(screenshots, options = {}) {
 
 // server/services/vaultIntelligence.ts
 async function detectThreadGroups(userScreenshots, allMessages = []) {
-  const chatScreenshots = userScreenshots.filter((s) => s.category === "chat" || allMessages && allMessages.some((m) => m.screenshot_id === s.id)).sort((a, b) => {
+  const chatScreenshots = userScreenshots.filter((s) => s.processing_status === "ready" && (s.category === "chat" || allMessages && allMessages.some((m) => m.screenshot_id === s.id))).sort((a, b) => {
     const timeA = new Date(a.captured_at || a.created_at || a.uploaded_at).getTime();
     const timeB = new Date(b.captured_at || b.created_at || b.uploaded_at).getTime();
     return timeA - timeB;
@@ -69729,17 +69729,7 @@ router2.post(
         } catch (e) {
           console.warn("Could not read/normalize image file for storage:", e);
         }
-        let initialCategory = "other";
-        const nameLower = effectiveFilename.toLowerCase();
-        if (nameLower.includes("chat") || nameLower.includes("wa") || nameLower.includes("msg") || nameLower.includes("whatsapp") || nameLower.includes("telegram")) {
-          initialCategory = "chat";
-        } else if (nameLower.includes("game") || nameLower.includes("bgmi") || nameLower.includes("pubg") || nameLower.includes("score")) {
-          initialCategory = "game";
-        } else if (nameLower.includes("product") || nameLower.includes("shop") || nameLower.includes("cart") || nameLower.includes("buy")) {
-          initialCategory = "product";
-        } else if (nameLower.includes("doc") || nameLower.includes("bill") || nameLower.includes("invoice") || nameLower.includes("ticket")) {
-          initialCategory = "poster_document";
-        }
+        const initialCategory = "unprocessed";
         const insertStmt = db.prepare(`
           INSERT INTO screenshots (
             id, user_id, storage_key, original_filename, mime_type, width, height, file_size,

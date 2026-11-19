@@ -136,18 +136,8 @@ router.post(
           console.warn('Could not read/normalize image file for storage:', e);
         }
 
-        // Fast initial heuristic categorization (<1ms) based on filename
-        let initialCategory = 'other';
-        const nameLower = effectiveFilename.toLowerCase();
-        if (nameLower.includes('chat') || nameLower.includes('wa') || nameLower.includes('msg') || nameLower.includes('whatsapp') || nameLower.includes('telegram')) {
-          initialCategory = 'chat';
-        } else if (nameLower.includes('game') || nameLower.includes('bgmi') || nameLower.includes('pubg') || nameLower.includes('score')) {
-          initialCategory = 'game';
-        } else if (nameLower.includes('product') || nameLower.includes('shop') || nameLower.includes('cart') || nameLower.includes('buy')) {
-          initialCategory = 'product';
-        } else if (nameLower.includes('doc') || nameLower.includes('bill') || nameLower.includes('invoice') || nameLower.includes('ticket')) {
-          initialCategory = 'poster_document';
-        }
+        // Unprocessed initial state: Category and thread badges are strictly awarded ONLY after AI vision analysis completes
+        const initialCategory = 'unprocessed';
 
         const insertStmt = db.prepare(`
           INSERT INTO screenshots (
