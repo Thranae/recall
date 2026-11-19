@@ -34,6 +34,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   const [activePartIndex, setActivePartIndex] = useState(0);
 
   const reelContainerRef = useRef<HTMLDivElement>(null);
+  const partPillsContainerRef = useRef<HTMLDivElement>(null);
   const lastThreadRef = useRef<ThreadGroup | null>(thread);
 
   if (thread) {
@@ -41,13 +42,39 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
   }
   const activeThread = thread || lastThreadRef.current;
 
-  // Real-time smooth scroll synchronization to highlight current Part pill
+  // Auto-centers the active part pill within the horizontal strip
+  const centerActivePill = useCallback((idx: number, smooth = true) => {
+    const container = partPillsContainerRef.current;
+    const btn = document.getElementById(`thread-part-pill-${idx}`);
+    if (container && btn) {
+      const targetLeft = btn.offsetLeft - container.clientWidth / 2 + btn.clientWidth / 2;
+      container.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }
+  }, []);
+
+  // Center initial part pill on open
+  useEffect(() => {
+    if (isOpen) {
+      setActivePartIndex(0);
+      const timer = setTimeout(() => {
+        centerActivePill(0, false);
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, activeThread?.threadId, centerActivePill]);
+
+  // Real-time smooth scroll synchronization: highlights active part & auto-scrolls pill strip
   useEffect(() => {
     if (!isOpen || !activeThread || viewMode !== 'visual') return;
     const container = reelContainerRef.current;
     if (!container) return;
 
     let ticking = false;
+    let lastIdx = 0;
+
     const onScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
@@ -67,7 +94,11 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
             }
           });
 
-          setActivePartIndex(closestIdx);
+          if (closestIdx !== lastIdx) {
+            lastIdx = closestIdx;
+            setActivePartIndex(closestIdx);
+            centerActivePill(closestIdx, true);
+          }
           ticking = false;
         });
         ticking = true;
@@ -76,11 +107,12 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
 
     container.addEventListener('scroll', onScroll, { passive: true });
     return () => container.removeEventListener('scroll', onScroll);
-  }, [isOpen, activeThread, viewMode]);
+  }, [isOpen, activeThread, viewMode, centerActivePill]);
 
   // Jumps to part cleanly within container without jittering outer window
   const scrollToPart = useCallback((index: number) => {
     setActivePartIndex(index);
+    centerActivePill(index, true);
     const container = reelContainerRef.current;
     const target = document.getElementById(`thread-part-${index}`);
     if (container && target) {
@@ -93,7 +125,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
         behavior: 'smooth',
       });
     }
-  }, []);
+  }, [centerActivePill]);
 
   const handleExportStitched = async () => {
     if (!activeThread?.screenshots.length || isExporting) return;
@@ -309,30 +341,62 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
             <div ref={reelContainerRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 overscroll-contain">
               {viewMode === 'visual' ? (
                 <div className="relative mx-auto max-w-md">
-                  {/* Sticky Plump Liquid Glass Part Navigator */}
+                  {/* Sticky Plump Liquid Glass Part Navigator with Dynamic Horizontal Progress Scroll */}
                   <div className="sticky top-0 z-20 pb-3 pt-1 pointer-events-none flex justify-center">
-                    <div className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-full plump-glass-pill !bg-white/95 backdrop-blur-xl border border-white/95 shadow-md">
-                      <span className="text-[10px] font-extrabold text-[#3478F6] tracking-wider uppercase pl-2 pr-0.5 shrink-0">
-                        Part
-                      </span>
-                      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[260px] sm:max-w-xs py-0.5 px-0.5">
-                        {activeThread.screenshots.map((sc, idx) => {
-                          const isActive = activePartIndex === idx;
-                          return (
-                            <button
-                              key={sc.id}
-                              type="button"
-                              onClick={() => scrollToPart(idx)}
-                              className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 shrink-0 ${
-                                isActive
-                                  ? 'bg-[#3478F6] text-white shadow-xs'
-                                  : 'text-slate-600 hover:text-slate-900 bg-white/60 hover:bg-white border border-white/80'
-                              }`}
-                            >
-                              <span>{idx + 1}</span>
-                            </button>
-                          );
-                        })}
+                    <div className="pointer-events-auto relative flex flex-col items-center rounded-full plump-glass-pill !bg-white/95 backdrop-blur-xl border border-white/95 shadow-md overflow-hidden max-w-[94%] xs:max-w-md">
+                      <div className="flex items-center gap-1.5 p-1 w-full justify-between">
+                        <div className="flex items-center gap-1 pl-2.5 pr-1 shrink-0">
+                          <span className="text-[10px] font-extrabold text-[#3478F6] tracking-wider uppercase">
+                            Part
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100/90 px-1.5 py-0.5 rounded-full">
+                            {activePartIndex + 1}/{activeThread.screenshots.length}
+                          </span>
+                        </div>
+
+                        <div
+                          ref={partPillsContainerRef}
+                          className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth max-w-[210px] xs:max-w-[260px] sm:max-w-[320px] py-0.5 px-2"
+                          style={{
+                            maskImage:
+                              activeThread.screenshots.length > 5
+                                ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                                : undefined,
+                            WebkitMaskImage:
+                              activeThread.screenshots.length > 5
+                                ? 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)'
+                                : undefined,
+                          }}
+                        >
+                          {activeThread.screenshots.map((sc, idx) => {
+                            const isActive = activePartIndex === idx;
+                            return (
+                              <button
+                                key={sc.id}
+                                id={`thread-part-pill-${idx}`}
+                                type="button"
+                                onClick={() => scrollToPart(idx)}
+                                className={`min-w-[28px] h-7 px-2 inline-flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
+                                  isActive
+                                    ? 'bg-[#3478F6] text-white shadow-xs font-extrabold scale-105'
+                                    : 'text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/60'
+                                }`}
+                              >
+                                <span>{idx + 1}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Integrated Thread Scroll Progress Hairline */}
+                      <div className="w-full h-[2px] bg-slate-200/50 overflow-hidden">
+                        <div
+                          className="h-full bg-[#3478F6] transition-all duration-150 rounded-full"
+                          style={{
+                            width: `${((activePartIndex + 1) / activeThread.screenshots.length) * 100}%`,
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

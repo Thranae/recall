@@ -32,7 +32,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
   isOpen,
   onClose,
   title,
-  albumEmoji = '✨',
+  albumEmoji = '🎬',
   accentColor = '#3478F6',
   screenshots,
   initialIndex = 0,

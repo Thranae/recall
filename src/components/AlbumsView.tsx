@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   FolderHeart,
-  Sparkles,
+  FolderArchive,
+  Film,
   Play,
   Plus,
   ArrowLeft,
@@ -266,7 +267,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
     if (highlightsScreenshots.length === 0) return;
     setStoryTarget({
       title: 'Memory Highlights',
-      emoji: '✨',
+      emoji: '🎬',
       accentColor: '#3478F6',
       screenshots: highlightsScreenshots,
     });
@@ -599,7 +600,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           <div className="relative z-10 space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm border border-white/20">
-                <Sparkles className="w-3 h-3 text-amber-300" />
+                <Film className="w-3 h-3 text-amber-300" />
                 Highlights Reel
               </span>
               <span className="text-[11px] font-mono text-white/80">
@@ -652,7 +653,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
             activeFilter === 'smart' ? 'liquid-filter-chip-active' : ''
           }`}
         >
-          <Sparkles className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${activeFilter === 'smart' ? 'text-[#3478F6]' : 'text-slate-500'}`} />
+          <FolderArchive className={`h-3.5 w-3.5 shrink-0 stroke-[2.2] ${activeFilter === 'smart' ? 'text-[#3478F6]' : 'text-slate-500'}`} />
           <span className="whitespace-nowrap text-[12px] font-semibold">Smart AI</span>
           <span className={`text-[10px] font-mono ml-0.5 px-1.5 py-0.5 rounded-full ${activeFilter === 'smart' ? 'bg-[#B9D9FF]/40 text-[#3478F6] font-bold' : 'bg-slate-200/60 text-slate-500 font-semibold'}`}>
             {smartAlbums.length}
