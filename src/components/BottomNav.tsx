@@ -1,7 +1,7 @@
 import React from 'react';
-import { Layers, Search, Plus, MessageSquare, User } from 'lucide-react';
+import { Layers, Search, Plus, FolderHeart, User } from 'lucide-react';
 
-export type TabType = 'library' | 'search' | 'settings';
+export type TabType = 'library' | 'search' | 'albums' | 'settings';
 
 interface BottomNavProps {
   currentTab: TabType;
@@ -23,7 +23,7 @@ const TABS: (TabItem | null)[] = [
   { key: 'library', label: 'Library', Icon: Layers, category: 'all' },
   { key: 'search', label: 'Search', Icon: Search },
   null,
-  { key: 'library', label: 'Chats', Icon: MessageSquare, category: 'chat' },
+  { key: 'albums', label: 'Albums', Icon: FolderHeart },
   { key: 'settings', label: 'Settings', Icon: User },
 ];
 

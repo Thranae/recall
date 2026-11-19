@@ -4,6 +4,7 @@ import { TopHeader } from './components/TopHeader';
 import { BottomNav, type TabType } from './components/BottomNav';
 import { LibraryView } from './components/LibraryView';
 import { SearchView } from './components/SearchView';
+import { AlbumsView } from './components/AlbumsView';
 import { SettingsView } from './components/SettingsView';
 import { ScreenshotDetailSheet } from './components/ScreenshotDetailSheet';
 import { UploadSheet } from './components/UploadSheet';
@@ -44,8 +45,9 @@ export const App: React.FC = () => {
   const [selectedScreenshotId, setSelectedScreenshotId] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<SearchResultItem | undefined>(undefined);
   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [isAlbumsModalOpen, setIsAlbumsModalOpen] = useState(false);
 
-  const isAnyModalActive = isLibraryModalOpen || Boolean(selectedScreenshotId) || isUploadOpen;
+  const isAnyModalActive = isLibraryModalOpen || isAlbumsModalOpen || Boolean(selectedScreenshotId) || isUploadOpen;
 
   // Check existing session on launch & listen for auth invalidation
   useEffect(() => {
@@ -414,6 +416,15 @@ export const App: React.FC = () => {
             searchError={searchError}
             onRetrySearch={() => handleSearch()}
             onSelectScreenshot={(id, res) => handleOpenDetail(id, res)}
+          />
+        )}
+
+        {currentTab === 'albums' && (
+          <AlbumsView
+            screenshots={screenshots}
+            onSelectScreenshot={(id) => handleOpenDetail(id)}
+            onRefresh={fetchScreenshots}
+            onModalStateChange={setIsAlbumsModalOpen}
           />
         )}
 

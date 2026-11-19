@@ -251,3 +251,18 @@ export interface LiveInspectorNode {
   href?: string;
 }
 
+export interface Album {
+  id: string;
+  title: string;
+  description?: string;
+  category?: 'thread' | 'chat' | 'game' | 'receipt' | 'ticket' | 'product' | 'visual' | 'tag' | 'custom';
+  coverScreenshotId?: string;
+  screenshotIds: string[];
+  createdAt: string;
+  updatedAt?: string;
+  isSmart?: boolean;
+  accentColor?: string;
+  emoji?: string;
+  badge?: string;
+}
+
