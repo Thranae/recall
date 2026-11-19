@@ -16,6 +16,7 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -67,16 +68,20 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     setIsUploading(true);
+    setUploadProgress(0);
     setErrorMessage(null);
     try {
-      await api.uploadScreenshots(selectedFiles);
+      await api.uploadScreenshots(selectedFiles, (percent) => {
+        setUploadProgress(percent);
+      });
       setUploadSuccess(true);
       setTimeout(() => {
         onUploadSuccess();
         onClose();
         setSelectedFiles([]);
         setUploadSuccess(false);
-      }, 400);
+        setUploadProgress(0);
+      }, 500);
     } catch (err: any) {
       console.error('Upload failed:', err);
       setErrorMessage(err.message || 'Upload failed. Please ensure the files are valid images.');
@@ -170,6 +175,98 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
               >
                 Screenshots saved. Recall is analyzing and indexing in the background.
               </motion.p>
+            </motion.div>
+          ) : isUploading ? (
+            <motion.div
+              key="uploading-progress-container"
+              initial={{ opacity: 0, scale: 0.94, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center justify-center py-7 text-center"
+            >
+              {/* Circular Liquid Glass Progress Ring Pod */}
+              <div className="relative mb-3 flex items-center justify-center">
+                {/* Ambient Soft Glow */}
+                <div className="absolute h-28 w-28 rounded-full bg-blue-400/20 blur-xl pointer-events-none" />
+
+                {/* Glass Pod Container */}
+                <div
+                  className="relative flex h-28 w-28 items-center justify-center rounded-full p-2"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 246, 255, 0.88) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                    boxShadow:
+                      '0 12px 28px -4px rgba(23, 43, 77, 0.12), inset 0 2px 3px #FFFFFF, inset 0 -2px 3px rgba(52, 120, 246, 0.12)',
+                  }}
+                >
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <defs>
+                      <linearGradient id="upload-progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4A8CF7" />
+                        <stop offset="50%" stopColor="#3478F6" />
+                        <stop offset="100%" stopColor="#2060DC" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Muted Track Circle */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="none"
+                      stroke="rgba(52, 120, 246, 0.14)"
+                      strokeWidth="6"
+                    />
+
+                    {/* Active Progress Circle */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="none"
+                      stroke="url(#upload-progress-gradient)"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray={263.89}
+                      strokeDashoffset={263.89 - (uploadProgress / 100) * 263.89}
+                      style={{
+                        transition: 'stroke-dashoffset 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+                      }}
+                    />
+                  </svg>
+
+                  {/* Percentage in Center */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center select-none pointer-events-none">
+                    <span className="text-xl font-black font-mono tracking-tight text-[#172B4D]">
+                      {uploadProgress}%
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#3478F6]">
+                      Uploading
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <h4 className="text-sm font-bold text-slate-800 tracking-tight">
+                Uploading {selectedFiles.length} Screenshot{selectedFiles.length > 1 ? 's' : ''}
+              </h4>
+              <p className="mt-1 text-xs text-slate-500 font-normal max-w-[240px]">
+                {uploadProgress < 100
+                  ? 'Transmitting encrypted visual files to Recall vault...'
+                  : 'Finalizing cloud storage and starting AI indexing...'}
+              </p>
+
+              {/* Status Pill */}
+              <div className="mt-3 liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active gap-1.5 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3478F6] animate-pulse" />
+                <span className="font-mono text-[10px] font-bold text-[#3478F6]">
+                  {uploadProgress}% complete
+                </span>
+              </div>
             </motion.div>
           ) : (
             <div className="mt-4 space-y-4">

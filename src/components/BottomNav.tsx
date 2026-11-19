@@ -10,6 +10,7 @@ interface BottomNavProps {
   onOpenUpload: () => void;
   screenshotCount: number;
   visible?: boolean;
+  isIndexing?: boolean;
 }
 
 type TabItem = {
@@ -33,6 +34,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onSelectTab,
   onOpenUpload,
   visible = true,
+  isIndexing = false,
 }) => {
   const isActive = (key: string, category?: string) => {
     if (key === 'library' && category === 'chat')
@@ -127,6 +129,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                         <div className="nav-unselected-icon-pod">
                           <Icon className="h-4.5 w-4.5 stroke-[2.4] text-[#172B4D]" />
                         </div>
+                      )}
+
+                      {/* Micro pulse indicator when albums are indexing / setting up */}
+                      {item.key === 'albums' && isIndexing && (
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3478F6] opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3478F6] border border-white" />
+                        </span>
                       )}
                     </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import {
   FolderHeart,
   FolderArchive,
@@ -26,6 +27,7 @@ interface AlbumsViewProps {
   onSelectScreenshot: (id: string) => void;
   onRefresh?: () => void;
   onModalStateChange?: (isOpen: boolean) => void;
+  isIndexing?: boolean;
 }
 
 const LOCAL_STORAGE_CUSTOM_ALBUMS = 'recall_custom_albums';
@@ -35,10 +37,30 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   onSelectScreenshot,
   onRefresh,
   onModalStateChange,
+  isIndexing = false,
 }) => {
+  // Check if any uploaded screenshots are still pending indexing / AI clustering
+  const pendingScreenshots = useMemo(
+    () => screenshots.filter((s) => s.processing_status === 'queued' || s.processing_status === 'processing'),
+    [screenshots]
+  );
+  const isSettingUpAlbums = isIndexing || pendingScreenshots.length > 0;
+
+  // Real-time indexing progress counters
+  const totalScreenshotsCount = screenshots.length;
+  const completedScreenshotsCount = Math.max(0, totalScreenshotsCount - pendingScreenshots.length);
+  const setupPercent = totalScreenshotsCount > 0 ? Math.round((completedScreenshotsCount / totalScreenshotsCount) * 100) : 100;
+
   // Navigation / View State
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'smart' | 'custom'>('all');
+
+  // Dismiss any opened album view if background indexing starts
+  useEffect(() => {
+    if (isSettingUpAlbums) {
+      setSelectedAlbumId(null);
+    }
+  }, [isSettingUpAlbums]);
 
   // Story & Create Modals
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -557,6 +579,111 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       setIsExportingCollage(false);
     }
   };
+
+  // -------------------------------------------------------------
+  // VIEW: ALBUMS SETTING UP (Minimal Fluid Animation during Indexing)
+  // -------------------------------------------------------------
+  if (isSettingUpAlbums) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 py-12 text-center select-none animate-fadeIn">
+        {/* Minimal Animated Liquid Glass Orb Pod */}
+        <div className="relative mb-6 flex items-center justify-center">
+          {/* Subtle Ambient Breathing Radial Glow */}
+          <motion.div
+            animate={{
+              scale: [1, 1.25, 1],
+              opacity: [0.25, 0.45, 0.25],
+            }}
+            transition={{
+              duration: 3.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            className="absolute h-36 w-36 rounded-full bg-gradient-to-tr from-[#3478F6]/30 via-sky-300/20 to-blue-500/30 blur-2xl pointer-events-none"
+          />
+
+          {/* Concentric Rotating Shimmer Rings */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+            className="absolute h-32 w-32 rounded-full border border-blue-200/40 pointer-events-none"
+            style={{
+              borderTopColor: '#3478F6',
+              borderRightColor: 'rgba(52, 120, 246, 0.1)',
+            }}
+          />
+
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+            className="absolute h-26 w-26 rounded-full border border-dashed border-blue-300/30 pointer-events-none"
+          />
+
+          {/* Central Plump Liquid Glass Dome */}
+          <motion.div
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative flex h-20 w-20 items-center justify-center rounded-[28px] shadow-xl"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 247, 255, 0.88) 100%)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1.5px solid rgba(255, 255, 255, 0.95)',
+              borderTopColor: '#FFFFFF',
+              borderBottomColor: 'rgba(52, 120, 246, 0.3)',
+              boxShadow:
+                '0 14px 32px -4px rgba(23, 43, 77, 0.12), 0 4px 12px rgba(52, 120, 246, 0.1), inset 0 2px 3px #FFFFFF, inset 0 -2px 3px rgba(52, 120, 246, 0.14)',
+            }}
+          >
+            {/* Specular Edge Hairline */}
+            <div
+              className="absolute top-0 inset-x-3 h-[1px] rounded-full pointer-events-none"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 1) 30%, rgba(255, 255, 255, 1) 70%, transparent 100%)',
+              }}
+            />
+
+            <FolderHeart className="h-9 w-9 text-[#3478F6] stroke-[2.2]" />
+          </motion.div>
+        </div>
+
+        {/* Text Details */}
+        <h2 className="text-xl font-black text-[#172B4D] tracking-tight">
+          Albums are Setting Up
+        </h2>
+        <p className="mt-1.5 text-xs text-[#4A5D78] font-medium leading-relaxed max-w-[270px]">
+          AI Vision is analyzing and organizing your screenshots into smart visual collections.
+        </p>
+
+        {/* Real-time Progress Bar & Percentage */}
+        <div className="mt-5 w-60 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-mono">
+            <span className="font-semibold text-slate-500">
+              {completedScreenshotsCount} of {totalScreenshotsCount} indexed
+            </span>
+            <span className="font-bold text-[#3478F6]">{setupPercent}%</span>
+          </div>
+
+          <div className="h-2 w-full rounded-full bg-blue-100/60 p-0.5 overflow-hidden shadow-inner border border-white/90">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#4A8CF7] to-[#3478F6] transition-all duration-500 ease-out shadow-xs"
+              style={{ width: `${Math.max(6, setupPercent)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Calming Reassurance Pill */}
+        <div className="mt-5 liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active gap-1.5 shadow-2xs">
+          <Loader2 className="w-3 h-3 text-[#3478F6] animate-spin" />
+          <span className="text-[10.5px] font-bold text-[#3478F6]">
+            Unlocks automatically once ready
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // -------------------------------------------------------------
   // VIEW: SINGLE ALBUM DETAIL

@@ -109,6 +109,53 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+function uploadFormDataWithXhr<T>(
+  endpoint: string,
+  formData: FormData,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const apiBase = getApiBase();
+    xhr.open('POST', `${apiBase}${endpoint}`);
+
+    const token = getAuthToken();
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          onProgress(event.loaded, event.total);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const json = JSON.parse(xhr.responseText);
+          resolve(json);
+        } catch {
+          resolve(xhr.responseText as unknown as T);
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.error || err.message || `Upload failed with status ${xhr.status}`));
+        } catch {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out'));
+    xhr.send(formData);
+  });
+}
+
 export const api = {
   askVault: (query: string, category?: string) =>
     request<import('../types').VaultAskResponse>('/search/ask', {
@@ -358,24 +405,56 @@ export const api = {
     }
   },
 
-  async uploadScreenshots(files: File[]): Promise<{ message: string; screenshots: any[] }> {
+  async uploadScreenshots(
+    files: File[],
+    onProgress?: (percent: number) => void
+  ): Promise<{ message: string; screenshots: any[] }> {
     const allScreenshots: any[] = [];
     const errors: string[] = [];
+
+    if (files.length === 0) {
+      return { message: 'No files to upload', screenshots: [] };
+    }
+
+    onProgress?.(5);
+
+    // Track bytes transmitted across all files for true smooth continuous circular progress
+    const totalBytes = Math.max(1, files.reduce((acc, f) => acc + f.size, 0));
+    const loadedBytesMap = new Map<number, number>();
+
+    const updateAggregatedProgress = () => {
+      let loaded = 0;
+      for (const b of loadedBytesMap.values()) loaded += b;
+      // Scale from 5% to 95% during network transmission
+      const pct = 5 + Math.round((loaded / totalBytes) * 90);
+      onProgress?.(Math.min(96, Math.max(5, pct)));
+    };
 
     // Parallel client optimization + upload chunking (5 at a time) for sub-second perceived upload
     const CHUNK_SIZE = 5;
     for (let i = 0; i < files.length; i += CHUNK_SIZE) {
       const chunk = files.slice(i, i + CHUNK_SIZE);
       await Promise.all(
-        chunk.map(async (rawFile) => {
+        chunk.map(async (rawFile, chunkIdx) => {
+          const globalIdx = i + chunkIdx;
           try {
             const file = await this.optimizeImageForUpload(rawFile);
             const formData = new FormData();
             formData.append('screenshots', file);
-            const res = await request<{ message: string; screenshots: any[] }>('/screenshots/upload', {
-              method: 'POST',
-              body: formData,
-            });
+
+            const res = await uploadFormDataWithXhr<{ message: string; screenshots: any[] }>(
+              '/screenshots/upload',
+              formData,
+              (fileLoaded, fileTotal) => {
+                const ratio = fileTotal > 0 ? fileLoaded / fileTotal : 0;
+                loadedBytesMap.set(globalIdx, ratio * rawFile.size);
+                updateAggregatedProgress();
+              }
+            );
+
+            loadedBytesMap.set(globalIdx, rawFile.size);
+            updateAggregatedProgress();
+
             if (res.screenshots) {
               allScreenshots.push(...res.screenshots);
             }
@@ -389,6 +468,9 @@ export const api = {
     if (allScreenshots.length === 0 && errors.length > 0) {
       throw new Error(errors[0]);
     }
+
+    onProgress?.(100);
+
     return {
       message: `Successfully uploaded ${allScreenshots.length} screenshots.${errors.length > 0 ? ` ${errors.length} failed.` : ''}`,
       screenshots: allScreenshots,

@@ -425,6 +425,7 @@ export const App: React.FC = () => {
             onSelectScreenshot={(id) => handleOpenDetail(id)}
             onRefresh={fetchScreenshots}
             onModalStateChange={setIsAlbumsModalOpen}
+            isIndexing={processingCount > 0}
           />
         )}
 
@@ -463,6 +464,7 @@ export const App: React.FC = () => {
         onOpenUpload={() => setIsUploadOpen(true)}
         screenshotCount={screenshots.length}
         visible={!isSelectionMode && !hasActiveUndo && !isAnyModalActive}
+        isIndexing={processingCount > 0}
       />
 
       {/* Upload Mobile Sheet */}
