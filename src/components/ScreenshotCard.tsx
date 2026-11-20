@@ -35,8 +35,8 @@ interface ScreenshotCardProps {
 }
 
 function formatTagForChip(rawTag: string): string {
-  const clean = rawTag.replace(/^#+/, '').trim().toLowerCase();
-  if (clean === 'poster_document' || clean === 'poster_documen') return '#notes';
+  const clean = rawTag.replace(/^[#'"\s]+|[#'"\s]+$/g, '').trim().toLowerCase();
+  if (clean === 'poster_document' || clean === 'poster_documen' || clean.includes('poster_doc')) return '#notes';
   if (clean === 'code_dev') return '#code';
   if (clean === 'food_dining') return '#food';
   if (clean === 'product_shopping' || clean === 'product') return '#product';

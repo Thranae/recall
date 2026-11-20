@@ -82,7 +82,56 @@ export function extractLiveInspectorNodes(
     });
   }
 
-  // 3. Discount / Promo Code
+  // 3. Financial Total & Monetary Amount
+  const moneyMatch =
+    ocr.match(/(?:total|amount|paid|bill|due|balance|subtotal)\s*[:\-]?\s*([$₹€£]\s*[\d,]+(?:\.\d{2})?)/i) ||
+    ocr.match(/([$₹€£]\s*[\d,]+(?:\.\d{2})?)\s*(?:total|paid|due|debited|credited)/i) ||
+    ocr.match(/[$₹€£]\s*[\d,]+(?:\.\d{2})?/);
+
+  if (moneyMatch && !nodes.some((n) => n.value === moneyMatch[1] || n.value === moneyMatch[0])) {
+    const val = (moneyMatch[1] || moneyMatch[0]).replace(/\s+/, '');
+    nodes.push({
+      id: `inspect_money_${val}`,
+      x: 55,
+      y: estimateLineY(val, 65),
+      kind: 'money',
+      label: 'Financial Total',
+      detail: `Amount: ${val}`,
+      actionText: 'Copy Amount',
+      value: val,
+    });
+  }
+
+  // 4. Game Result & Kill Counts
+  if (screenshot.game_result) {
+    const { kills, rank, game_name } = screenshot.game_result;
+    if (kills !== null && kills !== undefined) {
+      nodes.push({
+        id: `inspect_game_kills`,
+        x: 48,
+        y: 35,
+        kind: 'game',
+        label: `${game_name || 'Game'} Match Stats`,
+        detail: `${kills} Eliminations / Kills`,
+        actionText: 'Copy Stats',
+        value: `${kills} Kills`,
+      });
+    }
+    if (rank) {
+      nodes.push({
+        id: `inspect_game_rank`,
+        x: 50,
+        y: 22,
+        kind: 'game',
+        label: 'Match Placement',
+        detail: rank,
+        actionText: 'Copy Rank',
+        value: rank,
+      });
+    }
+  }
+
+  // 5. Discount / Promo Code
   const promoMatch = ocr.match(/(?:code|promo|coupon|use|flat|voucher|save)\s*(?:is|:|-)?\s*([A-Z0-9]{4,15})\b/i);
   if (promoMatch && !nodes.some((n) => n.value === promoMatch[1])) {
     nodes.push({
@@ -97,7 +146,58 @@ export function extractLiveInspectorNodes(
     });
   }
 
-  // 4. Extracted Message Highlights (if chat category)
+  // 6. Academic / Study Notes & Document Formulas
+  const formulaMatch =
+    ocr.match(/(?:m\s*=\s*c\^d\s*mod\s*n\s*=\s*[\d^ ]+\s*mod\s*\d+\s*=\s*\d+)/i) ||
+    ocr.match(/(?:for\s*rsa\s*with\s*p=\d+,\s*q=\d+.*)/i) ||
+    ocr.match(/(?:compute\s*n,\s*phi\(n\)\s*and\s*d)/i);
+
+  if (formulaMatch && !nodes.some((n) => n.value === formulaMatch[0])) {
+    const cleanFormula = formulaMatch[0].trim();
+    nodes.push({
+      id: `inspect_formula_1`,
+      x: 50,
+      y: estimateLineY(cleanFormula, 45),
+      kind: 'formula',
+      label: 'Formula / Key Computation',
+      detail: cleanFormula,
+      actionText: 'Copy Formula',
+      value: cleanFormula,
+    });
+  }
+
+  const assignmentMatch = ocr.match(/(?:(?:machine\s*learning|artificial\s*intelligence|computer\s*science)\s*assignment\s*\d*|assignment\s*\d+)/i);
+  if (assignmentMatch && !nodes.some((n) => n.value === assignmentMatch[0])) {
+    nodes.push({
+      id: `inspect_assignment_topic`,
+      x: 45,
+      y: estimateLineY(assignmentMatch[0], 15),
+      kind: 'formula',
+      label: 'Assignment Title',
+      detail: assignmentMatch[0],
+      actionText: 'Copy Title',
+      value: assignmentMatch[0],
+    });
+  }
+
+  // 7. Event & Travel Dates
+  const eventDateMatch = ocr.match(
+    /\b(?:\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+\d{2,4})?|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,\s*\d{2,4})?)\b/i
+  );
+  if (eventDateMatch && !nodes.some((n) => n.value === eventDateMatch[0])) {
+    nodes.push({
+      id: `inspect_event_date`,
+      x: 35,
+      y: estimateLineY(eventDateMatch[0], 55),
+      kind: 'calendar',
+      label: 'Detected Event Date',
+      detail: eventDateMatch[0],
+      actionText: 'Copy Date',
+      value: eventDateMatch[0],
+    });
+  }
+
+  // 8. Extracted Message Highlights (if chat category)
   if (messages.length > 0 && screenshot.category === 'chat') {
     const importantMsg = messages.find((m) => m.message_text.length >= 8 && m.message_text.length <= 40);
     if (importantMsg && !nodes.some((n) => n.value === importantMsg.message_text)) {

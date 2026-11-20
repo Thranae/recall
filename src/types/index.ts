@@ -262,7 +262,7 @@ export interface LiveInspectorNode {
   id: string;
   x: number; // percentage (0 - 100)
   y: number; // percentage (0 - 100)
-  kind: 'otp' | 'phone' | 'email' | 'url' | 'calendar' | 'upi' | 'discount' | 'entity';
+  kind: 'otp' | 'phone' | 'email' | 'url' | 'calendar' | 'upi' | 'discount' | 'money' | 'game' | 'code' | 'formula' | 'entity';
   label: string;
   detail: string;
   actionText: string;

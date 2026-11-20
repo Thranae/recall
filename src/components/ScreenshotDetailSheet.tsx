@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Trash2,
@@ -32,6 +33,9 @@ import {
   Bot,
   FileText,
   Info,
+  Sparkles,
+  KeyRound,
+  CreditCard,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
@@ -81,6 +85,32 @@ interface ScreenshotDetailSheetProps {
   onSelectRelated?: (id: string) => void;
 }
 
+const getInspectorNodeIcon = (kind: LiveInspectorNode['kind']) => {
+  switch (kind) {
+    case 'otp':
+      return KeyRound;
+    case 'money':
+      return CreditCard;
+    case 'game':
+      return Trophy;
+    case 'discount':
+      return Sparkles;
+    case 'calendar':
+      return Calendar;
+    case 'phone':
+      return Phone;
+    case 'email':
+      return Mail;
+    case 'url':
+      return ExternalLink;
+    case 'formula':
+    case 'code':
+      return FileText;
+    default:
+      return Eye;
+  }
+};
+
 export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   screenshotId,
   initialScreenshot,
@@ -102,6 +132,9 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [copiedAllFlow, setCopiedAllFlow] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [isVisualLensActive, setIsVisualLensActive] = useState(true);
+  const [selectedInspectorNode, setSelectedInspectorNode] = useState<LiveInspectorNode | null>(null);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [activeInspectorNode, setActiveInspectorNode] = useState<LiveInspectorNode | null>(null);
   const [inspectorCopied, setInspectorCopied] = useState(false);
 
@@ -245,6 +278,12 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   }, [data?.screenshot, data?.messages]);
 
   const handleInspectorAction = (node: LiveInspectorNode) => {
+    setActiveInspectorNode(node);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(10);
+      } catch {}
+    }
     if (node.href) {
       window.open(node.href, '_blank');
       return;
@@ -256,6 +295,31 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     navigator.clipboard.writeText(node.value);
     setInspectorCopied(true);
     setTimeout(() => setInspectorCopied(false), 2000);
+  };
+
+  const handleCopyAllSummary = () => {
+    if (!data?.screenshot) return;
+    const lines = [
+      `📋 RECALL Key Extract: ${data.screenshot.original_filename}`,
+      `• Category: ${data.screenshot.category}`,
+    ];
+    if (inspectorNodes.length > 0) {
+      inspectorNodes.forEach((node) => {
+        lines.push(`• ${node.label}: ${node.value}`);
+      });
+    }
+    if (data.screenshot.visual_description) {
+      lines.push(`• Overview: ${data.screenshot.visual_description}`);
+    }
+    const fullText = lines.join('\n');
+    navigator.clipboard.writeText(fullText);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(15);
+      } catch {}
+    }
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2000);
   };
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
@@ -1367,6 +1431,121 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 title={!isRedactedMode ? (isImageExpanded ? 'Click to collapse view' : 'Click to expand view') : undefined}
               />
 
+              {/* Apple Visual Look Up: Interactive Spatial Pins */}
+              {!isRedactedMode && !isRedacting && !isAiRedacting && isVisualLensActive && (
+                <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+                  {inspectorNodes.map((node) => {
+                    const NodePinIcon = getInspectorNodeIcon(node.kind);
+                    const isSelected = selectedInspectorNode?.id === node.id;
+                    return (
+                      <div
+                        key={node.id}
+                        style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                              try {
+                                navigator.vibrate(10);
+                              } catch {}
+                            }
+                            setSelectedInspectorNode(isSelected ? null : node);
+                          }}
+                          className={`h-7 w-7 rounded-full flex items-center justify-center backdrop-blur-md shadow-md active:scale-90 transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[#3478F6] text-white border-white scale-110 shadow-blue-500/40 ring-4 ring-white/60'
+                              : 'bg-white/88 text-[#3478F6] border-white/90 animate-pulse hover:bg-white'
+                          }`}
+                          title={`Visual Look Up: ${node.label}`}
+                        >
+                          <NodePinIcon className="h-3.5 w-3.5 stroke-[2.4]" />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* Floating Apple-style Look-Up Card on Pin Selection */}
+                  <AnimatePresence>
+                    {selectedInspectorNode && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.92, y: 8 }}
+                        transition={{ duration: 0.16 }}
+                        className="absolute bottom-2 inset-x-2 z-30 pointer-events-auto rounded-[20px] bg-white/95 backdrop-blur-xl border border-white p-3 shadow-lg flex flex-col gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] font-bold text-[#3478F6] uppercase tracking-wider">
+                              Visual Look Up · {selectedInspectorNode.label}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInspectorNode(null)}
+                            className="p-1 text-slate-400 active:text-slate-600 rounded-full cursor-pointer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        <p className="text-[12.5px] font-bold text-[#172B4D] truncate px-0.5">
+                          {selectedInspectorNode.value}
+                        </p>
+
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleInspectorAction(selectedInspectorNode)}
+                            className="flex-1 flex items-center justify-center gap-1 h-7.5 rounded-full bg-[#3478F6] text-white text-[11px] font-bold active:scale-95 transition-transform shadow-xs cursor-pointer"
+                          >
+                            {inspectorCopied ? (
+                              <>
+                                <Check className="h-3 w-3 stroke-[3]" />
+                                <span>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 stroke-[2.3]" />
+                                <span>Copy Value</span>
+                              </>
+                            )}
+                          </button>
+
+                          {selectedInspectorNode.href && (
+                            <a
+                              href={selectedInspectorNode.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-1 h-7.5 px-3 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold active:scale-95 transition-transform cursor-pointer"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              <span>Open</span>
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSelectTag?.(selectedInspectorNode.value);
+                            }}
+                            className="flex items-center justify-center gap-1 h-7.5 px-3 rounded-full bg-blue-50 border border-blue-200/60 text-[#3478F6] text-[11px] font-bold active:scale-95 transition-transform cursor-pointer whitespace-nowrap"
+                            title="Cross-reference other screenshots in vault"
+                          >
+                            <Layers className="h-3 w-3 stroke-[2.3]" />
+                            <span>Vault Radar</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
               {/* Standard Redact Pass: Tactile Marker-Ink Sweep & Live Censorship HUD */}
               {isRedacting && (
                 <div className="pointer-events-none absolute inset-0 z-[15] overflow-hidden bg-[#0B1220]/16 backdrop-blur-[1px]">
@@ -1555,16 +1734,44 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             </div>
 
             {/* Dedicated Interactive Control Dock for Screenshot */}
-            <div className="flex items-center justify-between gap-2.5 pt-1">
+            <div className="flex items-center justify-between gap-2 pt-1">
+              {/* Apple Visual Lens Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVisualLensActive(!isVisualLensActive);
+                  setSelectedInspectorNode(null);
+                }}
+                disabled={isRedacting || isAiRedacting}
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-2.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
+                  isVisualLensActive
+                    ? 'bg-[#3478F6] text-white shadow-xs'
+                    : 'liquid-filter-chip'
+                }`}
+                title="Toggle interactive Apple Visual Look Up spatial pins"
+              >
+                <Sparkles className="h-3.5 w-3.5 stroke-[2.3] shrink-0" />
+                <span className="whitespace-nowrap">Visual Lens</span>
+                {inspectorNodes.length > 0 && (
+                  <span
+                    className={`text-[9.5px] font-mono px-1.5 py-0.2 rounded-full ${
+                      isVisualLensActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {inspectorNodes.length}
+                  </span>
+                )}
+              </button>
+
               {/* Privacy Redaction Feature Button */}
               <button
                 type="button"
                 onClick={handleToggleRedact}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-2.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isRedactedMode
                     ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-1 ring-[#3478F6]/40'
-                    : 'liquid-filter-chip liquid-filter-chip-active'
+                    : 'liquid-filter-chip'
                 }`}
                 title="Mask and redact private info, personal chats or sensitive details"
               >
@@ -1589,12 +1796,15 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               {/* Subtle Full Image Expand / Collapse Button */}
               <button
                 type="button"
-                onClick={() => setIsImageExpanded(!isImageExpanded)}
+                onClick={() => {
+                  setIsImageExpanded(!isImageExpanded);
+                  setSelectedInspectorNode(null);
+                }}
                 disabled={isRedacting || isAiRedacting}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
+                className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-2.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isImageExpanded
                     ? 'bg-[#EBF3FF] text-[#3478F6] border border-[#3478F6]/30 shadow-2xs'
-                    : 'liquid-filter-chip liquid-filter-chip-active'
+                    : 'liquid-filter-chip'
                 }`}
                 title={isImageExpanded ? 'Collapse to standard view' : 'Subtly expand screenshot preview'}
               >
@@ -1875,48 +2085,85 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     </div>
                   )}
 
-                  {/* Identified Visual Entities & Quick Actions (Zero Clipping) */}
+                  {/* AI Precision Data Card: High-precision key-value extraction & 1-tap form copier */}
                   {inspectorNodes.length > 0 && (
-                    <div className="rounded-[20px] liquid-glass-card p-3.5 space-y-2.5 shadow-2xs border border-white/90">
-                      <div className="flex items-center justify-between px-0.5">
-                        <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-slate-800">
-                          <Eye className="h-3.5 w-3.5 text-[#3478F6]" />
-                          <span>Detected Details & Entities ({inspectorNodes.length})</span>
+                    <div className="rounded-[20px] liquid-glass-card p-4 space-y-3 shadow-2xs border border-white/90">
+                      <div className="flex items-center justify-between text-xs text-slate-800 font-bold px-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
+                          <span>AI Precision Data Card</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={handleCopyAllSummary}
+                          className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-transform flex items-center gap-1"
+                          title="Copy structured summary of all extracted data fields"
+                        >
+                          {copiedSummary ? (
+                            <>
+                              <Check className="h-2.5 w-2.5 text-emerald-600 stroke-[3]" />
+                              <span className="text-emerald-600">Copied All!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-2.5 w-2.5" />
+                              <span>Copy All Fields</span>
+                            </>
+                          )}
+                        </button>
                       </div>
+
                       <div className="space-y-1.5">
-                        {inspectorNodes.map((node) => (
-                          <div
-                            key={node.id}
-                            className="flex items-center justify-between gap-2.5 rounded-[16px] bg-white/85 border border-white px-3.5 py-2.5 text-xs shadow-2xs"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[10px] font-bold text-[#3478F6] uppercase tracking-wide block">
-                                {node.label}
-                              </span>
-                              <p className="text-[12px] font-bold text-[#172B4D] truncate leading-tight mt-0.5">
-                                {node.detail}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveInspectorNode(node);
-                                handleInspectorAction(node);
-                              }}
-                              className="plump-glass-pill shrink-0 px-3.5 h-8 rounded-full text-[11px] font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1.5"
+                        {inspectorNodes.map((node) => {
+                          const NodeIcon = getInspectorNodeIcon(node.kind);
+                          return (
+                            <div
+                              key={node.id}
+                              className="flex items-center justify-between gap-2.5 rounded-[16px] bg-white/85 border border-white px-3.5 py-2.5 text-xs shadow-2xs"
                             >
-                              {activeInspectorNode?.id === node.id && inspectorCopied ? (
-                                <>
-                                  <Check className="h-3.5 w-3.5 stroke-[2.4] text-emerald-600" />
-                                  <span className="text-emerald-600">Copied!</span>
-                                </>
-                              ) : (
-                                <span>{node.actionText}</span>
-                              )}
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3478F6]/10 text-[#3478F6] shrink-0">
+                                  <NodeIcon className="h-3.5 w-3.5 stroke-[2.2]" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block truncate">
+                                    {node.label}
+                                  </span>
+                                  <p className="text-[12px] font-bold text-[#172B4D] truncate leading-tight mt-0.5">
+                                    {node.value}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleInspectorAction(node)}
+                                  className="plump-glass-pill shrink-0 px-3 h-7.5 rounded-full text-[11px] font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-all shadow-xs flex items-center gap-1"
+                                >
+                                  {activeInspectorNode?.id === node.id && inspectorCopied ? (
+                                    <>
+                                      <Check className="h-3 w-3 stroke-[2.4] text-emerald-600" />
+                                      <span className="text-emerald-600">Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-2.5 w-2.5" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onSelectTag?.(node.value)}
+                                  className="h-7.5 w-7.5 rounded-full bg-blue-50/80 border border-blue-200/60 flex items-center justify-center text-[#3478F6] active:scale-95 cursor-pointer transition-transform shrink-0"
+                                  title={`Cross-reference "${node.value}" in vault`}
+                                >
+                                  <Layers className="h-3 w-3 stroke-[2.3]" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

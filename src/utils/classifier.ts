@@ -76,13 +76,15 @@ export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
 
   let tagsArr: string[] = [];
   if (Array.isArray(s.tags)) {
-    tagsArr = s.tags.map((t) => String(t).toLowerCase());
+    tagsArr = s.tags.map((t) => String(t).toLowerCase().replace(/^[#'"\s]+|[#'"\s]+$/g, ''));
   } else if (typeof s.tags === 'string') {
     try {
       const parsed = JSON.parse(s.tags);
-      if (Array.isArray(parsed)) tagsArr = parsed.map((t) => String(t).toLowerCase());
+      if (Array.isArray(parsed)) {
+        tagsArr = parsed.map((t) => String(t).toLowerCase().replace(/^[#'"\s]+|[#'"\s]+$/g, ''));
+      }
     } catch {
-      tagsArr = (s.tags as string).toLowerCase().split(/[\s,]+/);
+      tagsArr = (s.tags as string).toLowerCase().split(/[\s,]+/).map((t) => t.replace(/^[#'"\s]+|[#'"\s]+$/g, ''));
     }
   }
 
@@ -90,13 +92,19 @@ export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
   // Strictly awarded for handwritten homework, marksheets, syllabus, lecture notes & assignments
   const isStudyOrDocument =
     s.category === 'poster_document' ||
-    /\b(?:handwritten|handwriting|hand written|notebook|assignment|homework|lecture notes|study notes|syllabus|curriculum|marksheet|mark sheet|grade card|semester marks|question paper|exam paper)\b/i.test(visual) ||
-    tagsArr.some((t) => ['notes', 'study', 'handwritten', 'assignment', 'homework', 'syllabus', 'marks', 'exam', 'document', 'pdf', 'certificate'].includes(t)) ||
-    /(?:assignment\s*\d*|machine\s*learning\s*assignment|homework|semester\b|courses?\s*\(?ca\)?|digital\s*electronics|computer\s*organization|syllabus|curriculum|marksheet|hall\s*ticket|question\s*paper|rsa\s*with\s*p=|compute\s*n,\s*phi\(n\)|encrypt\s*m\s*=|decrypt\s*:\s*m\s*=|mod\s*\d+|theorem|corollary|lemma|proof\b)/i.test(ocr);
+    /\b(?:handwritten|handwriting|hand written|notebook|assignment|homework|lecture notes|study notes|syllabus|curriculum|marksheet|mark sheet|grade card|semester marks|question paper|exam paper|coursework|problem statement|rsa encryption|formula)\b/i.test(visual) ||
+    tagsArr.some((t) => ['notes', 'study', 'handwritten', 'assignment', 'homework', 'syllabus', 'marks', 'exam', 'document', 'pdf', 'certificate', 'course', 'academic', 'formula'].includes(t)) ||
+    /(?:assignment\s*\d*|machine\s*learning\s*assignment|homework|semester\b|courses?\s*\(?ca\)?|digital\s*electronics|computer\s*organization|syllabus|curriculum|marksheet|mark\s*sheet|hall\s*ticket|question\s*paper|rsa\s*with\s*p=|compute\s*n,\s*phi\(n\)|encrypt\s*m\s*=|decrypt\s*:\s*m\s*=|mod\s*\d+|theorem|corollary|lemma|proof\b)/i.test(ocr);
 
   if (isStudyOrDocument) return 'poster_document';
 
-  // If the screenshot already has a precise category set (and is not misclassified study notes), return it
+  // 2. Web Search & Profiles (Google Search, biography, web browser)
+  const isWebSearchOrProfile =
+    ocr.includes('google.com/search') ||
+    ocr.includes('google.com') ||
+    /\b(?:google search|search engine result|browser search|profile biography)\b/i.test(visual);
+
+  // If the screenshot already has a precise category set (and is not misclassified study notes or web search), return it
   const knownPrecise = new Set([
     'code_dev',
     'food_dining',
@@ -108,17 +116,19 @@ export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
     'ticket_travel',
     'product_shopping',
   ]);
-  if (knownPrecise.has(s.category)) {
+  if (knownPrecise.has(s.category) && (!isWebSearchOrProfile || s.category !== 'code_dev')) {
     return s.category as PreciseCategory;
   }
 
-  // 2. Coding, Tech & System Errors (Google OAuth error, Java code, terminal, syntax, dev tools)
+  if (isWebSearchOrProfile) return 'other';
+
+  // 3. Coding, Tech & System Errors (Google OAuth error, Java code, terminal, syntax, dev tools)
   const isCodeOrDev =
     /(?:class\s+\w+|public\s+static|import\s+java|for\s*\(\s*int\s+\w+|return\s+\w+;|int\s+\w+\s*=|scanner\s+scn)/i.test(ocr) ||
     /(?:authorisation\s+error|access\s+blocked|oauth\s*2\.0|google's\s+oauth|developer\s+console|error\s+details|not\s+comply\s+with\s+google|client_id|redirect_uri)/i.test(ocr) ||
     /(?:console\.log|function\s*\(|def\s+\w+\(|<div|select\s+.*from|git\s+commit|exception\b|syntaxerror|stack\s*trace|terminal|bash|powershell|npm\s+|yarn\s+)/i.test(ocr) ||
-    /\b(?:code|programming|source code|developer error|oauth error|stack trace|terminal output|system error|compiler)\b/i.test(visual) ||
-    tagsArr.some((t) => ['code', 'programming', 'developer', 'oauth', 'error', 'java', 'python', 'javascript', 'terminal'].includes(t));
+    /\b(?:programming source code|oauth error|stack trace|terminal output|system error|compiler error)\b/i.test(visual) ||
+    tagsArr.some((t) => ['sourcecode', 'oauth', 'syntaxerror', 'stacktrace', 'terminal', 'compiler'].includes(t));
 
   if (isCodeOrDev) return 'code_dev';
 
