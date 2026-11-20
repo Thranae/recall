@@ -350,29 +350,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="relative flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-x-hidden bg-[#F3F7FC] px-6 py-8 text-[#172B4D]">
-      {/* Subtle Ambient Arctic Blue Light */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(52, 120, 246, 0.12) 0%, transparent 70%)',
-            width: '65vw',
-            height: '65vw',
-            top: '-10%',
-            left: '-10%',
-          }}
-        />
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.35) 0%, transparent 70%)',
-            width: '60vw',
-            height: '60vw',
-            bottom: '15%',
-            right: '-10%',
-          }}
-        />
-      </div>
+      {/* Subtle Ambient Arctic Blue Light (Hardware accelerated static gradient) */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 12% 5%, rgba(52, 120, 246, 0.08) 0%, transparent 48%), radial-gradient(circle at 88% 85%, rgba(185, 217, 255, 0.22) 0%, transparent 52%)',
+        }}
+      />
 
       {/* Unified Centered Content Stack — keeps Brand & Slogan consistently anchored above forms */}
       <div className="relative z-10 flex w-full max-w-md flex-col items-center">
@@ -393,7 +378,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 animation: 'splashAuraPulse 6s ease-in-out infinite',
               }}
             />
-            <div className="relative rounded-[22px] shadow-[0_12px_30px_-6px_rgba(37,99,235,0.34)] transition-transform duration-200 ease-out hover:scale-[1.03] active:scale-[0.97]">
+            <div className="relative rounded-[22px] shadow-[0_12px_30px_-6px_rgba(37,99,235,0.34)] transition-transform duration-150 ease-out active:scale-[0.97]">
               <RecallEmblem className="h-15 w-15 rounded-[22px]" />
             </div>
           </div>

@@ -355,10 +355,10 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
                   <img
                     src={imageUrl}
                     alt={screenshot.original_filename}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    className="h-full w-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                  <div className="absolute inset-0 bg-black/5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">

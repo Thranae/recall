@@ -260,7 +260,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
                   e.stopPropagation();
                   setIsPaused((p) => !p);
                 }}
-                className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white backdrop-blur-md transition-all active:scale-95"
+                className="p-2 rounded-full bg-white/15 active:bg-white/25 text-white backdrop-blur-md transition-all active:scale-95"
                 aria-label={isPaused ? 'Resume' : 'Pause'}
               >
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -272,7 +272,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
                   e.stopPropagation();
                   onClose();
                 }}
-                className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white backdrop-blur-md transition-all active:scale-95"
+                className="p-2 rounded-full bg-white/15 active:bg-white/25 text-white backdrop-blur-md transition-all active:scale-95"
                 aria-label="Close Story"
               >
                 <X className="h-4 w-4" />
@@ -358,7 +358,7 @@ export const AlbumStoryModal: React.FC<AlbumStoryModalProps> = ({
                     e.stopPropagation();
                     onOpenDetail(currentScreenshot.id);
                   }}
-                  className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shrink-0 cursor-pointer shadow-md"
+                  className="liquid-filter-chip liquid-filter-chip-sm liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-95 transition-all shrink-0 cursor-pointer shadow-md"
                 >
                   <span>Detail</span>
                   <ExternalLink className="h-3 w-3 stroke-[2.4]" />

@@ -262,7 +262,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
               e.stopPropagation();
               onUndoDelete?.();
             }}
-            className="mt-2.5 flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white bg-white/25 hover:bg-white/35 active:scale-95 transition-all cursor-pointer backdrop-blur-lg border border-white/50 shadow-md"
+            className="mt-2.5 flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white bg-white/25 active:bg-white/35 active:scale-95 transition-all cursor-pointer backdrop-blur-md border border-white/50 shadow-md"
           >
             <RotateCcw className="h-3 w-3 stroke-[2.6]" />
             <span>Tap to Undo</span>
@@ -397,7 +397,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                     e.stopPropagation();
                     onOpenThreadReel?.(threadGroup, partIndex >= 0 ? partIndex : 0);
                   }}
-                  className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active active:scale-95 transition-transform cursor-pointer shadow-sm hover:brightness-105 pointer-events-auto max-w-[70%]"
+                  className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active active:scale-95 transition-transform cursor-pointer shadow-sm pointer-events-auto max-w-[70%]"
                   title={`Part ${partNumber} of ${totalParts} in conversation thread`}
                 >
                   <Layers className="h-3 w-3 shrink-0 stroke-[2.3] text-[#3478F6]" />

@@ -276,7 +276,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 onClearSearch();
               }}
               aria-label="Clear search"
-              className="p-1 text-[#4A5D78] hover:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
+              className="p-1 text-[#4A5D78] active:text-[#172B4D] active:scale-90 transition-transform cursor-pointer mr-1 relative z-10"
             >
               <X className="h-4 w-4 stroke-[2.2]" />
             </button>
@@ -400,7 +400,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
             <button
               type="button"
               onClick={onRetrySearch}
-              className="shrink-0 rounded-full bg-white px-3 py-1 font-bold text-rose-600 border border-rose-200/80 hover:bg-rose-50 active:scale-95 transition-all shadow-2xs cursor-pointer"
+              className="shrink-0 rounded-full bg-white px-3 py-1 font-bold text-rose-600 border border-rose-200/80 active:bg-rose-50 active:scale-95 transition-all shadow-2xs cursor-pointer"
             >
               Retry
             </button>
@@ -473,7 +473,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold border transition-all cursor-pointer ${
                         isSpeaking
                           ? 'bg-[#3478F6] text-white border-[#3478F6]'
-                          : 'bg-white/80 text-slate-600 border-white hover:text-[#3478F6]'
+                          : 'bg-white/80 text-slate-600 border-white active:text-[#3478F6]'
                       }`}
                     >
                       <Volume2 className="h-3 w-3" />
@@ -500,7 +500,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                         key={cid}
                         type="button"
                         onClick={() => onSelectScreenshot(citedItem.screenshot.id, citedItem)}
-                        className="inline-flex items-center gap-1 rounded-full bg-white/85 hover:bg-white border border-blue-100 px-2.5 py-1 text-[10.5px] font-semibold text-[#3478F6] shadow-2xs active:scale-95 transition-all cursor-pointer max-w-[190px]"
+                        className="inline-flex items-center gap-1 rounded-full bg-white/85 active:bg-white border border-blue-100 px-2.5 py-1 text-[10.5px] font-semibold text-[#3478F6] shadow-2xs active:scale-95 transition-all cursor-pointer max-w-[190px]"
                       >
                         <span className="truncate">{citedItem.screenshot.original_filename}</span>
                         <ArrowUpRight className="h-3 w-3 shrink-0" />

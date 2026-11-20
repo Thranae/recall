@@ -120,7 +120,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
               className={`rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 activeTab === 'all'
                   ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'liquid-glass-pill text-slate-600 hover:text-slate-900'
+                  : 'liquid-glass-pill text-slate-600 active:text-slate-900'
               }`}
             >
               <span>All</span>
@@ -133,7 +133,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
               className={`rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 activeTab === 'discounts'
                   ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'liquid-glass-pill text-slate-600 hover:text-slate-900'
+                  : 'liquid-glass-pill text-slate-600 active:text-slate-900'
               }`}
             >
               <span>Promos</span>
@@ -146,7 +146,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
               className={`rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 activeTab === 'events'
                   ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'liquid-glass-pill text-slate-600 hover:text-slate-900'
+                  : 'liquid-glass-pill text-slate-600 active:text-slate-900'
               }`}
             >
               <span>Events</span>
@@ -159,7 +159,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
               className={`rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 activeTab === 'bills'
                   ? 'bg-[#3478F6] text-white shadow-xs'
-                  : 'liquid-glass-pill text-slate-600 hover:text-slate-900'
+                  : 'liquid-glass-pill text-slate-600 active:text-slate-900'
               }`}
             >
               <span>Bills</span>
@@ -204,7 +204,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
                         onSelectScreenshot(item.screenshotId);
                         onClose();
                       }}
-                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80 hover:border-amber-200"
+                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
@@ -282,7 +282,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
                         onSelectScreenshot(item.screenshotId);
                         onClose();
                       }}
-                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80 hover:border-blue-200"
+                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
@@ -309,7 +309,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleAddToCalendar(item, e)}
-                        className="flex h-8.5 items-center gap-1 rounded-full px-3 text-[11px] font-bold liquid-glass-pill text-[#3478F6] hover:bg-blue-50 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
+                        className="flex h-8.5 items-center gap-1 rounded-full px-3 text-[11px] font-bold liquid-glass-pill text-[#3478F6] active:bg-blue-50 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
                       >
                         <Calendar className="h-3 w-3 stroke-[2.2]" />
                         <span>Add</span>
@@ -334,7 +334,7 @@ export const VaultDigestModal: React.FC<VaultDigestModalProps> = ({
                         onSelectScreenshot(item.screenshotId);
                         onClose();
                       }}
-                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80 hover:border-rose-200"
+                      className="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.98] transition-all border border-white/80"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img

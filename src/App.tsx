@@ -353,49 +353,14 @@ export const App: React.FC = () => {
         <AuthView onAuthSuccess={handleAuthSuccess} />
       ) : (
         <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
-      {/* Ambient Aurora Light for Liquid Glass Refraction (Arctic Blue palette) */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(52, 120, 246, 0.12) 0%, transparent 70%)',
-            width: '65vw',
-            height: '65vw',
-            top: '-10%',
-            left: '-10%',
-          }}
-        />
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.35) 0%, transparent 70%)',
-            width: '60vw',
-            height: '60vw',
-            bottom: '15%',
-            right: '-10%',
-          }}
-        />
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(74, 140, 247, 0.09) 0%, transparent 70%)',
-            width: '70vw',
-            height: '70vw',
-            top: '30%',
-            left: '15%',
-          }}
-        />
-        <div
-          className="vision-blob"
-          style={{
-            background: 'radial-gradient(circle, rgba(185, 217, 255, 0.28) 0%, transparent 70%)',
-            width: '60vw',
-            height: '60vw',
-            bottom: '-10%',
-            left: '-10%',
-          }}
-        />
-      </div>
+      {/* Ambient Soft Light for Liquid Glass Refraction (Arctic Blue palette, hardware-accelerated static gradient) */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 12% 5%, rgba(52, 120, 246, 0.08) 0%, transparent 48%), radial-gradient(circle at 88% 85%, rgba(185, 217, 255, 0.22) 0%, transparent 52%)',
+        }}
+      />
 
       {/* Top Mobile iOS Light Header (Statically Fixed) */}
       <TopHeader

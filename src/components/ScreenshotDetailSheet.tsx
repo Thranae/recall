@@ -1131,7 +1131,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   <button
                     type="button"
                     onClick={() => setNewName('')}
-                    className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600 active:scale-90 transition-transform cursor-pointer"
+                    className="absolute right-2.5 p-1 text-slate-400 active:text-slate-600 active:scale-90 transition-transform cursor-pointer"
                     aria-label="Clear input"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -1143,7 +1143,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditingName(false)}
-                  className="flex h-8.5 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold text-slate-600 liquid-glass-pill hover:text-slate-800 active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8.5 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold text-slate-600 liquid-glass-pill active:text-slate-800 active:scale-95 transition-all cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5 stroke-[2.2]" />
                   <span>Cancel</span>
@@ -1154,7 +1154,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     type="button"
                     onClick={() => handleSaveName(false)}
                     disabled={isSavingName || !newName.trim()}
-                    className="flex h-8.5 items-center justify-center rounded-full px-4 text-xs font-bold text-[#3478F6] liquid-glass-pill hover:bg-blue-50/70 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                    className="flex h-8.5 items-center justify-center rounded-full px-4 text-xs font-bold text-[#3478F6] liquid-glass-pill active:bg-blue-50/70 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
                   >
                     {isSavingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span>Save</span>}
                   </button>
@@ -1188,18 +1188,18 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 role="button"
                 tabIndex={0}
                 title="Tap to rename"
-                className="group flex items-center gap-1.5 cursor-pointer min-w-0 flex-1 rounded-xl py-1 px-1.5 -ml-1.5 hover:bg-white/50 active:scale-[0.99] transition-all"
+                className="group flex items-center gap-1.5 cursor-pointer min-w-0 flex-1 rounded-xl py-1 px-1.5 -ml-1.5 active:bg-white/50 active:scale-[0.99] transition-all"
               >
-                <h3 className="text-sm font-bold text-[#172B4D] truncate group-hover:text-[#3478F6] transition-colors">
+                <h3 className="text-sm font-bold text-[#172B4D] truncate">
                   {data?.screenshot.original_filename || 'Untitled Screenshot'}
                 </h3>
-                <Pencil className="h-3 w-3 text-slate-400 group-hover:text-[#3478F6] transition-colors shrink-0" />
+                <Pencil className="h-3 w-3 text-slate-400 shrink-0" />
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={handleDownloadScreenshot}
-                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#172B4D] liquid-glass-pill hover:text-[#3478F6] active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#172B4D] liquid-glass-pill active:text-[#3478F6] active:scale-95 transition-all cursor-pointer"
                   title="Download screenshot"
                 >
                   <Download className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
@@ -1211,7 +1211,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     setNewName(data?.screenshot.original_filename || '');
                     setIsEditingName(true);
                   }}
-                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#3478F6] liquid-glass-pill hover:bg-blue-50/70 active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#3478F6] liquid-glass-pill active:bg-blue-50/70 active:scale-95 transition-all cursor-pointer"
                 >
                   <Pencil className="h-3 w-3 stroke-[2.3]" />
                   <span>Rename</span>
@@ -1229,7 +1229,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               <button
                 type="button"
                 onClick={() => setIsThreadReelOpen(true)}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl liquid-filter-chip liquid-filter-chip-active text-[#3478F6] shadow-2xs active:scale-[0.99] transition-all cursor-pointer hover:brightness-105"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl liquid-filter-chip liquid-filter-chip-active text-[#3478F6] shadow-2xs active:scale-[0.99] transition-all cursor-pointer"
                 title="Tap to open full connected conversation thread reel"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -1485,7 +1485,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isRedactedMode
                     ? 'bg-[#0B1220] text-white border border-white/25 shadow-md ring-1 ring-[#3478F6]/40'
-                    : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
+                    : 'liquid-filter-chip liquid-filter-chip-active'
                 }`}
                 title="Mask and redact private info, personal chats or sensitive details"
               >
@@ -1515,7 +1515,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 className={`flex-1 flex items-center justify-center gap-1.5 h-8.5 px-3 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap select-none ${
                   isImageExpanded
                     ? 'bg-[#EBF3FF] text-[#3478F6] border border-[#3478F6]/30 shadow-2xs'
-                    : 'liquid-filter-chip liquid-filter-chip-active hover:brightness-105'
+                    : 'liquid-filter-chip liquid-filter-chip-active'
                 }`}
                 title={isImageExpanded ? 'Collapse to standard view' : 'Subtly expand screenshot preview'}
               >
@@ -1616,7 +1616,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                         className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium active:scale-[0.97] cursor-pointer transition-colors disabled:opacity-50 ${
                           isSelected
                             ? 'bg-[#0B1220] text-white border-[#0B1220]'
-                            : 'bg-white/90 hover:bg-white text-slate-700 border-slate-200/80'
+                            : 'bg-white/90 active:bg-white text-slate-700 border-slate-200/80'
                         }`}
                       >
                         {preset}
@@ -1782,7 +1782,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                             key={act.id}
                             type="button"
                             onClick={() => handleSmartAction(act)}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-white/85 hover:bg-white border border-blue-100 px-3 py-1.5 text-[11px] font-semibold text-[#172B4D] shadow-2xs active:scale-95 transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-white/85 active:bg-white border border-blue-100 px-3 py-1.5 text-[11px] font-semibold text-[#172B4D] shadow-2xs active:scale-95 transition-all cursor-pointer"
                           >
                             {isCopied ? (
                               <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[2.3]" />
@@ -1892,7 +1892,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleCopySingleMessage(msg.id, msg.message_text)}
-                                  className="mt-1 p-1 rounded-full opacity-60 hover:opacity-100 hover:bg-black/5 active:scale-90 transition-all cursor-pointer shrink-0"
+                                  className="mt-1 p-1 rounded-full opacity-60 active:opacity-100 active:bg-black/5 active:scale-90 transition-all cursor-pointer shrink-0"
                                   title="Copy text verbatim"
                                 >
                                   {copiedMsgId === msg.id ? (
@@ -2019,7 +2019,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                   setInitialChatPrompt(prompt);
                                   setIsFullScreenChatOpen(true);
                                 }}
-                                className="rounded-full bg-white/80 hover:bg-white border border-white px-2.5 py-1 text-[10px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                                className="rounded-full bg-white/80 active:bg-white border border-white px-2.5 py-1 text-[10px] font-semibold text-[#3478F6] active:scale-95 transition-all cursor-pointer shadow-2xs flex items-center gap-1"
                               >
                                 <span>{prompt}</span>
                                 <span>→</span>
@@ -2064,7 +2064,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                             key={idx}
                             type="button"
                             onClick={() => onSelectTag?.(tag)}
-                            className="rounded-full bg-white/80 hover:bg-white hover:text-[#3478F6] border border-white px-2.5 py-0.5 text-[10.5px] font-medium text-slate-700 shadow-2xs active:scale-95 transition-all cursor-pointer"
+                            className="rounded-full bg-white/80 active:bg-white active:text-[#3478F6] border border-white px-2.5 py-0.5 text-[10.5px] font-medium text-slate-700 shadow-2xs active:scale-95 transition-all cursor-pointer"
                           >
                             #{tag}
                           </button>
@@ -2142,7 +2142,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                                     setCopiedReplyIdx(rIdx);
                                     setTimeout(() => setCopiedReplyIdx(null), 1600);
                                   }}
-                                  className="w-full text-left flex items-center justify-between gap-2 rounded-[14px] bg-white/85 hover:bg-white border border-white px-3 py-2 text-[11.5px] active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
+                                  className="w-full text-left flex items-center justify-between gap-2 rounded-[14px] bg-white/85 active:bg-white border border-white px-3 py-2 text-[11.5px] active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
                                 >
                                   <div className="min-w-0">
                                     <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#3478F6] block">
@@ -2412,7 +2412,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
-                className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
+                className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 active:text-slate-900 cursor-pointer"
               >
                 Cancel
               </button>

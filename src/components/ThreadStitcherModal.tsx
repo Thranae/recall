@@ -342,7 +342,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                     className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                       viewMode === 'visual'
                         ? 'bg-[#3478F6] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 active:text-slate-900'
                     }`}
                   >
                     Reel
@@ -353,7 +353,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                     className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                       viewMode === 'transcript'
                         ? 'bg-[#3478F6] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 active:text-slate-900'
                     }`}
                   >
                     Text
@@ -426,7 +426,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                               className={`min-w-[32px] h-7.5 px-2 inline-flex items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
                                 isActive
                                   ? 'bg-gradient-to-b from-[#4A8CF7] via-[#3478F6] to-[#2060DC] text-white shadow-md shadow-blue-500/30 font-black scale-105 border border-white/70'
-                                  : 'text-slate-600 hover:text-slate-900 bg-white/75 hover:bg-white border border-white/90 shadow-2xs'
+                                  : 'text-slate-600 active:text-slate-900 bg-white/75 active:bg-white border border-white/90 shadow-2xs'
                               }`}
                             >
                               <span className="leading-none select-none">{idx + 1}</span>
@@ -468,7 +468,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                             <button
                               type="button"
                               onClick={() => onSelectScreenshot(sc.id)}
-                              className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-md active:scale-95 transition-transform cursor-pointer hover:brightness-105 pointer-events-auto gap-1"
+                              className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active shadow-md active:scale-95 transition-transform cursor-pointer pointer-events-auto gap-1"
                               title="Open full screenshot details"
                             >
                               <span className="text-[10px] font-bold text-[#3478F6]">Detail</span>
@@ -517,7 +517,7 @@ export const ThreadStitcherModal: React.FC<ThreadStitcherModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleCopyPartText(sc.id, sc.ocr_text || '')}
-                              className="p-1 rounded-full hover:bg-black/5 active:scale-90 transition-all cursor-pointer text-[#3478F6]"
+                              className="p-1 rounded-full active:bg-black/5 active:scale-90 transition-all cursor-pointer text-[#3478F6]"
                               title="Copy part text verbatim"
                             >
                               {copiedPartId === sc.id ? (

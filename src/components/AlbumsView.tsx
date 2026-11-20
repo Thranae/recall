@@ -679,51 +679,46 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
     >
       {/* Minimal Animated Liquid Glass Orb Pod */}
       <div className="relative mb-6 flex items-center justify-center">
-        {/* Subtle Ambient Breathing Radial Glow */}
+        {/* Subtle Ambient Radial Glow */}
         <motion.div
-          animate={{
-            scale: isUnlocking ? [1, 1.4, 1.2] : [1, 1.25, 1],
-            opacity: isUnlocking ? [0.4, 0.7, 0.4] : [0.25, 0.45, 0.25],
-          }}
+          animate={
+            isUnlocking
+              ? { scale: [1, 1.25], opacity: [0.35, 0] }
+              : { opacity: [0.25, 0.4, 0.25] }
+          }
           transition={{
-            duration: isUnlocking ? 0.6 : 3.5,
+            duration: isUnlocking ? 0.5 : 3,
             repeat: isUnlocking ? 0 : Infinity,
             ease: 'easeInOut',
           }}
-          className={`absolute h-36 w-36 rounded-full blur-2xl pointer-events-none transition-colors duration-500 ${
+          className={`absolute h-32 w-32 rounded-full blur-xl pointer-events-none transition-colors duration-400 ${
             isUnlocking
               ? 'bg-gradient-to-tr from-emerald-400/40 via-teal-300/30 to-blue-400/30'
-              : 'bg-gradient-to-tr from-[#3478F6]/30 via-sky-300/20 to-blue-500/30'
+              : 'bg-gradient-to-tr from-[#3478F6]/25 via-sky-300/20 to-blue-500/25'
           }`}
         />
 
-        {/* Concentric Rotating Shimmer Rings */}
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+        {/* Concentric Subtle Halo Rings (Static 2D, zero continuous JS rotation overhead) */}
+        <div
           className="absolute h-32 w-32 rounded-full border border-blue-200/40 pointer-events-none"
           style={{
             borderTopColor: isUnlocking ? '#10B981' : '#3478F6',
-            borderRightColor: 'rgba(52, 120, 246, 0.1)',
+            borderRightColor: 'rgba(52, 120, 246, 0.15)',
           }}
         />
 
-        <motion.div
-          animate={{ rotate: -360 }}
-          transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
-          className="absolute h-26 w-26 rounded-full border border-dashed border-blue-300/30 pointer-events-none"
-        />
+        <div className="absolute h-26 w-26 rounded-full border border-dashed border-blue-300/30 pointer-events-none" />
 
         {/* Central Plump Liquid Glass Dome */}
         <motion.div
           animate={
             isUnlocking
-              ? { scale: [1, 1.18, 1], rotate: [0, 6, 0] }
-              : { y: [0, -4, 0] }
+              ? { scale: [1, 1.12, 1] }
+              : { y: [0, -3, 0] }
           }
           transition={
             isUnlocking
-              ? { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }
+              ? { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }
               : { duration: 3, repeat: Infinity, ease: 'easeInOut' }
           }
           className="relative flex h-20 w-20 items-center justify-center rounded-[28px] shadow-xl"
@@ -823,7 +818,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           <button
             type="button"
             onClick={() => setSelectedAlbumId(null)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-xs font-bold text-[#172B4D] hover:bg-white active:scale-95 transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-xs font-bold text-[#172B4D] active:bg-white active:scale-95 transition-all shadow-xs"
           >
             <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Albums</span>
@@ -834,7 +829,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
               type="button"
               onClick={handleExportCollage}
               disabled={isExportingCollage || currentAlbumScreenshots.length === 0}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-xs font-bold text-[#172B4D] hover:bg-white active:scale-95 transition-all shadow-xs disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-xs font-bold text-[#172B4D] active:bg-white active:scale-95 transition-all shadow-xs disabled:opacity-50"
             >
               {isExportingCollage ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -848,7 +843,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleDeleteCustomAlbum(currentAlbum.id)}
-                className="p-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 active:scale-95 transition-all"
+                className="p-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 active:bg-rose-100 active:scale-95 transition-all"
                 title="Delete Custom Album"
               >
                 <Trash2 className="w-4 h-4" />
@@ -903,7 +898,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                 type="button"
                 onClick={() => handlePlayAlbumStory(currentAlbum)}
                 disabled={currentAlbumScreenshots.length === 0}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-[#172B4D] font-extrabold text-sm shadow-lg hover:bg-slate-100 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-[#172B4D] font-extrabold text-sm shadow-lg active:scale-95 transition-all cursor-pointer disabled:opacity-40"
               >
                 <Play className="w-4 h-4 fill-[#172B4D]" />
                 <span>Play Story Reel</span>
@@ -1026,7 +1021,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                 type="button"
                 onClick={handlePlayHighlights}
                 disabled={highlightsScreenshots.length === 0}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-[#172B4D] font-extrabold text-xs shadow-md hover:bg-slate-100 active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-[#172B4D] font-extrabold text-xs shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40"
               >
                 <Play className="w-3.5 h-3.5 fill-[#172B4D]" />
                 <span>Play Highlights</span>
@@ -1102,7 +1097,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
             type="button"
             onClick={handleAiCurate}
             disabled={isAiAnalyzing || screenshots.length === 0}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
             title="Analyze and cluster vault screenshots with AI Vision"
           >
             <RefreshCw className={`w-3 h-3 text-[#3478F6] shrink-0 ${isAiAnalyzing ? 'animate-spin' : ''}`} />
@@ -1115,7 +1110,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] hover:brightness-105 active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
             title="Create New Custom Album"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.6] shrink-0 text-[#3478F6]" />
@@ -1153,7 +1148,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="mt-4 px-4 py-2 rounded-2xl bg-[#3478F6] text-white text-xs font-bold shadow-md hover:bg-[#2563EB] active:scale-95 transition-all"
+                className="mt-4 px-4 py-2 rounded-2xl bg-[#3478F6] text-white text-xs font-bold shadow-md active:bg-[#2563EB] active:scale-95 transition-all"
               >
                 Create Album
               </button>

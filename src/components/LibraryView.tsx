@@ -636,7 +636,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                           key={c.color}
                           type="button"
                           onClick={() => onFilterChange?.(c.color)}
-                          className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize hover:text-[#3478F6] cursor-pointer"
+                          className="rounded-full bg-white/80 border border-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 capitalize active:text-[#3478F6] cursor-pointer"
                         >
                           {c.color} ({c.count})
                         </button>
@@ -902,7 +902,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   type="button"
                   onClick={() => setRenameTarget(null)}
                   disabled={isRenaming}
-                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 cursor-pointer"
+                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-600 active:text-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -910,7 +910,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   type="button"
                   onClick={() => handleSaveRename(false)}
                   disabled={isRenaming || !renameInput.trim()}
-                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-[#3478F6] border border-[#3478F6]/30 hover:bg-blue-50/60 cursor-pointer disabled:opacity-50"
+                  className="plump-glass-pill rounded-full px-3.5 py-1.5 text-xs font-bold text-[#3478F6] border border-[#3478F6]/30 active:bg-blue-50/60 cursor-pointer disabled:opacity-50"
                 >
                   Save
                 </button>
@@ -959,7 +959,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleDownloadFile(renameSuccessInfo.id, renameSuccessInfo.name)}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white bg-[#3478F6] hover:bg-blue-600 active:scale-95 transition-all shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white bg-[#3478F6] active:bg-blue-600 active:scale-95 transition-all shadow-2xs cursor-pointer"
               >
                 <Download className="h-3 w-3 stroke-[2.4]" />
                 <span>Download</span>
@@ -967,7 +967,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               <button
                 type="button"
                 onClick={() => setRenameSuccessInfo(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="p-1 rounded-full text-slate-400 active:text-slate-600 cursor-pointer"
                 aria-label="Dismiss"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1014,7 +1014,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
+                  className="plump-glass-pill rounded-full px-4 py-2 text-xs font-bold text-slate-700 active:text-slate-900 cursor-pointer"
                 >
                   Cancel
                 </button>
