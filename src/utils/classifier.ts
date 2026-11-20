@@ -64,29 +64,13 @@ export function getPreciseCategoryMeta(category: string): CategoryMeta {
     case 'product':
       return { label: 'Product & Shop', badgeText: 'Product', icon: ShoppingBag, accentColor: '#E11D48' };
     case 'poster_document':
-      return { label: 'Document & Notes', badgeText: 'Document', icon: FileText, accentColor: '#475569' };
+      return { label: 'Document & Notes', badgeText: 'Notes', icon: FileText, accentColor: '#475569' };
     default:
       return { label: 'Visual', badgeText: 'Visual', icon: Layers, accentColor: '#3478F6' };
   }
 }
 
 export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
-  // If the screenshot already has a precise category set, return it
-  const knownPrecise = new Set([
-    'code_dev',
-    'food_dining',
-    'nature_scenery',
-    'wallpaper_art',
-    'portrait_people',
-    'animals_pets',
-    'receipt_finance',
-    'ticket_travel',
-    'product_shopping',
-  ]);
-  if (knownPrecise.has(s.category)) {
-    return s.category as PreciseCategory;
-  }
-
   const ocr = (s.ocr_text || '').toLowerCase();
   const visual = (s.visual_description || '').toLowerCase();
 
@@ -102,9 +86,35 @@ export function classifyScreenshotPrecisely(s: Screenshot): PreciseCategory {
     }
   }
 
-  // 1. Coding, Tech & System Errors (Google OAuth error, Java code, terminal, syntax, dev tools)
+  // 1. Study Notes, Handwritten Assignments & Academic Documents
+  // Strictly awarded for handwritten homework, marksheets, syllabus, lecture notes & assignments
+  const isStudyOrDocument =
+    s.category === 'poster_document' ||
+    /\b(?:handwritten|handwriting|hand written|notebook|assignment|homework|lecture notes|study notes|syllabus|curriculum|marksheet|mark sheet|grade card|semester marks|question paper|exam paper)\b/i.test(visual) ||
+    tagsArr.some((t) => ['notes', 'study', 'handwritten', 'assignment', 'homework', 'syllabus', 'marks', 'exam', 'document', 'pdf', 'certificate'].includes(t)) ||
+    /(?:assignment\s*\d*|machine\s*learning\s*assignment|homework|semester\b|courses?\s*\(?ca\)?|digital\s*electronics|computer\s*organization|syllabus|curriculum|marksheet|hall\s*ticket|question\s*paper|rsa\s*with\s*p=|compute\s*n,\s*phi\(n\)|encrypt\s*m\s*=|decrypt\s*:\s*m\s*=|mod\s*\d+|theorem|corollary|lemma|proof\b)/i.test(ocr);
+
+  if (isStudyOrDocument) return 'poster_document';
+
+  // If the screenshot already has a precise category set (and is not misclassified study notes), return it
+  const knownPrecise = new Set([
+    'code_dev',
+    'food_dining',
+    'nature_scenery',
+    'wallpaper_art',
+    'portrait_people',
+    'animals_pets',
+    'receipt_finance',
+    'ticket_travel',
+    'product_shopping',
+  ]);
+  if (knownPrecise.has(s.category)) {
+    return s.category as PreciseCategory;
+  }
+
+  // 2. Coding, Tech & System Errors (Google OAuth error, Java code, terminal, syntax, dev tools)
   const isCodeOrDev =
-    /(?:class\s+\w+|public\s+static|import\s+java|for\s*\(\s*int\s+\w+|return\s+\w+;|int\s+\w+\s*=|ciphertext|decryption|scanner\s+scn)/i.test(ocr) ||
+    /(?:class\s+\w+|public\s+static|import\s+java|for\s*\(\s*int\s+\w+|return\s+\w+;|int\s+\w+\s*=|scanner\s+scn)/i.test(ocr) ||
     /(?:authorisation\s+error|access\s+blocked|oauth\s*2\.0|google's\s+oauth|developer\s+console|error\s+details|not\s+comply\s+with\s+google|client_id|redirect_uri)/i.test(ocr) ||
     /(?:console\.log|function\s*\(|def\s+\w+\(|<div|select\s+.*from|git\s+commit|exception\b|syntaxerror|stack\s*trace|terminal|bash|powershell|npm\s+|yarn\s+)/i.test(ocr) ||
     /\b(?:code|programming|source code|developer error|oauth error|stack trace|terminal output|system error|compiler)\b/i.test(visual) ||

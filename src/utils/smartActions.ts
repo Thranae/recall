@@ -220,3 +220,103 @@ export function extractSmartActions(screenshot?: Screenshot | null): SmartAction
   return actions;
 }
 
+export interface PreciseCardHighlight {
+  type: 'otp' | 'money' | 'promo' | 'wifi' | 'event' | 'game' | 'phone' | 'url';
+  label: string;
+  value: string;
+}
+
+export function extractPreciseCardHighlight(screenshot?: Screenshot | null): PreciseCardHighlight | null {
+  if (!screenshot) return null;
+  const ocr = (screenshot.ocr_text || '').trim();
+
+  // 1. Structured Game result
+  if (screenshot.game_result) {
+    const { kills, rank, game_name } = screenshot.game_result;
+    if (kills !== null && kills !== undefined) {
+      return {
+        type: 'game',
+        label: `${kills} Kills${rank ? ` · ${rank}` : ''}`,
+        value: `${kills} Kills`,
+      };
+    }
+    if (rank) {
+      return {
+        type: 'game',
+        label: `${rank}${game_name ? ` · ${game_name}` : ''}`,
+        value: rank,
+      };
+    }
+  }
+
+  // 2. OTP Code
+  const otpMatch = ocr.match(/(?:otp|code|pin|verification(?:\s*code)?|passcode)\s*(?:is|:|#|-)?\s*\b(\d{4,8})\b/i);
+  if (otpMatch?.[1]) {
+    return {
+      type: 'otp',
+      label: `Code ${otpMatch[1]}`,
+      value: otpMatch[1],
+    };
+  }
+
+  // 3. Financial Amount (Total / Paid / Balance)
+  const moneyMatch =
+    ocr.match(/(?:total|paid|amount|bill|grand\s*total)\s*[:\-]?\s*([$₹€£]\s*[\d,]+(?:\.\d{2})?)/i) ||
+    ocr.match(/([$₹€£]\s*[\d,]+(?:\.\d{2})?)\s*(?:paid|total|debited|credited|due)/i);
+  if (moneyMatch?.[1]) {
+    const formatted = moneyMatch[1].replace(/\s+/, '');
+    return {
+      type: 'money',
+      label: formatted,
+      value: formatted,
+    };
+  }
+
+  // 4. Promo Code
+  const promoMatch = ocr.match(/(?:use\s*code|promo\s*code|coupon\s*code|voucher)\s*[:\-]?\s*([A-Z0-9]{4,14})\b/i);
+  if (promoMatch?.[1]) {
+    return {
+      type: 'promo',
+      label: `Promo: ${promoMatch[1]}`,
+      value: promoMatch[1],
+    };
+  }
+
+  // 5. Wi-Fi Password
+  const wifiMatch = ocr.match(/(?:wi-?fi|passcode|password)\s*(?:is|:|-)?\s*([A-Za-z0-9@#$_-]{6,18})\b/i);
+  if (wifiMatch?.[1]) {
+    return {
+      type: 'wifi',
+      label: `Wi-Fi: ${wifiMatch[1]}`,
+      value: wifiMatch[1],
+    };
+  }
+
+  // 6. Generic Currency if receipt/finance category
+  if (screenshot.category === 'receipt_finance' || screenshot.category === 'product_shopping') {
+    const rawCurrency = ocr.match(/[$₹€£]\s*[\d,]+(?:\.\d{2})?/);
+    if (rawCurrency?.[0]) {
+      const formatted = rawCurrency[0].replace(/\s+/, '');
+      return {
+        type: 'money',
+        label: formatted,
+        value: formatted,
+      };
+    }
+  }
+
+  // 7. Event Date
+  const dateMatch = ocr.match(
+    /\b(?:\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:\s+\d{2,4})?|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2})\b/i
+  );
+  if (dateMatch?.[0] && (screenshot.category === 'ticket_travel' || screenshot.category === 'poster_document')) {
+    return {
+      type: 'event',
+      label: dateMatch[0],
+      value: dateMatch[0],
+    };
+  }
+
+  return null;
+}
+

@@ -47,6 +47,7 @@ import {
   composeRedactedImage,
   getStatusBarRegions,
   extractSensitiveHintsFromText,
+  generateRedactedImage,
   type RedactRegion,
 } from '../utils/privacyRedact';
 import type {
@@ -137,6 +138,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isSafeSharing, setIsSafeSharing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Thread Membership State
@@ -807,6 +809,69 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     document.body.removeChild(link);
   };
 
+  const handleInstantSafeShare = async () => {
+    if (isSafeSharing) return;
+    setIsSafeSharing(true);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(15);
+      } catch {}
+    }
+    try {
+      let targetResult = redactedResult;
+      if (!targetResult && screenshotId) {
+        const hintSource = [
+          data?.screenshot.ocr_text,
+          ...(data?.messages || []).map((m) => `${m.sender_label || ''} ${m.message_text || ''}`),
+        ]
+          .filter(Boolean)
+          .join('\n');
+        const extraHintTokens = extractSensitiveHintsFromText(hintSource);
+
+        const result = await generateRedactedImage(api.getImageUrl(screenshotId), {
+          autoSensitiveText: true,
+          blurTopBar: true,
+          blurBottomBar: true,
+          extraHintTokens,
+        });
+
+        setRedactedResult(result);
+        targetResult = result;
+      }
+
+      if (targetResult) {
+        const baseName = (data?.screenshot?.original_filename || screenshotId || 'screenshot').replace(
+          /\.[a-z0-9]+$/i,
+          ''
+        );
+        const filename = `safe-share-${baseName}.png`;
+        const file = new File([targetResult.blob], filename, { type: 'image/png' });
+
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+          try {
+            if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Safe Share from RECALL',
+                text: 'Sanitized screenshot with AI privacy shield',
+              });
+              return;
+            }
+          } catch (err: any) {
+            if (err?.name === 'AbortError') return;
+          }
+        }
+
+        // Fallback: download the sanitized image
+        await downloadImageFile(targetResult.dataUrl, filename);
+      }
+    } catch (err) {
+      console.error('Instant safe share error:', err);
+    } finally {
+      setIsSafeSharing(false);
+    }
+  };
+
   const handleDownload = async (overrideName?: string) => {
     if (!screenshotId && !redactedResult) return;
     const baseName = (overrideName || newName.trim() || data?.screenshot?.original_filename || `screenshot-${screenshotId}`).replace(
@@ -1198,8 +1263,22 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
+                  onClick={handleInstantSafeShare}
+                  disabled={isSafeSharing}
+                  className="flex h-8 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-[11px] font-bold text-emerald-700 bg-emerald-50/80 border border-emerald-200/60 active:scale-95 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                  title="Sanitize sensitive PII with AI and share safely in 1 tap"
+                >
+                  {isSafeSharing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                  ) : (
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 stroke-[2.3]" />
+                  )}
+                  <span>Safe Share</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleDownloadScreenshot}
-                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#172B4D] liquid-glass-pill active:text-[#3478F6] active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-[11px] font-bold text-[#172B4D] liquid-glass-pill active:text-[#3478F6] active:scale-95 transition-all cursor-pointer"
                   title="Download screenshot"
                 >
                   <Download className="h-3.5 w-3.5 text-[#3478F6] stroke-[2.3]" />
@@ -1211,7 +1290,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     setNewName(data?.screenshot.original_filename || '');
                     setIsEditingName(true);
                   }}
-                  className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#3478F6] liquid-glass-pill active:bg-blue-50/70 active:scale-95 transition-all cursor-pointer"
+                  className="flex h-8 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-[11px] font-bold text-[#3478F6] liquid-glass-pill active:bg-blue-50/70 active:scale-95 transition-all cursor-pointer"
                 >
                   <Pencil className="h-3 w-3 stroke-[2.3]" />
                   <span>Rename</span>

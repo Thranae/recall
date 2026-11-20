@@ -1091,17 +1091,17 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+        <div className="flex items-center gap-2 shrink-0 ml-auto flex-nowrap">
           {/* AI Curate / Re-Analyze Vault Button */}
           <button
             type="button"
             onClick={handleAiCurate}
             disabled={isAiAnalyzing || screenshots.length === 0}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
             title="Analyze and cluster vault screenshots with AI Vision"
           >
             <RefreshCw className={`w-3 h-3 text-[#3478F6] shrink-0 ${isAiAnalyzing ? 'animate-spin' : ''}`} />
-            <span className="text-[11px] font-bold whitespace-nowrap select-none">
+            <span className="text-[11.5px] font-bold whitespace-nowrap select-none">
               {isAiAnalyzing ? 'Curating…' : 'AI Curate'}
             </span>
           </button>
@@ -1110,11 +1110,11 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-95 transition-all shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
             title="Create New Custom Album"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.6] shrink-0 text-[#3478F6]" />
-            <span className="text-[11px] font-bold whitespace-nowrap select-none">New Album</span>
+            <span className="text-[11.5px] font-bold whitespace-nowrap select-none">New Album</span>
           </button>
         </div>
       </div>
@@ -1136,8 +1136,8 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
       {/* 4. Physical 3D Photo-Stack Album Cards Grid */}
       <div className="px-4 pt-2">
         {filteredAlbums.length === 0 ? (
-          <div className="py-16 text-center bg-white/50 rounded-3xl border border-dashed border-slate-300">
-            <FolderHeart className="w-12 h-12 mx-auto text-slate-300" />
+          <div className="py-14 px-4 text-center bg-white/20 rounded-3xl border border-dashed border-slate-300/60 shadow-2xs">
+            <FolderHeart className="w-11 h-11 mx-auto text-slate-300 stroke-[1.8]" />
             <h3 className="mt-3 text-sm font-bold text-[#172B4D]">No albums here yet</h3>
             <p className="mt-1 text-xs text-[#4A5D78]">
               {activeFilter === 'custom'
@@ -1148,7 +1148,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="mt-4 px-4 py-2 rounded-2xl bg-[#3478F6] text-white text-xs font-bold shadow-md active:bg-[#2563EB] active:scale-95 transition-all"
+                className="mt-4 px-5 py-2 rounded-2xl bg-[#3478F6] text-white text-xs font-bold shadow-xs active:bg-[#2563EB] active:scale-95 transition-all cursor-pointer"
               >
                 Create Album
               </button>

@@ -8,10 +8,16 @@ import {
   Trash2,
   RotateCcw,
   Loader2,
+  KeyRound,
+  CreditCard,
+  Trophy,
+  Sparkles,
+  Calendar,
 } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
 import { api } from '../services/api';
 import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
+import { extractPreciseCardHighlight } from '../utils/smartActions';
 
 interface ScreenshotCardProps {
   screenshot: Screenshot;
@@ -26,6 +32,21 @@ interface ScreenshotCardProps {
   onLongPress?: () => void;
   threadGroup?: import('../types').ThreadGroup;
   onOpenThreadReel?: (thread: import('../types').ThreadGroup, initialIndex?: number) => void;
+}
+
+function formatTagForChip(rawTag: string): string {
+  const clean = rawTag.replace(/^#+/, '').trim().toLowerCase();
+  if (clean === 'poster_document' || clean === 'poster_documen') return '#notes';
+  if (clean === 'code_dev') return '#code';
+  if (clean === 'food_dining') return '#food';
+  if (clean === 'product_shopping' || clean === 'product') return '#product';
+  if (clean === 'receipt_finance') return '#bills';
+  if (clean === 'ticket_travel') return '#travel';
+  if (clean === 'animals_pets') return '#pets';
+  if (clean === 'wallpaper_art') return '#art';
+  if (clean === 'nature_scenery') return '#nature';
+  if (clean === 'portrait_people') return '#portrait';
+  return `#${clean.replace(/_/g, ' ')}`;
 }
 
 const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
@@ -48,6 +69,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
     count: 0,
   });
   const [failedId, setFailedId] = useState<string | null>(null);
+  const [copiedHighlight, setCopiedHighlight] = useState(false);
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressRef = useRef(false);
@@ -158,6 +180,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
   const preciseCategory = isReady ? classifyScreenshotPrecisely(screenshot) : 'unprocessed';
   const { badgeText: label, icon: CatIcon } = getPreciseCategoryMeta(preciseCategory);
   const tags = screenshot.tags || [];
+  const preciseHighlight = isReady ? extractPreciseCardHighlight(screenshot) : null;
 
   return (
     <div
@@ -477,18 +500,53 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
           <p className="truncate block w-full text-[12.5px] font-bold text-[#172B4D] leading-snug">
             {screenshot.original_filename}
           </p>
-          <div className="mt-1 flex items-center justify-between gap-1 text-[11px] text-slate-500 min-w-0">
-            <span className="font-mono shrink-0">
+          <div className="mt-1.5 flex items-center justify-between gap-1 text-[11px] text-slate-500 min-w-0">
+            {preciseHighlight ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(preciseHighlight.value);
+                  }
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    try {
+                      navigator.vibrate(10);
+                    } catch {}
+                  }
+                  setCopiedHighlight(true);
+                  setTimeout(() => setCopiedHighlight(false), 1500);
+                }}
+                className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-extrabold text-[#3478F6] truncate max-w-[70%] shrink-0 shadow-2xs active:scale-95 transition-transform cursor-pointer flex items-center gap-1"
+                title={`Tap to copy: ${preciseHighlight.value}`}
+              >
+                {copiedHighlight ? (
+                  <>
+                    <Check className="h-2.5 w-2.5 text-emerald-600 stroke-[3]" />
+                    <span className="text-emerald-600 font-bold">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    {preciseHighlight.type === 'otp' && <KeyRound className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    {preciseHighlight.type === 'money' && <CreditCard className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    {preciseHighlight.type === 'game' && <Trophy className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    {preciseHighlight.type === 'promo' && <Sparkles className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    {preciseHighlight.type === 'event' && <Calendar className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    <span className="truncate">{preciseHighlight.label}</span>
+                  </>
+                )}
+              </button>
+            ) : tags.length > 0 ? (
+              <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] truncate max-w-[65%] shrink-0 shadow-2xs">
+                {formatTagForChip(tags[0])}
+              </span>
+            ) : null}
+            <span className="font-mono text-[10px] text-slate-400 shrink-0 ml-auto">
               {new Date(screenshot.created_at).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
               })}
             </span>
-            {tags.length > 0 && (
-              <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] truncate max-w-[55%] shrink-0 shadow-2xs">
-                #{tags[0]}
-              </span>
-            )}
           </div>
         </div>
       )}

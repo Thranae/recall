@@ -68,6 +68,7 @@ export interface Screenshot {
   ocr_text?: string;
   visual_description?: string;
   tags?: string[];
+  game_result?: GameResult | null;
   created_at: string;
   updated_at: string;
 }
