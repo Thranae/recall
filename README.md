@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://web-app-vert-nu.vercel.app" target="_blank">
+<a href="https://recall-pro.vercel.app" target="_blank">
   <img src="public/banner.png" alt="Recall AI Header Banner" width="100%" onerror="this.style.display='none'" />
 </a>
 
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://web-app-vert-nu.vercel.app" target="_blank"><img src="https://img.shields.io/badge/LIVE%20DEMO-web--app--vert--nu.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white" alt="Live Demo on Vercel" /></a>
+  <a href="https://recall-pro.vercel.app" target="_blank"><img src="https://img.shields.io/badge/LIVE%20DEMO-recall--pro.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white" alt="Live Demo on Vercel" /></a>
   <a href="https://github.com/Thranae/recall"><img src="https://img.shields.io/badge/GITHUB-Thranae%2Frecall-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Repo" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/REACT-19.3-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
   <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/VITE-6.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6" /></a>
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://web-app-vert-nu.vercel.app" target="_blank">
+  <a href="https://recall-pro.vercel.app" target="_blank">
     <img src="https://img.shields.io/badge/⚡_LAUNCH_LIVE_APP-VERCEL_DEPLOYMENT-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Launch Live App" height="32" />
   </a>
 </p>
@@ -42,7 +42,7 @@
 ## 🚀 Live Deployment
 
 The application is deployed live on Vercel:
-**[https://web-app-vert-nu.vercel.app](https://web-app-vert-nu.vercel.app)**
+**[https://recall-pro.vercel.app](https://recall-pro.vercel.app)**
 
 ---
 

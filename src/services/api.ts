@@ -1,7 +1,7 @@
 import type { User, Screenshot, ExtractedMessage, GameResult, SearchResponse, SubscriptionInfo, SubscriptionPlanDetail, SubscriptionPlan } from '../types';
 import { Capacitor } from '@capacitor/core';
 
-export const PROD_BACKEND_URL = 'https://web-app-vert-nu.vercel.app/api';
+export const PROD_BACKEND_URL = 'https://recall-pro.vercel.app/api';
 
 export function getApiBase(): string {
   if (typeof window === 'undefined') return '/api';
