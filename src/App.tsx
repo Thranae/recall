@@ -364,7 +364,7 @@ export const App: React.FC = () => {
       ) : !user ? (
         <AuthView onAuthSuccess={handleAuthSuccess} />
       ) : (
-        <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-hidden">
+        <div className="relative min-h-[100dvh] bg-[#F3F7FC] text-[#172B4D] flex flex-col antialiased selection:bg-[#B9D9FF] selection:text-[#172B4D] overflow-x-clip">
       {/* Ambient Soft Light for Liquid Glass Refraction (Arctic Blue palette, hardware-accelerated static gradient) */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"

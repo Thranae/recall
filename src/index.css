@@ -21,7 +21,13 @@
   -webkit-touch-callout: none;
 }
 
-html, body {
+html {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
   -webkit-user-select: none;
   user-select: none;
   background-color: var(--theme-bg-base);
@@ -30,9 +36,8 @@ html, body {
   min-height: 100dvh;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
-  overscroll-behavior-x: none;
-  overscroll-behavior-y: none;
+  overflow-x: clip;
+  overflow-y: auto;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
@@ -49,7 +54,7 @@ input, textarea {
   flex-direction: column;
   position: relative;
   background-color: transparent;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Safe area insets */
@@ -1035,7 +1040,9 @@ input, textarea {
   scrollbar-width: none;
 }
 
-* {
+.overflow-y-auto,
+.overflow-x-auto,
+[data-scrollable="true"] {
   -webkit-overflow-scrolling: touch;
 }
 

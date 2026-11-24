@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { lockBodyScroll } from '../utils/scrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -66,14 +67,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   // Prevent background scrolling while subscription view is open
   useEffect(() => {
     if (!isOpen) return;
-    const origHtml = document.documentElement.style.overflow;
-    const origBody = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = origHtml;
-      document.body.style.overflow = origBody;
-    };
+    return lockBodyScroll();
   }, [isOpen]);
 
   // Load plans & current subscription state
@@ -375,7 +369,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         </header>
 
         {/* Dedicated Page Body Content (Spacious & Uncongested) */}
-        <main className="w-full max-w-lg mx-auto px-4 pt-5 pb-16 space-y-5 flex-1 overflow-x-hidden">
+        <main className="w-full max-w-lg mx-auto px-4 pt-5 pb-16 space-y-5 flex-1 overflow-x-clip">
           {/* 1. Hero Plan Status Banner */}
           <div className="text-center pt-2 pb-2">
             <div className="relative inline-flex items-center justify-center mb-3.5">

@@ -11,7 +11,7 @@ import {
   KeyRound,
   CreditCard,
   Trophy,
-  Sparkles,
+  Tag,
   Calendar,
 } from 'lucide-react';
 import type { Screenshot, SearchResultItem } from '../types';
@@ -530,7 +530,7 @@ const ScreenshotCardComponent: React.FC<ScreenshotCardProps> = ({
                     {preciseHighlight.type === 'otp' && <KeyRound className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
                     {preciseHighlight.type === 'money' && <CreditCard className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
                     {preciseHighlight.type === 'game' && <Trophy className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
-                    {preciseHighlight.type === 'promo' && <Sparkles className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
+                    {preciseHighlight.type === 'promo' && <Tag className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
                     {preciseHighlight.type === 'event' && <Calendar className="h-2.5 w-2.5 text-[#3478F6] shrink-0" />}
                     <span className="truncate">{preciseHighlight.label}</span>
                   </>

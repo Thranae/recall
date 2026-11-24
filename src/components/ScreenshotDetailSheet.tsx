@@ -33,10 +33,12 @@ import {
   Bot,
   FileText,
   Info,
-  Sparkles,
+  Scan,
+  ScanText,
   KeyRound,
   CreditCard,
 } from 'lucide-react';
+import { lockBodyScroll } from '../utils/scrollLock';
 import { api } from '../services/api';
 import { classifyScreenshotPrecisely, getPreciseCategoryMeta } from '../utils/classifier';
 import { extractSmartActions, triggerCalendarDownload, type SmartActionItem } from '../utils/smartActions';
@@ -94,7 +96,7 @@ const getInspectorNodeIcon = (kind: LiveInspectorNode['kind']) => {
     case 'game':
       return Trophy;
     case 'discount':
-      return Sparkles;
+      return Tag;
     case 'calendar':
       return Calendar;
     case 'phone':
@@ -999,20 +1001,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   // Prevent background page from scrolling when detail sheet is open
   useEffect(() => {
     if (!screenshotId) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalOverscroll = document.body.style.overscrollBehavior;
-    const originalTouchAction = document.body.style.touchAction;
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none';
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.overscrollBehavior = originalOverscroll;
-      document.body.style.touchAction = originalTouchAction;
-    };
+    return lockBodyScroll();
   }, [screenshotId]);
 
   if (!screenshotId) return null;
@@ -1750,7 +1739,7 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                 }`}
                 title="Toggle interactive Apple Visual Look Up spatial pins"
               >
-                <Sparkles className="h-3.5 w-3.5 stroke-[2.3] shrink-0" />
+                <Scan className="h-3.5 w-3.5 stroke-[2.3] shrink-0" />
                 <span className="whitespace-nowrap">Visual Lens</span>
                 {inspectorNodes.length > 0 && (
                   <span
@@ -2090,8 +2079,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                     <div className="rounded-[20px] liquid-glass-card p-4 space-y-3 shadow-2xs border border-white/90">
                       <div className="flex items-center justify-between text-xs text-slate-800 font-bold px-0.5">
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
-                          <span>AI Precision Data Card</span>
+                          <ScanText className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
+                          <span>Precision Data Card</span>
                         </div>
                         <button
                           type="button"
