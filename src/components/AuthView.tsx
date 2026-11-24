@@ -17,6 +17,7 @@ import {
 import { api } from '../services/api';
 import type { User } from '../types';
 import { OtpInput } from './OtpInput';
+import { LegalModal, type LegalDocType } from './LegalModal';
 import { Capacitor } from '@capacitor/core';
 import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
@@ -53,6 +54,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [resendTimer, setResendTimer] = useState(40);
   const [isResending, setIsResending] = useState(false);
   const [otpPurpose, setOtpPurpose] = useState<'signup' | 'forgot_password'>('signup');
+  const [activeLegalDoc, setActiveLegalDoc] = useState<LegalDocType | null>(null);
 
   const tokenClientRef = useRef<any>(null);
 
@@ -720,7 +722,61 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0 stroke-[2.2]" />
           <span>End-to-end user isolation • 100% private library</span>
         </div>
+
+        {/* Public Compliance & Policy Footer (Mandatory for Payment Gateways / Razorpay KYC) */}
+        <div className="mt-4 pt-3 border-t border-slate-200/60 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-slate-500 font-medium">
+          <button
+            type="button"
+            onClick={() => setActiveLegalDoc('pricing')}
+            className="hover:text-[#3478F6] transition-colors cursor-pointer underline-offset-2 hover:underline"
+          >
+            Pricing & Plans
+          </button>
+          <span>•</span>
+          <button
+            type="button"
+            onClick={() => setActiveLegalDoc('terms')}
+            className="hover:text-[#3478F6] transition-colors cursor-pointer underline-offset-2 hover:underline"
+          >
+            Terms of Service
+          </button>
+          <span>•</span>
+          <button
+            type="button"
+            onClick={() => setActiveLegalDoc('privacy')}
+            className="hover:text-[#3478F6] transition-colors cursor-pointer underline-offset-2 hover:underline"
+          >
+            Privacy Policy
+          </button>
+          <span>•</span>
+          <button
+            type="button"
+            onClick={() => setActiveLegalDoc('refund')}
+            className="hover:text-[#3478F6] transition-colors cursor-pointer underline-offset-2 hover:underline"
+          >
+            Refund Policy
+          </button>
+          <span>•</span>
+          <button
+            type="button"
+            onClick={() => setActiveLegalDoc('contact')}
+            className="hover:text-[#3478F6] transition-colors cursor-pointer underline-offset-2 hover:underline"
+          >
+            Contact Us
+          </button>
+        </div>
+
+        <div className="mt-2 text-center text-[10px] text-slate-400">
+          © {new Date().getFullYear()} Recall by Samy Thranaeswanth. All rights reserved.
+        </div>
       </div>
+
+      {/* Interactive Compliance Modal */}
+      <LegalModal
+        isOpen={Boolean(activeLegalDoc)}
+        initialDoc={activeLegalDoc || 'terms'}
+        onClose={() => setActiveLegalDoc(null)}
+      />
     </div>
   );
 };
