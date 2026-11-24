@@ -9,7 +9,10 @@
       "*.google.com",
       "*.googleusercontent.com",
       "*.gstatic.com",
-      "web-app-vert-nu.vercel.app"
+      "recall-pro.vercel.app",
+      "*.razorpay.com",
+      "checkout.razorpay.com",
+      "api.razorpay.com"
     ]
   },
   "plugins": {
