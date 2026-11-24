@@ -605,8 +605,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     <label className="block text-[11px] font-bold text-slate-600 mb-1 px-1">
                       Full Name
                     </label>
-                    <div className="relative flex items-center">
-                      <UserIcon className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
+                    <div className="relative flex items-center group">
                       <input
                         type="text"
                         autoComplete="name"
@@ -619,6 +618,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                         required
                         className="liquid-glass-input h-11 w-full pl-10 pr-3.5 text-xs font-semibold text-slate-800 placeholder-slate-400"
                       />
+                      <UserIcon className="pointer-events-none absolute left-3.5 z-10 h-4 w-4 text-[#4A5D78] group-focus-within:text-[#3478F6] shrink-0 stroke-[2.2] transition-colors" />
                     </div>
                   </div>
                 )}
@@ -627,8 +627,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                   <label className="block text-[11px] font-bold text-slate-600 mb-1 px-1">
                     Email Address
                   </label>
-                  <div className="relative flex items-center">
-                    <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
+                  <div className="relative flex items-center group">
                     <input
                       type="email"
                       autoComplete="email"
@@ -641,6 +640,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       required
                       className="liquid-glass-input h-11 w-full pl-10 pr-3.5 text-xs font-semibold text-slate-800 placeholder-slate-400"
                     />
+                    <Mail className="pointer-events-none absolute left-3.5 z-10 h-4 w-4 text-[#4A5D78] group-focus-within:text-[#3478F6] shrink-0 stroke-[2.2] transition-colors" />
                   </div>
                 </div>
 
@@ -658,8 +658,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                         </button>
                       )}
                     </div>
-                    <div className="relative flex items-center">
-                      <Lock className="absolute left-3.5 h-4 w-4 text-slate-400 shrink-0 stroke-[2]" />
+                    <div className="relative flex items-center group">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
@@ -673,15 +672,17 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                         minLength={6}
                         className="liquid-glass-input h-11 w-full pl-10 pr-10 text-xs font-semibold text-slate-800 placeholder-slate-400"
                       />
+                      <Lock className="pointer-events-none absolute left-3.5 z-10 h-4 w-4 text-[#4A5D78] group-focus-within:text-[#3478F6] shrink-0 stroke-[2.2] transition-colors" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 text-slate-400 active:text-slate-700 p-1 cursor-pointer"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="absolute right-3 z-10 text-[#4A5D78] hover:text-slate-800 active:text-slate-900 p-1 cursor-pointer transition-colors"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 shrink-0 stroke-[2]" />
+                          <EyeOff className="h-4 w-4 shrink-0 stroke-[2.2]" />
                         ) : (
-                          <Eye className="h-4 w-4 shrink-0 stroke-[2]" />
+                          <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" />
                         )}
                       </button>
                     </div>
