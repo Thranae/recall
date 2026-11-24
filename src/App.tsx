@@ -9,7 +9,7 @@ import { AlbumsView } from './components/AlbumsView';
 import { SettingsView } from './components/SettingsView';
 import { ScreenshotDetailSheet } from './components/ScreenshotDetailSheet';
 import { UploadSheet } from './components/UploadSheet';
-import { SubscriptionModal } from './components/SubscriptionModal';
+import { SubscriptionView } from './components/SubscriptionView';
 import { SplashScreen } from './components/SplashScreen';
 import { SignOutTransition } from './components/SignOutTransition';
 import { api } from './services/api';
@@ -502,8 +502,8 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Subscription & Cloud Membership Modal */}
-      <SubscriptionModal
+      {/* Subscription & Cloud Membership Dedicated View */}
+      <SubscriptionView
         isOpen={isSubscriptionOpen}
         onClose={() => setIsSubscriptionOpen(false)}
         user={user}
