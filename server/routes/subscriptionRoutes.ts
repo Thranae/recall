@@ -1,6 +1,9 @@
 import { Router, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'recall_super_secret_jwt_key_2026_dev';
 import { processRecurringDeductions } from '../services/autopayService';
 import {
   isRazorpayConfigured,
@@ -107,12 +110,28 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
       FROM users WHERE id = ?
     `).get(userId)) as any;
 
-    const tier = userRow?.subscription_tier === 'pro' ? 'pro' : 'free';
-    const plan = userRow?.subscription_plan || tier;
-    const status = userRow?.subscription_status || 'active';
-    const expiresAt = userRow?.subscription_expires_at || null;
-    const trialEndsAt = userRow?.trial_ends_at || null;
-    const nextBillingAt = userRow?.next_billing_at || null;
+    let tier = userRow?.subscription_tier === 'pro' ? 'pro' : 'free';
+    let plan = userRow?.subscription_plan || tier;
+    let status = userRow?.subscription_status || 'active';
+    let expiresAt = userRow?.subscription_expires_at || null;
+    let trialEndsAt = userRow?.trial_ends_at || null;
+    let nextBillingAt = userRow?.next_billing_at || null;
+
+    const now = new Date();
+    // Enforce real expiration verification on Pro tier
+    if (tier === 'pro') {
+      const expDate = expiresAt ? new Date(expiresAt) : null;
+      const trialDate = trialEndsAt ? new Date(trialEndsAt) : null;
+      if (status === 'trialing' && trialDate && trialDate < now) {
+        tier = 'free';
+        status = 'expired';
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+      } else if (status === 'active' && expDate && expDate < now) {
+        tier = 'free';
+        status = 'expired';
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+      }
+    }
 
     // Trial calculations
     const nowMs = Date.now();
@@ -486,9 +505,19 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
       if (user) targetUserId = user.id;
     }
 
+    // Try extracting from authorization bearer token if still not found
+    if (!targetUserId && req.headers.authorization?.startsWith('Bearer ')) {
+      try {
+        const token = req.headers.authorization.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        if (decoded?.id) targetUserId = decoded.id;
+      } catch {}
+    }
+
     const now = new Date();
     const durationDays = plan === 'pro_annual' ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+    let updatedUser: any = null;
 
     if (targetUserId) {
       await db.prepare(`
@@ -499,6 +528,12 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
             subscription_expires_at = ?
         WHERE id = ?
       `).run(plan, expiresAt, targetUserId);
+
+      updatedUser = (await db.prepare(`
+        SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+               subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
+        FROM users WHERE id = ?
+      `).get(targetUserId)) as any;
 
       const invId = `inv_std_${Date.now()}`;
       try {
@@ -524,6 +559,7 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
       message: 'Payment verified successfully. Pro perks activated.',
       order_id: razorpay_order_id,
       payment_id: razorpay_payment_id,
+      user: updatedUser,
     });
   } catch (err: any) {
     console.error('Razorpay Verify Payment Error:', err);

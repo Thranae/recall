@@ -37,6 +37,7 @@ import {
   ScanText,
   KeyRound,
   CreditCard,
+  Crown,
 } from 'lucide-react';
 import { lockBodyScroll } from '../utils/scrollLock';
 import { api } from '../services/api';
@@ -85,6 +86,8 @@ interface ScreenshotDetailSheetProps {
   onUpdated: () => void;
   onSelectTag?: (tag: string) => void;
   onSelectRelated?: (id: string) => void;
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
 const getInspectorNodeIcon = (kind: LiveInspectorNode['kind']) => {
@@ -122,6 +125,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
   onUpdated,
   onSelectTag,
   onSelectRelated,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   const [data, setData] = useState<ScreenshotDetailData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -322,6 +327,36 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
     }
     setCopiedSummary(true);
     setTimeout(() => setCopiedSummary(false), 2000);
+  };
+
+  const handleExportStructuredData = () => {
+    if (!data?.screenshot || inspectorNodes.length === 0) return;
+    const exportPayload = {
+      filename: data.screenshot.original_filename,
+      extracted_at: new Date().toISOString(),
+      category: data.screenshot.category,
+      ocr_text: data.screenshot.ocr_text,
+      entities: inspectorNodes.map((n) => ({
+        kind: n.kind,
+        label: n.label,
+        value: n.value,
+        href: n.href,
+      })),
+      smart_actions: smartActions.map((a) => ({
+        kind: a.kind,
+        label: a.label,
+        value: a.value,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(data.screenshot.original_filename || 'screenshot').replace(/\.[^/.]+$/, '')}_data.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
   const previewImgRef = useRef<HTMLImageElement | null>(null);
   const redactBoxRef = useRef<HTMLDivElement | null>(null);
@@ -1360,7 +1395,13 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
             <div className="animate-fadeIn">
               <button
                 type="button"
-                onClick={() => setIsThreadReelOpen(true)}
+                onClick={() => {
+                  if (!isPro) {
+                    onOpenSubscription?.();
+                    return;
+                  }
+                  setIsThreadReelOpen(true);
+                }}
                 className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl liquid-filter-chip liquid-filter-chip-active text-[#3478F6] shadow-2xs active:scale-[0.99] transition-all cursor-pointer"
                 title="Tap to open full connected conversation thread reel"
               >
@@ -1378,8 +1419,17 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#3478F6]/10 text-[10.5px] font-extrabold text-[#3478F6] shrink-0">
-                  <span>View Reel</span>
-                  <span className="text-xs">→</span>
+                  {!isPro ? (
+                    <>
+                      <Crown className="w-3 h-3 text-amber-500" />
+                      <span>Reel (Pro)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>View Reel</span>
+                      <span className="text-xs">→</span>
+                    </>
+                  )}
                 </div>
               </button>
             </div>
@@ -2082,24 +2132,45 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
                           <ScanText className="h-4 w-4 text-[#3478F6] stroke-[2.2]" />
                           <span>Precision Data Card</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleCopyAllSummary}
-                          className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-transform flex items-center gap-1"
-                          title="Copy structured summary of all extracted data fields"
-                        >
-                          {copiedSummary ? (
-                            <>
-                              <Check className="h-2.5 w-2.5 text-emerald-600 stroke-[3]" />
-                              <span className="text-emerald-600">Copied All!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-2.5 w-2.5" />
-                              <span>Copy All Fields</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isPro) {
+                                onOpenSubscription?.();
+                                return;
+                              }
+                              handleExportStructuredData();
+                            }}
+                            className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-transform flex items-center gap-1"
+                            title="Export structured JSON of extracted data (Pro feature)"
+                          >
+                            {!isPro ? (
+                              <Crown className="h-2.5 w-2.5 text-amber-500" />
+                            ) : (
+                              <Download className="h-2.5 w-2.5 text-[#3478F6]" />
+                            )}
+                            <span>{isPro ? 'Export JSON' : 'Export (Pro)'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCopyAllSummary}
+                            className="liquid-filter-chip liquid-filter-chip-xs !font-bold text-[#3478F6] cursor-pointer active:scale-95 transition-transform flex items-center gap-1"
+                            title="Copy structured summary of all extracted data fields"
+                          >
+                            {copiedSummary ? (
+                              <>
+                                <Check className="h-2.5 w-2.5 text-emerald-600 stroke-[3]" />
+                                <span className="text-emerald-600">Copied All!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-2.5 w-2.5" />
+                                <span>Copy All</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-1.5">
@@ -2761,6 +2832,8 @@ export const ScreenshotDetailSheet: React.FC<ScreenshotDetailSheetProps> = ({
           chatMessages={chatMessages}
           setChatMessages={setChatMessages}
           initialPrompt={initialChatPrompt}
+          isPro={isPro}
+          onOpenSubscription={onOpenSubscription}
         />
       )}
 

@@ -29358,9 +29358,9 @@ var require_jws = __commonJS({
 var require_decode = __commonJS({
   "node_modules/jsonwebtoken/decode.js"(exports, module) {
     var jws = require_jws();
-    module.exports = function(jwt3, options) {
+    module.exports = function(jwt4, options) {
       options = options || {};
-      var decoded = jws.decode(jwt3, options);
+      var decoded = jws.decode(jwt4, options);
       if (!decoded) {
         return null;
       }
@@ -68041,7 +68041,7 @@ var WsClient = class extends Client {
   // An allocator of SQL text ids.
   #sqlIdAlloc;
   /** @private */
-  constructor(socket, jwt3) {
+  constructor(socket, jwt4) {
     super();
     this.#socket = socket;
     this.#openCallbacks = [];
@@ -68060,7 +68060,7 @@ var WsClient = class extends Client {
     this.#socket.addEventListener("close", (event) => this.#onSocketClose(event));
     this.#socket.addEventListener("error", (event) => this.#onSocketError(event));
     this.#socket.addEventListener("message", (event) => this.#onSocketMessage(event));
-    this.#send({ type: "hello", jwt: jwt3 });
+    this.#send({ type: "hello", jwt: jwt4 });
   }
   // Send (or enqueue to send) a message to the server.
   #send(msg) {
@@ -68745,11 +68745,11 @@ var HttpStream = class extends Stream {
   #closed;
   #sqlIdAlloc;
   /** @private */
-  constructor(client, baseUrl, jwt3, customFetch, remoteEncryptionKey) {
+  constructor(client, baseUrl, jwt4, customFetch, remoteEncryptionKey) {
     super(client.intMode);
     this.#client = client;
     this.#baseUrl = baseUrl.toString();
-    this.#jwt = jwt3;
+    this.#jwt = jwt4;
     this.#fetch = customFetch;
     this.#remoteEncryptionKey = remoteEncryptionKey;
     this.#baton = void 0;
@@ -69105,10 +69105,10 @@ var HttpClient = class extends Client {
   /** @private */
   _endpoint;
   /** @private */
-  constructor(url, jwt3, customFetch, remoteEncryptionKey, protocolVersion = 2) {
+  constructor(url, jwt4, customFetch, remoteEncryptionKey, protocolVersion = 2) {
     super();
     this.#url = url;
-    this.#jwt = jwt3;
+    this.#jwt = jwt4;
     this.#fetch = customFetch ?? globalThis.fetch;
     this.#remoteEncryptionKey = remoteEncryptionKey;
     this.#closed = void 0;
@@ -69185,7 +69185,7 @@ async function findEndpoint(customFetch, clientUrl) {
 }
 
 // node_modules/@libsql/hrana-client/lib-esm/index.js
-function openWs(url, jwt3, protocolVersion = 2) {
+function openWs(url, jwt4, protocolVersion = 2) {
   if (typeof import_websocket.default === "undefined") {
     throw new WebSocketUnsupportedError("WebSockets are not supported in this environment");
   }
@@ -69196,10 +69196,10 @@ function openWs(url, jwt3, protocolVersion = 2) {
     subprotocols = Array.from(subprotocolsV2.keys());
   }
   const socket = new import_websocket.default(url, subprotocols);
-  return new WsClient(socket, jwt3);
+  return new WsClient(socket, jwt4);
 }
-function openHttp(url, jwt3, customFetch, remoteEncryptionKey, protocolVersion = 2) {
-  return new HttpClient(url instanceof URL ? url : new URL(url), jwt3, customFetch, remoteEncryptionKey, protocolVersion);
+function openHttp(url, jwt4, customFetch, remoteEncryptionKey, protocolVersion = 2) {
+  return new HttpClient(url instanceof URL ? url : new URL(url), jwt4, customFetch, remoteEncryptionKey, protocolVersion);
 }
 
 // node_modules/@libsql/client/lib-esm/hrana.js
@@ -88494,6 +88494,22 @@ router.get("/me", authMiddleware, async (req, res) => {
       FROM users WHERE id = ?
     `).get(req.user.id);
     if (userRow) {
+      let tier = userRow.subscription_tier || "free";
+      let status = userRow.subscription_status || "active";
+      const now = /* @__PURE__ */ new Date();
+      if (tier === "pro") {
+        const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
+        const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
+        if (status === "trialing" && trialEndsAt && trialEndsAt < now) {
+          tier = "free";
+          status = "expired";
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+        } else if (status === "active" && expiresAt && expiresAt < now) {
+          tier = "free";
+          status = "expired";
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+        }
+      }
       res.json({
         user: {
           id: userRow.id,
@@ -88502,9 +88518,9 @@ router.get("/me", authMiddleware, async (req, res) => {
           avatar_url: userRow.avatar_url,
           google_id: userRow.google_id,
           is_verified: userRow.is_verified,
-          subscription_tier: userRow.subscription_tier || "free",
-          subscription_status: userRow.subscription_status || "active",
-          subscription_plan: userRow.subscription_plan || "free",
+          subscription_tier: tier,
+          subscription_status: status,
+          subscription_plan: userRow.subscription_plan || tier,
           subscription_expires_at: userRow.subscription_expires_at || null,
           trial_ends_at: userRow.trial_ends_at || null,
           autopay_mandate_id: userRow.autopay_mandate_id || null,
@@ -89411,6 +89427,15 @@ router2.post("/duplicates/clean", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user?.email || userId;
     const { ids } = req.body;
+    const userRow = await db.prepare("SELECT subscription_tier FROM users WHERE id = ?").get(userId);
+    const isPro = userRow?.subscription_tier === "pro";
+    if (!isPro) {
+      res.status(403).json({
+        error: "1-Tap AI Duplicate Cleanup is exclusive to Recall Pro subscribers.",
+        code: "UPGRADE_REQUIRED"
+      });
+      return;
+    }
     if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({ error: "No duplicate IDs provided for cleanup" });
       return;
@@ -89513,6 +89538,15 @@ router2.post("/clutter/purge", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user?.email || userId;
     const { ids } = req.body;
+    const userRow = await db.prepare("SELECT subscription_tier FROM users WHERE id = ?").get(userId);
+    const isPro = userRow?.subscription_tier === "pro";
+    if (!isPro) {
+      res.status(403).json({
+        error: "Smart Declutter Memory Broom is exclusive to Recall Pro subscribers.",
+        code: "UPGRADE_REQUIRED"
+      });
+      return;
+    }
     if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({ error: "No IDs provided for clutter purge" });
       return;
@@ -91243,6 +91277,7 @@ var testDataRoutes_default = router4;
 
 // server/routes/subscriptionRoutes.ts
 var import_express5 = __toESM(require_express2(), 1);
+var import_jsonwebtoken3 = __toESM(require_jsonwebtoken(), 1);
 
 // server/services/razorpayService.ts
 var import_razorpay = __toESM(require_razorpay(), 1);
@@ -91282,6 +91317,7 @@ function verifyWebhookSignature(body, signature) {
 }
 
 // server/routes/subscriptionRoutes.ts
+var JWT_SECRET3 = process.env.JWT_SECRET || "recall_super_secret_jwt_key_2026_dev";
 var router5 = (0, import_express5.Router)();
 var FREE_SCREENSHOT_LIMIT = 50;
 var FREE_DAILY_AI_LIMIT = 5;
@@ -91368,12 +91404,26 @@ router5.get("/current", authMiddleware, async (req, res) => {
              ai_queries_today, ai_queries_reset_at
       FROM users WHERE id = ?
     `).get(userId);
-    const tier = userRow?.subscription_tier === "pro" ? "pro" : "free";
-    const plan = userRow?.subscription_plan || tier;
-    const status = userRow?.subscription_status || "active";
-    const expiresAt = userRow?.subscription_expires_at || null;
-    const trialEndsAt = userRow?.trial_ends_at || null;
-    const nextBillingAt = userRow?.next_billing_at || null;
+    let tier = userRow?.subscription_tier === "pro" ? "pro" : "free";
+    let plan = userRow?.subscription_plan || tier;
+    let status = userRow?.subscription_status || "active";
+    let expiresAt = userRow?.subscription_expires_at || null;
+    let trialEndsAt = userRow?.trial_ends_at || null;
+    let nextBillingAt = userRow?.next_billing_at || null;
+    const now = /* @__PURE__ */ new Date();
+    if (tier === "pro") {
+      const expDate = expiresAt ? new Date(expiresAt) : null;
+      const trialDate = trialEndsAt ? new Date(trialEndsAt) : null;
+      if (status === "trialing" && trialDate && trialDate < now) {
+        tier = "free";
+        status = "expired";
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+      } else if (status === "active" && expDate && expDate < now) {
+        tier = "free";
+        status = "expired";
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+      }
+    }
     const nowMs = Date.now();
     const trialEndMs = trialEndsAt ? new Date(trialEndsAt).getTime() : 0;
     const isTrialing = status === "trialing" && trialEndMs > nowMs;
@@ -91683,9 +91733,18 @@ router5.post("/verify-payment", async (req, res) => {
       const user = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
       if (user) targetUserId = user.id;
     }
+    if (!targetUserId && req.headers.authorization?.startsWith("Bearer ")) {
+      try {
+        const token = req.headers.authorization.substring(7);
+        const decoded = import_jsonwebtoken3.default.verify(token, JWT_SECRET3);
+        if (decoded?.id) targetUserId = decoded.id;
+      } catch {
+      }
+    }
     const now = /* @__PURE__ */ new Date();
     const durationDays = plan === "pro_annual" ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+    let updatedUser = null;
     if (targetUserId) {
       await db.prepare(`
         UPDATE users
@@ -91695,6 +91754,11 @@ router5.post("/verify-payment", async (req, res) => {
             subscription_expires_at = ?
         WHERE id = ?
       `).run(plan, expiresAt, targetUserId);
+      updatedUser = await db.prepare(`
+        SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+               subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
+        FROM users WHERE id = ?
+      `).get(targetUserId);
       const invId = `inv_std_${Date.now()}`;
       try {
         await db.prepare(`
@@ -91717,7 +91781,8 @@ router5.post("/verify-payment", async (req, res) => {
       success: true,
       message: "Payment verified successfully. Pro perks activated.",
       order_id: razorpay_order_id,
-      payment_id: razorpay_payment_id
+      payment_id: razorpay_payment_id,
+      user: updatedUser
     });
   } catch (err) {
     console.error("Razorpay Verify Payment Error:", err);

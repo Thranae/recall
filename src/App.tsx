@@ -417,6 +417,8 @@ export const App: React.FC = () => {
             onSelectionModeChange={setIsSelectionMode}
             onActiveUndoChange={setHasActiveUndo}
             onModalStateChange={setIsLibraryModalOpen}
+            isPro={user?.subscription_tier === 'pro'}
+            onOpenSubscription={() => setIsSubscriptionOpen(true)}
             onQuickSearch={(q) => {
               setSearchCategory('all');
               setQuery(q);
@@ -448,6 +450,8 @@ export const App: React.FC = () => {
             onRefresh={fetchScreenshots}
             onModalStateChange={setIsAlbumsModalOpen}
             isIndexing={processingCount > 0}
+            isPro={user?.subscription_tier === 'pro'}
+            onOpenSubscription={() => setIsSubscriptionOpen(true)}
           />
         )}
 
@@ -518,6 +522,8 @@ export const App: React.FC = () => {
         screenshotId={selectedScreenshotId}
         initialScreenshot={screenshots.find((s) => s.id === selectedScreenshotId)}
         searchResult={selectedSearchResult}
+        isPro={user?.subscription_tier === 'pro'}
+        onOpenSubscription={() => setIsSubscriptionOpen(true)}
         onClose={() => {
           setSelectedScreenshotId(null);
           setSelectedSearchResult(undefined);

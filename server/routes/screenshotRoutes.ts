@@ -376,6 +376,16 @@ router.post('/duplicates/clean', authMiddleware, async (req: AuthRequest, res: R
     const userEmail = req.user?.email || userId;
     const { ids } = req.body;
 
+    const userRow = (await db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(userId)) as any;
+    const isPro = userRow?.subscription_tier === 'pro';
+    if (!isPro) {
+      res.status(403).json({
+        error: '1-Tap AI Duplicate Cleanup is exclusive to Recall Pro subscribers.',
+        code: 'UPGRADE_REQUIRED',
+      });
+      return;
+    }
+
     if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({ error: 'No duplicate IDs provided for cleanup' });
       return;
@@ -495,6 +505,16 @@ router.post('/clutter/purge', authMiddleware, async (req: AuthRequest, res: Resp
     const userId = req.user!.id;
     const userEmail = req.user?.email || userId;
     const { ids } = req.body;
+
+    const userRow = (await db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(userId)) as any;
+    const isPro = userRow?.subscription_tier === 'pro';
+    if (!isPro) {
+      res.status(403).json({
+        error: 'Smart Declutter Memory Broom is exclusive to Recall Pro subscribers.',
+        code: 'UPGRADE_REQUIRED',
+      });
+      return;
+    }
 
     if (!Array.isArray(ids) || ids.length === 0) {
       res.status(400).json({ error: 'No IDs provided for clutter purge' });

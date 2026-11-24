@@ -566,6 +566,26 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
     `).get(req.user!.id)) as any;
 
     if (userRow) {
+      let tier = userRow.subscription_tier || 'free';
+      let status = userRow.subscription_status || 'active';
+      const now = new Date();
+
+      // Enforce real expiration verification on tier
+      if (tier === 'pro') {
+        const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
+        const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
+
+        if (status === 'trialing' && trialEndsAt && trialEndsAt < now) {
+          tier = 'free';
+          status = 'expired';
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+        } else if (status === 'active' && expiresAt && expiresAt < now) {
+          tier = 'free';
+          status = 'expired';
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+        }
+      }
+
       res.json({
         user: {
           id: userRow.id,
@@ -574,9 +594,9 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
           avatar_url: userRow.avatar_url,
           google_id: userRow.google_id,
           is_verified: userRow.is_verified,
-          subscription_tier: userRow.subscription_tier || 'free',
-          subscription_status: userRow.subscription_status || 'active',
-          subscription_plan: userRow.subscription_plan || 'free',
+          subscription_tier: tier,
+          subscription_status: status,
+          subscription_plan: userRow.subscription_plan || tier,
           subscription_expires_at: userRow.subscription_expires_at || null,
           trial_ends_at: userRow.trial_ends_at || null,
           autopay_mandate_id: userRow.autopay_mandate_id || null,

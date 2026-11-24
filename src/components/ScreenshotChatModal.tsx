@@ -14,6 +14,7 @@ import {
   ChevronUp,
   ChevronDown,
   X,
+  Crown,
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Screenshot, ScreenshotChatMessage } from '../types';
@@ -25,6 +26,8 @@ interface ScreenshotChatModalProps {
   chatMessages: ScreenshotChatMessage[];
   setChatMessages: React.Dispatch<React.SetStateAction<ScreenshotChatMessage[]>>;
   initialPrompt?: string;
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
 const CHAT_PROMPT_SUGGESTIONS = [
@@ -184,6 +187,8 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
   chatMessages,
   setChatMessages,
   initialPrompt,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
@@ -365,8 +370,10 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
                     <h2 className="text-[13px] font-bold text-slate-900 leading-tight">
                       Recall AI Vision
                     </h2>
-                    <span className="rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-1.5 py-0.2 text-[8.5px] font-bold">
-                      Active
+                    <span className={`rounded-full px-1.5 py-0.2 text-[8.5px] font-bold ${
+                      isPro ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-50 text-emerald-600 border border-emerald-200/60'
+                    }`}>
+                      {isPro ? 'PRO Unlimited' : 'Active'}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-500 font-medium truncate max-w-[160px] sm:max-w-[220px]">
@@ -564,16 +571,50 @@ export const ScreenshotChatModal: React.FC<ScreenshotChatModalProps> = ({
             )}
 
             {chatError && (
-              <div className="rounded-[16px] bg-rose-50 border border-rose-200 p-3 text-[12px] font-medium text-rose-700 flex items-center justify-between gap-2">
-                <span>{chatError}</span>
-                <button
-                  type="button"
-                  onClick={() => setChatError(null)}
-                  className="p-1 text-rose-500 hover:text-rose-700 active:scale-90"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              chatError.includes('limit') || chatError.includes('UPGRADE_REQUIRED') || chatError.includes('Pro') ? (
+                <div className="rounded-[22px] bg-gradient-to-br from-amber-500/10 via-blue-500/10 to-indigo-500/15 border border-amber-300/80 p-4 space-y-3 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white shadow-2xs">
+                        <Crown className="w-3.5 h-3.5 text-amber-100" />
+                      </div>
+                      <span>Daily AI Limit Reached (5/5)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setChatError(null)}
+                      className="p-1 text-slate-400 hover:text-slate-600 active:scale-90"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                    Free accounts include 5 AI Vision questions per day. Unlock unlimited instant AI look-ups, chat threads, and story reels with Recall Pro.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenSubscription?.();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-[#3478F6] to-[#0052cc] text-white text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Upgrade to Pro — Unlimited AI</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-[16px] bg-rose-50 border border-rose-200 p-3 text-[12px] font-medium text-rose-700 flex items-center justify-between gap-2">
+                  <span>{chatError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setChatError(null)}
+                    className="p-1 text-rose-500 hover:text-rose-700 active:scale-90"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
             )}
 
             <div ref={messagesEndRef} />

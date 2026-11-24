@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Download,
   X,
+  Crown,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { downloadImageFile } from '../utils/fileDownload';
@@ -41,6 +42,8 @@ interface LibraryViewProps {
   onSelectionModeChange?: (active: boolean) => void;
   onActiveUndoChange?: (hasActiveUndo: boolean) => void;
   onModalStateChange?: (isOpen: boolean) => void;
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
 const CATEGORIES = [
@@ -64,6 +67,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onSelectionModeChange,
   onActiveUndoChange,
   onModalStateChange,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   const [showInsights, setShowInsights] = useState(false);
   const [insights, setInsights] = useState<VaultInsightsSummary | null>(null);
@@ -448,6 +453,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
   const handleCleanDuplicates = async () => {
     if (!insights || insights.duplicate_groups.length === 0 || cleaningDuplicates) return;
+    if (!isPro) {
+      onOpenSubscription?.();
+      return;
+    }
     setCleaningDuplicates(true);
     try {
       const idsToDelete = insights.duplicate_groups.flatMap((g) => g.duplicates.map((d) => d.id));
@@ -539,23 +548,45 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           {/* Digest Chip */}
           <button
             type="button"
-            onClick={() => setIsVaultDigestOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-1 text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+            onClick={() => {
+              if (!isPro) {
+                onOpenSubscription?.();
+                return;
+              }
+              setIsVaultDigestOpen(true);
+            }}
+            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="View Proactive Vault Digest (Coupons, Events, Bills)"
           >
             <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
             <span className="truncate">Digest</span>
+            {!isPro && (
+              <span className="px-1 py-0.2 rounded-full bg-amber-500/15 text-[8.5px] font-extrabold text-amber-600 shrink-0">
+                PRO
+              </span>
+            )}
           </button>
 
           {/* Clean Chip */}
           <button
             type="button"
-            onClick={() => setIsClutterSweeperOpen(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-1 text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+            onClick={() => {
+              if (!isPro) {
+                onOpenSubscription?.();
+                return;
+              }
+              setIsClutterSweeperOpen(true);
+            }}
+            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="Smart Declutter Memory Broom"
           >
             <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
             <span className="truncate">Clean</span>
+            {!isPro && (
+              <span className="px-1 py-0.2 rounded-full bg-rose-500/15 text-[8.5px] font-extrabold text-rose-600 shrink-0">
+                PRO
+              </span>
+            )}
           </button>
 
           {/* Insights Chip */}
@@ -666,9 +697,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       type="button"
                       onClick={handleCleanDuplicates}
                       disabled={cleaningDuplicates}
-                      className="rounded-full bg-rose-500 text-white px-2.5 py-1 text-[10px] font-bold active:scale-95 cursor-pointer disabled:opacity-50"
+                      className="rounded-full bg-rose-500 text-white px-2.5 py-1 text-[10px] font-bold active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-1"
                     >
-                      {cleaningDuplicates ? 'Cleaning...' : 'Clean All'}
+                      {!isPro && <Crown className="w-2.5 h-2.5 text-amber-300" />}
+                      <span>{cleaningDuplicates ? 'Cleaning...' : isPro ? 'Clean All' : 'Clean (Pro)'}</span>
                     </button>
                   )}
                 </div>
@@ -758,6 +790,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 onLongPress={() => handleCardLongPress(s.id)}
                 threadGroup={threadByScreenshotId.get(s.id)}
                 onOpenThreadReel={(t, initialIndex) => {
+                  if (!isPro) {
+                    onOpenSubscription?.();
+                    return;
+                  }
                   setSelectedThread(t);
                   setSelectedThreadInitialIndex(initialIndex ?? 0);
                 }}

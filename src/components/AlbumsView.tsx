@@ -14,6 +14,7 @@ import {
   Loader2,
   RefreshCw,
   CheckCircle2,
+  Crown,
 } from 'lucide-react';
 import type { Screenshot, Album, ThreadGroup } from '../types';
 import { api } from '../services/api';
@@ -30,6 +31,8 @@ interface AlbumsViewProps {
   onRefresh?: () => void;
   onModalStateChange?: (isOpen: boolean) => void;
   isIndexing?: boolean;
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
 const LOCAL_STORAGE_CUSTOM_ALBUMS = 'recall_custom_albums';
@@ -40,6 +43,8 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   onRefresh,
   onModalStateChange,
   isIndexing = false,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   // Check if any uploaded screenshots are still pending indexing / AI clustering
   const pendingScreenshots = useMemo(
@@ -512,6 +517,10 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
   // Launch Fullscreen Story Reel for Highlights
   const handlePlayHighlights = () => {
+    if (!isPro) {
+      onOpenSubscription?.();
+      return;
+    }
     if (highlightsScreenshots.length === 0) return;
     setStoryTarget({
       title: 'Memory Highlights',
@@ -524,6 +533,10 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
   // Launch Fullscreen Story Reel for a specific Album
   const handlePlayAlbumStory = (album: Album) => {
+    if (!isPro) {
+      onOpenSubscription?.();
+      return;
+    }
     const idSet = new Set(album.screenshotIds);
     const albumScreenshots = screenshots.filter((s) => idSet.has(s.id));
     if (albumScreenshots.length === 0) return;
@@ -900,8 +913,12 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                 disabled={currentAlbumScreenshots.length === 0}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-[#172B4D] font-extrabold text-sm shadow-lg active:scale-95 transition-all cursor-pointer disabled:opacity-40"
               >
-                <Play className="w-4 h-4 fill-[#172B4D]" />
-                <span>Play Story Reel</span>
+                {isPro ? (
+                  <Play className="w-4 h-4 fill-[#172B4D]" />
+                ) : (
+                  <Crown className="w-4 h-4 text-amber-500" />
+                )}
+                <span>{isPro ? 'Play Story Reel' : 'Unlock Story Reel (Pro)'}</span>
               </button>
             </div>
           </div>
@@ -930,6 +947,10 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                   onClick={() => onSelectScreenshot(s.id)}
                   threadGroup={threadByScreenshotId.get(s.id)}
                   onOpenThreadReel={(t, initialIndex) => {
+                    if (!isPro) {
+                      onOpenSubscription?.();
+                      return;
+                    }
                     setSelectedThread(t);
                     setSelectedThreadInitialIndex(initialIndex ?? 0);
                   }}
