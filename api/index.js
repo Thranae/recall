@@ -88335,6 +88335,12 @@ router.post("/login", async (req, res) => {
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
+    if (user.google_id && (!user.password_hash || user.password_hash === "")) {
+      res.status(401).json({
+        error: "This account was registered with Google. Please use 'Continue with Google', or tap 'Forgot password?' to log in with a 6-digit email code."
+      });
+      return;
+    }
     const isMatch = await bcryptjs_default.compare(password, user.password_hash || "");
     if (!isMatch) {
       res.status(401).json({ error: "Invalid email or password" });
