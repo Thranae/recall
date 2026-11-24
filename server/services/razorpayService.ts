@@ -29,6 +29,22 @@ export function getRazorpayPublicKey(): string | null {
   return process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || null;
 }
 
+export function verifyRazorpayOrderSignature(
+  orderId: string,
+  paymentId: string,
+  signature: string
+): boolean {
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keySecret) return false;
+
+  const expectedSignature = crypto
+    .createHmac('sha256', keySecret)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+
+  return expectedSignature === signature;
+}
+
 export function verifyRazorpayPaymentSignature(
   paymentId: string,
   subscriptionId: string,

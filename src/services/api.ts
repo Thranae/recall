@@ -634,6 +634,55 @@ export const api = {
     });
   },
 
+  // Razorpay Standard Checkout
+  async createRazorpayOrder(data: {
+    amount: number;
+    currency?: string;
+    receipt?: string;
+    plan?: string;
+  }): Promise<{
+    success: boolean;
+    order_id: string;
+    amount: number;
+    currency: string;
+    key_id: string | null;
+  }> {
+    return request<{
+      success: boolean;
+      order_id: string;
+      amount: number;
+      currency: string;
+      key_id: string | null;
+    }>('/create-order', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async verifyRazorpayPayment(data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    plan?: string;
+    user_id?: string;
+    email?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    order_id?: string;
+    payment_id?: string;
+  }> {
+    return request<{
+      success: boolean;
+      message: string;
+      order_id?: string;
+      payment_id?: string;
+    }>('/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   // Test Benchmark Seeding
   async seedBenchmarkData(): Promise<{ message: string; seeded_screenshots: string[] }> {
     return request<{ message: string; seeded_screenshots: string[] }>('/test-data/seed', {

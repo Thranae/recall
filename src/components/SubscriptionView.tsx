@@ -110,6 +110,112 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   })();
 
+  const handleRazorpayCheckout = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const planToSet: SubscriptionPlan = billingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
+    const amountInPaise = billingCycle === 'annual' ? 149900 : 19900;
+
+    try {
+      // 1. Ensure Razorpay checkout.js script is loaded
+      if (typeof window !== 'undefined' && !(window as any).Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => resolve(true);
+          script.onerror = () => reject(new Error('Failed to load Razorpay checkout script'));
+          document.body.appendChild(script);
+        });
+      }
+
+      // 2. Call backend create-order endpoint (STEP 1)
+      const orderData = await api.createRazorpayOrder({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: `rcpt_${Date.now()}`,
+        plan: planToSet,
+      });
+
+      if (!orderData || !orderData.order_id) {
+        throw new Error('Could not initialize Razorpay order from server');
+      }
+
+      const effectiveKey = orderData.key_id || razorpayKey || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || 'rzp_test_U3yA0Th7GB3iXU';
+
+      // 3. Open Razorpay Modal (STEP 2)
+      const options = {
+        key: effectiveKey,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Recall Pro',
+        description: billingCycle === 'annual' ? 'Recall Pro Annual Plan (₹1,499)' : 'Recall Pro Monthly Plan (₹199)',
+        image: '/favicon.svg',
+        order_id: orderData.order_id,
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#3478F6',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsLoading(false);
+          },
+        },
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            setIsLoading(true);
+            // 4. Send all three to verify endpoint (STEP 3)
+            const verifyRes = await api.verifyRazorpayPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: planToSet,
+              user_id: user?.id,
+              email: user?.email,
+            });
+
+            if (verifyRes.success) {
+              setIsSuccess(true);
+              const freshUser = await api.getCurrentUser();
+              if (freshUser) onSubscriptionUpdated(freshUser);
+              const freshSub = await api.getSubscription();
+              if (freshSub) setSubscription(freshSub.subscription);
+
+              setTimeout(() => {
+                setIsSuccess(false);
+                onClose();
+              }, 2000);
+            } else {
+              setErrorMessage(verifyRes.message || 'Payment signature verification failed.');
+            }
+          } catch (verifyErr: any) {
+            setErrorMessage(verifyErr.message || 'Payment verification failed.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+      };
+
+      const rzpInstance = new (window as any).Razorpay(options);
+      rzpInstance.on('payment.failed', (failResp: any) => {
+        setIsLoading(false);
+        setErrorMessage(failResp?.error?.description || 'Payment was declined or failed.');
+      });
+      rzpInstance.open();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Razorpay checkout failed to launch.');
+      setIsLoading(false);
+    }
+  };
+
   const handleStartTrial = async () => {
     if (isLoading) return;
     setIsLoading(true);
@@ -648,24 +754,35 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={handleStartTrial}
-                disabled={isLoading}
-                className="plump-liquid-cta w-full cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                    <span>Setting up Autopay Mandate...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Start 7-Day Free Trial (₹0 Today)</span>
-                    <ArrowRight className="h-4.5 w-4.5 stroke-[2.4]" />
-                  </>
-                )}
-              </button>
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={handleRazorpayCheckout}
+                  disabled={isLoading}
+                  className="plump-liquid-cta w-full cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                      <span>Opening Razorpay Checkout...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Pay with Razorpay ({billingCycle === 'annual' ? '₹1,499/yr' : '₹199/mo'})</span>
+                      <ArrowRight className="h-4.5 w-4.5 stroke-[2.4]" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleStartTrial}
+                  disabled={isLoading}
+                  className="w-full py-2.5 rounded-full border border-slate-200 bg-white/70 hover:bg-white text-xs font-bold text-slate-700 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
+                >
+                  <span>Or Start 7-Day Free Trial (₹0 Today via Autopay)</span>
+                </button>
+              </div>
             )}
 
             {/* Bottom Terms & Disclosure */}

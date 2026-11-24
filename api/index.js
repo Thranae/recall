@@ -91241,11 +91241,32 @@ var import_express5 = __toESM(require_express2(), 1);
 // server/services/razorpayService.ts
 var import_razorpay = __toESM(require_razorpay(), 1);
 import crypto10 from "crypto";
+var razorpayInstance = null;
+function getRazorpayClient() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    return null;
+  }
+  if (!razorpayInstance) {
+    razorpayInstance = new import_razorpay.default({
+      key_id: keyId,
+      key_secret: keySecret
+    });
+  }
+  return razorpayInstance;
+}
 function isRazorpayConfigured() {
   return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 }
 function getRazorpayPublicKey() {
   return process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || null;
+}
+function verifyRazorpayOrderSignature(orderId, paymentId, signature) {
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keySecret) return false;
+  const expectedSignature = crypto10.createHmac("sha256", keySecret).update(`${orderId}|${paymentId}`).digest("hex");
+  return expectedSignature === signature;
 }
 function verifyWebhookSignature(body, signature) {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -91584,6 +91605,122 @@ router5.post("/webhook", async (req, res) => {
     res.status(500).json({ error: "Webhook processing failed" });
   }
 });
+router5.post("/create-order", async (req, res) => {
+  try {
+    const { amount, currency = "INR", receipt, plan = "pro_annual" } = req.body;
+    const numAmount = Number(amount);
+    if (!numAmount || isNaN(numAmount) || numAmount < 100) {
+      res.status(400).json({ error: "Amount must be at least 100 paise (\u20B91)" });
+      return;
+    }
+    const client = getRazorpayClient();
+    if (!client) {
+      res.status(500).json({
+        error: "Razorpay is not configured on the server. Please check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET."
+      });
+      return;
+    }
+    const orderOptions = {
+      amount: Math.round(numAmount),
+      currency: String(currency || "INR").toUpperCase(),
+      receipt: String(receipt || `rcpt_${Date.now()}`),
+      notes: {
+        plan: String(plan)
+      }
+    };
+    const order = await client.orders.create(orderOptions);
+    res.json({
+      success: true,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: getRazorpayPublicKey()
+    });
+  } catch (err) {
+    console.error("Razorpay Create Order Error:", err);
+    res.status(500).json({
+      error: err?.error?.description || err?.message || "Failed to create Razorpay order"
+    });
+  }
+});
+router5.post("/verify-payment", async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      plan = "pro_annual",
+      user_id,
+      email
+    } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      res.status(400).json({
+        success: false,
+        error: "Missing required parameters: razorpay_order_id, razorpay_payment_id, razorpay_signature"
+      });
+      return;
+    }
+    const isValid2 = verifyRazorpayOrderSignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    );
+    if (!isValid2) {
+      res.status(400).json({
+        success: false,
+        error: "Signature verification failed. Payment not verified."
+      });
+      return;
+    }
+    let targetUserId = user_id;
+    if (!targetUserId && email) {
+      const user = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+      if (user) targetUserId = user.id;
+    }
+    const now = /* @__PURE__ */ new Date();
+    const durationDays = plan === "pro_annual" ? 365 : 30;
+    const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+    if (targetUserId) {
+      await db.prepare(`
+        UPDATE users
+        SET subscription_tier = 'pro',
+            subscription_status = 'active',
+            subscription_plan = ?,
+            subscription_expires_at = ?
+        WHERE id = ?
+      `).run(plan, expiresAt, targetUserId);
+      const invId = `inv_std_${Date.now()}`;
+      try {
+        await db.prepare(`
+          INSERT INTO subscription_invoices (
+            id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
+          ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Standard Checkout', ?)
+        `).run(
+          invId,
+          targetUserId,
+          razorpay_order_id,
+          plan === "pro_annual" ? 1499 : 199,
+          `Recall Pro Subscription (${plan === "pro_annual" ? "Annual" : "Monthly"})`,
+          now.toISOString()
+        );
+      } catch (invErr) {
+        console.warn("Invoice logging notice:", invErr);
+      }
+    }
+    res.json({
+      success: true,
+      message: "Payment verified successfully. Pro perks activated.",
+      order_id: razorpay_order_id,
+      payment_id: razorpay_payment_id
+    });
+  } catch (err) {
+    console.error("Razorpay Verify Payment Error:", err);
+    res.status(500).json({
+      success: false,
+      error: err?.message || "Internal server error verifying payment"
+    });
+  }
+});
 var subscriptionRoutes_default = router5;
 
 // server/index.ts
@@ -91615,6 +91752,7 @@ app.get("/api/health", (_req, res) => {
 });
 app.use("/api/auth", authRoutes_default);
 app.use("/api/subscription", subscriptionRoutes_default);
+app.use("/api", subscriptionRoutes_default);
 app.use("/api/screenshots", screenshotRoutes_default);
 app.use("/api/search", searchRoutes_default);
 app.use("/api/test-data", testDataRoutes_default);

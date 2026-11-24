@@ -51,6 +51,8 @@ app.get('/api/health', (_req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+// Standard Checkout direct aliases
+app.use('/api', subscriptionRoutes);
 app.use('/api/screenshots', screenshotRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/test-data', testDataRoutes);
