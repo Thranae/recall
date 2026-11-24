@@ -141,8 +141,28 @@ const SCHEMA_DDL = `
     is_verified INTEGER DEFAULT 1,
     otp_code TEXT,
     otp_expires TEXT,
+    subscription_tier TEXT DEFAULT 'free',
+    subscription_status TEXT DEFAULT 'active',
+    subscription_plan TEXT DEFAULT 'free',
+    subscription_expires_at TEXT,
+    ai_queries_today INTEGER DEFAULT 0,
+    ai_queries_reset_at TEXT,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    plan TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    status TEXT NOT NULL,
+    payment_method TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
 
   CREATE TABLE IF NOT EXISTS screenshots (
     id TEXT PRIMARY KEY,
@@ -237,5 +257,21 @@ export async function initDatabase(): Promise<void> {
     } catch (err) {
       console.warn('Local SQLite initialization notice:', err);
     }
+  }
+
+  // Safe idempotent migration for subscription columns on existing databases
+  const subCols = [
+    'ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT "free"',
+    'ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT "active"',
+    'ALTER TABLE users ADD COLUMN subscription_plan TEXT DEFAULT "free"',
+    'ALTER TABLE users ADD COLUMN subscription_expires_at TEXT',
+    'ALTER TABLE users ADD COLUMN ai_queries_today INTEGER DEFAULT 0',
+    'ALTER TABLE users ADD COLUMN ai_queries_reset_at TEXT',
+  ];
+
+  for (const alterSql of subCols) {
+    try {
+      await db.exec(alterSql);
+    } catch {}
   }
 }

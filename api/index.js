@@ -21002,27 +21002,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router5;
+    module.exports = Router6;
     module.exports.Route = Route;
-    function Router5(options) {
-      if (!(this instanceof Router5)) {
-        return new Router5(options);
+    function Router6(options) {
+      if (!(this instanceof Router6)) {
+        return new Router6(options);
       }
       const opts = options || {};
-      function router5(req, res, next) {
-        router5.handle(req, res, next);
+      function router6(req, res, next) {
+        router6.handle(req, res, next);
       }
-      Object.setPrototypeOf(router5, this);
-      router5.caseSensitive = opts.caseSensitive;
-      router5.mergeParams = opts.mergeParams;
-      router5.params = {};
-      router5.strict = opts.strict;
-      router5.stack = [];
-      return router5;
+      Object.setPrototypeOf(router6, this);
+      router6.caseSensitive = opts.caseSensitive;
+      router6.mergeParams = opts.mergeParams;
+      router6.params = {};
+      router6.strict = opts.strict;
+      router6.stack = [];
+      return router6;
     }
-    Router5.prototype = function() {
+    Router6.prototype = function() {
     };
-    Router5.prototype.param = function param(name2, fn) {
+    Router6.prototype.param = function param(name2, fn) {
       if (!name2) {
         throw new TypeError("argument name is required");
       }
@@ -21042,7 +21042,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router5.prototype.handle = function handle(req, res, callback) {
+    Router6.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -21169,7 +21169,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router5.prototype.use = function use(handler) {
+    Router6.prototype.use = function use(handler) {
       let offset = 0;
       let path8 = "/";
       if (typeof handler !== "function") {
@@ -21202,7 +21202,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router5.prototype.route = function route(path8) {
+    Router6.prototype.route = function route(path8) {
       const route2 = new Route(path8);
       const layer = new Layer(path8, {
         sensitive: this.caseSensitive,
@@ -21217,7 +21217,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router5.prototype[method] = function(path8) {
+      Router6.prototype[method] = function(path8) {
         const route = this.route(path8);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21400,13 +21400,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve3 = __require("node:path").resolve;
     var once = require_once();
-    var Router5 = require_router();
+    var Router6 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router5 = null;
+      var router6 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21415,13 +21415,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router5 === null) {
-            router5 = new Router5({
+          if (router6 === null) {
+            router6 = new Router6({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router5;
+          return router6;
         }
       });
     };
@@ -21492,15 +21492,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router5 = this.router;
+      var router6 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router5.use(path8, fn2);
+          return router6.use(path8, fn2);
         }
         debug(".use app under %s", path8);
         fn2.mountpath = path8;
         fn2.parent = this;
-        router5.use(path8, function mounted_app(req, res, next) {
+        router6.use(path8, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -24089,7 +24089,7 @@ var require_express = __commonJS({
     var EventEmitter7 = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router5 = require_router();
+    var Router6 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -24111,8 +24111,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router5.Route;
-    exports.Router = Router5;
+    exports.Route = Router6.Route;
+    exports.Router = Router6;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -46097,7 +46097,7 @@ var require_multer = __commonJS({
 });
 
 // server/index.ts
-var import_express5 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_dotenv2 = __toESM(require_dist4(), 1);
 import path7 from "path";
@@ -50906,8 +50906,28 @@ var SCHEMA_DDL = `
     is_verified INTEGER DEFAULT 1,
     otp_code TEXT,
     otp_expires TEXT,
+    subscription_tier TEXT DEFAULT 'free',
+    subscription_status TEXT DEFAULT 'active',
+    subscription_plan TEXT DEFAULT 'free',
+    subscription_expires_at TEXT,
+    ai_queries_today INTEGER DEFAULT 0,
+    ai_queries_reset_at TEXT,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    plan TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    status TEXT NOT NULL,
+    payment_method TEXT,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
 
   CREATE TABLE IF NOT EXISTS screenshots (
     id TEXT PRIMARY KEY,
@@ -51000,6 +51020,20 @@ async function initDatabase() {
       }
     } catch (err) {
       console.warn("Local SQLite initialization notice:", err);
+    }
+  }
+  const subCols = [
+    'ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT "free"',
+    'ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT "active"',
+    'ALTER TABLE users ADD COLUMN subscription_plan TEXT DEFAULT "free"',
+    "ALTER TABLE users ADD COLUMN subscription_expires_at TEXT",
+    "ALTER TABLE users ADD COLUMN ai_queries_today INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN ai_queries_reset_at TEXT"
+  ];
+  for (const alterSql of subCols) {
+    try {
+      await db.exec(alterSql);
+    } catch {
     }
   }
 }
@@ -69061,8 +69095,34 @@ router.post("/google", async (req, res) => {
     res.status(500).json({ error: "Google authentication failed" });
   }
 });
-router.get("/me", authMiddleware, (req, res) => {
-  res.json({ user: req.user });
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const userRow = await db.prepare(`
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at, ai_queries_today
+      FROM users WHERE id = ?
+    `).get(req.user.id);
+    if (userRow) {
+      res.json({
+        user: {
+          id: userRow.id,
+          email: userRow.email,
+          name: userRow.name,
+          avatar_url: userRow.avatar_url,
+          google_id: userRow.google_id,
+          is_verified: userRow.is_verified,
+          subscription_tier: userRow.subscription_tier || "free",
+          subscription_status: userRow.subscription_status || "active",
+          subscription_plan: userRow.subscription_plan || "free",
+          subscription_expires_at: userRow.subscription_expires_at || null,
+          ai_queries_today: userRow.ai_queries_today || 0
+        }
+      });
+      return;
+    }
+    res.json({ user: req.user });
+  } catch {
+    res.json({ user: req.user });
+  }
 });
 var authRoutes_default = router;
 
@@ -69719,6 +69779,22 @@ router2.post(
         }
       } catch (safetyErr) {
         console.warn("Safety user check in upload:", safetyErr);
+      }
+      const userRow = await db.prepare("SELECT subscription_tier FROM users WHERE id = ?").get(userId);
+      const isPro = userRow?.subscription_tier === "pro";
+      if (!isPro) {
+        const countRow = await db.prepare("SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?").get(userId);
+        const currentCount = Number(countRow?.total || 0);
+        const FREE_VAULT_LIMIT = 50;
+        if (currentCount + files.length > FREE_VAULT_LIMIT) {
+          res.status(403).json({
+            error: `Free vault storage limit reached (${currentCount}/${FREE_VAULT_LIMIT} screenshots). Upgrade to Recall Pro for unlimited vault storage.`,
+            code: "UPGRADE_REQUIRED",
+            current_count: currentCount,
+            limit: FREE_VAULT_LIMIT
+          });
+          return;
+        }
       }
       for (const file of files) {
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -70468,6 +70544,27 @@ var handleImageChat = async (req, res) => {
     if (!row) {
       res.status(404).json({ error: "Screenshot not found" });
       return;
+    }
+    const userRow = await db.prepare("SELECT subscription_tier, ai_queries_today, ai_queries_reset_at FROM users WHERE id = ?").get(userId);
+    const isPro = userRow?.subscription_tier === "pro";
+    if (!isPro) {
+      const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      let queriesToday = Number(userRow?.ai_queries_today || 0);
+      if (userRow?.ai_queries_reset_at !== todayStr) {
+        queriesToday = 0;
+        await db.prepare("UPDATE users SET ai_queries_today = 0, ai_queries_reset_at = ? WHERE id = ?").run(todayStr, userId);
+      }
+      const DAILY_AI_LIMIT = 5;
+      if (queriesToday >= DAILY_AI_LIMIT) {
+        res.status(403).json({
+          error: `Daily free AI question limit reached (${DAILY_AI_LIMIT}/${DAILY_AI_LIMIT}). Upgrade to Recall Pro for unlimited conversational AI and precision lookups.`,
+          code: "UPGRADE_REQUIRED",
+          queries_today: queriesToday,
+          limit: DAILY_AI_LIMIT
+        });
+        return;
+      }
+      await db.prepare("UPDATE users SET ai_queries_today = ai_queries_today + 1 WHERE id = ?").run(userId);
     }
     let parsedTags = [];
     if (Array.isArray(row.tags)) {
@@ -71747,17 +71844,242 @@ router4.post("/seed", authMiddleware, async (req, res) => {
 });
 var testDataRoutes_default = router4;
 
+// server/routes/subscriptionRoutes.ts
+var import_express5 = __toESM(require_express2(), 1);
+var router5 = (0, import_express5.Router)();
+var FREE_SCREENSHOT_LIMIT = 50;
+var FREE_DAILY_AI_LIMIT = 5;
+var PRO_PERKS = [
+  "Unlimited screenshot vault storage",
+  "Unlimited Apple-style Visual Look-Up interactive pins",
+  "Unlimited multi-turn Gemini AI screenshot chat",
+  "Multi-screenshot conversation thread stitcher",
+  "One-tap AI clutter sweeper & duplicate cleanup",
+  "Turbo edge cloud OCR & neural semantic indexing",
+  "Private biometric & PIN-locked secret albums",
+  "Full high-res text, Markdown & PDF export"
+];
+var FREE_PERKS = [
+  "Up to 50 screenshots vault storage",
+  "Full-text on-device OCR search",
+  "5 AI Visual Look-Up queries & chat per day",
+  "Auto-category detection (Chats, Code, Notes, Products)",
+  "Standard smart albums"
+];
+router5.get("/plans", (_req, res) => {
+  res.json({
+    currency: "USD",
+    plans: [
+      {
+        id: "free",
+        name: "Recall Starter",
+        tier: "free",
+        price: 0,
+        interval: "forever",
+        price_display: "Free Forever",
+        description: "Essential visual memory for quick everyday screenshots.",
+        screenshot_limit: FREE_SCREENSHOT_LIMIT,
+        ai_daily_limit: FREE_DAILY_AI_LIMIT,
+        perks: FREE_PERKS
+      },
+      {
+        id: "pro_monthly",
+        name: "Recall Pro Monthly",
+        tier: "pro",
+        price: 4.99,
+        interval: "month",
+        price_display: "$4.99 / mo",
+        description: "Complete visual intelligence with zero storage or AI limits.",
+        screenshot_limit: null,
+        ai_daily_limit: null,
+        perks: PRO_PERKS
+      },
+      {
+        id: "pro_annual",
+        name: "Recall Pro Annual",
+        tier: "pro",
+        price: 39.99,
+        interval: "year",
+        price_display: "$39.99 / yr",
+        badge: "Save 33%",
+        monthly_equivalent: "$3.33 / mo",
+        description: "Best value for heavy users, students, developers, and researchers.",
+        screenshot_limit: null,
+        ai_daily_limit: null,
+        perks: [...PRO_PERKS, "Early access to multi-modal vector graph visual search"]
+      }
+    ]
+  });
+});
+router5.get("/current", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRow = await db.prepare(`
+      SELECT id, email, name, subscription_tier, subscription_status, subscription_plan, subscription_expires_at, ai_queries_today, ai_queries_reset_at
+      FROM users WHERE id = ?
+    `).get(userId);
+    const tier = userRow?.subscription_tier === "pro" ? "pro" : "free";
+    const plan = userRow?.subscription_plan || tier;
+    const status = userRow?.subscription_status || "active";
+    const expiresAt = userRow?.subscription_expires_at || null;
+    const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    let aiQueriesToday = Number(userRow?.ai_queries_today || 0);
+    if (userRow?.ai_queries_reset_at !== todayStr) {
+      aiQueriesToday = 0;
+      await db.prepare("UPDATE users SET ai_queries_today = 0, ai_queries_reset_at = ? WHERE id = ?").run(todayStr, userId);
+    }
+    const countRow = await db.prepare("SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?").get(userId);
+    const screenshotCount = Number(countRow?.total || 0);
+    const isPro = tier === "pro";
+    res.json({
+      success: true,
+      subscription: {
+        tier,
+        plan,
+        status,
+        expires_at: expiresAt,
+        screenshot_count: screenshotCount,
+        screenshot_limit: isPro ? null : FREE_SCREENSHOT_LIMIT,
+        can_upload: isPro || screenshotCount < FREE_SCREENSHOT_LIMIT,
+        ai_queries_today: aiQueriesToday,
+        ai_queries_limit: isPro ? null : FREE_DAILY_AI_LIMIT,
+        is_pro: isPro,
+        perks: isPro ? PRO_PERKS : FREE_PERKS
+      }
+    });
+  } catch (err) {
+    console.error("Fetch subscription status error:", err);
+    res.status(500).json({ error: "Failed to fetch subscription status" });
+  }
+});
+router5.post("/upgrade", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { plan = "pro_annual", payment_method = "card_instant" } = req.body;
+    const validPlans = ["pro_monthly", "pro_annual"];
+    if (!validPlans.includes(plan)) {
+      res.status(400).json({ error: "Invalid subscription plan. Choose pro_monthly or pro_annual." });
+      return;
+    }
+    const durationDays = plan === "pro_annual" ? 365 : 30;
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+    const amount = plan === "pro_annual" ? 39.99 : 4.99;
+    const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await db.prepare(`
+      UPDATE users 
+      SET subscription_tier = 'pro',
+          subscription_status = 'active',
+          subscription_plan = ?,
+          subscription_expires_at = ?
+      WHERE id = ?
+    `).run(plan, expiresAt, userId);
+    try {
+      await db.prepare(`
+        INSERT INTO subscriptions (id, user_id, tier, plan, amount, currency, status, payment_method, created_at)
+        VALUES (?, ?, 'pro', ?, ?, 'USD', 'completed', ?, ?)
+      `).run(subId, userId, plan, amount, payment_method, now);
+    } catch (subErr) {
+      console.warn("Logging subscription entry note:", subErr);
+    }
+    const updatedUser = await db.prepare(`
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at
+      FROM users WHERE id = ?
+    `).get(userId);
+    const countRow = await db.prepare("SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?").get(userId);
+    const screenshotCount = Number(countRow?.total || 0);
+    res.json({
+      success: true,
+      message: "\u{1F389} Congratulations! You have unlocked Recall Pro.",
+      user: updatedUser,
+      subscription: {
+        tier: "pro",
+        plan,
+        status: "active",
+        expires_at: expiresAt,
+        screenshot_count: screenshotCount,
+        screenshot_limit: null,
+        can_upload: true,
+        ai_queries_today: 0,
+        ai_queries_limit: null,
+        is_pro: true,
+        perks: PRO_PERKS
+      }
+    });
+  } catch (err) {
+    console.error("Upgrade subscription error:", err);
+    res.status(500).json({ error: "Failed to process upgrade" });
+  }
+});
+router5.post("/cancel", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await db.prepare(`
+      UPDATE users 
+      SET subscription_status = 'canceled'
+      WHERE id = ?
+    `).run(userId);
+    const updatedUser = await db.prepare(`
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at
+      FROM users WHERE id = ?
+    `).get(userId);
+    res.json({
+      success: true,
+      message: "Subscription has been canceled. Your Pro benefits remain active until the end of your billing cycle.",
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error("Cancel subscription error:", err);
+    res.status(500).json({ error: "Failed to cancel subscription" });
+  }
+});
+router5.post("/restore", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const existingSub = await db.prepare(`
+      SELECT * FROM subscriptions 
+      WHERE user_id = ? AND status = 'completed' 
+      ORDER BY created_at DESC LIMIT 1
+    `).get(userId);
+    if (existingSub) {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1e3).toISOString();
+      await db.prepare(`
+        UPDATE users 
+        SET subscription_tier = 'pro',
+            subscription_status = 'active',
+            subscription_plan = ?,
+            subscription_expires_at = ?
+        WHERE id = ?
+      `).run(existingSub.plan || "pro_monthly", expiresAt, userId);
+      res.json({
+        success: true,
+        message: "Prior Recall Pro purchase restored successfully.",
+        tier: "pro"
+      });
+      return;
+    }
+    res.json({
+      success: false,
+      message: "No active prior subscriptions found for this account."
+    });
+  } catch (err) {
+    console.error("Restore subscription error:", err);
+    res.status(500).json({ error: "Failed to restore purchases" });
+  }
+});
+var subscriptionRoutes_default = router5;
+
 // server/index.ts
 import_dotenv2.default.config();
-var app = (0, import_express5.default)();
+var app = (0, import_express6.default)();
 var PORT = process.env.PORT || 5e3;
 initDatabase();
 app.use((0, import_cors.default)({
   origin: true,
   credentials: true
 }));
-app.use(import_express5.default.json({ limit: "150mb" }));
-app.use(import_express5.default.urlencoded({ extended: true, limit: "150mb" }));
+app.use(import_express6.default.json({ limit: "150mb" }));
+app.use(import_express6.default.urlencoded({ extended: true, limit: "150mb" }));
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "online",
@@ -71775,12 +72097,13 @@ app.get("/api/health", (_req, res) => {
   });
 });
 app.use("/api/auth", authRoutes_default);
+app.use("/api/subscription", subscriptionRoutes_default);
 app.use("/api/screenshots", screenshotRoutes_default);
 app.use("/api/search", searchRoutes_default);
 app.use("/api/test-data", testDataRoutes_default);
 var distPath = path7.resolve(process.cwd(), "dist");
 if (fs9.existsSync(distPath) && !process.env.VERCEL) {
-  app.use(import_express5.default.static(distPath));
+  app.use(import_express6.default.static(distPath));
   app.use((req, res, next) => {
     if (req.path.startsWith("/api")) return next();
     if (req.method !== "GET") return next();

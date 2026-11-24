@@ -550,8 +550,36 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
 });
 
 // 8. Get Current User Profile
-router.get('/me', authMiddleware, (req: AuthRequest, res: Response): void => {
-  res.json({ user: req.user });
+router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userRow = (await db.prepare(`
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at, ai_queries_today
+      FROM users WHERE id = ?
+    `).get(req.user!.id)) as any;
+
+    if (userRow) {
+      res.json({
+        user: {
+          id: userRow.id,
+          email: userRow.email,
+          name: userRow.name,
+          avatar_url: userRow.avatar_url,
+          google_id: userRow.google_id,
+          is_verified: userRow.is_verified,
+          subscription_tier: userRow.subscription_tier || 'free',
+          subscription_status: userRow.subscription_status || 'active',
+          subscription_plan: userRow.subscription_plan || 'free',
+          subscription_expires_at: userRow.subscription_expires_at || null,
+          ai_queries_today: userRow.ai_queries_today || 0,
+        },
+      });
+      return;
+    }
+
+    res.json({ user: req.user });
+  } catch {
+    res.json({ user: req.user });
+  }
 });
 
 export default router;

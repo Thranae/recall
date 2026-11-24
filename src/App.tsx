@@ -9,6 +9,7 @@ import { AlbumsView } from './components/AlbumsView';
 import { SettingsView } from './components/SettingsView';
 import { ScreenshotDetailSheet } from './components/ScreenshotDetailSheet';
 import { UploadSheet } from './components/UploadSheet';
+import { SubscriptionModal } from './components/SubscriptionModal';
 import { SplashScreen } from './components/SplashScreen';
 import { SignOutTransition } from './components/SignOutTransition';
 import { api } from './services/api';
@@ -48,8 +49,9 @@ export const App: React.FC = () => {
   const [selectedSearchResult, setSelectedSearchResult] = useState<SearchResultItem | undefined>(undefined);
   const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
   const [isAlbumsModalOpen, setIsAlbumsModalOpen] = useState(false);
+  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
 
-  const isAnyModalActive = isLibraryModalOpen || isAlbumsModalOpen || Boolean(selectedScreenshotId) || isUploadOpen;
+  const isAnyModalActive = isLibraryModalOpen || isAlbumsModalOpen || Boolean(selectedScreenshotId) || isUploadOpen || isSubscriptionOpen;
 
   // Back Button Navigation Management
   const [exitToast, setExitToast] = useState<string | null>(null);
@@ -67,6 +69,16 @@ export const App: React.FC = () => {
       return true;
     },
     Boolean(selectedScreenshotId)
+  );
+
+  useBackButton(
+    'app-subscription-modal',
+    60,
+    () => {
+      setIsSubscriptionOpen(false);
+      return true;
+    },
+    isSubscriptionOpen
   );
 
   useBackButton(
@@ -372,6 +384,8 @@ export const App: React.FC = () => {
         showSearch={currentTab !== 'search'}
         searchQuery={libraryFilterQuery}
         visible={!isAnyModalActive}
+        isPro={user?.subscription_tier === 'pro'}
+        onOpenSubscription={() => setIsSubscriptionOpen(true)}
         onSearchChange={(q) => {
           setLibraryFilterQuery(q);
           if (q.trim() && currentTab !== 'library') {
@@ -443,6 +457,7 @@ export const App: React.FC = () => {
             screenshots={screenshots}
             onLogout={handleLogout}
             onRefresh={fetchScreenshots}
+            onOpenSubscription={() => setIsSubscriptionOpen(true)}
           />
         )}
       </main>
@@ -479,7 +494,21 @@ export const App: React.FC = () => {
       <UploadSheet
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
+        user={user}
+        currentScreenshotCount={screenshots.length}
+        onOpenSubscription={() => setIsSubscriptionOpen(true)}
         onUploadSuccess={() => {
+          fetchScreenshots();
+        }}
+      />
+
+      {/* Subscription & Cloud Membership Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionOpen}
+        onClose={() => setIsSubscriptionOpen(false)}
+        user={user}
+        onSubscriptionUpdated={(updatedUser) => {
+          setUser(updatedUser);
           fetchScreenshots();
         }}
       />

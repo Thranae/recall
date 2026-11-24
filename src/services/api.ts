@@ -1,4 +1,4 @@
-import type { User, Screenshot, ExtractedMessage, GameResult, SearchResponse } from '../types';
+import type { User, Screenshot, ExtractedMessage, GameResult, SearchResponse, SubscriptionInfo, SubscriptionPlanDetail, SubscriptionPlan } from '../types';
 import { Capacitor } from '@capacitor/core';
 
 export const PROD_BACKEND_URL = 'https://web-app-vert-nu.vercel.app/api';
@@ -550,6 +550,44 @@ export const api = {
     return request<SearchResponse>('/search', {
       method: 'POST',
       body: JSON.stringify({ query, category }),
+    });
+  },
+
+  // Subscriptions & Cloud Membership
+  async getSubscriptionPlans(): Promise<{ currency: string; plans: SubscriptionPlanDetail[] }> {
+    return request<{ currency: string; plans: SubscriptionPlanDetail[] }>('/subscription/plans');
+  },
+
+  async getSubscription(): Promise<{ success: boolean; subscription: SubscriptionInfo }> {
+    return request<{ success: boolean; subscription: SubscriptionInfo }>('/subscription/current');
+  },
+
+  async upgradeSubscription(plan: SubscriptionPlan = 'pro_annual', paymentMethod = 'card_instant'): Promise<{
+    success: boolean;
+    message: string;
+    user: User;
+    subscription: SubscriptionInfo;
+  }> {
+    return request<{
+      success: boolean;
+      message: string;
+      user: User;
+      subscription: SubscriptionInfo;
+    }>('/subscription/upgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan, payment_method: paymentMethod }),
+    });
+  },
+
+  async cancelSubscription(): Promise<{ success: boolean; message: string; user: User }> {
+    return request<{ success: boolean; message: string; user: User }>('/subscription/cancel', {
+      method: 'POST',
+    });
+  },
+
+  async restoreSubscription(): Promise<{ success: boolean; message: string; tier?: string }> {
+    return request<{ success: boolean; message: string; tier?: string }>('/subscription/restore', {
+      method: 'POST',
     });
   },
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Loader2, Search, X, ArrowRight } from 'lucide-react';
+import { RefreshCw, Loader2, Search, X, ArrowRight, Crown, Sparkles } from 'lucide-react';
 import { RecallEmblem } from './RecallEmblem';
 
 interface TopHeaderProps {
@@ -13,6 +13,8 @@ interface TopHeaderProps {
   onSearchChange?: (q: string) => void;
   onSearchSubmit?: (q: string) => void;
   visible?: boolean;
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -26,6 +28,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onSearchChange,
   onSearchSubmit,
   visible = true,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   const [isLocalSpinning, setIsLocalSpinning] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -184,8 +188,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   </div>
                 </div>
 
-                {/* Distinctive Recall Wordmark */}
-                <div className="flex items-baseline">
+                {/* Distinctive Recall Wordmark & Subscription Badge */}
+                <div className="flex items-center gap-1.5">
                   <h1 className="font-['Outfit'] text-[18.5px] font-extrabold tracking-[-0.03em] text-[#172B4D] leading-none select-none">
                     {title || 'Recall'}
                     <span
@@ -205,6 +209,34 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       .
                     </span>
                   </h1>
+
+                  {isPro ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSubscription?.();
+                      }}
+                      title="Recall Pro Active — Tap to view perks"
+                      className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/15 via-yellow-400/25 to-amber-500/15 px-2 py-0.5 border border-amber-400/40 text-[9.5px] font-black tracking-wider text-amber-700 shadow-2xs cursor-pointer active:scale-95 transition-transform"
+                    >
+                      <Crown className="h-2.5 w-2.5 text-amber-600 fill-amber-500" />
+                      <span>PRO</span>
+                    </button>
+                  ) : onOpenSubscription ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSubscription();
+                      }}
+                      title="Upgrade to Recall Pro"
+                      className="inline-flex items-center gap-1 rounded-full bg-slate-100/90 hover:bg-amber-50 px-2 py-0.5 border border-slate-200/80 hover:border-amber-300 text-[9.5px] font-bold text-slate-600 hover:text-amber-700 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                    >
+                      <Sparkles className="h-2.5 w-2.5 text-amber-500" />
+                      <span>PRO</span>
+                    </button>
+                  ) : null}
                 </div>
               </div>
 

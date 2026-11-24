@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes';
 import screenshotRoutes from './routes/screenshotRoutes';
 import searchRoutes from './routes/searchRoutes';
 import testDataRoutes from './routes/testDataRoutes';
+import subscriptionRoutes from './routes/subscriptionRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +49,7 @@ app.get('/api/health', (_req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/screenshots', screenshotRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/test-data', testDataRoutes);

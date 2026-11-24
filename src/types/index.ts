@@ -1,3 +1,6 @@
+export type SubscriptionTier = 'free' | 'pro';
+export type SubscriptionPlan = 'free' | 'pro_monthly' | 'pro_annual';
+
 export interface User {
   id: string;
   email: string;
@@ -5,6 +8,40 @@ export interface User {
   avatar_url?: string;
   google_id?: string;
   is_verified?: number | boolean;
+  subscription_tier?: SubscriptionTier;
+  subscription_status?: 'active' | 'trialing' | 'canceled' | 'past_due';
+  subscription_plan?: SubscriptionPlan;
+  subscription_expires_at?: string;
+  ai_queries_today?: number;
+}
+
+export interface SubscriptionInfo {
+  tier: SubscriptionTier;
+  plan: SubscriptionPlan;
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  expires_at: string | null;
+  screenshot_count: number;
+  screenshot_limit: number | null;
+  can_upload: boolean;
+  ai_queries_today: number;
+  ai_queries_limit: number | null;
+  is_pro: boolean;
+  perks: string[];
+}
+
+export interface SubscriptionPlanDetail {
+  id: SubscriptionPlan;
+  name: string;
+  tier: SubscriptionTier;
+  price: number;
+  interval: 'month' | 'year' | 'forever';
+  price_display: string;
+  badge?: string;
+  monthly_equivalent?: string;
+  description: string;
+  screenshot_limit: number | null;
+  ai_daily_limit: number | null;
+  perks: string[];
 }
 
 export interface ExtractedMessage {

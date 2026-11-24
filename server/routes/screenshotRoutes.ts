@@ -105,6 +105,24 @@ router.post(
         console.warn('Safety user check in upload:', safetyErr);
       }
 
+      // Enforce Free Tier Screenshot Vault Quota (50 screenshots limit for free tier)
+      const userRow = (await db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(userId)) as any;
+      const isPro = userRow?.subscription_tier === 'pro';
+      if (!isPro) {
+        const countRow = (await db.prepare('SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?').get(userId)) as any;
+        const currentCount = Number(countRow?.total || 0);
+        const FREE_VAULT_LIMIT = 50;
+        if (currentCount + files.length > FREE_VAULT_LIMIT) {
+          res.status(403).json({
+            error: `Free vault storage limit reached (${currentCount}/${FREE_VAULT_LIMIT} screenshots). Upgrade to Recall Pro for unlimited vault storage.`,
+            code: 'UPGRADE_REQUIRED',
+            current_count: currentCount,
+            limit: FREE_VAULT_LIMIT,
+          });
+          return;
+        }
+      }
+
       for (const file of files) {
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const storageKey = path.join(userId, file.filename).replace(/\\/g, '/');
@@ -977,6 +995,29 @@ const handleImageChat = async (req: AuthRequest, res: any) => {
     if (!row) {
       res.status(404).json({ error: 'Screenshot not found' });
       return;
+    }
+
+    // Subscription Check: Daily AI Queries for Free Users
+    const userRow = (await db.prepare('SELECT subscription_tier, ai_queries_today, ai_queries_reset_at FROM users WHERE id = ?').get(userId)) as any;
+    const isPro = userRow?.subscription_tier === 'pro';
+    if (!isPro) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let queriesToday = Number(userRow?.ai_queries_today || 0);
+      if (userRow?.ai_queries_reset_at !== todayStr) {
+        queriesToday = 0;
+        await db.prepare('UPDATE users SET ai_queries_today = 0, ai_queries_reset_at = ? WHERE id = ?').run(todayStr, userId);
+      }
+      const DAILY_AI_LIMIT = 5;
+      if (queriesToday >= DAILY_AI_LIMIT) {
+        res.status(403).json({
+          error: `Daily free AI question limit reached (${DAILY_AI_LIMIT}/${DAILY_AI_LIMIT}). Upgrade to Recall Pro for unlimited conversational AI and precision lookups.`,
+          code: 'UPGRADE_REQUIRED',
+          queries_today: queriesToday,
+          limit: DAILY_AI_LIMIT,
+        });
+        return;
+      }
+      await db.prepare('UPDATE users SET ai_queries_today = ai_queries_today + 1 WHERE id = ?').run(userId);
     }
 
     let parsedTags: string[] = [];

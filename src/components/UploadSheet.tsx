@@ -1,26 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, UploadCloud, Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, UploadCloud, Camera, Image as ImageIcon, Loader2, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
+import type { User } from '../types';
 
 interface UploadSheetProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSuccess: () => void;
+  user?: User | null;
+  currentScreenshotCount?: number;
+  onOpenSubscription?: () => void;
 }
 
 export const UploadSheet: React.FC<UploadSheetProps> = ({
   isOpen,
   onClose,
   onUploadSuccess,
+  user,
+  currentScreenshotCount = 0,
+  onOpenSubscription,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLimitReached, setIsLimitReached] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isPro = user?.subscription_tier === 'pro';
+  const isVaultFull = !isPro && currentScreenshotCount >= 50;
 
   // Prevent background page from scrolling when upload sheet is open
   useEffect(() => {
@@ -84,6 +95,9 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
       }, 500);
     } catch (err: any) {
       console.error('Upload failed:', err);
+      if (err?.code === 'UPGRADE_REQUIRED' || err?.message?.includes('limit reached')) {
+        setIsLimitReached(true);
+      }
       setErrorMessage(err.message || 'Upload failed. Please ensure the files are valid images.');
     } finally {
       setIsUploading(false);
@@ -113,6 +127,33 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
             <X className="h-4 w-4 stroke-[2]" />
           </button>
         </div>
+
+        {/* Pro Upsell Alert if Vault Full or Limit Reached */}
+        {(isVaultFull || isLimitReached) && (
+          <div className="mt-3 rounded-[20px] bg-gradient-to-r from-amber-500/15 via-yellow-400/20 to-amber-500/15 p-3.5 border border-amber-400/40 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-2xs">
+                <Crown className="h-4 w-4" />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold text-amber-950 truncate">Free Vault Limit (50/50)</p>
+                <p className="text-[10.5px] text-amber-900/80 leading-tight">Upgrade to Recall Pro for unlimited storage</p>
+              </div>
+            </div>
+            {onOpenSubscription && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSubscription();
+                }}
+                className="shrink-0 rounded-full bg-gradient-to-r from-slate-900 to-[#172B4D] px-3 py-1.5 text-[11px] font-extrabold text-white shadow-xs active:scale-95 transition-transform cursor-pointer"
+              >
+                Upgrade
+              </button>
+            )}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {uploadSuccess ? (

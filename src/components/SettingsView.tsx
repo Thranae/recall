@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2 } from 'lucide-react';
+import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2, Crown, Sparkles, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 import { isNativePlatform, isFullscreenActive, toggleStatusBar } from '../utils/statusBar';
 import type { User, Screenshot, VaultInsightsSummary } from '../types';
@@ -9,6 +9,7 @@ interface SettingsViewProps {
   screenshots: Screenshot[];
   onLogout: () => void;
   onRefresh?: () => void;
+  onOpenSubscription?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -16,6 +17,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   screenshots,
   onLogout,
   onRefresh,
+  onOpenSubscription,
 }) => {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeNote, setUpgradeNote] = useState<string | null>(null);
@@ -123,6 +125,82 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span>Encrypted Session Active</span>
           </div>
         </div>
+      </div>
+
+      {/* 2. Membership & Subscription Plan Card */}
+      <div className="liquid-glass-card rounded-[22px] p-4.5 space-y-3.5 relative overflow-hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+            {user.subscription_tier === 'pro' ? (
+              <Crown className="h-4.5 w-4.5 text-amber-500 fill-amber-400 stroke-[2]" />
+            ) : (
+              <Sparkles className="h-4.5 w-4.5 text-[#3478F6] stroke-[2]" />
+            )}
+            <span>Membership Plan</span>
+          </div>
+
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-black tracking-wide ${
+              user.subscription_tier === 'pro'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-2xs'
+                : 'bg-slate-100 text-slate-600 border border-slate-200'
+            }`}
+          >
+            {user.subscription_tier === 'pro' ? 'RECALL PRO' : 'FREE TIER'}
+          </span>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 font-medium">Vault Storage Limit</span>
+            <span className="font-bold text-[#172B4D]">
+              {user.subscription_tier === 'pro' ? 'Unlimited' : `${screenshots.length} / 50 used`}
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200/60">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                user.subscription_tier === 'pro'
+                  ? 'bg-gradient-to-r from-amber-400 to-yellow-300 w-full'
+                  : screenshots.length >= 45
+                  ? 'bg-red-500'
+                  : 'bg-[#3478F6]'
+              }`}
+              style={{
+                width: user.subscription_tier === 'pro' ? '100%' : `${Math.min(100, (screenshots.length / 50) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {user.subscription_tier === 'pro' ? (
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-slate-500">
+              {user.subscription_plan === 'pro_annual' ? 'Annual plan' : 'Monthly plan'} active
+            </span>
+            <button
+              type="button"
+              onClick={onOpenSubscription}
+              className="text-xs font-bold text-[#3478F6] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Manage Perks</span>
+              <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenSubscription}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 px-4 text-xs font-bold text-white shadow-md shadow-amber-500/20 active:scale-[0.98] transition-transform cursor-pointer"
+            style={{
+              background: 'linear-gradient(135deg, #172B4D 0%, #3478F6 50%, #F59E0B 100%)',
+            }}
+          >
+            <Crown className="h-3.5 w-3.5 text-amber-300" />
+            <span>Upgrade to Recall Pro — Unlimited Storage</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {/* 2. Library Storage Summary (No nested boxes) */}
