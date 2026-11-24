@@ -153,8 +153,13 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         },
         theme: {
           color: '#3478F6',
+          backdrop_color: 'rgba(15, 23, 42, 0.65)',
         },
         modal: {
+          backdropclose: false,
+          escape: true,
+          handleback: true,
+          confirm_close: true,
           ondismiss: () => {
             setIsLoading(false);
           },

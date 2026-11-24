@@ -546,54 +546,58 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       {!isSelectionMode && screenshots.length > 0 && (
         <div className="grid grid-cols-4 gap-2 px-0.5">
           {/* Digest Chip */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!isPro) {
-                onOpenSubscription?.();
-                return;
-              }
-              setIsVaultDigestOpen(true);
-            }}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
-            title="View Proactive Vault Digest (Coupons, Events, Bills)"
-          >
-            <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
-            <span className="truncate">Digest</span>
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isPro) {
+                  onOpenSubscription?.();
+                  return;
+                }
+                setIsVaultDigestOpen(true);
+              }}
+              className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+              title="View Proactive Vault Digest (Coupons, Events, Bills)"
+            >
+              <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
+              <span className="font-bold tracking-tight whitespace-nowrap">Digest</span>
+            </button>
             {!isPro && (
-              <span className="px-1 py-0.2 rounded-full bg-amber-500/15 text-[8.5px] font-extrabold text-amber-600 shrink-0">
+              <span className="absolute -top-1.5 -right-1 z-20 pointer-events-none px-1 py-0.2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
                 PRO
               </span>
             )}
-          </button>
+          </div>
 
           {/* Clean Chip */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!isPro) {
-                onOpenSubscription?.();
-                return;
-              }
-              setIsClutterSweeperOpen(true);
-            }}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
-            title="Smart Declutter Memory Broom"
-          >
-            <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
-            <span className="truncate">Clean</span>
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isPro) {
+                  onOpenSubscription?.();
+                  return;
+                }
+                setIsClutterSweeperOpen(true);
+              }}
+              className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+              title="Smart Declutter Memory Broom"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
+              <span className="font-bold tracking-tight whitespace-nowrap">Clean</span>
+            </button>
             {!isPro && (
-              <span className="px-1 py-0.2 rounded-full bg-rose-500/15 text-[8.5px] font-extrabold text-rose-600 shrink-0">
+              <span className="absolute -top-1.5 -right-1 z-20 pointer-events-none px-1 py-0.2 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
                 PRO
               </span>
             )}
-          </button>
+          </div>
 
           {/* Insights Chip */}
           <button
             type="button"
             onClick={handleToggleInsights}
-            className={`plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-1 text-[11.5px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
+            className={`plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
               showInsights
                 ? '!bg-[#3478F6] !text-white shadow-xs'
                 : 'text-indigo-700'
@@ -601,18 +605,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             title="Vault Intelligence & Duplicate Radar"
           >
             <BarChart3 className={`h-3.5 w-3.5 stroke-[2.2] shrink-0 ${showInsights ? 'text-white' : 'text-indigo-500'}`} />
-            <span className="truncate">{loadingInsights ? '…' : 'Insights'}</span>
+            <span className="font-bold tracking-tight whitespace-nowrap">{loadingInsights ? '…' : 'Insights'}</span>
           </button>
 
           {/* Select Chip */}
           <button
             type="button"
             onClick={() => setIsSelectionMode(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1.5 rounded-full px-1 text-[11.5px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
+            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="Select Multiple Screenshots"
           >
             <CheckSquare className="h-3.5 w-3.5 stroke-[2.4] text-[#3478F6] shrink-0" />
-            <span className="truncate">Select</span>
+            <span className="font-bold tracking-tight whitespace-nowrap">Select</span>
           </button>
         </div>
       )}
