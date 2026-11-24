@@ -12,14 +12,39 @@ export interface User {
   subscription_status?: 'active' | 'trialing' | 'canceled' | 'past_due';
   subscription_plan?: SubscriptionPlan;
   subscription_expires_at?: string;
+  trial_ends_at?: string;
+  autopay_mandate_id?: string;
+  autopay_method?: string;
+  autopay_vpa?: string;
+  next_billing_at?: string;
   ai_queries_today?: number;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  subscription_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string;
+  payment_method: string;
+  invoice_date: string;
 }
 
 export interface SubscriptionInfo {
   tier: SubscriptionTier;
   plan: SubscriptionPlan;
   status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  currency: string;
+  currency_symbol: string;
   expires_at: string | null;
+  trial_ends_at: string | null;
+  is_trialing: boolean;
+  days_left_in_trial: number;
+  next_billing_at: string | null;
+  autopay_mandate_id: string | null;
+  autopay_method: string | null;
+  autopay_vpa: string | null;
   screenshot_count: number;
   screenshot_limit: number | null;
   can_upload: boolean;
@@ -27,6 +52,7 @@ export interface SubscriptionInfo {
   ai_queries_limit: number | null;
   is_pro: boolean;
   perks: string[];
+  invoices?: SubscriptionInvoice[];
 }
 
 export interface SubscriptionPlanDetail {
@@ -38,6 +64,9 @@ export interface SubscriptionPlanDetail {
   price_display: string;
   badge?: string;
   monthly_equivalent?: string;
+  trial_days?: number;
+  trial_text?: string;
+  recurring_text?: string;
   description: string;
   screenshot_limit: number | null;
   ai_daily_limit: number | null;

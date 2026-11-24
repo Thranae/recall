@@ -42,6 +42,7 @@
     "lucide-react": "^1.70.0",
     "multer": "^2.5.0",
     "nodemailer": "^10.4.0",
+    "razorpay": "^2.9.8",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5",

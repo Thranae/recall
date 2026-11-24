@@ -554,12 +554,55 @@ export const api = {
   },
 
   // Subscriptions & Cloud Membership
-  async getSubscriptionPlans(): Promise<{ currency: string; plans: SubscriptionPlanDetail[] }> {
-    return request<{ currency: string; plans: SubscriptionPlanDetail[] }>('/subscription/plans');
+  async getSubscriptionPlans(): Promise<{
+    currency: string;
+    currency_symbol: string;
+    plans: SubscriptionPlanDetail[];
+    trial_days: number;
+    razorpay_key_id: string | null;
+    is_live_gateway: boolean;
+  }> {
+    return request<{
+      currency: string;
+      currency_symbol: string;
+      plans: SubscriptionPlanDetail[];
+      trial_days: number;
+      razorpay_key_id: string | null;
+      is_live_gateway: boolean;
+    }>('/subscription/plans');
   },
 
   async getSubscription(): Promise<{ success: boolean; subscription: SubscriptionInfo }> {
     return request<{ success: boolean; subscription: SubscriptionInfo }>('/subscription/current');
+  },
+
+  async startFreeTrial(data: {
+    plan: SubscriptionPlan;
+    autopay_method: 'upi_autopay' | 'card_mandate';
+    vpa?: string;
+    bank_name?: string;
+    card_last4?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    user: User;
+    subscription: SubscriptionInfo;
+  }> {
+    return request<{
+      success: boolean;
+      message: string;
+      user: User;
+      subscription: SubscriptionInfo;
+    }>('/subscription/start-trial', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async cancelAutopay(): Promise<{ success: boolean; message: string; user: User }> {
+    return request<{ success: boolean; message: string; user: User }>('/subscription/cancel-autopay', {
+      method: 'POST',
+    });
   },
 
   async upgradeSubscription(plan: SubscriptionPlan = 'pro_annual', paymentMethod = 'card_instant'): Promise<{
@@ -580,7 +623,7 @@ export const api = {
   },
 
   async cancelSubscription(): Promise<{ success: boolean; message: string; user: User }> {
-    return request<{ success: boolean; message: string; user: User }>('/subscription/cancel', {
+    return request<{ success: boolean; message: string; user: User }>('/subscription/cancel-autopay', {
       method: 'POST',
     });
   },

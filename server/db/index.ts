@@ -145,6 +145,11 @@ const SCHEMA_DDL = `
     subscription_status TEXT DEFAULT 'active',
     subscription_plan TEXT DEFAULT 'free',
     subscription_expires_at TEXT,
+    trial_ends_at TEXT,
+    autopay_mandate_id TEXT,
+    autopay_method TEXT,
+    autopay_vpa TEXT,
+    next_billing_at TEXT,
     ai_queries_today INTEGER DEFAULT 0,
     ai_queries_reset_at TEXT,
     created_at TEXT NOT NULL
@@ -156,13 +161,31 @@ const SCHEMA_DDL = `
     tier TEXT NOT NULL,
     plan TEXT NOT NULL,
     amount REAL NOT NULL,
-    currency TEXT NOT NULL DEFAULT 'USD',
+    currency TEXT NOT NULL DEFAULT 'INR',
     status TEXT NOT NULL,
     payment_method TEXT,
+    mandate_id TEXT,
+    razorpay_subscription_id TEXT,
+    trial_start TEXT,
+    trial_end TEXT,
     created_at TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+
+  CREATE TABLE IF NOT EXISTS subscription_invoices (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    subscription_id TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL,
+    description TEXT NOT NULL,
+    payment_method TEXT NOT NULL,
+    invoice_date TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_invoices_user ON subscription_invoices(user_id);
 
   CREATE TABLE IF NOT EXISTS screenshots (
     id TEXT PRIMARY KEY,
@@ -259,14 +282,34 @@ export async function initDatabase(): Promise<void> {
     }
   }
 
-  // Safe idempotent migration for subscription columns on existing databases
+  // Safe idempotent migration for subscription & autopay columns on existing databases
   const subCols = [
     'ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT "free"',
     'ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT "active"',
     'ALTER TABLE users ADD COLUMN subscription_plan TEXT DEFAULT "free"',
     'ALTER TABLE users ADD COLUMN subscription_expires_at TEXT',
+    'ALTER TABLE users ADD COLUMN trial_ends_at TEXT',
+    'ALTER TABLE users ADD COLUMN autopay_mandate_id TEXT',
+    'ALTER TABLE users ADD COLUMN autopay_method TEXT',
+    'ALTER TABLE users ADD COLUMN autopay_vpa TEXT',
+    'ALTER TABLE users ADD COLUMN next_billing_at TEXT',
     'ALTER TABLE users ADD COLUMN ai_queries_today INTEGER DEFAULT 0',
     'ALTER TABLE users ADD COLUMN ai_queries_reset_at TEXT',
+    'ALTER TABLE subscriptions ADD COLUMN mandate_id TEXT',
+    'ALTER TABLE subscriptions ADD COLUMN razorpay_subscription_id TEXT',
+    'ALTER TABLE subscriptions ADD COLUMN trial_start TEXT',
+    'ALTER TABLE subscriptions ADD COLUMN trial_end TEXT',
+    `CREATE TABLE IF NOT EXISTS subscription_invoices (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      subscription_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'INR',
+      status TEXT NOT NULL,
+      description TEXT NOT NULL,
+      payment_method TEXT NOT NULL,
+      invoice_date TEXT NOT NULL
+    )`,
   ];
 
   for (const alterSql of subCols) {

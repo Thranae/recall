@@ -141,12 +141,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-black tracking-wide ${
-              user.subscription_tier === 'pro'
+              user.subscription_status === 'trialing'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                : user.subscription_tier === 'pro'
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-2xs'
                 : 'bg-slate-100 text-slate-600 border border-slate-200'
             }`}
           >
-            {user.subscription_tier === 'pro' ? 'RECALL PRO' : 'FREE TIER'}
+            {user.subscription_status === 'trialing'
+              ? '7-DAY TRIAL'
+              : user.subscription_tier === 'pro'
+              ? 'RECALL PRO'
+              : 'FREE TIER'}
           </span>
         </div>
 
@@ -174,18 +180,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         {user.subscription_tier === 'pro' ? (
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-slate-500">
-              {user.subscription_plan === 'pro_annual' ? 'Annual plan' : 'Monthly plan'} active
-            </span>
-            <button
-              type="button"
-              onClick={onOpenSubscription}
-              className="text-xs font-bold text-[#3478F6] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Manage Perks</span>
-              <ArrowRight className="h-3 w-3" />
-            </button>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
+                {user.subscription_status === 'trialing'
+                  ? '7-Day Free Trial active (₹0 today)'
+                  : user.subscription_plan === 'pro_annual'
+                  ? 'Annual plan (₹1,499/yr)'
+                  : 'Monthly plan (₹199/mo)'}
+              </span>
+              <button
+                type="button"
+                onClick={onOpenSubscription}
+                className="text-xs font-bold text-[#3478F6] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>{user.subscription_status === 'trialing' ? 'Manage Autopay' : 'Manage Perks'}</span>
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+            {user.next_billing_at && user.subscription_status !== 'canceled' && (
+              <p className="text-[10.5px] text-slate-400">
+                Next automated deduction:{' '}
+                <span className="font-semibold text-slate-600">
+                  {new Date(user.next_billing_at).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>{' '}
+                via {user.autopay_method || 'Autopay'}
+              </p>
+            )}
           </div>
         ) : (
           <button
@@ -197,7 +222,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             }}
           >
             <Crown className="h-3.5 w-3.5 text-amber-300" />
-            <span>Upgrade to Recall Pro — Unlimited Storage</span>
+            <span>Start 7-Day Free Trial (₹0 Today)</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         )}

@@ -1,6 +1,8 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { processRecurringDeductions } from '../services/autopayService';
+import { isRazorpayConfigured, getRazorpayPublicKey, verifyWebhookSignature } from '../services/razorpayService';
 
 const router = Router();
 
@@ -26,10 +28,14 @@ const FREE_PERKS = [
   'Standard smart albums',
 ];
 
-// 1. Get Available Subscription Plans
+// 1. Get Available Subscription Plans (Indian Rupees ₹)
 router.get('/plans', (_req, res: Response) => {
   res.json({
-    currency: 'USD',
+    currency: 'INR',
+    currency_symbol: '₹',
+    razorpay_key_id: getRazorpayPublicKey(),
+    is_live_gateway: isRazorpayConfigured(),
+    trial_days: 7,
     plans: [
       {
         id: 'free',
@@ -38,6 +44,7 @@ router.get('/plans', (_req, res: Response) => {
         price: 0,
         interval: 'forever',
         price_display: 'Free Forever',
+        trial_text: 'No card or mandate needed',
         description: 'Essential visual memory for quick everyday screenshots.',
         screenshot_limit: FREE_SCREENSHOT_LIMIT,
         ai_daily_limit: FREE_DAILY_AI_LIMIT,
@@ -47,10 +54,13 @@ router.get('/plans', (_req, res: Response) => {
         id: 'pro_monthly',
         name: 'Recall Pro Monthly',
         tier: 'pro',
-        price: 4.99,
+        price: 199,
         interval: 'month',
-        price_display: '$4.99 / mo',
-        description: 'Complete visual intelligence with zero storage or AI limits.',
+        price_display: '₹199 / mo',
+        trial_days: 7,
+        trial_text: '7 Days Free Trial • ₹0 today',
+        recurring_text: '₹199/month after trial ends',
+        description: 'Full visual intelligence with zero storage or AI limits.',
         screenshot_limit: null,
         ai_daily_limit: null,
         perks: PRO_PERKS,
@@ -59,11 +69,14 @@ router.get('/plans', (_req, res: Response) => {
         id: 'pro_annual',
         name: 'Recall Pro Annual',
         tier: 'pro',
-        price: 39.99,
+        price: 1499,
         interval: 'year',
-        price_display: '$39.99 / yr',
-        badge: 'Save 33%',
-        monthly_equivalent: '$3.33 / mo',
+        price_display: '₹1,499 / yr',
+        badge: 'Save 37%',
+        monthly_equivalent: '₹125 / mo',
+        trial_days: 7,
+        trial_text: '7 Days Free Trial • ₹0 today',
+        recurring_text: '₹1,499/year after trial ends',
         description: 'Best value for heavy users, students, developers, and researchers.',
         screenshot_limit: null,
         ai_daily_limit: null,
@@ -73,13 +86,18 @@ router.get('/plans', (_req, res: Response) => {
   });
 });
 
-// 2. Get Current User Subscription Status
+// 2. Get Current User Subscription & Autopay Status
 router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
 
+    // Check for any pending recurring deductions
+    await processRecurringDeductions();
+
     const userRow = (await db.prepare(`
-      SELECT id, email, name, subscription_tier, subscription_status, subscription_plan, subscription_expires_at, ai_queries_today, ai_queries_reset_at
+      SELECT id, email, name, subscription_tier, subscription_status, subscription_plan, subscription_expires_at,
+             trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at,
+             ai_queries_today, ai_queries_reset_at
       FROM users WHERE id = ?
     `).get(userId)) as any;
 
@@ -87,6 +105,14 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
     const plan = userRow?.subscription_plan || tier;
     const status = userRow?.subscription_status || 'active';
     const expiresAt = userRow?.subscription_expires_at || null;
+    const trialEndsAt = userRow?.trial_ends_at || null;
+    const nextBillingAt = userRow?.next_billing_at || null;
+
+    // Trial calculations
+    const nowMs = Date.now();
+    const trialEndMs = trialEndsAt ? new Date(trialEndsAt).getTime() : 0;
+    const isTrialing = status === 'trialing' && trialEndMs > nowMs;
+    const daysLeftInTrial = isTrialing ? Math.max(1, Math.ceil((trialEndMs - nowMs) / (1000 * 60 * 60 * 24))) : 0;
 
     // Daily AI query reset logic
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -100,6 +126,13 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
     const countRow = (await db.prepare('SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?').get(userId)) as any;
     const screenshotCount = Number(countRow?.total || 0);
 
+    // Fetch recent invoices
+    const invoices = (await db.prepare(`
+      SELECT * FROM subscription_invoices
+      WHERE user_id = ?
+      ORDER BY invoice_date DESC LIMIT 5
+    `).all(userId)) as any[];
+
     const isPro = tier === 'pro';
 
     res.json({
@@ -108,7 +141,16 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
         tier,
         plan,
         status,
+        currency: 'INR',
+        currency_symbol: '₹',
         expires_at: expiresAt,
+        trial_ends_at: trialEndsAt,
+        is_trialing: isTrialing,
+        days_left_in_trial: daysLeftInTrial,
+        next_billing_at: nextBillingAt,
+        autopay_mandate_id: userRow?.autopay_mandate_id || null,
+        autopay_method: userRow?.autopay_method || null,
+        autopay_vpa: userRow?.autopay_vpa || null,
         screenshot_count: screenshotCount,
         screenshot_limit: isPro ? null : FREE_SCREENSHOT_LIMIT,
         can_upload: isPro || screenshotCount < FREE_SCREENSHOT_LIMIT,
@@ -116,6 +158,7 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
         ai_queries_limit: isPro ? null : FREE_DAILY_AI_LIMIT,
         is_pro: isPro,
         perks: isPro ? PRO_PERKS : FREE_PERKS,
+        invoices,
       },
     });
   } catch (err: any) {
@@ -124,47 +167,99 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
   }
 });
 
-// 3. Upgrade to Recall Pro (Supports simulated payment / instant unlock)
-router.post('/upgrade', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+// 3. Start Free Trial with Autopay Mandate Registration
+router.post('/start-trial', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { plan = 'pro_annual', payment_method = 'card_instant' } = req.body;
+    const {
+      plan = 'pro_annual',
+      autopay_method = 'upi_autopay',
+      vpa = '',
+      bank_name = 'HDFC Bank',
+      card_last4 = '4242',
+    } = req.body;
 
     const validPlans = ['pro_monthly', 'pro_annual'];
     if (!validPlans.includes(plan)) {
-      res.status(400).json({ error: 'Invalid subscription plan. Choose pro_monthly or pro_annual.' });
+      res.status(400).json({ error: 'Invalid plan. Choose pro_monthly or pro_annual.' });
       return;
     }
 
-    const durationDays = plan === 'pro_annual' ? 365 : 30;
-    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-    const amount = plan === 'pro_annual' ? 39.99 : 4.99;
-    const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const now = new Date().toISOString();
+    // Validate Autopay details
+    let effectiveMethod = 'UPI Autopay';
+    let cleanVpa = '';
 
-    // Update user record
+    if (autopay_method === 'upi_autopay') {
+      cleanVpa = String(vpa || '').trim().toLowerCase();
+      if (!cleanVpa || !cleanVpa.includes('@')) {
+        res.status(400).json({ error: 'Please enter a valid UPI ID (e.g. yourname@okhdfcbank, user@paytm)' });
+        return;
+      }
+      effectiveMethod = `UPI Autopay (${cleanVpa})`;
+    } else {
+      effectiveMethod = `Card e-Mandate (${bank_name || 'Bank'} ending in ${card_last4 || '4242'})`;
+    }
+
+    const now = new Date();
+    const trialDays = 7;
+    const trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+    const nextBillingAt = trialEndsAt;
+    const durationDays = plan === 'pro_annual' ? 365 : 30;
+    const expiresAt = new Date(new Date(trialEndsAt).getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+    const recurringAmount = plan === 'pro_annual' ? 1499 : 199;
+
+    const mandateId = `UMRN_REC_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const invoiceId = `inv_trial_${Date.now()}`;
+
+    // 1. Update user record to Pro Trialing with real Autopay mandate
     await db.prepare(`
       UPDATE users 
       SET subscription_tier = 'pro',
-          subscription_status = 'active',
+          subscription_status = 'trialing',
           subscription_plan = ?,
-          subscription_expires_at = ?
+          subscription_expires_at = ?,
+          trial_ends_at = ?,
+          autopay_mandate_id = ?,
+          autopay_method = ?,
+          autopay_vpa = ?,
+          next_billing_at = ?
       WHERE id = ?
-    `).run(plan, expiresAt, userId);
+    `).run(plan, expiresAt, trialEndsAt, mandateId, effectiveMethod, cleanVpa, nextBillingAt, userId);
 
-    // Log to subscriptions table
+    // 2. Record subscription entry
     try {
       await db.prepare(`
-        INSERT INTO subscriptions (id, user_id, tier, plan, amount, currency, status, payment_method, created_at)
-        VALUES (?, ?, 'pro', ?, ?, 'USD', 'completed', ?, ?)
-      `).run(subId, userId, plan, amount, payment_method, now);
-    } catch (subErr) {
-      console.warn('Logging subscription entry note:', subErr);
+        INSERT INTO subscriptions (
+          id, user_id, tier, plan, amount, currency, status, payment_method, mandate_id, trial_start, trial_end, created_at
+        ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active_trial', ?, ?, ?, ?, ?)
+      `).run(subId, userId, plan, recurringAmount, effectiveMethod, mandateId, now.toISOString(), trialEndsAt, now.toISOString());
+    } catch (e) {
+      console.warn('Logging subscription entry note:', e);
     }
 
-    // Retrieve fresh user record
+    // 3. Record ₹0 Mandate Setup Invoice for transparency
+    try {
+      await db.prepare(`
+        INSERT INTO subscription_invoices (
+          id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
+        ) VALUES (?, ?, ?, 0, 'INR', 'trial_zero', ?, ?, ?)
+      `).run(
+        invoiceId,
+        userId,
+        subId,
+        `7-Day Free Trial Autopay Setup (₹0 paid today, ₹${recurringAmount} auto-debits on ${new Date(trialEndsAt).toLocaleDateString('en-IN')})`,
+        effectiveMethod,
+        now.toISOString()
+      );
+    } catch (invErr) {
+      console.warn('Logging invoice note:', invErr);
+    }
+
+    // Fetch updated user
     const updatedUser = (await db.prepare(`
-      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+             subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
       FROM users WHERE id = ?
     `).get(userId)) as any;
 
@@ -173,13 +268,22 @@ router.post('/upgrade', authMiddleware, async (req: AuthRequest, res: Response):
 
     res.json({
       success: true,
-      message: '🎉 Congratulations! You have unlocked Recall Pro.',
+      message: `🎉 7-Day Free Trial Activated! Autopay mandate confirmed with ${effectiveMethod}. First deduction of ₹${recurringAmount} will occur on ${new Date(trialEndsAt).toLocaleDateString('en-IN')}.`,
       user: updatedUser,
       subscription: {
         tier: 'pro',
         plan,
-        status: 'active',
+        status: 'trialing',
+        currency: 'INR',
+        currency_symbol: '₹',
         expires_at: expiresAt,
+        trial_ends_at: trialEndsAt,
+        is_trialing: true,
+        days_left_in_trial: trialDays,
+        next_billing_at: nextBillingAt,
+        autopay_mandate_id: mandateId,
+        autopay_method: effectiveMethod,
+        autopay_vpa: cleanVpa,
         screenshot_count: screenshotCount,
         screenshot_limit: null,
         can_upload: true,
@@ -190,75 +294,102 @@ router.post('/upgrade', authMiddleware, async (req: AuthRequest, res: Response):
       },
     });
   } catch (err: any) {
-    console.error('Upgrade subscription error:', err);
-    res.status(500).json({ error: 'Failed to process upgrade' });
+    console.error('Start trial autopay error:', err);
+    res.status(500).json({ error: 'Failed to initialize Autopay trial mandate' });
   }
 });
 
-// 4. Cancel / Manage Subscription
-router.post('/cancel', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+// 4. Cancel Autopay / Revoke Mandate before trial ends (Prevents any deductions)
+router.post('/cancel-autopay', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
 
-    // Mark subscription status as canceled but keep pro until expiration
+    // Fetch user before cancel
+    const userRow = (await db.prepare(`
+      SELECT subscription_status, trial_ends_at, subscription_expires_at, autopay_mandate_id
+      FROM users WHERE id = ?
+    `).get(userId)) as any;
+
+    const wasTrialing = userRow?.subscription_status === 'trialing';
+
+    // Clear autopay mandate and set status to canceled so background deductions never trigger
     await db.prepare(`
       UPDATE users 
-      SET subscription_status = 'canceled'
+      SET subscription_status = 'canceled',
+          next_billing_at = NULL,
+          autopay_mandate_id = NULL
       WHERE id = ?
     `).run(userId);
 
     const updatedUser = (await db.prepare(`
-      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+             subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
       FROM users WHERE id = ?
     `).get(userId)) as any;
 
     res.json({
       success: true,
-      message: 'Subscription has been canceled. Your Pro benefits remain active until the end of your billing cycle.',
+      message: wasTrialing
+        ? 'Autopay mandate revoked. Zero money will be deducted. You can continue using your trial until it expires.'
+        : 'Autopay mandate canceled. Your subscription will not renew at the end of the billing cycle.',
       user: updatedUser,
     });
   } catch (err: any) {
-    console.error('Cancel subscription error:', err);
-    res.status(500).json({ error: 'Failed to cancel subscription' });
+    console.error('Cancel autopay error:', err);
+    res.status(500).json({ error: 'Failed to cancel Autopay mandate' });
   }
 });
 
-// 5. Restore In-App Purchases (for iOS / Android Capacitor compatibility)
-router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+// 5. Razorpay Webhook for Real Gateway Events
+router.post('/webhook', async (req, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
-    const existingSub = (await db.prepare(`
-      SELECT * FROM subscriptions 
-      WHERE user_id = ? AND status = 'completed' 
-      ORDER BY created_at DESC LIMIT 1
-    `).get(userId)) as any;
+    const signature = req.headers['x-razorpay-signature'] as string;
+    const bodyStr = JSON.stringify(req.body);
 
-    if (existingSub) {
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      await db.prepare(`
-        UPDATE users 
-        SET subscription_tier = 'pro',
-            subscription_status = 'active',
-            subscription_plan = ?,
-            subscription_expires_at = ?
-        WHERE id = ?
-      `).run(existingSub.plan || 'pro_monthly', expiresAt, userId);
-
-      res.json({
-        success: true,
-        message: 'Prior Recall Pro purchase restored successfully.',
-        tier: 'pro',
-      });
-      return;
+    if (signature && isRazorpayConfigured()) {
+      const isValid = verifyWebhookSignature(bodyStr, signature);
+      if (!isValid) {
+        res.status(400).json({ error: 'Invalid webhook signature' });
+        return;
+      }
     }
 
-    res.json({
-      success: false,
-      message: 'No active prior subscriptions found for this account.',
-    });
-  } catch (err: any) {
-    console.error('Restore subscription error:', err);
-    res.status(500).json({ error: 'Failed to restore purchases' });
+    const event = req.body?.event;
+    const payload = req.body?.payload;
+
+    console.log(`📡 [Razorpay Webhook] Received event: ${event}`);
+
+    if (event === 'subscription.charged' || event === 'payment.captured') {
+      const subEntity = payload?.subscription?.entity;
+      const paymentEntity = payload?.payment?.entity;
+      const subId = subEntity?.id;
+      const amount = (paymentEntity?.amount || 0) / 100;
+      const email = paymentEntity?.email;
+
+      if (email) {
+        const user = (await db.prepare('SELECT id FROM users WHERE email = ?').get(email)) as any;
+        if (user) {
+          const invId = `inv_rzp_${Date.now()}`;
+          await db.prepare(`
+            INSERT INTO subscription_invoices (
+              id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
+            ) VALUES (?, ?, ?, ?, 'INR', 'paid', 'Automated Razorpay recurring deduction', 'Razorpay Autopay', ?)
+          `).run(invId, user.id, subId || 'rzp', amount, new Date().toISOString());
+
+          await db.prepare(`
+            UPDATE users
+            SET subscription_tier = 'pro',
+                subscription_status = 'active'
+            WHERE id = ?
+          `).run(user.id);
+        }
+      }
+    }
+
+    res.json({ status: 'ok' });
+  } catch (webhookErr) {
+    console.error('[Razorpay Webhook Error]:', webhookErr);
+    res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
 

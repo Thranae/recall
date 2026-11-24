@@ -9,6 +9,7 @@ dotenv.config();
 import fs from 'fs';
 import { initDatabase } from './db';
 import { startPersistentBackgroundWorker } from './services/processingQueue';
+import { startAutopayWorker } from './services/autopayService';
 import authRoutes from './routes/authRoutes';
 import screenshotRoutes from './routes/screenshotRoutes';
 import searchRoutes from './routes/searchRoutes';
@@ -80,6 +81,8 @@ if (!process.env.VERCEL) {
     console.log(`📡 Storage Path: ${path.resolve(process.cwd(), process.env.STORAGE_PATH || './uploads')}`);
     // Start continuous autonomous background AI worker on persistent server
     startPersistentBackgroundWorker();
+    // Start automated recurring autopay deduction engine
+    startAutopayWorker();
   });
 }
 

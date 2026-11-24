@@ -553,7 +553,8 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userRow = (await db.prepare(`
-      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan, subscription_expires_at, ai_queries_today
+      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+             subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at, ai_queries_today
       FROM users WHERE id = ?
     `).get(req.user!.id)) as any;
 
@@ -570,6 +571,11 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
           subscription_status: userRow.subscription_status || 'active',
           subscription_plan: userRow.subscription_plan || 'free',
           subscription_expires_at: userRow.subscription_expires_at || null,
+          trial_ends_at: userRow.trial_ends_at || null,
+          autopay_mandate_id: userRow.autopay_mandate_id || null,
+          autopay_method: userRow.autopay_method || null,
+          autopay_vpa: userRow.autopay_vpa || null,
+          next_billing_at: userRow.next_billing_at || null,
           ai_queries_today: userRow.ai_queries_today || 0,
         },
       });
