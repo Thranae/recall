@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2, Crown, Sparkles, ArrowRight } from 'lucide-react';
+import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2, Crown, Layers, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 import { isNativePlatform, isFullscreenActive, toggleStatusBar } from '../utils/statusBar';
 import type { User, Screenshot, VaultInsightsSummary } from '../types';
@@ -134,7 +134,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {user.subscription_tier === 'pro' ? (
               <Crown className="h-4.5 w-4.5 text-amber-500 fill-amber-400 stroke-[2]" />
             ) : (
-              <Sparkles className="h-4.5 w-4.5 text-[#3478F6] stroke-[2]" />
+              <Layers className="h-4.5 w-4.5 text-[#3478F6] stroke-[2]" />
             )}
             <span>Membership Plan</span>
           </div>

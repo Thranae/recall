@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Loader2, Search, X, ArrowRight, Crown, Sparkles } from 'lucide-react';
+import { RefreshCw, Loader2, Search, X, ArrowRight, Crown } from 'lucide-react';
 import { RecallEmblem } from './RecallEmblem';
 
 interface TopHeaderProps {
@@ -231,9 +231,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                         onOpenSubscription();
                       }}
                       title="Upgrade to Recall Pro"
-                      className="inline-flex items-center gap-1 rounded-full bg-slate-100/90 hover:bg-amber-50 px-2 py-0.5 border border-slate-200/80 hover:border-amber-300 text-[9.5px] font-bold text-slate-600 hover:text-amber-700 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                      className="inline-flex items-center gap-1 rounded-full bg-white/80 hover:bg-amber-50/80 px-2.5 py-0.5 border border-white hover:border-amber-300 text-[10px] font-bold text-slate-600 hover:text-amber-800 transition-all cursor-pointer active:scale-95 shadow-2xs backdrop-blur-md"
                     >
-                      <Sparkles className="h-2.5 w-2.5 text-amber-500" />
+                      <Crown className="h-2.5 w-2.5 text-amber-500 stroke-[2.2]" />
                       <span>PRO</span>
                     </button>
                   ) : null}
