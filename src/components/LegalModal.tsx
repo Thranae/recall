@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, FileText, RefreshCw, Mail, CheckCircle2, Phone, MapPin, Clock, Award } from 'lucide-react';
+import { X, Shield, FileText, RefreshCw, Mail, CheckCircle2, MapPin, Clock, Award } from 'lucide-react';
 
 export type LegalDocType = 'pricing' | 'terms' | 'privacy' | 'refund' | 'contact';
 
@@ -48,7 +48,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Recall • Legal & Policies</h3>
-                <p className="text-[11px] font-semibold text-slate-500">Samy Thranaeswanth • IT & Software SaaS</p>
+                <p className="text-[11px] font-semibold text-slate-500">Thranae • IT & Software SaaS</p>
               </div>
             </div>
             <button
@@ -192,7 +192,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   <div>
                     <h5 className="font-bold text-slate-900">1. Acceptance of Terms</h5>
                     <p>
-                      By creating an account, accessing, or subscribing to Recall (<a href="https://recall-pro.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[#3478F6] underline">recall-pro.vercel.app</a>), you agree to comply with and be bound by these Terms and Conditions provided by <strong>Samy Thranaeswanth</strong> (Sole Proprietor / Service Provider). If you do not agree, do not use our services.
+                      By creating an account, accessing, or subscribing to Recall (<a href="https://recall-pro.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[#3478F6] underline">recall-pro.vercel.app</a>), you agree to comply with and be bound by these Terms and Conditions provided by <strong>Thranae</strong> (Service Provider). If you do not agree, do not use our services.
                     </p>
                   </div>
 
@@ -328,7 +328,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   For any support, subscription queries, billing inquiries, or technical feedback, reach out to our dedicated support team directly:
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
                     <div className="flex items-center gap-2 text-slate-900 font-bold">
                       <Mail className="h-4 w-4 text-[#3478F6]" />
@@ -336,30 +336,11 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                     </div>
                     <p className="text-[11.5px] text-slate-600">
                       Primary:{' '}
-                      <a href="mailto:thranae.dev@gmail.com" className="text-[#3478F6] font-semibold hover:underline">
-                        thranae.dev@gmail.com
+                      <a href="mailto:recall.support@gmail.com" className="text-[#3478F6] font-semibold hover:underline">
+                        recall.support@gmail.com
                       </a>
                     </p>
-                    <p className="text-[11.5px] text-slate-600">
-                      SaaS Desk:{' '}
-                      <a href="mailto:contact@recall-pro.vercel.app" className="text-[#3478F6] font-semibold hover:underline">
-                        contact@recall-pro.vercel.app
-                      </a>
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
-                    <div className="flex items-center gap-2 text-slate-900 font-bold">
-                      <Phone className="h-4 w-4 text-emerald-600" />
-                      <span>Phone / WhatsApp</span>
-                    </div>
-                    <p className="text-[11.5px] text-slate-600">
-                      Helpline:{' '}
-                      <a href="tel:+916383775761" className="text-slate-900 font-bold hover:underline">
-                        +91 63837 75761
-                      </a>
-                    </p>
-                    <p className="text-[11px] text-slate-500">Available on WhatsApp for urgent queries</p>
+                    <p className="text-[11px] text-slate-500">Fast assistance for subscriptions & features</p>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
@@ -368,7 +349,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                       <span>Operating Address</span>
                     </div>
                     <p className="text-[11.5px] text-slate-700 font-medium">
-                      Samy Thranaeswanth<br />
+                      Thranae<br />
                       Tamil Nadu, India<br />
                       PIN Code: 600001
                     </p>
@@ -390,7 +371,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[11px] text-slate-600 space-y-1">
                   <div className="font-bold text-slate-900">Grievance Redressal Officer</div>
                   <p>
-                    <strong>Name:</strong> Samy Thranaeswanth | <strong>Email:</strong> samythranae@gmail.com | <strong>Contact:</strong> +91 63837 75761
+                    <strong>Name:</strong> Thranae | <strong>Email:</strong> recall.support@gmail.com
                   </p>
                 </div>
               </div>
@@ -401,8 +382,8 @@ export const LegalModal: React.FC<LegalModalProps> = ({
           <div className="border-t border-slate-100 px-5 py-3.5 bg-slate-50/70 flex items-center justify-between">
             <div className="text-[11px] text-slate-500 font-medium hidden sm:block">
               Need assistance?{' '}
-              <a href="mailto:thranae.dev@gmail.com" className="text-[#3478F6] font-semibold hover:underline">
-                thranae.dev@gmail.com
+              <a href="mailto:recall.support@gmail.com" className="text-[#3478F6] font-semibold hover:underline">
+                recall.support@gmail.com
               </a>
             </div>
             <button
