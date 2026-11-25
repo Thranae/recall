@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { buildUserProfile } from './authRoutes';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'recall_super_secret_jwt_key_2026_dev';
 import { processRecurringDeductions } from '../services/autopayService';
@@ -388,30 +389,49 @@ router.post('/webhook', async (req, res: Response): Promise<void> => {
 
     console.log(`📡 [Razorpay Webhook] Received event: ${event}`);
 
-    if (event === 'subscription.charged' || event === 'payment.captured') {
+    if (event === 'subscription.charged' || event === 'payment.captured' || event === 'order.paid') {
       const subEntity = payload?.subscription?.entity;
       const paymentEntity = payload?.payment?.entity;
+      const orderEntity = payload?.order?.entity;
+      const notes = paymentEntity?.notes || orderEntity?.notes;
       const subId = subEntity?.id;
-      const amount = (paymentEntity?.amount || 0) / 100;
+      const orderId = paymentEntity?.order_id || orderEntity?.id;
+      const amount = (paymentEntity?.amount || 19900) / 100;
       const email = paymentEntity?.email;
+      const plan = notes?.plan || 'pro_monthly';
 
-      if (email) {
+      let targetUserId = notes?.user_id;
+      if (!targetUserId && orderId) {
+        const sub = (await db.prepare('SELECT user_id FROM subscriptions WHERE razorpay_subscription_id = ?').get(orderId)) as any;
+        if (sub?.user_id) targetUserId = sub.user_id;
+      }
+      if (!targetUserId && email) {
         const user = (await db.prepare('SELECT id FROM users WHERE email = ?').get(email)) as any;
-        if (user) {
-          const invId = `inv_rzp_${Date.now()}`;
+        if (user) targetUserId = user.id;
+      }
+
+      if (targetUserId) {
+        const now = new Date();
+        const durationDays = plan === 'pro_annual' ? 365 : 30;
+        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+        await db.prepare(`
+          UPDATE users
+          SET subscription_tier = 'pro',
+              subscription_status = 'active',
+              subscription_plan = ?,
+              subscription_expires_at = ?
+          WHERE id = ?
+        `).run(plan, expiresAt, targetUserId);
+
+        const invId = `inv_hook_${Date.now()}`;
+        try {
           await db.prepare(`
             INSERT INTO subscription_invoices (
               id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
-            ) VALUES (?, ?, ?, ?, 'INR', 'paid', 'Automated Razorpay recurring deduction', 'Razorpay Autopay', ?)
-          `).run(invId, user.id, subId || 'rzp', amount, new Date().toISOString());
-
-          await db.prepare(`
-            UPDATE users
-            SET subscription_tier = 'pro',
-                subscription_status = 'active'
-            WHERE id = ?
-          `).run(user.id);
-        }
+            ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Webhook', ?)
+          `).run(invId, targetUserId, orderId || subId || 'rzp', amount, `Recall Pro (${plan === 'pro_annual' ? 'Annual' : 'Monthly'})`, now.toISOString());
+        } catch {}
       }
     }
 
@@ -422,10 +442,47 @@ router.post('/webhook', async (req, res: Response): Promise<void> => {
   }
 });
 
-// 6. Razorpay Standard Checkout - Create Order
-router.post('/create-order', async (req, res: Response): Promise<void> => {
+// 6. Restore Purchases & Reconcile Active Subscriptions
+router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const profile = await buildUserProfile(userId);
+    const isPro = profile?.subscription_tier === 'pro';
+
+    res.json({
+      success: true,
+      tier: profile?.subscription_tier || 'free',
+      message: isPro
+        ? 'Active Pro subscription restored successfully!'
+        : 'No active paid subscriptions found for this account.',
+      user: profile,
+    });
+  } catch (err: any) {
+    console.error('Restore subscription error:', err);
+    res.status(500).json({ error: 'Failed to restore subscription' });
+  }
+});
+
+// 7. Razorpay Standard Checkout - Create Order
+router.post('/create-order', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { amount, currency = 'INR', receipt, plan = 'pro_annual' } = req.body;
+    let userId = req.body.user_id;
+    let userEmail = req.body.email || '';
+    let userName = req.body.name || '';
+
+    // Extract user from authorization bearer token if present
+    if (req.headers.authorization?.startsWith('Bearer ')) {
+      try {
+        const token = req.headers.authorization.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        if (decoded?.id) {
+          userId = decoded.id;
+          userEmail = decoded.email || userEmail;
+          userName = decoded.name || userName;
+        }
+      } catch {}
+    }
 
     const numAmount = Number(amount);
     if (!numAmount || isNaN(numAmount) || numAmount < 100) {
@@ -446,11 +503,28 @@ router.post('/create-order', async (req, res: Response): Promise<void> => {
       currency: String(currency || 'INR').toUpperCase(),
       receipt: String(receipt || `rcpt_${Date.now()}`),
       notes: {
+        user_id: String(userId || ''),
+        user_email: String(userEmail || ''),
+        user_name: String(userName || ''),
         plan: String(plan),
       },
     };
 
     const order = await client.orders.create(orderOptions);
+
+    // Track order in subscriptions table
+    if (userId) {
+      try {
+        const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await db.prepare(`
+          INSERT INTO subscriptions (
+            id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
+          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, userId, plan, Math.round(numAmount / 100), order.id, new Date().toISOString());
+      } catch (trackErr) {
+        console.warn('Order subscription tracking note:', trackErr);
+      }
+    }
 
     res.json({
       success: true,
@@ -467,8 +541,8 @@ router.post('/create-order', async (req, res: Response): Promise<void> => {
   }
 });
 
-// 7. Razorpay Standard Checkout - Verify Signature
-router.post('/verify-payment', async (req, res: Response): Promise<void> => {
+// 8. Razorpay Standard Checkout - Verify Signature
+router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const {
       razorpay_order_id,
@@ -487,7 +561,7 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
       return;
     }
 
-    // Step 3: Algorithm HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+    // Algorithm HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
     const isValid = verifyRazorpayOrderSignature(
       razorpay_order_id,
       razorpay_payment_id,
@@ -502,14 +576,9 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
       return;
     }
 
-    // On valid verification, update database if user can be identified
+    // Determine target user ID
     let targetUserId = user_id;
-    if (!targetUserId && email) {
-      const user = (await db.prepare('SELECT id FROM users WHERE email = ?').get(email)) as any;
-      if (user) targetUserId = user.id;
-    }
 
-    // Try extracting from authorization bearer token if still not found
     if (!targetUserId && req.headers.authorization?.startsWith('Bearer ')) {
       try {
         const token = req.headers.authorization.substring(7);
@@ -518,45 +587,81 @@ router.post('/verify-payment', async (req, res: Response): Promise<void> => {
       } catch {}
     }
 
+    if (!targetUserId) {
+      try {
+        const subRow = (await db.prepare('SELECT user_id FROM subscriptions WHERE razorpay_subscription_id = ?').get(razorpay_order_id)) as any;
+        if (subRow?.user_id) targetUserId = subRow.user_id;
+      } catch {}
+    }
+
+    if (!targetUserId && email) {
+      const user = (await db.prepare('SELECT id FROM users WHERE email = ?').get(email)) as any;
+      if (user) targetUserId = user.id;
+    }
+
+    if (!targetUserId) {
+      res.status(400).json({
+        success: false,
+        error: 'Could not associate payment with a user account.',
+      });
+      return;
+    }
+
     const now = new Date();
     const durationDays = plan === 'pro_annual' ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-    let updatedUser: any = null;
 
-    if (targetUserId) {
-      await db.prepare(`
-        UPDATE users
-        SET subscription_tier = 'pro',
-            subscription_status = 'active',
-            subscription_plan = ?,
-            subscription_expires_at = ?
-        WHERE id = ?
-      `).run(plan, expiresAt, targetUserId);
+    // 1. Update user record
+    await db.prepare(`
+      UPDATE users
+      SET subscription_tier = 'pro',
+          subscription_status = 'active',
+          subscription_plan = ?,
+          subscription_expires_at = ?
+      WHERE id = ?
+    `).run(plan, expiresAt, targetUserId);
 
-      updatedUser = (await db.prepare(`
-        SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
-               subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
-        FROM users WHERE id = ?
-      `).get(targetUserId)) as any;
-
-      const invId = `inv_std_${Date.now()}`;
-      try {
+    // 2. Upsert subscriptions table
+    try {
+      const existingSub = (await db.prepare('SELECT id FROM subscriptions WHERE razorpay_subscription_id = ?').get(razorpay_order_id)) as any;
+      if (existingSub) {
         await db.prepare(`
-          INSERT INTO subscription_invoices (
-            id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
-          ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Standard Checkout', ?)
-        `).run(
-          invId,
-          targetUserId,
-          razorpay_order_id,
-          plan === 'pro_annual' ? 1499 : 199,
-          `Recall Pro Subscription (${plan === 'pro_annual' ? 'Annual' : 'Monthly'})`,
-          now.toISOString()
-        );
-      } catch (invErr) {
-        console.warn('Invoice logging notice:', invErr);
+          UPDATE subscriptions 
+          SET status = 'active', tier = 'pro', plan = ?, amount = ?, created_at = ?
+          WHERE razorpay_subscription_id = ?
+        `).run(plan, plan === 'pro_annual' ? 1499 : 199, now.toISOString(), razorpay_order_id);
+      } else {
+        const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await db.prepare(`
+          INSERT INTO subscriptions (
+            id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
+          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, targetUserId, plan, plan === 'pro_annual' ? 1499 : 199, razorpay_order_id, now.toISOString());
       }
+    } catch (subErr) {
+      console.warn('Subscription upsert note:', subErr);
     }
+
+    // 3. Insert into subscription_invoices
+    const invId = `inv_std_${Date.now()}`;
+    try {
+      await db.prepare(`
+        INSERT INTO subscription_invoices (
+          id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
+        ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Standard Checkout', ?)
+      `).run(
+        invId,
+        targetUserId,
+        razorpay_order_id,
+        plan === 'pro_annual' ? 1499 : 199,
+        `Recall Pro Subscription (${plan === 'pro_annual' ? 'Annual' : 'Monthly'})`,
+        now.toISOString()
+      );
+    } catch (invErr) {
+      console.warn('Invoice logging notice:', invErr);
+    }
+
+    const updatedUser = await buildUserProfile(targetUserId);
 
     res.json({
       success: true,

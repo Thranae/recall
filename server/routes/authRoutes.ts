@@ -13,6 +13,92 @@ function generateSixDigitOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
+export async function buildUserProfile(userId: string): Promise<any> {
+  const userRow = (await db.prepare(`
+    SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+           subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at, ai_queries_today
+    FROM users WHERE id = ?
+  `).get(userId)) as any;
+
+  if (!userRow) return null;
+
+  let tier = userRow.subscription_tier || 'free';
+  let status = userRow.subscription_status || 'active';
+  let plan = userRow.subscription_plan || tier;
+  let expiresAt = userRow.subscription_expires_at || null;
+  const now = new Date();
+
+  // 1. Enforce real expiration verification on tier
+  if (tier === 'pro') {
+    const expDate = expiresAt ? new Date(expiresAt) : null;
+    const trialDate = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
+
+    if (status === 'canceled' || status === 'expired') {
+      tier = 'free';
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    } else if (status === 'trialing' && trialDate && trialDate < now) {
+      tier = 'free';
+      status = 'expired';
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    } else if (status === 'active' && expDate && expDate < now) {
+      tier = 'free';
+      status = 'expired';
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    }
+  }
+
+  // 2. Auto-heal: If user is marked free or has no active pro, verify whether they have a paid invoice that is still valid
+  if (tier !== 'pro') {
+    try {
+      const latestPaidInvoice = (await db.prepare(`
+        SELECT * FROM subscription_invoices 
+        WHERE user_id = ? AND status = 'paid'
+        ORDER BY invoice_date DESC LIMIT 1
+      `).get(userRow.id)) as any;
+
+      if (latestPaidInvoice) {
+        const invoiceDate = new Date(latestPaidInvoice.invoice_date).getTime();
+        const isAnnual = String(latestPaidInvoice.description || '').toLowerCase().includes('annual') || Number(latestPaidInvoice.amount) >= 1000;
+        const validDays = isAnnual ? 365 : 30;
+        const expiryTime = invoiceDate + validDays * 24 * 60 * 60 * 1000;
+
+        if (expiryTime > Date.now()) {
+          tier = 'pro';
+          status = 'active';
+          plan = isAnnual ? 'pro_annual' : 'pro_monthly';
+          expiresAt = new Date(expiryTime).toISOString();
+          await db.prepare(`
+            UPDATE users 
+            SET subscription_tier = 'pro', subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
+            WHERE id = ?
+          `).run(plan, expiresAt, userRow.id);
+        }
+      }
+    } catch (reconcileErr) {
+      console.warn('Auto-reconciliation error:', reconcileErr);
+    }
+  }
+
+  return {
+    id: userRow.id,
+    email: userRow.email,
+    name: userRow.name,
+    avatar_url: userRow.avatar_url,
+    google_id: userRow.google_id,
+    is_verified: userRow.is_verified,
+    subscription_tier: tier,
+    subscription_status: status,
+    subscription_plan: plan,
+    subscription_expires_at: expiresAt,
+    trial_ends_at: userRow.trial_ends_at || null,
+    autopay_mandate_id: userRow.autopay_mandate_id || null,
+    autopay_method: userRow.autopay_method || null,
+    autopay_vpa: userRow.autopay_vpa || null,
+    next_billing_at: userRow.next_billing_at || null,
+    ai_queries_today: userRow.ai_queries_today || 0,
+  };
+}
+
 // 1. Signup / Registration with 6-Digit OTP Email Verification (Packwise Standard)
 router.post('/signup', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -193,25 +279,25 @@ router.post('/verify-signup', async (req: Request, res: Response): Promise<void>
       { expiresIn: '30d' }
     );
 
+    const userProfile = (await buildUserProfile(user.id)) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: 'free',
+      subscription_status: 'active',
+      subscription_plan: 'free',
+    };
+
     res.json({
       success: true,
       message: 'Email verified successfully! Welcome to RECALL.',
       token,
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url,
-        },
+        user: userProfile,
       },
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url,
-      },
+      user: userProfile,
     });
   } catch (err: any) {
     console.error('Verify OTP error:', err);
@@ -348,15 +434,25 @@ router.post('/verify-otp', async (req: Request, res: Response): Promise<void> =>
       { expiresIn: '30d' }
     );
 
+    const userProfile = (await buildUserProfile(user.id)) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: 'free',
+      subscription_status: 'active',
+      subscription_plan: 'free',
+    };
+
     res.json({
       success: true,
       message: 'Identity verified successfully',
       token,
       data: {
         token,
-        user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+        user: userProfile,
       },
-      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+      user: userProfile,
     });
   } catch (err: any) {
     console.error('Verify OTP error:', err);
@@ -424,15 +520,25 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       { expiresIn: '30d' }
     );
 
+    const userProfile = (await buildUserProfile(user.id)) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: 'free',
+      subscription_status: 'active',
+      subscription_plan: 'free',
+    };
+
     res.json({
       success: true,
       message: 'Logged in successfully',
       token,
       data: {
         token,
-        user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+        user: userProfile,
       },
-      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+      user: userProfile,
     });
   } catch (err: any) {
     console.error('Login error:', err);
@@ -530,25 +636,25 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
       { expiresIn: '30d' }
     );
 
+    const userProfile = (await buildUserProfile(user.id)) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: user.subscription_tier || 'free',
+      subscription_status: user.subscription_status || 'active',
+      subscription_plan: user.subscription_plan || 'free',
+    };
+
     res.json({
       success: true,
       message: 'Signed in with Google successfully',
       token,
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url,
-        },
+        user: userProfile,
       },
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url,
-      },
+      user: userProfile,
     });
   } catch (err: any) {
     console.error('Google authentication error:', err);
@@ -559,59 +665,11 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
 // 8. Get Current User Profile
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const userRow = (await db.prepare(`
-      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
-             subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at, ai_queries_today
-      FROM users WHERE id = ?
-    `).get(req.user!.id)) as any;
-
-    if (userRow) {
-      let tier = userRow.subscription_tier || 'free';
-      let status = userRow.subscription_status || 'active';
-      const now = new Date();
-
-      // Enforce real expiration verification on tier
-      if (tier === 'pro') {
-        const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
-        const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
-
-        if (status === 'canceled' || status === 'expired') {
-          tier = 'free';
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        } else if (status === 'trialing' && trialEndsAt && trialEndsAt < now) {
-          tier = 'free';
-          status = 'expired';
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        } else if (status === 'active' && expiresAt && expiresAt < now) {
-          tier = 'free';
-          status = 'expired';
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        }
-      }
-
-      res.json({
-        user: {
-          id: userRow.id,
-          email: userRow.email,
-          name: userRow.name,
-          avatar_url: userRow.avatar_url,
-          google_id: userRow.google_id,
-          is_verified: userRow.is_verified,
-          subscription_tier: tier,
-          subscription_status: status,
-          subscription_plan: userRow.subscription_plan || tier,
-          subscription_expires_at: userRow.subscription_expires_at || null,
-          trial_ends_at: userRow.trial_ends_at || null,
-          autopay_mandate_id: userRow.autopay_mandate_id || null,
-          autopay_method: userRow.autopay_method || null,
-          autopay_vpa: userRow.autopay_vpa || null,
-          next_billing_at: userRow.next_billing_at || null,
-          ai_queries_today: userRow.ai_queries_today || 0,
-        },
-      });
+    const profile = await buildUserProfile(req.user!.id);
+    if (profile) {
+      res.json({ user: profile });
       return;
     }
-
     res.json({ user: req.user });
   } catch {
     res.json({ user: req.user });

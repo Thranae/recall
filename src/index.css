@@ -1357,23 +1357,12 @@ input, textarea {
    ======================================================== */
 .razorpay-container {
   z-index: 2147483647 !important;
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  padding-top: env(safe-area-inset-top, 0px) !important;
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-  padding-left: env(safe-area-inset-left, 0px) !important;
-  padding-right: env(safe-area-inset-right, 0px) !important;
-  box-sizing: border-box !important;
-  background-color: #3478F6 !important;
 }
 
-.razorpay-container > iframe,
-iframe.razorpay-checkout-frame {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  border: none !important;
-  box-sizing: border-box !important;
+@media (max-width: 768px) {
+  .razorpay-container {
+    padding-top: max(env(safe-area-inset-top, 0px), 36px) !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important;
+    box-sizing: border-box !important;
+  }
 }

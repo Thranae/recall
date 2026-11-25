@@ -402,7 +402,7 @@ export const App: React.FC = () => {
       {/* Main Tab Views with Top Padding for Fixed Static Top Navbar */}
       <main
         className="relative z-10 flex-1 w-full"
-        style={{ paddingTop: 'calc(70px + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: 'calc(74px + max(env(safe-area-inset-top, 0px), 28px))' }}
       >
         {currentTab === 'library' && (
           <LibraryView

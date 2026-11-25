@@ -99,23 +99,40 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     const amountInPaise = billingCycle === 'annual' ? 149900 : 19900;
 
     try {
-      // 1. Ensure Razorpay checkout.js script is loaded
+      // 1. Ensure Razorpay checkout.js script is loaded safely without race conditions
       if (typeof window !== 'undefined' && !(window as any).Razorpay) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          script.onload = () => resolve(true);
-          script.onerror = () => reject(new Error('Failed to load Razorpay checkout script'));
-          document.body.appendChild(script);
-        });
+        let loaded = false;
+        const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+        if (existingScript) {
+          for (let i = 0; i < 20; i++) {
+            if ((window as any).Razorpay) {
+              loaded = true;
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 100));
+          }
+        }
+        if (!loaded && !(window as any).Razorpay) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => resolve(true);
+            script.onerror = () => reject(new Error('Failed to load Razorpay checkout script'));
+            document.head.appendChild(script);
+          });
+        }
       }
 
-      // 2. Call backend create-order endpoint
+      // 2. Call backend create-order endpoint bound to current user
       const orderData = await api.createRazorpayOrder({
         amount: amountInPaise,
         currency: 'INR',
         receipt: `rcpt_${Date.now()}`,
         plan: planToSet,
+        user_id: user?.id,
+        email: user?.email,
+        name: user?.name,
       });
 
       if (!orderData || !orderData.order_id) {
@@ -123,21 +140,24 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
       }
 
       const effectiveKey = orderData.key_id || razorpayKey || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || 'rzp_live_U3ynRYRPdpX5Mq';
-
-      const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/favicon.svg` : '/favicon.svg';
+      const logoUrl = 'https://recall-pro.vercel.app/favicon.svg';
 
       // 3. Open Razorpay Checkout Modal
       const options = {
         key: effectiveKey,
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
-        name: 'Recall Pro',
-        description: billingCycle === 'annual' ? 'Recall Pro Annual Plan (₹1,499)' : 'Recall Pro Monthly Plan (₹199)',
+        name: 'Recall',
+        description: billingCycle === 'annual' ? 'Recall Pro (Annual - ₹1,499/yr)' : 'Recall Pro (Monthly - ₹199/mo)',
         image: logoUrl,
         order_id: orderData.order_id,
         prefill: {
           name: user?.name || '',
           email: user?.email || '',
+        },
+        notes: {
+          user_id: user?.id || '',
+          plan: planToSet,
         },
         theme: {
           color: '#3478F6',
@@ -171,6 +191,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
             if (verifyRes.success) {
               setIsSuccess(true);
+              if (verifyRes.user) {
+                onSubscriptionUpdated(verifyRes.user);
+              }
               const freshUser = await api.getCurrentUser();
               if (freshUser) onSubscriptionUpdated(freshUser);
               const freshSub = await api.getSubscription();
@@ -226,9 +249,14 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     try {
       const res = await api.restoreSubscription();
       setRestoreMessage(res.message);
+      if (res.user) {
+        onSubscriptionUpdated(res.user);
+      }
       if (res.tier === 'pro') {
         const freshUser = await api.getCurrentUser();
         if (freshUser) onSubscriptionUpdated(freshUser);
+        const freshSub = await api.getSubscription();
+        if (freshSub) setSubscription(freshSub.subscription);
       }
     } catch (err: any) {
       setRestoreMessage(err.message || 'Failed to restore purchases.');

@@ -90,13 +90,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       className={`fixed top-0 inset-x-0 z-30 select-none pointer-events-none transition-all duration-200 ease-out ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6 invisible'
       }`}
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 28px)' }}
     >
       {/* Subtle Cloudy Header Blur under the Top Nav Bar (Expo Project reference) */}
       <div
         className="absolute inset-x-0 top-0 pointer-events-none -z-10"
         style={{
-          height: 'calc(84px + env(safe-area-inset-top, 0px))',
+          height: 'calc(88px + max(env(safe-area-inset-top, 0px), 28px))',
           background:
             'linear-gradient(to bottom, rgba(243, 247, 252, 0.92) 0%, rgba(235, 243, 253, 0.40) 50%, transparent 100%)',
           backdropFilter: 'blur(10px)',

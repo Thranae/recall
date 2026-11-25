@@ -88033,6 +88033,81 @@ var JWT_SECRET2 = process.env.JWT_SECRET || "recall_super_secret_jwt_key_2026_de
 function generateSixDigitOtp() {
   return crypto9.randomInt(1e5, 999999).toString();
 }
+async function buildUserProfile(userId) {
+  const userRow = await db.prepare(`
+    SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
+           subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at, ai_queries_today
+    FROM users WHERE id = ?
+  `).get(userId);
+  if (!userRow) return null;
+  let tier = userRow.subscription_tier || "free";
+  let status = userRow.subscription_status || "active";
+  let plan = userRow.subscription_plan || tier;
+  let expiresAt = userRow.subscription_expires_at || null;
+  const now = /* @__PURE__ */ new Date();
+  if (tier === "pro") {
+    const expDate = expiresAt ? new Date(expiresAt) : null;
+    const trialDate = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
+    if (status === "canceled" || status === "expired") {
+      tier = "free";
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    } else if (status === "trialing" && trialDate && trialDate < now) {
+      tier = "free";
+      status = "expired";
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    } else if (status === "active" && expDate && expDate < now) {
+      tier = "free";
+      status = "expired";
+      await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+    }
+  }
+  if (tier !== "pro") {
+    try {
+      const latestPaidInvoice = await db.prepare(`
+        SELECT * FROM subscription_invoices 
+        WHERE user_id = ? AND status = 'paid'
+        ORDER BY invoice_date DESC LIMIT 1
+      `).get(userRow.id);
+      if (latestPaidInvoice) {
+        const invoiceDate = new Date(latestPaidInvoice.invoice_date).getTime();
+        const isAnnual = String(latestPaidInvoice.description || "").toLowerCase().includes("annual") || Number(latestPaidInvoice.amount) >= 1e3;
+        const validDays = isAnnual ? 365 : 30;
+        const expiryTime = invoiceDate + validDays * 24 * 60 * 60 * 1e3;
+        if (expiryTime > Date.now()) {
+          tier = "pro";
+          status = "active";
+          plan = isAnnual ? "pro_annual" : "pro_monthly";
+          expiresAt = new Date(expiryTime).toISOString();
+          await db.prepare(`
+            UPDATE users 
+            SET subscription_tier = 'pro', subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
+            WHERE id = ?
+          `).run(plan, expiresAt, userRow.id);
+        }
+      }
+    } catch (reconcileErr) {
+      console.warn("Auto-reconciliation error:", reconcileErr);
+    }
+  }
+  return {
+    id: userRow.id,
+    email: userRow.email,
+    name: userRow.name,
+    avatar_url: userRow.avatar_url,
+    google_id: userRow.google_id,
+    is_verified: userRow.is_verified,
+    subscription_tier: tier,
+    subscription_status: status,
+    subscription_plan: plan,
+    subscription_expires_at: expiresAt,
+    trial_ends_at: userRow.trial_ends_at || null,
+    autopay_mandate_id: userRow.autopay_mandate_id || null,
+    autopay_method: userRow.autopay_method || null,
+    autopay_vpa: userRow.autopay_vpa || null,
+    next_billing_at: userRow.next_billing_at || null,
+    ai_queries_today: userRow.ai_queries_today || 0
+  };
+}
 router.post("/signup", async (req, res) => {
   try {
     const { email, password, name: name2 } = req.body;
@@ -88179,25 +88254,24 @@ router.post("/verify-signup", async (req, res) => {
       JWT_SECRET2,
       { expiresIn: "30d" }
     );
+    const userProfile = await buildUserProfile(user.id) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: "free",
+      subscription_status: "active",
+      subscription_plan: "free"
+    };
     res.json({
       success: true,
       message: "Email verified successfully! Welcome to RECALL.",
       token,
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url
-        }
+        user: userProfile
       },
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url
-      }
+      user: userProfile
     });
   } catch (err) {
     console.error("Verify OTP error:", err);
@@ -88306,15 +88380,24 @@ router.post("/verify-otp", async (req, res) => {
       JWT_SECRET2,
       { expiresIn: "30d" }
     );
+    const userProfile = await buildUserProfile(user.id) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: "free",
+      subscription_status: "active",
+      subscription_plan: "free"
+    };
     res.json({
       success: true,
       message: "Identity verified successfully",
       token,
       data: {
         token,
-        user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url }
+        user: userProfile
       },
-      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url }
+      user: userProfile
     });
   } catch (err) {
     console.error("Verify OTP error:", err);
@@ -88370,15 +88453,24 @@ router.post("/login", async (req, res) => {
       JWT_SECRET2,
       { expiresIn: "30d" }
     );
+    const userProfile = await buildUserProfile(user.id) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: "free",
+      subscription_status: "active",
+      subscription_plan: "free"
+    };
     res.json({
       success: true,
       message: "Logged in successfully",
       token,
       data: {
         token,
-        user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url }
+        user: userProfile
       },
-      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url }
+      user: userProfile
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -88461,25 +88553,24 @@ router.post("/google", async (req, res) => {
       JWT_SECRET2,
       { expiresIn: "30d" }
     );
+    const userProfile = await buildUserProfile(user.id) || {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar_url: user.avatar_url,
+      subscription_tier: user.subscription_tier || "free",
+      subscription_status: user.subscription_status || "active",
+      subscription_plan: user.subscription_plan || "free"
+    };
     res.json({
       success: true,
       message: "Signed in with Google successfully",
       token,
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatar_url: user.avatar_url
-        }
+        user: userProfile
       },
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatar_url: user.avatar_url
-      }
+      user: userProfile
     });
   } catch (err) {
     console.error("Google authentication error:", err);
@@ -88488,51 +88579,9 @@ router.post("/google", async (req, res) => {
 });
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const userRow = await db.prepare(`
-      SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
-             subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at, ai_queries_today
-      FROM users WHERE id = ?
-    `).get(req.user.id);
-    if (userRow) {
-      let tier = userRow.subscription_tier || "free";
-      let status = userRow.subscription_status || "active";
-      const now = /* @__PURE__ */ new Date();
-      if (tier === "pro") {
-        const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
-        const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
-        if (status === "canceled" || status === "expired") {
-          tier = "free";
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        } else if (status === "trialing" && trialEndsAt && trialEndsAt < now) {
-          tier = "free";
-          status = "expired";
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        } else if (status === "active" && expiresAt && expiresAt < now) {
-          tier = "free";
-          status = "expired";
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-        }
-      }
-      res.json({
-        user: {
-          id: userRow.id,
-          email: userRow.email,
-          name: userRow.name,
-          avatar_url: userRow.avatar_url,
-          google_id: userRow.google_id,
-          is_verified: userRow.is_verified,
-          subscription_tier: tier,
-          subscription_status: status,
-          subscription_plan: userRow.subscription_plan || tier,
-          subscription_expires_at: userRow.subscription_expires_at || null,
-          trial_ends_at: userRow.trial_ends_at || null,
-          autopay_mandate_id: userRow.autopay_mandate_id || null,
-          autopay_method: userRow.autopay_method || null,
-          autopay_vpa: userRow.autopay_vpa || null,
-          next_billing_at: userRow.next_billing_at || null,
-          ai_queries_today: userRow.ai_queries_today || 0
-        }
-      });
+    const profile = await buildUserProfile(req.user.id);
+    if (profile) {
+      res.json({ user: profile });
       return;
     }
     res.json({ user: req.user });
@@ -91638,27 +91687,45 @@ router5.post("/webhook", async (req, res) => {
     const event = req.body?.event;
     const payload = req.body?.payload;
     console.log(`\u{1F4E1} [Razorpay Webhook] Received event: ${event}`);
-    if (event === "subscription.charged" || event === "payment.captured") {
+    if (event === "subscription.charged" || event === "payment.captured" || event === "order.paid") {
       const subEntity = payload?.subscription?.entity;
       const paymentEntity = payload?.payment?.entity;
+      const orderEntity = payload?.order?.entity;
+      const notes = paymentEntity?.notes || orderEntity?.notes;
       const subId = subEntity?.id;
-      const amount = (paymentEntity?.amount || 0) / 100;
+      const orderId = paymentEntity?.order_id || orderEntity?.id;
+      const amount = (paymentEntity?.amount || 19900) / 100;
       const email = paymentEntity?.email;
-      if (email) {
+      const plan = notes?.plan || "pro_monthly";
+      let targetUserId = notes?.user_id;
+      if (!targetUserId && orderId) {
+        const sub = await db.prepare("SELECT user_id FROM subscriptions WHERE razorpay_subscription_id = ?").get(orderId);
+        if (sub?.user_id) targetUserId = sub.user_id;
+      }
+      if (!targetUserId && email) {
         const user = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-        if (user) {
-          const invId = `inv_rzp_${Date.now()}`;
+        if (user) targetUserId = user.id;
+      }
+      if (targetUserId) {
+        const now = /* @__PURE__ */ new Date();
+        const durationDays = plan === "pro_annual" ? 365 : 30;
+        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+        await db.prepare(`
+          UPDATE users
+          SET subscription_tier = 'pro',
+              subscription_status = 'active',
+              subscription_plan = ?,
+              subscription_expires_at = ?
+          WHERE id = ?
+        `).run(plan, expiresAt, targetUserId);
+        const invId = `inv_hook_${Date.now()}`;
+        try {
           await db.prepare(`
             INSERT INTO subscription_invoices (
               id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
-            ) VALUES (?, ?, ?, ?, 'INR', 'paid', 'Automated Razorpay recurring deduction', 'Razorpay Autopay', ?)
-          `).run(invId, user.id, subId || "rzp", amount, (/* @__PURE__ */ new Date()).toISOString());
-          await db.prepare(`
-            UPDATE users
-            SET subscription_tier = 'pro',
-                subscription_status = 'active'
-            WHERE id = ?
-          `).run(user.id);
+            ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Webhook', ?)
+          `).run(invId, targetUserId, orderId || subId || "rzp", amount, `Recall Pro (${plan === "pro_annual" ? "Annual" : "Monthly"})`, now.toISOString());
+        } catch {
         }
       }
     }
@@ -91668,9 +91735,40 @@ router5.post("/webhook", async (req, res) => {
     res.status(500).json({ error: "Webhook processing failed" });
   }
 });
+router5.post("/restore", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const profile = await buildUserProfile(userId);
+    const isPro = profile?.subscription_tier === "pro";
+    res.json({
+      success: true,
+      tier: profile?.subscription_tier || "free",
+      message: isPro ? "Active Pro subscription restored successfully!" : "No active paid subscriptions found for this account.",
+      user: profile
+    });
+  } catch (err) {
+    console.error("Restore subscription error:", err);
+    res.status(500).json({ error: "Failed to restore subscription" });
+  }
+});
 router5.post("/create-order", async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, plan = "pro_annual" } = req.body;
+    let userId = req.body.user_id;
+    let userEmail = req.body.email || "";
+    let userName = req.body.name || "";
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      try {
+        const token = req.headers.authorization.substring(7);
+        const decoded = import_jsonwebtoken3.default.verify(token, JWT_SECRET3);
+        if (decoded?.id) {
+          userId = decoded.id;
+          userEmail = decoded.email || userEmail;
+          userName = decoded.name || userName;
+        }
+      } catch {
+      }
+    }
     const numAmount = Number(amount);
     if (!numAmount || isNaN(numAmount) || numAmount < 100) {
       res.status(400).json({ error: "Amount must be at least 100 paise (\u20B91)" });
@@ -91688,10 +91786,25 @@ router5.post("/create-order", async (req, res) => {
       currency: String(currency || "INR").toUpperCase(),
       receipt: String(receipt || `rcpt_${Date.now()}`),
       notes: {
+        user_id: String(userId || ""),
+        user_email: String(userEmail || ""),
+        user_name: String(userName || ""),
         plan: String(plan)
       }
     };
     const order = await client.orders.create(orderOptions);
+    if (userId) {
+      try {
+        const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await db.prepare(`
+          INSERT INTO subscriptions (
+            id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
+          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, userId, plan, Math.round(numAmount / 100), order.id, (/* @__PURE__ */ new Date()).toISOString());
+      } catch (trackErr) {
+        console.warn("Order subscription tracking note:", trackErr);
+      }
+    }
     res.json({
       success: true,
       order_id: order.id,
@@ -91736,10 +91849,6 @@ router5.post("/verify-payment", async (req, res) => {
       return;
     }
     let targetUserId = user_id;
-    if (!targetUserId && email) {
-      const user = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-      if (user) targetUserId = user.id;
-    }
     if (!targetUserId && req.headers.authorization?.startsWith("Bearer ")) {
       try {
         const token = req.headers.authorization.substring(7);
@@ -91748,42 +91857,72 @@ router5.post("/verify-payment", async (req, res) => {
       } catch {
       }
     }
+    if (!targetUserId) {
+      try {
+        const subRow = await db.prepare("SELECT user_id FROM subscriptions WHERE razorpay_subscription_id = ?").get(razorpay_order_id);
+        if (subRow?.user_id) targetUserId = subRow.user_id;
+      } catch {
+      }
+    }
+    if (!targetUserId && email) {
+      const user = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+      if (user) targetUserId = user.id;
+    }
+    if (!targetUserId) {
+      res.status(400).json({
+        success: false,
+        error: "Could not associate payment with a user account."
+      });
+      return;
+    }
     const now = /* @__PURE__ */ new Date();
     const durationDays = plan === "pro_annual" ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
-    let updatedUser = null;
-    if (targetUserId) {
-      await db.prepare(`
-        UPDATE users
-        SET subscription_tier = 'pro',
-            subscription_status = 'active',
-            subscription_plan = ?,
-            subscription_expires_at = ?
-        WHERE id = ?
-      `).run(plan, expiresAt, targetUserId);
-      updatedUser = await db.prepare(`
-        SELECT id, email, name, avatar_url, google_id, is_verified, subscription_tier, subscription_status, subscription_plan,
-               subscription_expires_at, trial_ends_at, autopay_mandate_id, autopay_method, autopay_vpa, next_billing_at
-        FROM users WHERE id = ?
-      `).get(targetUserId);
-      const invId = `inv_std_${Date.now()}`;
-      try {
+    await db.prepare(`
+      UPDATE users
+      SET subscription_tier = 'pro',
+          subscription_status = 'active',
+          subscription_plan = ?,
+          subscription_expires_at = ?
+      WHERE id = ?
+    `).run(plan, expiresAt, targetUserId);
+    try {
+      const existingSub = await db.prepare("SELECT id FROM subscriptions WHERE razorpay_subscription_id = ?").get(razorpay_order_id);
+      if (existingSub) {
         await db.prepare(`
-          INSERT INTO subscription_invoices (
-            id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
-          ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Standard Checkout', ?)
-        `).run(
-          invId,
-          targetUserId,
-          razorpay_order_id,
-          plan === "pro_annual" ? 1499 : 199,
-          `Recall Pro Subscription (${plan === "pro_annual" ? "Annual" : "Monthly"})`,
-          now.toISOString()
-        );
-      } catch (invErr) {
-        console.warn("Invoice logging notice:", invErr);
+          UPDATE subscriptions 
+          SET status = 'active', tier = 'pro', plan = ?, amount = ?, created_at = ?
+          WHERE razorpay_subscription_id = ?
+        `).run(plan, plan === "pro_annual" ? 1499 : 199, now.toISOString(), razorpay_order_id);
+      } else {
+        const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await db.prepare(`
+          INSERT INTO subscriptions (
+            id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
+          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, targetUserId, plan, plan === "pro_annual" ? 1499 : 199, razorpay_order_id, now.toISOString());
       }
+    } catch (subErr) {
+      console.warn("Subscription upsert note:", subErr);
     }
+    const invId = `inv_std_${Date.now()}`;
+    try {
+      await db.prepare(`
+        INSERT INTO subscription_invoices (
+          id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
+        ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Standard Checkout', ?)
+      `).run(
+        invId,
+        targetUserId,
+        razorpay_order_id,
+        plan === "pro_annual" ? 1499 : 199,
+        `Recall Pro Subscription (${plan === "pro_annual" ? "Annual" : "Monthly"})`,
+        now.toISOString()
+      );
+    } catch (invErr) {
+      console.warn("Invoice logging notice:", invErr);
+    }
+    const updatedUser = await buildUserProfile(targetUserId);
     res.json({
       success: true,
       message: "Payment verified successfully. Pro perks activated.",

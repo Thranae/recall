@@ -628,8 +628,8 @@ export const api = {
     });
   },
 
-  async restoreSubscription(): Promise<{ success: boolean; message: string; tier?: string }> {
-    return request<{ success: boolean; message: string; tier?: string }>('/subscription/restore', {
+  async restoreSubscription(): Promise<{ success: boolean; message: string; tier?: string; user?: User }> {
+    return request<{ success: boolean; message: string; tier?: string; user?: User }>('/subscription/restore', {
       method: 'POST',
     });
   },
@@ -640,6 +640,9 @@ export const api = {
     currency?: string;
     receipt?: string;
     plan?: string;
+    user_id?: string;
+    email?: string;
+    name?: string;
   }): Promise<{
     success: boolean;
     order_id: string;
@@ -671,12 +674,14 @@ export const api = {
     message: string;
     order_id?: string;
     payment_id?: string;
+    user?: User;
   }> {
     return request<{
       success: boolean;
       message: string;
       order_id?: string;
       payment_id?: string;
+      user?: User;
     }>('/verify-payment', {
       method: 'POST',
       body: JSON.stringify(data),
