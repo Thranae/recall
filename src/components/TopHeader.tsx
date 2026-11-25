@@ -231,10 +231,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                         onOpenSubscription();
                       }}
                       title="Upgrade to Recall Pro"
-                      className="inline-flex items-center gap-1 rounded-full bg-white/80 hover:bg-amber-50/80 px-2.5 py-0.5 border border-white hover:border-amber-300 text-[10px] font-bold text-slate-600 hover:text-amber-800 transition-all cursor-pointer active:scale-95 shadow-2xs backdrop-blur-md"
+                      className="inline-flex items-center gap-1 rounded-full bg-blue-50/90 hover:bg-blue-100/90 px-2.5 py-0.5 border border-blue-200/70 text-[10px] font-bold text-[#3478F6] transition-all cursor-pointer active:scale-95 shadow-2xs backdrop-blur-md"
                     >
-                      <Crown className="h-2.5 w-2.5 text-amber-500 stroke-[2.2]" />
-                      <span>PRO</span>
+                      <Crown className="h-2.5 w-2.5 text-[#3478F6] stroke-[2.4]" />
+                      <span>Upgrade</span>
                     </button>
                   ) : null}
                 </div>

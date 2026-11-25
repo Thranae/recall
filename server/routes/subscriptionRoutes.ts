@@ -337,10 +337,14 @@ router.post('/cancel-autopay', authMiddleware, async (req: AuthRequest, res: Res
 
     const wasTrialing = userRow?.subscription_status === 'trialing';
 
-    // Clear autopay mandate and set status to canceled so background deductions never trigger
+    // Clear autopay mandate and set subscription to free and canceled
     await db.prepare(`
       UPDATE users 
-      SET subscription_status = 'canceled',
+      SET subscription_tier = 'free',
+          subscription_status = 'canceled',
+          subscription_plan = 'free',
+          subscription_expires_at = NULL,
+          trial_ends_at = NULL,
           next_billing_at = NULL,
           autopay_mandate_id = NULL
       WHERE id = ?

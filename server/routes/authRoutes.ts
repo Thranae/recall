@@ -575,14 +575,17 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response): Promi
         const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
         const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
 
-        if (status === 'trialing' && trialEndsAt && trialEndsAt < now) {
+        if (status === 'canceled' || status === 'expired') {
+          tier = 'free';
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+        } else if (status === 'trialing' && trialEndsAt && trialEndsAt < now) {
           tier = 'free';
           status = 'expired';
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
         } else if (status === 'active' && expiresAt && expiresAt < now) {
           tier = 'free';
           status = 'expired';
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
         }
       }
 

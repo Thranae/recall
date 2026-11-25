@@ -271,7 +271,9 @@ async function runTests() {
   console.log('✅ TEST 4 PASSED: Pure photo person/color/clothing search ("boy", "black", "boy in black shirt", "girl") ranked accurately!\n');
 
   // Clean up test data
-  await db.prepare('DELETE FROM screenshots_fts WHERE user_id = ?').run(testUserId);
+  try {
+    await db.prepare('DELETE FROM screenshots_fts WHERE user_id = ?').run(testUserId);
+  } catch {}
   await db.prepare('DELETE FROM screenshots WHERE user_id = ?').run(testUserId);
   await db.prepare('DELETE FROM extracted_messages WHERE user_id = ?').run(testUserId);
   await db.prepare('DELETE FROM game_results WHERE user_id = ?').run(testUserId);

@@ -88500,14 +88500,17 @@ router.get("/me", authMiddleware, async (req, res) => {
       if (tier === "pro") {
         const expiresAt = userRow.subscription_expires_at ? new Date(userRow.subscription_expires_at) : null;
         const trialEndsAt = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
-        if (status === "trialing" && trialEndsAt && trialEndsAt < now) {
+        if (status === "canceled" || status === "expired") {
+          tier = "free";
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
+        } else if (status === "trialing" && trialEndsAt && trialEndsAt < now) {
           tier = "free";
           status = "expired";
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
         } else if (status === "active" && expiresAt && expiresAt < now) {
           tier = "free";
           status = "expired";
-          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userRow.id);
+          await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
         }
       }
       res.json({
@@ -91597,7 +91600,11 @@ router5.post("/cancel-autopay", authMiddleware, async (req, res) => {
     const wasTrialing = userRow?.subscription_status === "trialing";
     await db.prepare(`
       UPDATE users 
-      SET subscription_status = 'canceled',
+      SET subscription_tier = 'free',
+          subscription_status = 'canceled',
+          subscription_plan = 'free',
+          subscription_expires_at = NULL,
+          trial_ends_at = NULL,
           next_billing_at = NULL,
           autopay_mandate_id = NULL
       WHERE id = ?

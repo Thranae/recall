@@ -5,18 +5,16 @@ import {
   ChevronLeft,
   Crown,
   Zap,
-  Infinity as InfinityIcon,
   ShieldCheck,
   ArrowRight,
   Loader2,
   RefreshCw,
   CheckCircle2,
   ShieldAlert,
-  CreditCard,
-  Smartphone,
   Lock,
   Cpu,
   Check,
+  Eye,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackButton } from '../utils/backHandler';
@@ -38,10 +36,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   initialReason,
 }) => {
   const [billingCycle, setBillingCycle] = useState<'annual' | 'monthly'>('annual');
-  const [autopayMethod, setAutopayMethod] = useState<'upi_autopay' | 'card_mandate'>('upi_autopay');
-  const [upiId, setUpiId] = useState('');
-  const [cardLast4, setCardLast4] = useState('4242');
-  const [bankName, setBankName] = useState('HDFC Bank');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -51,7 +45,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   const [razorpayKey, setRazorpayKey] = useState<string | null>(null);
 
   const isPro = user?.subscription_tier === 'pro';
-  const isTrialing = subscription?.is_trialing || user?.subscription_status === 'trialing';
 
   // Hardware Back Button integration (Android & PWA swipe)
   useBackButton(
@@ -88,21 +81,14 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     api.getSubscription()
       .then((res) => {
         setSubscription(res.subscription);
-        if (res.subscription.autopay_vpa) {
-          setUpiId(res.subscription.autopay_vpa);
-        }
       })
       .catch(() => {});
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Calculate 7-day trial date
-  const trialEndFormatted = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  })();
+  const currentPrice = billingCycle === 'annual' ? 1499 : 199;
+  const currentPriceFormatted = billingCycle === 'annual' ? '₹1,499 / year' : '₹199 / month';
 
   const handleRazorpayCheckout = async () => {
     if (isLoading) return;
@@ -124,7 +110,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         });
       }
 
-      // 2. Call backend create-order endpoint (STEP 1)
+      // 2. Call backend create-order endpoint
       const orderData = await api.createRazorpayOrder({
         amount: amountInPaise,
         currency: 'INR',
@@ -136,16 +122,18 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         throw new Error('Could not initialize Razorpay order from server');
       }
 
-      const effectiveKey = orderData.key_id || razorpayKey || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || 'rzp_test_U3yA0Th7GB3iXU';
+      const effectiveKey = orderData.key_id || razorpayKey || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || 'rzp_live_U3ynRYRPdpX5Mq';
 
-      // 3. Open Razorpay Modal (STEP 2)
+      const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/favicon.svg` : '/favicon.svg';
+
+      // 3. Open Razorpay Checkout Modal
       const options = {
         key: effectiveKey,
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
         name: 'Recall Pro',
         description: billingCycle === 'annual' ? 'Recall Pro Annual Plan (₹1,499)' : 'Recall Pro Monthly Plan (₹199)',
-        image: '/favicon.svg',
+        image: logoUrl,
         order_id: orderData.order_id,
         prefill: {
           name: user?.name || '',
@@ -153,7 +141,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         },
         theme: {
           color: '#3478F6',
-          backdrop_color: 'rgba(15, 23, 42, 0.65)',
+          backdrop_color: 'rgba(15, 23, 42, 0.75)',
         },
         modal: {
           backdropclose: false,
@@ -162,6 +150,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           confirm_close: true,
           ondismiss: () => {
             setIsLoading(false);
+            setErrorMessage('Payment cancelled. Your account was not charged.');
           },
         },
         handler: async (response: {
@@ -171,7 +160,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         }) => {
           try {
             setIsLoading(true);
-            // 4. Send all three to verify endpoint (STEP 3)
             const verifyRes = await api.verifyRazorpayPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -206,7 +194,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
       const rzpInstance = new (window as any).Razorpay(options);
       rzpInstance.on('payment.failed', (failResp: any) => {
         setIsLoading(false);
-        setErrorMessage(failResp?.error?.description || 'Payment was declined or failed.');
+        setErrorMessage(failResp?.error?.description || 'Payment was declined or cancelled.');
       });
       rzpInstance.open();
     } catch (err: any) {
@@ -215,72 +203,17 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     }
   };
 
-  const handleStartTrial = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    const planToSet: SubscriptionPlan = billingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
-
-    if (autopayMethod === 'upi_autopay') {
-      const cleanVpa = upiId.trim().toLowerCase();
-      if (!cleanVpa || !cleanVpa.includes('@')) {
-        setErrorMessage('Please enter a valid UPI ID (e.g. name@okhdfcbank or mobile@paytm)');
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    try {
-      // Razorpay Checkout loader if gateway keys are present
-      if (razorpayKey && typeof window !== 'undefined') {
-        const loadScript = () => {
-          return new Promise((resolve) => {
-            if ((window as any).Razorpay) return resolve(true);
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-          });
-        };
-        await loadScript();
-      }
-
-      const res = await api.startFreeTrial({
-        plan: planToSet,
-        autopay_method: autopayMethod,
-        vpa: upiId.trim(),
-        bank_name: bankName,
-        card_last4: cardLast4,
-      });
-
-      setIsSuccess(true);
-      onSubscriptionUpdated(res.user);
-      setSubscription(res.subscription);
-
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 2000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Autopay setup failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCancelAutopay = async () => {
+  const handleCancelSubscription = async () => {
     if (isLoading) return;
     setIsLoading(true);
     setErrorMessage(null);
     try {
       const res = await api.cancelAutopay();
       onSubscriptionUpdated(res.user);
-      setSubscription((prev) => (prev ? { ...prev, status: 'canceled', next_billing_at: null, autopay_mandate_id: null } : null));
-      setRestoreMessage(res.message);
+      setSubscription((prev) => (prev ? { ...prev, tier: 'free', status: 'canceled', is_pro: false } : null));
+      setRestoreMessage('Your subscription has been canceled and reverted to Free tier.');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to cancel Autopay mandate.');
+      setErrorMessage(err.message || 'Failed to cancel subscription.');
     } finally {
       setIsLoading(false);
     }
@@ -304,8 +237,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     }
   };
 
-  const currentPrice = billingCycle === 'annual' ? 1499 : 199;
-
   return (
     <AnimatePresence>
       <motion.div
@@ -325,17 +256,17 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           className="fixed inset-0 pointer-events-none -z-10"
           style={{
             background:
-              'radial-gradient(circle at 15% 10%, rgba(52, 120, 246, 0.09) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(185, 217, 255, 0.25) 0%, transparent 50%)',
+              'radial-gradient(circle at 15% 10%, rgba(52, 120, 246, 0.08) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(185, 217, 255, 0.22) 0%, transparent 50%)',
           }}
         />
 
         {/* Top iOS Sticky Navigation Bar */}
         <header
-          className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/80 border-b border-white/80 shadow-[0_4px_20px_-4px_rgba(23,43,77,0.06)]"
+          className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/85 border-b border-white/90 shadow-[0_4px_20px_-4px_rgba(23,43,77,0.06)]"
           style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)' }}
         >
-          <div className="max-w-lg mx-auto px-4 h-13.5 flex items-center justify-between">
-            {/* Plump Liquid Glass Back Button */}
+          <div className="max-w-lg mx-auto px-4 h-13 flex items-center justify-between">
+            {/* Plump Glass Back Button */}
             <button
               type="button"
               onClick={onClose}
@@ -345,19 +276,24 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
               <span>Back</span>
             </button>
 
-            {/* Title */}
-            <div className="flex items-center gap-1.5">
+            {/* Title & Tier Badge */}
+            <div className="flex items-center gap-2">
               <span className="font-['Outfit'] text-[15.5px] font-extrabold tracking-tight text-[#172B4D]">
-                Membership & Perks
+                Subscription Plans
               </span>
-              {isPro && (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-700 px-2 py-0.5 text-[9.5px] font-black border border-amber-400/30">
-                  PRO
+              {isPro ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 px-2 py-0.5 text-[9.5px] font-black border border-amber-400/40">
+                  <Crown className="h-2.5 w-2.5 text-amber-600 fill-amber-500" />
+                  <span>PRO</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200/70 text-slate-600 px-2 py-0.5 text-[9.5px] font-bold">
+                  FREE TIER
                 </span>
               )}
             </div>
 
-            {/* Plump Liquid Glass Restore Button */}
+            {/* Restore Button */}
             <button
               type="button"
               onClick={handleRestore}
@@ -373,106 +309,58 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           </div>
         </header>
 
-        {/* Dedicated Page Body Content (Spacious & Uncongested) */}
-        <main className="w-full max-w-lg mx-auto px-4 pt-5 pb-16 space-y-5 flex-1 overflow-x-clip">
-          {/* 1. Hero Plan Status Banner */}
-          <div className="text-center pt-2 pb-2">
-            <div className="relative inline-flex items-center justify-center mb-3.5">
-              <div className="absolute inset-0 rounded-full bg-amber-400/25 blur-2xl animate-pulse" />
+        {/* Main Content Body */}
+        <main className="w-full max-w-lg mx-auto px-4 pt-5 pb-16 space-y-5 flex-1">
+          {/* Hero Header */}
+          <div className="text-center pt-1 pb-1">
+            <div className="relative inline-flex items-center justify-center mb-3">
+              <div className="absolute inset-0 rounded-full bg-[#3478F6]/20 blur-2xl animate-pulse" />
               <div
-                className="relative flex h-18 w-18 items-center justify-center rounded-[26px] text-white border border-white/90 shadow-[0_12px_32px_rgba(245,158,11,0.32)]"
+                className="relative flex h-16 w-16 items-center justify-center rounded-[24px] text-white border border-white/95 shadow-[0_12px_28px_rgba(52,120,246,0.25)]"
                 style={{
-                  background: 'linear-gradient(145deg, #F59E0B 0%, #D97706 100%)',
-                  boxShadow: 'inset 0 2px 2.5px rgba(255,255,255,0.8), 0 12px 28px rgba(217,119,6,0.3)',
+                  background: 'linear-gradient(145deg, #5392FF 0%, #3478F6 100%)',
                 }}
               >
-                <Crown className="h-9 w-9 stroke-[2.2] text-amber-50" />
+                <Crown className="h-8 w-8 stroke-[2.2] text-white fill-white/20" />
               </div>
             </div>
 
-            {/* Plump Status Capsule */}
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-4 py-1.5 border border-emerald-500/25 mb-3 backdrop-blur-md shadow-2xs">
-                <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 stroke-[2.4]" />
-                <span className="text-xs font-black tracking-wide text-emerald-800">
-                  {isTrialing
-                    ? `${subscription?.days_left_in_trial || 7} Days Left in Free Trial • ₹0 Today`
-                    : isPro
-                    ? 'Recall Pro Active'
-                    : '7-Day Free Trial • ₹0 Due Today'}
-                </span>
-              </div>
-            </div>
-
-            <h1 className="font-['Outfit'] text-[26px] font-black tracking-tight text-[#172B4D] leading-tight">
-              {isTrialing ? 'Recall Pro Trial Active' : isPro ? 'Recall Pro Membership' : 'Start 7-Day Free Trial'}
+            <h1 className="font-['Outfit'] text-[24px] font-black tracking-tight text-[#172B4D] leading-tight">
+              {isPro ? 'You are on Recall Pro' : 'Unlock Recall Pro'}
             </h1>
-            <p className="mt-2 text-[13px] text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
+            <p className="mt-1.5 text-[13px] text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
               {initialReason ||
-                (isTrialing
-                  ? 'Your Autopay mandate is verified and active. Zero deduction until your trial ends.'
-                  : 'Experience unlimited cloud memory and neural search with ₹0 due today. Cancel anytime with 1 tap.')}
+                (isPro
+                  ? 'Your Pro subscription is fully active. Enjoy unlimited screenshot search and AI memory.'
+                  : 'Get unlimited vault memory, neural OCR search, and AI clutter cleaner.')}
             </p>
           </div>
 
-          {/* 2. Active Mandate Card (If trialing or subscribed) */}
-          {isTrialing && subscription && (
-            <div className="rounded-[24px] bg-emerald-50/80 p-5 border border-emerald-200/90 shadow-[0_8px_24px_rgba(16,185,129,0.08)] space-y-2.5 backdrop-blur-md overflow-hidden">
-              <div className="flex items-center justify-between text-xs font-bold text-emerald-900 gap-2">
-                <span className="flex items-center gap-1.5 shrink-0">
-                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                  <span>Autopay Mandate Active</span>
-                </span>
-                <span className="text-[10.5px] font-mono font-bold text-emerald-800 bg-white/90 px-2.5 py-1 rounded-full border border-emerald-200/90 truncate max-w-[150px]">
-                  {subscription.autopay_mandate_id?.slice(0, 16)}...
-                </span>
-              </div>
-              <div className="text-[12px] text-emerald-900/90 leading-relaxed pt-1 border-t border-emerald-200/60 space-y-1">
-                <p>
-                  Payment Method: <span className="font-bold text-emerald-950">{subscription.autopay_method || 'UPI Autopay'}</span>
-                </p>
-                <p>
-                  Next scheduled deduction:{' '}
-                  <span className="font-bold text-emerald-950">
-                    ₹{subscription.plan === 'pro_annual' ? '1,499' : '199'} on{' '}
-                    {subscription.next_billing_at
-                      ? new Date(subscription.next_billing_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : trialEndFormatted}
-                  </span>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 3. Plump Billing Cycle Selector (Annual vs Monthly) */}
+          {/* Butter-Smooth Billing Cycle Selector (Zero Lag Segmented Pill) */}
           {!isPro && (
             <div className="flex justify-center">
-              <div className="flex w-full max-w-sm rounded-full bg-slate-200/60 p-1.5 border border-white/90 shadow-inner backdrop-blur-md gap-1">
+              <div className="relative flex w-full max-w-xs rounded-full bg-slate-200/70 p-1 border border-white/90 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setBillingCycle('annual')}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-extrabold transition-all duration-150 cursor-pointer ${
                     billingCycle === 'annual'
-                      ? 'plump-toggle-active shadow-[0_4px_12px_rgba(0,0,0,0.08)]'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   <span>Annual</span>
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-500/20">
+                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[9.5px] font-black text-emerald-700">
                     Save 37%
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setBillingCycle('monthly')}
-                  className={`flex flex-1 items-center justify-center rounded-full py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                  className={`relative z-10 flex-1 flex items-center justify-center py-2 rounded-full text-xs font-extrabold transition-all duration-150 cursor-pointer ${
                     billingCycle === 'monthly'
-                      ? 'plump-toggle-active shadow-[0_4px_12px_rgba(0,0,0,0.08)]'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   Monthly
@@ -481,41 +369,42 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             </div>
           )}
 
-          {/* 4. Plump Obsidian Titanium Price Pass Card */}
-          <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0A192F] text-white p-6 shadow-[0_20px_40px_-10px_rgba(15,23,42,0.45)] border border-white/15">
-            {/* Top specular hairline edge */}
+          {/* Pricing Pass Card */}
+          <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0A192F] text-white p-6 shadow-[0_20px_40px_-10px_rgba(15,23,42,0.40)] border border-white/15">
             <div
               className="absolute top-0 left-0 right-0 h-px pointer-events-none"
               style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
               }}
             />
 
             <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1.5">
-                <span className="text-[10.5px] font-black uppercase tracking-widest text-amber-400 block">
-                  {isTrialing ? 'Active Trial Period' : '7 Days Free Trial'}
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#5392FF] block">
+                  {isPro ? 'Active Membership' : 'Recall Pro Membership'}
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-['Outfit'] text-[40px] font-black tracking-tight text-white leading-none">
-                    ₹0
+                  <span className="font-['Outfit'] text-[38px] font-black tracking-tight text-white leading-none">
+                    ₹{currentPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-sm text-slate-300 font-semibold">due today</span>
+                  <span className="text-sm text-slate-300 font-semibold">
+                    {billingCycle === 'annual' ? '/ year (~₹125/mo)' : '/ month'}
+                  </span>
                 </div>
-                <p className="text-[12px] text-amber-200/95 font-medium leading-normal pt-1">
-                  Then ₹{currentPrice.toLocaleString('en-IN')}{' '}
-                  {billingCycle === 'annual' ? '/ year (₹125/mo)' : '/ month'} via Autopay
+                <p className="text-[12px] text-slate-300 font-medium leading-normal pt-1">
+                  {billingCycle === 'annual'
+                    ? 'Billed annually at ₹1,499. Includes 37% discount.'
+                    : 'Billed monthly at ₹199. Cancel anytime.'}
                 </p>
               </div>
 
-              {/* Zero Risk Plump Liquid Badge */}
-              <div className="rounded-full bg-white/12 backdrop-blur-md px-3.5 py-1.5 border border-white/25 text-[11px] font-bold text-white flex items-center gap-1.5 shadow-sm shrink-0">
-                <Lock className="h-3.5 w-3.5 text-amber-300 stroke-[2.4]" />
-                <span>Zero Risk</span>
+              <div className="rounded-full bg-white/12 backdrop-blur-md px-3.5 py-1.5 border border-white/20 text-[11px] font-bold text-white flex items-center gap-1.5 shadow-sm shrink-0">
+                <Lock className="h-3.5 w-3.5 text-emerald-400 stroke-[2.4]" />
+                <span>Verified</span>
               </div>
             </div>
 
-            {/* Inset Liquid Glass Storage Gauge */}
+            {/* Storage Progress Gauge */}
             {subscription && (
               <div className="mt-5 pt-4 border-t border-white/10">
                 <div className="flex items-center justify-between text-xs text-slate-300 mb-2">
@@ -528,7 +417,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                 </div>
                 <div className="h-2.5 w-full rounded-full bg-white/10 overflow-hidden p-[1px] border border-white/10">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full rounded-full transition-all duration-300 ${
                       isPro
                         ? 'bg-gradient-to-r from-amber-400 to-yellow-300 w-full'
                         : 'bg-gradient-to-r from-[#5392FF] to-[#3478F6]'
@@ -544,158 +433,52 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             )}
           </div>
 
-          {/* 5. Autopay Mandate Form Card (Only shown if starting trial) */}
-          {!isPro && (
-            <div className="liquid-glass-card rounded-[26px] p-5 border border-white/90 shadow-[0_10px_28px_rgba(23,43,77,0.05)] space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-[#172B4D] flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-[#3478F6] stroke-[2.4]" />
-                  <span>Choose Autopay Mandate Method</span>
-                </span>
-                <span className="text-[10px] font-black text-emerald-800 bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                  ₹0 Authorized Today
-                </span>
-              </div>
-
-              {/* Plump Method Toggle Buttons */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setAutopayMethod('upi_autopay')}
-                  className={`flex items-center justify-center gap-2 rounded-[18px] py-3 px-3 text-xs font-bold transition-all cursor-pointer ${
-                    autopayMethod === 'upi_autopay'
-                      ? 'bg-white text-[#172B4D] shadow-[0_4px_14px_rgba(52,120,246,0.18)] border border-[#3478F6]/40'
-                      : 'bg-slate-100/70 text-slate-500 hover:text-slate-800 border border-slate-200/50'
-                  }`}
-                >
-                  <Smartphone className="h-4 w-4 text-[#3478F6] shrink-0" />
-                  <span>UPI Autopay</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAutopayMethod('card_mandate')}
-                  className={`flex items-center justify-center gap-2 rounded-[18px] py-3 px-3 text-xs font-bold transition-all cursor-pointer ${
-                    autopayMethod === 'card_mandate'
-                      ? 'bg-white text-[#172B4D] shadow-[0_4px_14px_rgba(52,120,246,0.18)] border border-[#3478F6]/40'
-                      : 'bg-slate-100/70 text-slate-500 hover:text-slate-800 border border-slate-200/50'
-                  }`}
-                >
-                  <CreditCard className="h-4 w-4 text-[#3478F6] shrink-0" />
-                  <span>Card e-Mandate</span>
-                </button>
-              </div>
-
-              {autopayMethod === 'upi_autopay' ? (
-                <div className="space-y-2.5 pt-1">
-                  <label className="text-xs font-bold text-slate-700 block">
-                    Enter UPI ID (Google Pay, PhonePe, Paytm, BHIM)
-                  </label>
-                  <input
-                    type="text"
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="e.g. yourname@okhdfcbank"
-                    className="w-full rounded-[18px] bg-white px-4 py-3 text-xs font-semibold text-slate-900 border border-slate-200 focus:border-[#3478F6] focus:ring-2 focus:ring-[#3478F6]/20 focus:outline-none shadow-2xs select-text transition-all"
-                  />
-                  {/* Quick VPA Chips */}
-                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                    {['@okhdfcbank', '@okaxis', '@paytm', '@ybl'].map((suffix) => (
-                      <button
-                        key={suffix}
-                        type="button"
-                        onClick={() => {
-                          const prefix = upiId.includes('@') ? upiId.split('@')[0] : upiId || 'user';
-                          setUpiId(`${prefix}${suffix}`);
-                        }}
-                        className="rounded-full bg-slate-100 hover:bg-blue-50 px-3 py-1 text-[11px] font-bold text-slate-600 hover:text-[#3478F6] border border-slate-200/80 hover:border-blue-300 transition-colors cursor-pointer"
-                      >
-                        {suffix}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Bank Name</label>
-                    <input
-                      type="text"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="HDFC / SBI / ICICI"
-                      className="w-full rounded-[18px] bg-white px-3.5 py-3 text-xs font-semibold text-slate-900 border border-slate-200 focus:border-[#3478F6] focus:outline-none shadow-2xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Card Last 4</label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      value={cardLast4}
-                      onChange={(e) => setCardLast4(e.target.value)}
-                      placeholder="4242"
-                      className="w-full rounded-[18px] bg-white px-3.5 py-3 text-xs font-mono font-bold text-slate-900 border border-slate-200 focus:border-[#3478F6] focus:outline-none shadow-2xs"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* RBI Safe Mandate Notice */}
-              <div className="flex items-start gap-2.5 rounded-[16px] bg-slate-100/70 p-3 border border-slate-200/60">
-                <Lock className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-slate-600 leading-snug font-medium">
-                  Protected by RBI e-mandate rules. Pre-debit SMS sent 24h prior. Cancel anytime in 1 tap.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 6. Included Pro Perks (Spacious Individual Cards) */}
+          {/* Features Checklist */}
           <div className="space-y-3">
-            <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">
-              Included Pro Superpowers
-            </h2>
+            <h3 className="text-xs font-black tracking-wider uppercase text-slate-500 px-1">
+              What Recall Pro Unlocks
+            </h3>
 
-            <div className="grid gap-2.5">
+            <div className="space-y-2.5">
               {[
                 {
-                  icon: <InfinityIcon className="h-5 w-5 text-amber-500 stroke-[2.2]" />,
+                  icon: <Zap className="h-5 w-5 text-amber-500 stroke-[2.2]" />,
                   podBg: 'bg-amber-50 border-amber-200/60',
-                  title: 'Unlimited Screenshot Vault',
-                  desc: 'Never hit storage caps; store and search thousands of screenshots with zero limits.',
+                  title: 'Unlimited Screenshot Cloud Vault',
+                  desc: 'Store tens of thousands of screenshots safely without the 50-item limit.',
                 },
                 {
-                  icon: <Zap className="h-5 w-5 text-[#3478F6] stroke-[2.2]" />,
+                  icon: <Eye className="h-5 w-5 text-[#3478F6] stroke-[2.2]" />,
                   podBg: 'bg-blue-50 border-blue-200/60',
-                  title: 'Apple Visual Look-Up & Data Cards',
-                  desc: 'Interactive object pins, OCR extraction for specs, receipts, flight tickets, and marks.',
+                  title: 'Apple Visual Look-Up & Spec Cards',
+                  desc: 'Interactive object pins, spec extraction for receipts, tickets, and products.',
                 },
                 {
                   icon: <Cpu className="h-5 w-5 text-indigo-500 stroke-[2.2]" />,
                   podBg: 'bg-indigo-50 border-indigo-200/60',
                   title: 'Unlimited Neural AI Vision Chat',
-                  desc: 'Multi-screenshot reasoning, semantic conversation stitcher, and conversational Q&A.',
+                  desc: 'Ask questions across screenshots with deep multi-screenshot context.',
                 },
                 {
                   icon: <ShieldCheck className="h-5 w-5 text-emerald-600 stroke-[2.2]" />,
                   podBg: 'bg-emerald-50 border-emerald-200/60',
-                  title: 'AI Clutter Sweeper & Deduplication',
-                  desc: 'Detect and sweep blurred images, expired promos, memes, and duplicate captures.',
+                  title: 'Memory Broom & Clutter Cleaner',
+                  desc: 'One-tap cleanup for duplicate captures, blurry images, and expired promos.',
                 },
               ].map((perk, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3.5 rounded-[22px] bg-white/85 hover:bg-white backdrop-blur-xl p-4 border border-white shadow-[0_4px_16px_rgba(23,43,77,0.04)] transition-all"
+                  className="flex items-center gap-3.5 rounded-[22px] bg-white/85 p-3.5 border border-white shadow-[0_4px_16px_rgba(23,43,77,0.03)]"
                 >
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] border ${perk.podBg} shadow-2xs`}>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border ${perk.podBg} shadow-2xs`}>
                     {perk.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-bold text-[#172B4D] leading-tight truncate">{perk.title}</p>
-                    <p className="text-[11.5px] text-slate-500 leading-snug mt-1 font-normal line-clamp-2">{perk.desc}</p>
+                    <p className="text-[13px] font-bold text-[#172B4D] leading-tight truncate">{perk.title}</p>
+                    <p className="text-[11px] text-slate-500 leading-snug mt-0.5 font-normal line-clamp-2">{perk.desc}</p>
                   </div>
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80 shadow-2xs">
-                    <Check className="h-3.5 w-3.5 stroke-[3]" />
+                  <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80">
+                    <Check className="h-3 w-3 stroke-[3]" />
                   </div>
                 </div>
               ))}
@@ -716,40 +499,26 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             </div>
           )}
 
-          {/* 7. Plumpy Liquid CTA Actions */}
+          {/* Primary Action Buttons */}
           <div className="pt-2">
             {isSuccess ? (
               <div className="flex items-center justify-center gap-2 rounded-full bg-emerald-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/30">
                 <CheckCircle2 className="h-5 w-5" />
-                <span>7-Day Free Trial & Autopay Activated!</span>
-              </div>
-            ) : isTrialing ? (
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={handleCancelAutopay}
-                  disabled={isLoading}
-                  className="plump-liquid-rose-cta w-full cursor-pointer active:scale-95 transition-transform"
-                >
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>Cancel Autopay Mandate (₹0 Deducted)</span>}
-                </button>
-                <p className="text-center text-[11px] text-slate-400 font-medium">
-                  Revoking mandate cancels all future automatic deductions immediately.
-                </p>
+                <span>Payment Successful! Recall Pro Activated.</span>
               </div>
             ) : isPro ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2 rounded-full bg-slate-100 py-3.5 text-xs font-bold text-slate-700 border border-slate-200 shadow-xs">
-                  <Crown className="h-4 w-4 text-amber-500" />
-                  <span>You are on Recall Pro ({user?.subscription_plan === 'pro_annual' ? '₹1,499/yr' : '₹199/mo'})</span>
+                <div className="flex items-center justify-center gap-2 rounded-full bg-emerald-50 py-3.5 text-xs font-extrabold text-emerald-800 border border-emerald-200 shadow-xs">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>Recall Pro is Active on your Account</span>
                 </div>
                 <button
                   type="button"
-                  onClick={handleCancelAutopay}
+                  onClick={handleCancelSubscription}
                   disabled={isLoading}
-                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-red-500 py-1 transition-colors cursor-pointer"
+                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-red-600 py-1.5 transition-colors cursor-pointer"
                 >
-                  Cancel auto-renewal mandate
+                  {isLoading ? 'Cancelling...' : 'Cancel Subscription (Revert to Free)'}
                 </button>
               </div>
             ) : (
@@ -758,33 +527,27 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   type="button"
                   onClick={handleRazorpayCheckout}
                   disabled={isLoading}
-                  className="plump-liquid-cta w-full cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  className="plump-liquid-cta w-full cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2 py-4"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                      <span>Opening Razorpay Checkout...</span>
+                      <span>Opening Secure Razorpay Checkout...</span>
                     </>
                   ) : (
                     <>
-                      <span>Pay with Razorpay ({billingCycle === 'annual' ? '₹1,499/yr' : '₹199/mo'})</span>
+                      <span>Pay with Razorpay ({currentPriceFormatted})</span>
                       <ArrowRight className="h-4.5 w-4.5 stroke-[2.4]" />
                     </>
                   )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleStartTrial}
-                  disabled={isLoading}
-                  className="w-full py-2.5 rounded-full border border-slate-200 bg-white/70 hover:bg-white text-xs font-bold text-slate-700 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
-                >
-                  <span>Or Start 7-Day Free Trial (₹0 Today via Autopay)</span>
-                </button>
+                <p className="text-center text-[11px] text-slate-400 font-medium">
+                  Instant activation via UPI, Cards, or NetBanking. Safe &amp; encrypted.
+                </p>
               </div>
             )}
 
-            {/* Bottom Terms & Disclosure */}
+            {/* Bottom Restore & Guarantee */}
             <div className="mt-4 flex items-center justify-between text-xs text-slate-400 px-2 font-medium">
               <button
                 type="button"
@@ -803,4 +566,3 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     </AnimatePresence>
   );
 };
-
