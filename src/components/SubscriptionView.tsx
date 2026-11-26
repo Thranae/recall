@@ -17,7 +17,6 @@ import {
   Layers,
   Trash2,
   FileSpreadsheet,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackButton } from '../utils/backHandler';
@@ -784,7 +783,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#3478F6]" />
                   <h3 className="text-xs font-black tracking-wider uppercase text-slate-700">
                     Plan Comparison: Basic vs Pro
                   </h3>

@@ -225,54 +225,79 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
             />
           </div>
 
-          {/* Pro PIN Lock & Vault Protection Card */}
-          <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 p-3.5 shadow-xs transition-all">
+          {/* Pro PIN Lock & Vault Protection Card - Plumpy iOS Liquid Glass */}
+          <div
+            className="rounded-[22px] p-3.5 transition-all"
+            style={{
+              background: 'linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 250, 255, 0.90) 50%, rgba(235, 244, 255, 0.85) 100%)',
+              border: '1.5px solid rgba(255, 255, 255, 0.95)',
+              borderTopColor: '#FFFFFF',
+              boxShadow: '0 4px 14px rgba(23, 43, 77, 0.05), inset 0 1.5px 2px #FFFFFF, inset 0 -1px 1.5px rgba(52, 120, 246, 0.06)',
+            }}
+          >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 shadow-xs">
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-[14px] text-white"
+                  style={{
+                    background: 'linear-gradient(145deg, #5392FF 0%, #3478F6 50%, #1E5CD1 100%)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                    borderTopColor: '#FFFFFF',
+                    borderBottomColor: 'rgba(23, 43, 77, 0.35)',
+                    boxShadow: '0 3px 10px rgba(52, 120, 246, 0.32), inset 0 1.5px 2px rgba(255, 255, 255, 0.85)',
+                  }}
+                >
                   <Lock className="h-4.5 w-4.5 stroke-[2.4]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-extrabold text-slate-900">4-Digit PIN Lock</span>
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-900 text-[10px] font-black border border-amber-500/25">
+                    <span className="text-xs font-black text-[#172B4D]">4-Digit PIN Lock</span>
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-950 text-[10px] font-black border border-amber-500/25 shadow-2xs">
                       <Crown className="h-3 w-3 text-amber-600 fill-amber-500" />
                       Pro
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className="text-[11px] text-[#4A5D78] font-medium">
                     {isLocked ? 'Passcode enabled • Secret vault protected' : 'Require 4-digit PIN & biometrics to view'}
                   </p>
                 </div>
               </div>
 
-              {/* Toggle switch */}
+              {/* Plumpy Liquid Toggle switch */}
               <button
                 type="button"
                 onClick={handleToggleLock}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                className={`relative inline-flex h-6.5 w-11.5 items-center rounded-full transition-all cursor-pointer p-0.5 ${
                   isLocked ? 'bg-[#3478F6]' : 'bg-slate-300'
                 }`}
+                style={{
+                  boxShadow: isLocked
+                    ? '0 2px 8px rgba(52, 120, 246, 0.4), inset 0 1px 1.5px rgba(255, 255, 255, 0.6)'
+                    : 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
+                }}
                 aria-label="Toggle PIN Lock"
               >
                 <span
-                  className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-md transition-transform ${
-                    isLocked ? 'translate-x-5.5' : 'translate-x-1'
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
+                    isLocked ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
+                  style={{
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 1px #FFFFFF',
+                  }}
                 />
               </button>
             </div>
 
             {isLocked && (
-              <div className="mt-2.5 pt-2 border-t border-amber-200/50 flex items-center justify-between text-[11px]">
-                <span className="text-emerald-700 font-bold flex items-center gap-1">
+              <div className="mt-2.5 pt-2 border-t border-blue-100/70 flex items-center justify-between text-[11px]">
+                <span className="text-emerald-700 font-black flex items-center gap-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Passcode Configured
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsPinModalOpen(true)}
-                  className="text-[#3478F6] font-bold hover:underline cursor-pointer"
+                  className="plump-glass-pill !h-6 !px-2.5 !rounded-full !text-[10px] !font-bold text-[#3478F6] cursor-pointer"
                 >
                   Change PIN
                 </button>

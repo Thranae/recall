@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, Fingerprint, Delete, X, KeyRound, Sparkles } from 'lucide-react';
+import { Lock, Unlock, Fingerprint, Delete, X, KeyRound } from 'lucide-react';
 import { lockBodyScroll } from '../utils/scrollLock';
 import { useBackButton } from '../utils/backHandler';
 
@@ -71,7 +72,7 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
   // Hardware Back Button
   useBackButton(
     'album-pin-modal',
-    90,
+    95,
     () => {
       onClose();
       return true;
@@ -100,12 +101,9 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
       }
 
       setErrorMessage(null);
-      setPin((prev) => {
-        const next = prev + digit;
-        return next;
-      });
+      setPin((prev) => prev + digit);
     },
-    [pin, isVerifying]
+    [pin.length, isVerifying]
   );
 
   const handleDeletePress = useCallback(() => {
@@ -114,7 +112,7 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
       navigator.vibrate?.(8);
     }
     setPin((prev) => prev.slice(0, -1));
-  }, [isVerifying, pin]);
+  }, [isVerifying, pin.length]);
 
   // Handle Complete PIN Entry
   useEffect(() => {
@@ -139,13 +137,11 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
         }
       } else if (mode === 'set') {
         if (!isConfirming) {
-          // First step complete: switch to confirm
           setFirstPin(pin);
           setPin('');
           setIsConfirming(true);
           setIsVerifying(false);
         } else {
-          // Confirm step
           if (pin === firstPin) {
             const finalHash = await hashPasscode(pin);
             if ('vibrate' in navigator) {
@@ -169,20 +165,15 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
     };
   }, [pin, mode, isConfirming, firstPin, expectedPinHash, onSuccess, triggerError]);
 
-  // Biometric Unlock simulation / trigger
   const handleBiometric = async () => {
     if ('vibrate' in navigator) {
       navigator.vibrate?.(15);
     }
     if (mode === 'unlock' && expectedPinHash) {
-      // In web environment, if WebAuthn is available or as a Pro convenience
-      if (window.PublicKeyCredential) {
+      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
         try {
-          // Trigger biometric confirmation
           onSuccess(expectedPinHash);
-        } catch {
-          // fallback to PIN
-        }
+        } catch {}
       }
     }
   };
@@ -200,66 +191,84 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
 
   const subTitle =
     mode === 'unlock'
-      ? `Enter 4-digit PIN to access “${albumTitle}”`
+      ? `Enter 4-digit PIN for “${albumTitle}”`
       : mode === 'remove'
-      ? `Enter current PIN to unlock and remove protection`
+      ? `Enter current PIN to remove protection`
       : isConfirming
-      ? 'Re-enter your passcode to confirm'
-      : `Create a 4-digit PIN to lock “${albumTitle}”`;
+      ? 'Re-enter passcode to confirm'
+      : `Create a 4-digit PIN for “${albumTitle}”`;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[85] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl select-none touch-none overscroll-none">
+      <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 bg-slate-950/50 backdrop-blur-md select-none touch-none overscroll-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 16 }}
+          initial={{ opacity: 0, scale: 0.92, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.92, y: 16 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-sm rounded-[36px] border border-white/80 bg-white/95 p-6 shadow-[0_24px_70px_rgba(23,43,77,0.28)] backdrop-blur-2xl text-slate-800 flex flex-col items-center overflow-hidden"
+          exit={{ opacity: 0, scale: 0.92, y: 12 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-[88vw] max-w-[280px] rounded-[30px] p-4 text-slate-800 flex flex-col items-center overflow-hidden"
+          style={{
+            background:
+              'linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 250, 255, 0.95) 50%, rgba(235, 244, 255, 0.92) 100%)',
+            backdropFilter: 'blur(28px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+            boxShadow:
+              '0 16px 48px -4px rgba(23, 43, 77, 0.28), inset 0 2px 2px #FFFFFF, inset 0 -1.5px 2px rgba(52, 120, 246, 0.08)',
+            border: '1.5px solid rgba(255, 255, 255, 0.95)',
+            borderTop: '2px solid #FFFFFF',
+          }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
+          {/* Plumpy Dismiss Button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-95 transition-all cursor-pointer"
+            className="absolute top-3.5 right-3.5 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100/90 hover:bg-slate-200 border border-white/80 shadow-xs text-slate-500 active:scale-90 transition-all cursor-pointer"
             aria-label="Close"
           >
-            <X className="h-4 w-4 stroke-[2.2]" />
+            <X className="h-3.5 w-3.5 stroke-[2.5]" />
           </button>
 
-          {/* Glowing Shield Icon */}
-          <div className="relative mt-2 mb-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#3478F6] to-[#60A5FA] text-white shadow-lg shadow-blue-500/30">
+          {/* Plumpy iOS Liquid Glass Lock Pod (Zero Sparkles) */}
+          <div className="relative mt-0.5 mb-2">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-[18px] text-white"
+              style={{
+                background: 'linear-gradient(145deg, #5392FF 0%, #3478F6 50%, #1E5CD1 100%)',
+                border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                borderTopColor: '#FFFFFF',
+                borderBottomColor: 'rgba(23, 43, 77, 0.35)',
+                boxShadow:
+                  '0 4px 14px rgba(52, 120, 246, 0.35), inset 0 1.5px 2px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.16)',
+              }}
+            >
               {mode === 'unlock' ? (
-                <Lock className="h-7 w-7 stroke-[2.2]" />
+                <Lock className="h-5 w-5 stroke-[2.4]" />
               ) : mode === 'remove' ? (
-                <Unlock className="h-7 w-7 stroke-[2.2]" />
+                <Unlock className="h-5 w-5 stroke-[2.4]" />
               ) : (
-                <KeyRound className="h-7 w-7 stroke-[2.2]" />
+                <KeyRound className="h-5 w-5 stroke-[2.4]" />
               )}
-            </div>
-            <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-xs">
-              <Sparkles className="h-3 w-3 stroke-[2.5]" />
             </div>
           </div>
 
           {/* Title & Info */}
-          <h3 className="text-base font-extrabold text-slate-900 text-center tracking-tight">
+          <h3 className="text-[14px] font-black text-[#172B4D] text-center tracking-tight leading-snug">
             {headerTitle}
           </h3>
-          <p className="mt-1 text-xs text-slate-500 text-center font-medium max-w-[260px] line-clamp-2">
+          <p className="mt-0.5 text-[10.5px] text-[#4A5D78] text-center font-medium max-w-[210px] truncate leading-tight">
             {subTitle}
           </p>
 
-          {/* Passcode Indicator Dots (Apple Style) */}
+          {/* Plumpy Passcode Indicator Dots (Apple Style) */}
           <motion.div
             animate={
               errorShake
-                ? { x: [-12, 12, -8, 8, -4, 4, 0] }
+                ? { x: [-10, 10, -7, 7, -3, 3, 0] }
                 : { x: 0 }
             }
-            transition={{ duration: 0.4 }}
-            className="my-5 flex items-center justify-center gap-4.5"
+            transition={{ duration: 0.35 }}
+            className="my-3 flex items-center justify-center gap-3.5"
           >
             {[0, 1, 2, 3].map((index) => {
               const isFilled = pin.length > index;
@@ -272,7 +281,7 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
                       ? '#EF4444'
                       : isFilled
                       ? '#3478F6'
-                      : 'transparent',
+                      : 'rgba(255, 255, 255, 0.7)',
                     borderColor: errorShake
                       ? '#EF4444'
                       : isFilled
@@ -280,12 +289,12 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
                       : '#CBD5E1',
                   }}
                   transition={{ duration: 0.15 }}
-                  className={`h-4 w-4 rounded-full border-2 transition-shadow ${
+                  className={`h-3 w-3 rounded-full border-2 transition-shadow ${
                     isFilled
                       ? errorShake
-                        ? 'shadow-[0_0_12px_rgba(239,68,68,0.5)]'
-                        : 'shadow-[0_0_12px_rgba(52,120,246,0.45)]'
-                      : ''
+                        ? 'shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                        : 'shadow-[0_0_8px_rgba(52,120,246,0.45)]'
+                      : 'shadow-2xs'
                   }`}
                 />
               );
@@ -293,33 +302,42 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
           </motion.div>
 
           {/* Error / Feedback Message */}
-          <div className="h-5 flex items-center justify-center mb-1">
+          <div className="h-3.5 flex items-center justify-center mb-0.5">
             {errorMessage ? (
-              <span className="text-[11px] font-bold text-red-500 animate-fadeIn">
+              <span className="text-[10px] font-bold text-red-500 animate-fadeIn">
                 {errorMessage}
               </span>
             ) : isVerifying ? (
-              <span className="text-[11px] font-bold text-[#3478F6] animate-pulse">
-                Verifying Passcode...
+              <span className="text-[10px] font-bold text-[#3478F6] animate-pulse">
+                Verifying...
               </span>
             ) : null}
           </div>
 
-          {/* Numeric Passcode Keypad Grid (Apple-grade tactile circular glass buttons) */}
-          <div className="w-full max-w-[260px] grid grid-cols-3 gap-3.5 pt-1">
+          {/* Plumpy iOS Liquid Glass Keypad Grid */}
+          <div className="w-full max-w-[216px] grid grid-cols-3 gap-2 pt-0.5">
             {KEYPAD_DIGITS.map(({ digit, letters }) => (
               <button
                 key={digit}
                 type="button"
                 onClick={() => handleDigitPress(digit)}
                 disabled={isVerifying}
-                className="group relative flex flex-col items-center justify-center h-16 w-16 mx-auto rounded-full bg-slate-100/80 hover:bg-slate-200/90 active:scale-92 active:bg-[#3478F6] active:text-white transition-all duration-100 shadow-2xs border border-white/60 cursor-pointer touch-manipulation select-none"
+                className="group relative flex flex-col items-center justify-center h-12 w-12 mx-auto rounded-full transition-transform duration-100 active:scale-90 cursor-pointer touch-manipulation select-none"
+                style={{
+                  background:
+                    'linear-gradient(155deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 250, 255, 0.92) 50%, rgba(230, 241, 255, 0.85) 100%)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.98)',
+                  borderTopColor: '#FFFFFF',
+                  borderBottomColor: 'rgba(185, 217, 255, 0.5)',
+                  boxShadow:
+                    '0 3px 8px rgba(23, 43, 77, 0.06), inset 0 1.5px 2px #FFFFFF, inset 0 -1px 1.5px rgba(52, 120, 246, 0.08)',
+                }}
               >
-                <span className="text-xl font-bold leading-none text-slate-800 group-active:text-white">
+                <span className="text-[17px] font-bold leading-none text-[#172B4D] group-active:text-[#3478F6]">
                   {digit}
                 </span>
                 {letters ? (
-                  <span className="text-[8px] font-extrabold tracking-widest text-slate-400 group-active:text-white/80 mt-0.5">
+                  <span className="text-[7px] font-black tracking-widest text-[#4A5D78] group-active:text-[#3478F6] mt-0.5">
                     {letters}
                   </span>
                 ) : null}
@@ -332,13 +350,20 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
                 <button
                   type="button"
                   onClick={handleBiometric}
-                  className="flex h-16 w-16 items-center justify-center rounded-full text-slate-500 hover:text-[#3478F6] hover:bg-blue-50 active:scale-90 transition-all cursor-pointer"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-[#3478F6] hover:bg-blue-50/80 active:scale-90 transition-all cursor-pointer"
                   title="Biometric Unlock"
+                  style={{
+                    background:
+                      'linear-gradient(155deg, rgba(255, 255, 255, 0.95) 0%, rgba(235, 244, 255, 0.88) 100%)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                    boxShadow:
+                      '0 2px 6px rgba(23, 43, 77, 0.05), inset 0 1px 1.5px #FFFFFF',
+                  }}
                 >
-                  <Fingerprint className="h-7 w-7 stroke-[1.8]" />
+                  <Fingerprint className="h-5 w-5 stroke-[2]" />
                 </button>
               ) : (
-                <div className="h-16 w-16" />
+                <div className="h-12 w-12" />
               )}
             </div>
 
@@ -346,9 +371,18 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
               type="button"
               onClick={() => handleDigitPress('0')}
               disabled={isVerifying}
-              className="group relative flex flex-col items-center justify-center h-16 w-16 mx-auto rounded-full bg-slate-100/80 hover:bg-slate-200/90 active:scale-92 active:bg-[#3478F6] active:text-white transition-all duration-100 shadow-2xs border border-white/60 cursor-pointer touch-manipulation select-none"
+              className="group relative flex flex-col items-center justify-center h-12 w-12 mx-auto rounded-full transition-transform duration-100 active:scale-90 cursor-pointer touch-manipulation select-none"
+              style={{
+                background:
+                  'linear-gradient(155deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 250, 255, 0.92) 50%, rgba(230, 241, 255, 0.85) 100%)',
+                border: '1.5px solid rgba(255, 255, 255, 0.98)',
+                borderTopColor: '#FFFFFF',
+                borderBottomColor: 'rgba(185, 217, 255, 0.5)',
+                boxShadow:
+                  '0 3px 8px rgba(23, 43, 77, 0.06), inset 0 1.5px 2px #FFFFFF, inset 0 -1px 1.5px rgba(52, 120, 246, 0.08)',
+              }}
             >
-              <span className="text-xl font-bold leading-none text-slate-800 group-active:text-white">
+              <span className="text-[17px] font-bold leading-none text-[#172B4D] group-active:text-[#3478F6]">
                 0
               </span>
             </button>
@@ -357,23 +391,32 @@ export const AlbumPinModal: React.FC<AlbumPinModalProps> = ({
               type="button"
               onClick={handleDeletePress}
               disabled={isVerifying || pin.length === 0}
-              className={`flex h-16 w-16 items-center justify-center rounded-full transition-all cursor-pointer ${
+              className={`flex h-12 w-12 items-center justify-center rounded-full transition-all cursor-pointer ${
                 pin.length > 0
                   ? 'text-slate-600 hover:text-slate-900 active:scale-90 active:text-red-500'
                   : 'text-slate-300 opacity-40 cursor-default'
               }`}
+              style={{
+                background:
+                  pin.length > 0
+                    ? 'linear-gradient(155deg, rgba(255, 255, 255, 0.95) 0%, rgba(246, 250, 255, 0.88) 100%)'
+                    : 'transparent',
+                border: pin.length > 0 ? '1.5px solid rgba(255, 255, 255, 0.95)' : 'none',
+                boxShadow: pin.length > 0 ? '0 2px 6px rgba(23, 43, 77, 0.05), inset 0 1px 1.5px #FFFFFF' : 'none',
+              }}
               title="Delete digit"
             >
-              <Delete className="h-6 w-6 stroke-[2]" />
+              <Delete className="h-5 w-5 stroke-[2]" />
             </button>
           </div>
 
           {/* Privacy Footnote */}
-          <p className="mt-4 text-[10px] text-slate-400 text-center font-medium">
-            Protected by Recall Pro Hardware &amp; Vault Encryption
+          <p className="mt-2 text-[9.5px] text-[#4A5D78]/70 text-center font-medium">
+            Protected by Recall Pro Vault
           </p>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

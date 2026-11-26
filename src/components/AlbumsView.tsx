@@ -336,7 +336,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   useEffect(() => {
     const isModalActive = isStoryOpen || isCreateOpen || pinModalConfig.isOpen;
     onModalStateChange?.(isModalActive);
-  }, [isStoryOpen, isCreateOpen, onModalStateChange]);
+  }, [isStoryOpen, isCreateOpen, pinModalConfig.isOpen, onModalStateChange]);
 
   // Generate Smart Albums from screenshots using precision AI classification
   const smartAlbums = useMemo<Album[]>(() => {
@@ -956,38 +956,45 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Pro PIN Lock / Relock Button for Custom Albums */}
+            {/* Pro PIN Lock / Relock Plumpy iOS Liquid Glass Action Buttons */}
             {!currentAlbum.isSmart && (
               currentAlbum.isLocked ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleRelockCurrentAlbum(currentAlbum.id)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-300 text-xs font-bold text-amber-900 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    className="plump-glass-pill !px-3 !rounded-full !text-xs !font-black !text-amber-950 active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    style={{
+                      background: 'linear-gradient(145deg, #FEF3C7 0%, #FDE68A 50%, #F59E0B 100%)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                      borderTopColor: '#FFFFFF',
+                      borderBottomColor: 'rgba(180, 83, 9, 0.4)',
+                      boxShadow: '0 3px 10px rgba(245, 158, 11, 0.28), inset 0 1.5px 2px rgba(255, 255, 255, 0.85), inset 0 -1px 2px rgba(0, 0, 0, 0.12)',
+                    }}
                     title="Lock album now"
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-600 stroke-[2.4]" />
+                    <Lock className="w-3.5 h-3.5 text-amber-950 stroke-[2.6]" />
                     <span>Relock</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleRemoveLockPrompt(currentAlbum)}
-                    className="p-1.5 rounded-full bg-white/80 border border-slate-200/70 text-slate-500 hover:text-slate-800 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    className="plump-glass-pill !w-8 !h-8 !p-0 !rounded-full text-slate-500 hover:text-slate-800 active:scale-95 transition-transform flex items-center justify-center cursor-pointer shadow-2xs"
                     title="Remove PIN Protection"
                   >
-                    <Unlock className="w-3.5 h-3.5" />
+                    <Unlock className="w-3.5 h-3.5 stroke-[2.3]" />
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => handleLockCustomAlbumPrompt(currentAlbum)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-white to-amber-500/10 border border-amber-300 text-xs font-bold text-amber-900 active:scale-95 transition-all shadow-xs cursor-pointer"
+                  className="plump-glass-pill !px-3 !rounded-full !text-xs !font-bold text-[#172B4D] active:scale-95 transition-transform flex items-center gap-1.5 cursor-pointer shadow-xs"
                   title="Lock album with 4-digit PIN"
                 >
-                  <Lock className="w-3.5 h-3.5 text-amber-600 stroke-[2.4]" />
+                  <Lock className="w-3.5 h-3.5 text-[#3478F6] stroke-[2.5]" />
                   <span>Lock</span>
-                  <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
+                  <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
                 </button>
               )
             )}
@@ -1366,29 +1373,57 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                     </div>
                   )}
 
-                  {/* Centered Secret Vault Privacy Shield Overlay when Locked */}
+                  {/* Centered Secret Vault Plumpy iOS Liquid Glass Pod when Locked */}
                   {isAlbumLocked && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-3 text-center pointer-events-none">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/25 backdrop-blur-md text-white border border-white/50 shadow-lg mb-1.5 animate-pulse">
-                        <Lock className="h-5 w-5 stroke-[2.4]" />
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-[18px] text-white mb-1.5"
+                        style={{
+                          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.18) 100%)',
+                          backdropFilter: 'blur(20px) saturate(180%)',
+                          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                          border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                          borderTopColor: '#FFFFFF',
+                          borderBottomColor: 'rgba(255, 255, 255, 0.40)',
+                          boxShadow: '0 8px 28px rgba(0, 0, 0, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -1.5px 2px rgba(0, 0, 0, 0.15)',
+                        }}
+                      >
+                        <Lock className="h-5 w-5 stroke-[2.4] text-white drop-shadow-sm" />
                       </div>
                       <span className="text-[11px] font-black text-white tracking-wider uppercase drop-shadow-md">
                         Secret Vault
                       </span>
-                      <span className="text-[9.5px] font-bold text-white/85 drop-shadow-xs">
+                      <span className="text-[9.5px] font-bold text-white/90 drop-shadow-xs">
                         Tap to Unlock with PIN
                       </span>
                     </div>
                   )}
 
-                  {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
+                  {/* Top Bar Floating Badges (Plumpy iOS Liquid Glass Style) */}
                   <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
-                    <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">
+                    <span
+                      className="liquid-filter-chip liquid-filter-chip-xs !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs"
+                      style={{
+                        background: 'linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 250, 255, 0.90) 100%)',
+                        backdropFilter: 'blur(16px)',
+                        border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                        boxShadow: '0 3px 10px rgba(23, 43, 77, 0.08), inset 0 1px 1.5px #FFFFFF',
+                      }}
+                    >
                       {album.emoji || (isAlbumLocked ? '🔒' : '📁')}
                     </span>
                     {isAlbumLocked ? (
-                      <span className="liquid-filter-chip liquid-filter-chip-xs !bg-amber-400 !text-amber-950 !border-amber-300 !font-black shadow-md pointer-events-auto flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5 stroke-[3]" />
+                      <span
+                        className="plump-glass-pill !h-6 !px-2.5 !rounded-full !font-black !text-[9px] tracking-wider pointer-events-auto flex items-center gap-1 text-amber-950 shadow-sm"
+                        style={{
+                          background: 'linear-gradient(145deg, #FEF3C7 0%, #FDE68A 50%, #F59E0B 100%)',
+                          border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                          borderTopColor: '#FFFFFF',
+                          borderBottomColor: 'rgba(180, 83, 9, 0.4)',
+                          boxShadow: '0 3px 8px rgba(245, 158, 11, 0.3), inset 0 1.5px 2px rgba(255, 255, 255, 0.85), inset 0 -1px 2px rgba(0, 0, 0, 0.12)',
+                        }}
+                      >
+                        <Lock className="w-2.5 h-2.5 stroke-[3] text-amber-950" />
                         <span>LOCKED</span>
                       </span>
                     ) : (
