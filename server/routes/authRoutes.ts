@@ -58,7 +58,7 @@ export async function buildUserProfile(userId: string): Promise<any> {
 
       if (latestPaidInvoice) {
         const invoiceDate = new Date(latestPaidInvoice.invoice_date).getTime();
-        const isAnnual = String(latestPaidInvoice.description || '').toLowerCase().includes('annual') || Number(latestPaidInvoice.amount) >= 1000;
+        const isAnnual = String(latestPaidInvoice.description || '').toLowerCase().includes('annual') || Number(latestPaidInvoice.amount) >= 500;
         const validDays = isAnnual ? 365 : 30;
         const expiryTime = invoiceDate + validDays * 24 * 60 * 60 * 1000;
 

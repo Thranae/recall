@@ -36,7 +36,7 @@ export async function processRecurringDeductions(): Promise<AutopayDeductionResu
     for (const user of dueUsers) {
       try {
         const plan = user.subscription_plan === 'pro_annual' ? 'pro_annual' : 'pro_monthly';
-        const amount = plan === 'pro_annual' ? 1499 : 199;
+        const amount = plan === 'pro_annual' ? 700 : 77;
         const durationDays = plan === 'pro_annual' ? 365 : 30;
 
         const nextBilling = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();

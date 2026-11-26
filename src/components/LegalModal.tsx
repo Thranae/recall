@@ -140,10 +140,10 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#3478F6]">Recall Pro</span>
                     </div>
                     <div className="text-2xl font-black text-slate-900">
-                      ₹199 <span className="text-xs font-normal text-slate-500">/ month</span>
+                      ₹77 <span className="text-xs font-normal text-slate-500">/ month</span>
                     </div>
                     <div className="text-[11px] font-semibold text-emerald-600">
-                      Annual: ₹1,499 / year (~₹124.90/mo, Save 37%)
+                      Annual: ₹700 / year (~₹58/mo, Save 24%)
                     </div>
                     <ul className="space-y-1.5 pt-1 text-[11.5px] text-slate-700 font-medium">
                       <li className="flex items-center gap-1.5">

@@ -87,8 +87,8 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
   if (!isOpen) return null;
 
-  const currentPrice = billingCycle === 'annual' ? 1499 : 199;
-  const currentPriceFormatted = billingCycle === 'annual' ? '₹1,499 / year' : '₹199 / month';
+  const currentPrice = billingCycle === 'annual' ? 700 : 77;
+  const currentPriceFormatted = billingCycle === 'annual' ? '₹700 / year' : '₹77 / month';
 
   const handleRazorpayCheckout = async () => {
     if (isLoading) return;
@@ -96,7 +96,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     setErrorMessage(null);
 
     const planToSet: SubscriptionPlan = billingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
-    const amountInPaise = billingCycle === 'annual' ? 149900 : 19900;
+    const amountInPaise = billingCycle === 'annual' ? 70000 : 7700;
 
     try {
       // 1. Ensure Razorpay checkout.js script is loaded safely without race conditions
@@ -148,7 +148,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
         name: 'Recall',
-        description: billingCycle === 'annual' ? 'Recall Pro (Annual - ₹1,499/yr)' : 'Recall Pro (Monthly - ₹199/mo)',
+        description: billingCycle === 'annual' ? 'Recall Pro (Annual - ₹700/yr)' : 'Recall Pro (Monthly - ₹77/mo)',
         image: logoUrl,
         order_id: orderData.order_id,
         prefill: {
@@ -379,7 +379,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                 >
                   <span>Annual</span>
                   <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[9.5px] font-black text-emerald-700">
-                    Save 37%
+                    Save 24%
                   </span>
                 </button>
                 <button
@@ -416,13 +416,13 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                     ₹{currentPrice.toLocaleString('en-IN')}
                   </span>
                   <span className="text-sm text-slate-300 font-semibold">
-                    {billingCycle === 'annual' ? '/ year (~₹125/mo)' : '/ month'}
+                    {billingCycle === 'annual' ? '/ year (~₹58/mo)' : '/ month'}
                   </span>
                 </div>
                 <p className="text-[12px] text-slate-300 font-medium leading-normal pt-1">
                   {billingCycle === 'annual'
-                    ? 'Billed annually at ₹1,499. Includes 37% discount.'
-                    : 'Billed monthly at ₹199. Cancel anytime.'}
+                    ? 'Billed annually at ₹700. Includes 24% discount.'
+                    : 'Billed monthly at ₹77. Cancel anytime.'}
                 </p>
               </div>
 

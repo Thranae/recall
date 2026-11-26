@@ -186,8 +186,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {user.subscription_status === 'trialing'
                   ? '7-Day Free Trial active (₹0 today)'
                   : user.subscription_plan === 'pro_annual'
-                  ? 'Annual plan (₹1,499/yr)'
-                  : 'Monthly plan (₹199/mo)'}
+                  ? 'Annual plan (₹700/yr)'
+                  : 'Monthly plan (₹77/mo)'}
               </span>
               <button
                 type="button"

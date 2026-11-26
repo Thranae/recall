@@ -64,12 +64,12 @@ router.get('/plans', (_req, res: Response) => {
         id: 'pro_monthly',
         name: 'Recall Pro Monthly',
         tier: 'pro',
-        price: 199,
+        price: 77,
         interval: 'month',
-        price_display: '₹199 / mo',
+        price_display: '₹77 / mo',
         trial_days: 7,
         trial_text: '7 Days Free Trial • ₹0 today',
-        recurring_text: '₹199/month after trial ends',
+        recurring_text: '₹77/month after trial ends',
         description: 'Full visual intelligence with zero storage or AI limits.',
         screenshot_limit: null,
         ai_daily_limit: null,
@@ -79,14 +79,14 @@ router.get('/plans', (_req, res: Response) => {
         id: 'pro_annual',
         name: 'Recall Pro Annual',
         tier: 'pro',
-        price: 1499,
+        price: 700,
         interval: 'year',
-        price_display: '₹1,499 / yr',
-        badge: 'Save 37%',
-        monthly_equivalent: '₹125 / mo',
+        price_display: '₹700 / yr',
+        badge: 'Save 24%',
+        monthly_equivalent: '₹58 / mo',
         trial_days: 7,
         trial_text: '7 Days Free Trial • ₹0 today',
-        recurring_text: '₹1,499/year after trial ends',
+        recurring_text: '₹700/year after trial ends',
         description: 'Best value for heavy users, students, developers, and researchers.',
         screenshot_limit: null,
         ai_daily_limit: null,
@@ -232,7 +232,7 @@ router.post('/start-trial', authMiddleware, async (req: AuthRequest, res: Respon
     const nextBillingAt = trialEndsAt;
     const durationDays = plan === 'pro_annual' ? 365 : 30;
     const expiresAt = new Date(new Date(trialEndsAt).getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-    const recurringAmount = plan === 'pro_annual' ? 1499 : 199;
+    const recurringAmount = plan === 'pro_annual' ? 700 : 77;
 
     const mandateId = `UMRN_REC_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -396,7 +396,7 @@ router.post('/webhook', async (req, res: Response): Promise<void> => {
       const notes = paymentEntity?.notes || orderEntity?.notes;
       const subId = subEntity?.id;
       const orderId = paymentEntity?.order_id || orderEntity?.id;
-      const amount = (paymentEntity?.amount || 19900) / 100;
+      const amount = (paymentEntity?.amount || 7700) / 100;
       const email = paymentEntity?.email;
       const plan = notes?.plan || 'pro_monthly';
 
@@ -629,14 +629,14 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
           UPDATE subscriptions 
           SET status = 'active', tier = 'pro', plan = ?, amount = ?, created_at = ?
           WHERE razorpay_subscription_id = ?
-        `).run(plan, plan === 'pro_annual' ? 1499 : 199, now.toISOString(), razorpay_order_id);
+        `).run(plan, plan === 'pro_annual' ? 700 : 77, now.toISOString(), razorpay_order_id);
       } else {
         const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         await db.prepare(`
           INSERT INTO subscriptions (
             id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
           ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
-        `).run(subId, targetUserId, plan, plan === 'pro_annual' ? 1499 : 199, razorpay_order_id, now.toISOString());
+        `).run(subId, targetUserId, plan, plan === 'pro_annual' ? 700 : 77, razorpay_order_id, now.toISOString());
       }
     } catch (subErr) {
       console.warn('Subscription upsert note:', subErr);
@@ -653,7 +653,7 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
         invId,
         targetUserId,
         razorpay_order_id,
-        plan === 'pro_annual' ? 1499 : 199,
+        plan === 'pro_annual' ? 700 : 77,
         `Recall Pro Subscription (${plan === 'pro_annual' ? 'Annual' : 'Monthly'})`,
         now.toISOString()
       );
