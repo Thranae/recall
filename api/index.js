@@ -58638,9 +58638,9 @@ var require_axios = __commonJS({
           let bytesLeft;
           let passed = 0;
           if (maxRate) {
-            const now = Date.now();
-            if (!internals.ts || (passed = now - internals.ts) >= timeWindow) {
-              internals.ts = now;
+            const now2 = Date.now();
+            if (!internals.ts || (passed = now2 - internals.ts) >= timeWindow) {
+              internals.ts = now2;
               bytesLeft = bytesThreshold - internals.bytes;
               internals.bytes = bytesLeft < 0 ? -bytesLeft : 0;
               passed = 0;
@@ -59232,13 +59232,13 @@ var require_axios = __commonJS({
       let firstSampleTS;
       min = min !== void 0 ? min : 1e3;
       return function push(chunkLength) {
-        const now = Date.now();
+        const now2 = Date.now();
         const startedAt = timestamps[tail];
         if (!firstSampleTS) {
-          firstSampleTS = now;
+          firstSampleTS = now2;
         }
         bytes[head] = chunkLength;
-        timestamps[head] = now;
+        timestamps[head] = now2;
         let i = tail;
         let bytesCount = 0;
         while (i !== head) {
@@ -59249,10 +59249,10 @@ var require_axios = __commonJS({
         if (head === tail) {
           tail = (tail + 1) % samplesCount;
         }
-        if (now - firstSampleTS < min) {
+        if (now2 - firstSampleTS < min) {
           return;
         }
-        const passed = startedAt && now - startedAt;
+        const passed = startedAt && now2 - startedAt;
         return passed ? Math.round(bytesCount * 1e3 / passed) : void 0;
       };
     }
@@ -59261,8 +59261,8 @@ var require_axios = __commonJS({
       let threshold = 1e3 / freq;
       let lastArgs;
       let timer;
-      const invoke = (args, now = Date.now()) => {
-        timestamp = now;
+      const invoke = (args, now2 = Date.now()) => {
+        timestamp = now2;
         lastArgs = null;
         if (timer) {
           clearTimeout(timer);
@@ -59271,10 +59271,10 @@ var require_axios = __commonJS({
         fn(...args);
       };
       const throttled = (...args) => {
-        const now = Date.now();
-        const passed = now - timestamp;
+        const now2 = Date.now();
+        const passed = now2 - timestamp;
         if (passed >= threshold) {
-          invoke(args, now);
+          invoke(args, now2);
         } else {
           lastArgs = args;
           if (!timer) {
@@ -60947,8 +60947,8 @@ var require_axios = __commonJS({
           request.send(requestData || null);
         };
         if (xsrfCookieName) {
-          const now = typeof performance !== "undefined" && utils$1.isFunction(performance.now) ? () => performance.now() : Date.now;
-          const deadline = request.timeout > 0 ? now() + Number(request.timeout) : void 0;
+          const now2 = typeof performance !== "undefined" && utils$1.isFunction(performance.now) ? () => performance.now() : Date.now;
+          const deadline = request.timeout > 0 ? now2() + Number(request.timeout) : void 0;
           const abortOnTimeout = () => {
             if (!request) return;
             const xhr = request;
@@ -60957,7 +60957,7 @@ var require_axios = __commonJS({
           };
           if (deadline !== void 0) {
             const scheduleTimeout = () => {
-              const remaining = deadline - now();
+              const remaining = deadline - now2();
               if (remaining > 0) {
                 timeoutId = setTimeout(scheduleTimeout, Math.min(remaining, 2147483647));
               } else {
@@ -60968,7 +60968,7 @@ var require_axios = __commonJS({
           }
           cookies.readAsync(xsrfCookieName).then((value) => {
             if (!request) return;
-            if (deadline !== void 0 && now() >= deadline) {
+            if (deadline !== void 0 && now2() >= deadline) {
               abortOnTimeout();
               return;
             }
@@ -61718,8 +61718,8 @@ var require_axios = __commonJS({
     function resolveClock() {
       return typeof performance !== "undefined" && utils$1.isFunction(performance.now) ? () => performance.now() : Date.now;
     }
-    function elapsedSince(now, start) {
-      return Math.max(0, Math.round(now() - start));
+    function elapsedSince(now2, start) {
+      return Math.max(0, Math.round(now2() - start));
     }
     function dispatchRequest(_config) {
       const config = utils$1.toSafeFlatObject(_config);
@@ -61730,11 +61730,11 @@ var require_axios = __commonJS({
         config.headers.setContentType("application/x-www-form-urlencoded", false);
       }
       const adapter = adapters.getAdapter(config.adapter || defaults.adapter, config);
-      const now = resolveClock();
-      const start = now();
+      const now2 = resolveClock();
+      const start = now2();
       return adapter(config).then(function onAdapterResolution(response) {
         throwIfCancellationRequested(config);
-        response.duration = elapsedSince(now, start);
+        response.duration = elapsedSince(now2, start);
         config.response = response;
         try {
           response.data = transformData.call(config, config.transformResponse, response);
@@ -61747,7 +61747,7 @@ var require_axios = __commonJS({
         if (!isCancel(reason)) {
           throwIfCancellationRequested(config);
           if (reason && reason.response) {
-            reason.response.duration = elapsedSince(now, start);
+            reason.response.duration = elapsedSince(now2, start);
             config.response = reason.response;
             try {
               reason.response.data = transformData.call(config, config.transformResponse, reason.response);
@@ -69714,8 +69714,8 @@ var WsClient2 = class {
     if (this.closed) {
       throw new LibsqlError("The client is closed", "CLIENT_CLOSED");
     }
-    const now = /* @__PURE__ */ new Date();
-    const ageMillis = now.valueOf() - this.#connState.openTime.valueOf();
+    const now2 = /* @__PURE__ */ new Date();
+    const ageMillis = now2.valueOf() - this.#connState.openTime.valueOf();
     if (ageMillis > maxConnAgeMillis && this.#futureConnState === void 0) {
       const futureConnState = this.#openConn();
       this.#futureConnState = futureConnState;
@@ -72944,7 +72944,7 @@ async function processScreenshotDirectly(screenshotId, userId, storageKey, mimeT
     embedding = await generateTextEmbedding(textForEmbedding);
   } catch {
   }
-  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const now2 = (/* @__PURE__ */ new Date()).toISOString();
   try {
     await db.prepare("DELETE FROM extracted_messages WHERE screenshot_id = ?").run(screenshotId);
     await db.prepare("DELETE FROM game_results WHERE screenshot_id = ?").run(screenshotId);
@@ -72970,7 +72970,7 @@ async function processScreenshotDirectly(screenshotId, userId, storageKey, mimeT
     analysis.visual_description,
     JSON.stringify(embedding),
     JSON.stringify(analysis.tags),
-    now,
+    now2,
     screenshotId,
     userId
   );
@@ -73101,8 +73101,8 @@ async function executeJob(job) {
 
 // server/services/autopayService.ts
 async function processRecurringDeductions() {
-  const now = /* @__PURE__ */ new Date();
-  const nowIso = now.toISOString();
+  const now2 = /* @__PURE__ */ new Date();
+  const nowIso = now2.toISOString();
   const results = {
     processed: 0,
     deductions: []
@@ -73121,7 +73121,7 @@ async function processRecurringDeductions() {
         const plan = user.subscription_plan === "pro_annual" ? "pro_annual" : "pro_monthly";
         const amount = plan === "pro_annual" ? 700 : 77;
         const durationDays = plan === "pro_annual" ? 365 : 30;
-        const nextBilling = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+        const nextBilling = new Date(now2.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
         const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const subId = user.autopay_mandate_id || `sub_${user.id}`;
         const paymentMethod = user.autopay_method || (user.autopay_vpa ? `UPI Autopay (${user.autopay_vpa})` : "Card e-Mandate");
@@ -75970,11 +75970,11 @@ var resolveHostname = (options, callback) => {
   let cached;
   if (dnsCache.has(options.host)) {
     cached = dnsCache.get(options.host);
-    const now = Date.now();
-    if (now - lastCacheCleanup > CACHE_CLEANUP_INTERVAL) {
-      lastCacheCleanup = now;
+    const now2 = Date.now();
+    if (now2 - lastCacheCleanup > CACHE_CLEANUP_INTERVAL) {
+      lastCacheCleanup = now2;
       for (const [host2, entry] of dnsCache.entries()) {
-        if (entry.expires && entry.expires < now) {
+        if (entry.expires && entry.expires < now2) {
           dnsCache.delete(host2);
         }
       }
@@ -75984,7 +75984,7 @@ var resolveHostname = (options, callback) => {
         keys.forEach((key) => dnsCache.delete(key));
       }
     }
-    if (!cached.expires || cached.expires >= now) {
+    if (!cached.expires || cached.expires >= now2) {
       return callback(null, formatDNSValue(cached.value, {
         servername,
         cached: true
@@ -86869,17 +86869,17 @@ var SMTPPool = class extends EventEmitter4 {
     if (!this._rateLimit.limit) {
       return callback();
     }
-    const now = Date.now();
+    const now2 = Date.now();
     if (this._rateLimit.counter < this._rateLimit.limit) {
       return callback();
     }
     this._rateLimit.waiting.push(callback);
-    if (this._rateLimit.checkpoint <= now - this._rateLimit.delta) {
+    if (this._rateLimit.checkpoint <= now2 - this._rateLimit.delta) {
       return this._clearRateLimit();
     }
     if (!this._rateLimit.timeout) {
-      this._rateLimit.timeout = setTimeout(() => this._clearRateLimit(), this._rateLimit.delta - (now - this._rateLimit.checkpoint));
-      this._rateLimit.checkpoint = now;
+      this._rateLimit.timeout = setTimeout(() => this._clearRateLimit(), this._rateLimit.delta - (now2 - this._rateLimit.checkpoint));
+      this._rateLimit.checkpoint = now2;
     }
   }
   /**
@@ -88044,24 +88044,24 @@ async function buildUserProfile(userId) {
   let status = userRow.subscription_status || "active";
   let plan = userRow.subscription_plan || tier;
   let expiresAt = userRow.subscription_expires_at || null;
-  const now = /* @__PURE__ */ new Date();
-  if (tier === "pro") {
+  const now2 = /* @__PURE__ */ new Date();
+  if (tier === "pro" || tier === "basic") {
     const expDate = expiresAt ? new Date(expiresAt) : null;
     const trialDate = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
     if (status === "canceled" || status === "expired") {
       tier = "free";
       await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-    } else if (status === "trialing" && trialDate && trialDate < now) {
+    } else if (status === "trialing" && trialDate && trialDate < now2) {
       tier = "free";
       status = "expired";
       await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
-    } else if (status === "active" && expDate && expDate < now) {
+    } else if (status === "active" && expDate && expDate < now2) {
       tier = "free";
       status = "expired";
       await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userRow.id);
     }
   }
-  if (tier !== "pro") {
+  if (tier === "free") {
     try {
       const latestPaidInvoice = await db.prepare(`
         SELECT * FROM subscription_invoices 
@@ -88070,19 +88070,21 @@ async function buildUserProfile(userId) {
       `).get(userRow.id);
       if (latestPaidInvoice) {
         const invoiceDate = new Date(latestPaidInvoice.invoice_date).getTime();
-        const isAnnual = String(latestPaidInvoice.description || "").toLowerCase().includes("annual") || Number(latestPaidInvoice.amount) >= 500;
+        const desc = String(latestPaidInvoice.description || "").toLowerCase();
+        const isBasicPlan = desc.includes("basic") || Number(latestPaidInvoice.amount) === 39 || Number(latestPaidInvoice.amount) === 349;
+        const isAnnual = desc.includes("annual") || Number(latestPaidInvoice.amount) >= 300;
         const validDays = isAnnual ? 365 : 30;
         const expiryTime = invoiceDate + validDays * 24 * 60 * 60 * 1e3;
         if (expiryTime > Date.now()) {
-          tier = "pro";
+          tier = isBasicPlan ? "basic" : "pro";
           status = "active";
-          plan = isAnnual ? "pro_annual" : "pro_monthly";
+          plan = isBasicPlan ? isAnnual ? "basic_annual" : "basic_monthly" : isAnnual ? "pro_annual" : "pro_monthly";
           expiresAt = new Date(expiryTime).toISOString();
           await db.prepare(`
             UPDATE users 
-            SET subscription_tier = 'pro', subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
+            SET subscription_tier = ?, subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
             WHERE id = ?
-          `).run(plan, expiresAt, userRow.id);
+          `).run(tier, plan, expiresAt, userRow.id);
         }
       }
     } catch (reconcileErr) {
@@ -89099,7 +89101,7 @@ ${desc}`;
 }
 async function detectClutterCandidates(userScreenshots) {
   const candidates = [];
-  const now = Date.now();
+  const now2 = Date.now();
   for (const sc of userScreenshots) {
     const ocr = (sc.ocr_text || "").trim();
     const desc = (sc.visual_description || "").trim();
@@ -89107,7 +89109,7 @@ async function detectClutterCandidates(userScreenshots) {
 ${desc}`;
     if (!combined) continue;
     const createdAt = new Date(sc.created_at || sc.uploaded_at).getTime();
-    const ageDays = Math.max(0, Math.floor((now - createdAt) / (1e3 * 60 * 60 * 24)));
+    const ageDays = Math.max(0, Math.floor((now2 - createdAt) / (1e3 * 60 * 60 * 24)));
     const otpMatch = ocr.match(/(?:otp|code|pin|verification(?:\s*code)?|passcode)\s*(?:is|:|#|-)?\s*\b(\d{4,8})\b/i);
     if (otpMatch && ageDays >= 1) {
       candidates.push({
@@ -89128,7 +89130,7 @@ ${desc}`;
     if (isEvent && dateMatch && ageDays >= 2) {
       const parsedYear = dateMatch[1] ? Number(dateMatch[1]) : (/* @__PURE__ */ new Date()).getFullYear();
       const eventTime = Date.parse(`${dateMatch[0]} ${parsedYear}`);
-      if (!Number.isNaN(eventTime) && eventTime < now) {
+      if (!Number.isNaN(eventTime) && eventTime < now2) {
         candidates.push({
           id: `clutter_past_${sc.id}`,
           screenshotId: sc.id,
@@ -89246,17 +89248,19 @@ router2.post(
         console.warn("Safety user check in upload:", safetyErr);
       }
       const userRow = await db.prepare("SELECT subscription_tier FROM users WHERE id = ?").get(userId);
-      const isPro = userRow?.subscription_tier === "pro";
+      const userTier = userRow?.subscription_tier || "free";
+      const isPro = userTier === "pro";
+      const isBasic = userTier === "basic";
       if (!isPro) {
         const countRow = await db.prepare("SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?").get(userId);
         const currentCount = Number(countRow?.total || 0);
-        const FREE_VAULT_LIMIT = 50;
-        if (currentCount + files.length > FREE_VAULT_LIMIT) {
+        const vaultLimit = isBasic ? 500 : 50;
+        if (currentCount + files.length > vaultLimit) {
           res.status(403).json({
-            error: `Free vault storage limit reached (${currentCount}/${FREE_VAULT_LIMIT} screenshots). Upgrade to Recall Pro for unlimited vault storage.`,
+            error: `${isBasic ? "Basic" : "Free"} vault storage limit reached (${currentCount}/${vaultLimit} screenshots). Upgrade to Recall ${isBasic ? "Pro" : "Basic or Pro"} for more storage.`,
             code: "UPGRADE_REQUIRED",
             current_count: currentCount,
-            limit: FREE_VAULT_LIMIT
+            limit: vaultLimit
           });
           return;
         }
@@ -89264,7 +89268,7 @@ router2.post(
       for (const file of files) {
         const screenshotId = `sc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         const storageKey = path5.join(userId, file.filename).replace(/\\/g, "/");
-        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const now2 = (/* @__PURE__ */ new Date()).toISOString();
         let effectiveMime = file.mimetype || "image/jpeg";
         let effectiveFilename = file.originalname;
         let effectiveSize = file.size;
@@ -89309,8 +89313,8 @@ router2.post(
           null,
           // height (optional)
           effectiveSize,
-          now,
-          now,
+          now2,
+          now2,
           initialCategory,
           "queued",
           null,
@@ -89319,8 +89323,8 @@ router2.post(
           null,
           "[]",
           base64Data,
-          now,
-          now
+          now2,
+          now2
         );
         createdScreenshots.push({
           id: screenshotId,
@@ -89903,7 +89907,7 @@ router2.post("/process-pending", authMiddleware, async (req, res) => {
       embedding = await generateTextEmbedding(textForEmbedding);
     } catch {
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now2 = (/* @__PURE__ */ new Date()).toISOString();
     await db.prepare(`
       UPDATE screenshots
       SET category = ?, processing_status = 'ready', ocr_text = ?, visual_description = ?,
@@ -89915,7 +89919,7 @@ router2.post("/process-pending", authMiddleware, async (req, res) => {
       analysis.visual_description,
       JSON.stringify(analysis.tags),
       JSON.stringify(embedding),
-      now,
+      now2,
       pending.id
     );
     try {
@@ -90029,7 +90033,9 @@ var handleImageChat = async (req, res) => {
       return;
     }
     const userRow = await db.prepare("SELECT subscription_tier, ai_queries_today, ai_queries_reset_at FROM users WHERE id = ?").get(userId);
-    const isPro = userRow?.subscription_tier === "pro";
+    const userTier = userRow?.subscription_tier || "free";
+    const isPro = userTier === "pro";
+    const isBasic = userTier === "basic";
     if (!isPro) {
       const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       let queriesToday = Number(userRow?.ai_queries_today || 0);
@@ -90037,13 +90043,13 @@ var handleImageChat = async (req, res) => {
         queriesToday = 0;
         await db.prepare("UPDATE users SET ai_queries_today = 0, ai_queries_reset_at = ? WHERE id = ?").run(todayStr, userId);
       }
-      const DAILY_AI_LIMIT = 5;
-      if (queriesToday >= DAILY_AI_LIMIT) {
+      const dailyAiLimit = isBasic ? 25 : 5;
+      if (queriesToday >= dailyAiLimit) {
         res.status(403).json({
-          error: `Daily free AI question limit reached (${DAILY_AI_LIMIT}/${DAILY_AI_LIMIT}). Upgrade to Recall Pro for unlimited conversational AI and precision lookups.`,
+          error: `Daily ${isBasic ? "Basic" : "Free"} AI question limit reached (${dailyAiLimit}/${dailyAiLimit}). Upgrade to Recall ${isBasic ? "Pro for unlimited conversational AI and precision lookups." : "Basic (25/day) or Pro (unlimited)."}`,
           code: "UPGRADE_REQUIRED",
           queries_today: queriesToday,
-          limit: DAILY_AI_LIMIT
+          limit: dailyAiLimit
         });
         return;
       }
@@ -91373,15 +91379,25 @@ var JWT_SECRET3 = process.env.JWT_SECRET || "recall_super_secret_jwt_key_2026_de
 var router5 = (0, import_express5.Router)();
 var FREE_SCREENSHOT_LIMIT = 50;
 var FREE_DAILY_AI_LIMIT = 5;
+var BASIC_SCREENSHOT_LIMIT = 500;
+var BASIC_DAILY_AI_LIMIT = 25;
 var PRO_PERKS = [
   "Unlimited screenshot vault storage",
   "Unlimited Apple-style Visual Look-Up interactive pins",
   "Unlimited multi-turn Gemini AI screenshot chat",
   "Multi-screenshot conversation thread stitcher",
   "One-tap AI clutter sweeper & duplicate cleanup",
+  "Proactive Vault Digest (Coupons, events, bills)",
   "Turbo edge cloud OCR & neural semantic indexing",
   "Private biometric & PIN-locked secret albums",
   "Full high-res text, Markdown & PDF export"
+];
+var BASIC_PERKS = [
+  "Up to 500 screenshots cloud vault storage (10x free tier)",
+  "Full-text high-speed cloud OCR search",
+  "25 AI Visual Look-Up queries & chat per day",
+  "Auto-category detection (Chats, Code, Notes, Products)",
+  "Smart custom albums & high-res image downloads"
 ];
 var FREE_PERKS = [
   "Up to 50 screenshots vault storage",
@@ -91410,6 +91426,38 @@ router5.get("/plans", (_req, res) => {
         screenshot_limit: FREE_SCREENSHOT_LIMIT,
         ai_daily_limit: FREE_DAILY_AI_LIMIT,
         perks: FREE_PERKS
+      },
+      {
+        id: "basic_monthly",
+        name: "Recall Basic Monthly",
+        tier: "basic",
+        price: 39,
+        interval: "month",
+        price_display: "\u20B939 / mo",
+        trial_days: 7,
+        trial_text: "7 Days Free Trial \u2022 \u20B90 today",
+        recurring_text: "\u20B939/month after trial ends",
+        description: "Generous 500 screenshot vault storage & 25 daily AI lookups.",
+        screenshot_limit: BASIC_SCREENSHOT_LIMIT,
+        ai_daily_limit: BASIC_DAILY_AI_LIMIT,
+        perks: BASIC_PERKS
+      },
+      {
+        id: "basic_annual",
+        name: "Recall Basic Annual",
+        tier: "basic",
+        price: 349,
+        interval: "year",
+        price_display: "\u20B9349 / yr",
+        badge: "Save 25%",
+        monthly_equivalent: "\u20B929 / mo",
+        trial_days: 7,
+        trial_text: "7 Days Free Trial \u2022 \u20B90 today",
+        recurring_text: "\u20B9349/year after trial ends",
+        description: "Affordable annual visual vault storage for power mobile users.",
+        screenshot_limit: BASIC_SCREENSHOT_LIMIT,
+        ai_daily_limit: BASIC_DAILY_AI_LIMIT,
+        perks: [...BASIC_PERKS, "Priority cloud OCR indexing queue"]
       },
       {
         id: "pro_monthly",
@@ -91456,24 +91504,24 @@ router5.get("/current", authMiddleware, async (req, res) => {
              ai_queries_today, ai_queries_reset_at
       FROM users WHERE id = ?
     `).get(userId);
-    let tier = userRow?.subscription_tier === "pro" ? "pro" : "free";
+    let tier = userRow?.subscription_tier === "pro" ? "pro" : userRow?.subscription_tier === "basic" ? "basic" : "free";
     let plan = userRow?.subscription_plan || tier;
     let status = userRow?.subscription_status || "active";
     let expiresAt = userRow?.subscription_expires_at || null;
     let trialEndsAt = userRow?.trial_ends_at || null;
     let nextBillingAt = userRow?.next_billing_at || null;
-    const now = /* @__PURE__ */ new Date();
-    if (tier === "pro") {
+    const now2 = /* @__PURE__ */ new Date();
+    if (tier === "pro" || tier === "basic") {
       const expDate = expiresAt ? new Date(expiresAt) : null;
       const trialDate = trialEndsAt ? new Date(trialEndsAt) : null;
-      if (status === "trialing" && trialDate && trialDate < now) {
+      if (status === "trialing" && trialDate && trialDate < now2) {
         tier = "free";
         status = "expired";
-        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
-      } else if (status === "active" && expDate && expDate < now) {
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userId);
+      } else if (status === "active" && expDate && expDate < now2) {
         tier = "free";
         status = "expired";
-        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userId);
       }
     }
     const nowMs = Date.now();
@@ -91494,6 +91542,10 @@ router5.get("/current", authMiddleware, async (req, res) => {
       ORDER BY invoice_date DESC LIMIT 5
     `).all(userId);
     const isPro = tier === "pro";
+    const isBasic = tier === "basic";
+    const screenshotLimit = isPro ? null : isBasic ? BASIC_SCREENSHOT_LIMIT : FREE_SCREENSHOT_LIMIT;
+    const canUpload = isPro || screenshotCount < (isBasic ? BASIC_SCREENSHOT_LIMIT : FREE_SCREENSHOT_LIMIT);
+    const aiQueriesLimit = isPro ? null : isBasic ? BASIC_DAILY_AI_LIMIT : FREE_DAILY_AI_LIMIT;
     res.json({
       success: true,
       subscription: {
@@ -91511,12 +91563,13 @@ router5.get("/current", authMiddleware, async (req, res) => {
         autopay_method: userRow?.autopay_method || null,
         autopay_vpa: userRow?.autopay_vpa || null,
         screenshot_count: screenshotCount,
-        screenshot_limit: isPro ? null : FREE_SCREENSHOT_LIMIT,
-        can_upload: isPro || screenshotCount < FREE_SCREENSHOT_LIMIT,
+        screenshot_limit: screenshotLimit,
+        can_upload: canUpload,
         ai_queries_today: aiQueriesToday,
-        ai_queries_limit: isPro ? null : FREE_DAILY_AI_LIMIT,
+        ai_queries_limit: aiQueriesLimit,
+        is_basic: isBasic,
         is_pro: isPro,
-        perks: isPro ? PRO_PERKS : FREE_PERKS,
+        perks: isPro ? PRO_PERKS : isBasic ? BASIC_PERKS : FREE_PERKS,
         invoices
       }
     });
@@ -91535,9 +91588,9 @@ router5.post("/start-trial", authMiddleware, async (req, res) => {
       bank_name = "HDFC Bank",
       card_last4 = "4242"
     } = req.body;
-    const validPlans = ["pro_monthly", "pro_annual"];
+    const validPlans = ["basic_monthly", "basic_annual", "pro_monthly", "pro_annual"];
     if (!validPlans.includes(plan)) {
-      res.status(400).json({ error: "Invalid plan. Choose pro_monthly or pro_annual." });
+      res.status(400).json({ error: "Invalid plan. Choose basic_monthly, basic_annual, pro_monthly, or pro_annual." });
       return;
     }
     let effectiveMethod = "UPI Autopay";
@@ -91552,19 +91605,21 @@ router5.post("/start-trial", authMiddleware, async (req, res) => {
     } else {
       effectiveMethod = `Card e-Mandate (${bank_name || "Bank"} ending in ${card_last4 || "4242"})`;
     }
-    const now = /* @__PURE__ */ new Date();
+    const targetTier = plan.startsWith("basic") ? "basic" : "pro";
+    const isAnnual = plan.includes("annual");
+    const recurringAmount = plan === "pro_annual" ? 700 : plan === "pro_monthly" ? 77 : plan === "basic_annual" ? 349 : 39;
+    const now2 = /* @__PURE__ */ new Date();
     const trialDays = 7;
-    const trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1e3).toISOString();
+    const trialEndsAt = new Date(now2.getTime() + trialDays * 24 * 60 * 60 * 1e3).toISOString();
     const nextBillingAt = trialEndsAt;
-    const durationDays = plan === "pro_annual" ? 365 : 30;
+    const durationDays = isAnnual ? 365 : 30;
     const expiresAt = new Date(new Date(trialEndsAt).getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
-    const recurringAmount = plan === "pro_annual" ? 700 : 77;
     const mandateId = `UMRN_REC_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const invoiceId = `inv_trial_${Date.now()}`;
     await db.prepare(`
       UPDATE users 
-      SET subscription_tier = 'pro',
+      SET subscription_tier = ?,
           subscription_status = 'trialing',
           subscription_plan = ?,
           subscription_expires_at = ?,
@@ -91574,13 +91629,13 @@ router5.post("/start-trial", authMiddleware, async (req, res) => {
           autopay_vpa = ?,
           next_billing_at = ?
       WHERE id = ?
-    `).run(plan, expiresAt, trialEndsAt, mandateId, effectiveMethod, cleanVpa, nextBillingAt, userId);
+    `).run(targetTier, plan, expiresAt, trialEndsAt, mandateId, effectiveMethod, cleanVpa, nextBillingAt, userId);
     try {
       await db.prepare(`
         INSERT INTO subscriptions (
           id, user_id, tier, plan, amount, currency, status, payment_method, mandate_id, trial_start, trial_end, created_at
-        ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active_trial', ?, ?, ?, ?, ?)
-      `).run(subId, userId, plan, recurringAmount, effectiveMethod, mandateId, now.toISOString(), trialEndsAt, now.toISOString());
+        ) VALUES (?, ?, ?, ?, ?, 'INR', 'active_trial', ?, ?, ?, ?, ?)
+      `).run(subId, userId, targetTier, plan, recurringAmount, effectiveMethod, mandateId, now2.toISOString(), trialEndsAt, now2.toISOString());
     } catch (e) {
       console.warn("Logging subscription entry note:", e);
     }
@@ -91595,7 +91650,7 @@ router5.post("/start-trial", authMiddleware, async (req, res) => {
         subId,
         `7-Day Free Trial Autopay Setup (\u20B90 paid today, \u20B9${recurringAmount} auto-debits on ${new Date(trialEndsAt).toLocaleDateString("en-IN")})`,
         effectiveMethod,
-        now.toISOString()
+        now2.toISOString()
       );
     } catch (invErr) {
       console.warn("Logging invoice note:", invErr);
@@ -91707,9 +91762,9 @@ router5.post("/webhook", async (req, res) => {
         if (user) targetUserId = user.id;
       }
       if (targetUserId) {
-        const now = /* @__PURE__ */ new Date();
+        const now2 = /* @__PURE__ */ new Date();
         const durationDays = plan === "pro_annual" ? 365 : 30;
-        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+        const expiresAt = new Date(now2.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
         await db.prepare(`
           UPDATE users
           SET subscription_tier = 'pro',
@@ -91724,7 +91779,7 @@ router5.post("/webhook", async (req, res) => {
             INSERT INTO subscription_invoices (
               id, user_id, subscription_id, amount, currency, status, description, payment_method, invoice_date
             ) VALUES (?, ?, ?, ?, 'INR', 'paid', ?, 'Razorpay Webhook', ?)
-          `).run(invId, targetUserId, orderId || subId || "rzp", amount, `Recall Pro (${plan === "pro_annual" ? "Annual" : "Monthly"})`, now.toISOString());
+          `).run(invId, targetUserId, orderId || subId || "rzp", amount, `Recall Pro (${plan === "pro_annual" ? "Annual" : "Monthly"})`, now2.toISOString());
         } catch {
         }
       }
@@ -91740,10 +91795,11 @@ router5.post("/restore", authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const profile = await buildUserProfile(userId);
     const isPro = profile?.subscription_tier === "pro";
+    const isBasic = profile?.subscription_tier === "basic";
     res.json({
       success: true,
       tier: profile?.subscription_tier || "free",
-      message: isPro ? "Active Pro subscription restored successfully!" : "No active paid subscriptions found for this account.",
+      message: isPro ? "Active Pro subscription restored successfully!" : isBasic ? "Active Basic subscription restored successfully!" : "No active paid subscriptions found for this account.",
       user: profile
     });
   } catch (err) {
@@ -91796,11 +91852,12 @@ router5.post("/create-order", async (req, res) => {
     if (userId) {
       try {
         const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const targetTier = String(plan).startsWith("basic") ? "basic" : "pro";
         await db.prepare(`
           INSERT INTO subscriptions (
             id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
-          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
-        `).run(subId, userId, plan, Math.round(numAmount / 100), order.id, (/* @__PURE__ */ new Date()).toISOString());
+          ) VALUES (?, ?, ?, ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, userId, targetTier, plan, Math.round(numAmount / 100), order.id, (/* @__PURE__ */ new Date()).toISOString());
       } catch (trackErr) {
         console.warn("Order subscription tracking note:", trackErr);
       }
@@ -91875,32 +91932,34 @@ router5.post("/verify-payment", async (req, res) => {
       });
       return;
     }
-    const now = /* @__PURE__ */ new Date();
-    const durationDays = plan === "pro_annual" ? 365 : 30;
+    const targetTier = String(plan).startsWith("basic") ? "basic" : "pro";
+    const isAnnual = String(plan).includes("annual");
+    const durationDays = isAnnual ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1e3).toISOString();
+    const planAmount = plan === "pro_annual" ? 700 : plan === "pro_monthly" ? 77 : plan === "basic_annual" ? 349 : 39;
     await db.prepare(`
       UPDATE users
-      SET subscription_tier = 'pro',
+      SET subscription_tier = ?,
           subscription_status = 'active',
           subscription_plan = ?,
           subscription_expires_at = ?
       WHERE id = ?
-    `).run(plan, expiresAt, targetUserId);
+    `).run(targetTier, plan, expiresAt, targetUserId);
     try {
       const existingSub = await db.prepare("SELECT id FROM subscriptions WHERE razorpay_subscription_id = ?").get(razorpay_order_id);
       if (existingSub) {
         await db.prepare(`
           UPDATE subscriptions 
-          SET status = 'active', tier = 'pro', plan = ?, amount = ?, created_at = ?
+          SET status = 'active', tier = ?, plan = ?, amount = ?, created_at = ?
           WHERE razorpay_subscription_id = ?
-        `).run(plan, plan === "pro_annual" ? 700 : 77, now.toISOString(), razorpay_order_id);
+        `).run(targetTier, plan, planAmount, now.toISOString(), razorpay_order_id);
       } else {
         const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         await db.prepare(`
           INSERT INTO subscriptions (
             id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
-          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
-        `).run(subId, targetUserId, plan, plan === "pro_annual" ? 700 : 77, razorpay_order_id, now.toISOString());
+          ) VALUES (?, ?, ?, ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, targetUserId, targetTier, plan, planAmount, razorpay_order_id, now.toISOString());
       }
     } catch (subErr) {
       console.warn("Subscription upsert note:", subErr);
@@ -91915,8 +91974,8 @@ router5.post("/verify-payment", async (req, res) => {
         invId,
         targetUserId,
         razorpay_order_id,
-        plan === "pro_annual" ? 700 : 77,
-        `Recall Pro Subscription (${plan === "pro_annual" ? "Annual" : "Monthly"})`,
+        planAmount,
+        `Recall ${targetTier === "pro" ? "Pro" : "Basic"} Subscription (${isAnnual ? "Annual" : "Monthly"})`,
         now.toISOString()
       );
     } catch (invErr) {
@@ -91925,7 +91984,7 @@ router5.post("/verify-payment", async (req, res) => {
     const updatedUser = await buildUserProfile(targetUserId);
     res.json({
       success: true,
-      message: "Payment verified successfully. Pro perks activated.",
+      message: `Payment verified successfully. ${targetTier === "pro" ? "Pro" : "Basic"} perks activated.`,
       order_id: razorpay_order_id,
       payment_id: razorpay_payment_id,
       user: updatedUser

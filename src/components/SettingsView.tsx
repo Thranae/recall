@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2, Crown, Layers, ArrowRight } from 'lucide-react';
+import { RefreshCw, Cpu, Loader2, User as UserIcon, Shield, Database, Lock, LogOut, CheckCircle2, Trash2, CopyCheck, Smartphone, Maximize2, Minimize2, Crown, Layers, ArrowRight, Zap } from 'lucide-react';
 import { api } from '../services/api';
 import { isNativePlatform, isFullscreenActive, toggleStatusBar } from '../utils/statusBar';
 import type { User, Screenshot, VaultInsightsSummary } from '../types';
@@ -133,6 +133,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
             {user.subscription_tier === 'pro' ? (
               <Crown className="h-4.5 w-4.5 text-amber-500 fill-amber-400 stroke-[2]" />
+            ) : user.subscription_tier === 'basic' ? (
+              <Zap className="h-4.5 w-4.5 text-blue-600 fill-blue-500 stroke-[2]" />
             ) : (
               <Layers className="h-4.5 w-4.5 text-[#3478F6] stroke-[2]" />
             )}
@@ -145,6 +147,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                 : user.subscription_tier === 'pro'
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-2xs'
+                : user.subscription_tier === 'basic'
+                ? 'bg-blue-100 text-blue-800 border border-blue-300'
                 : 'bg-slate-100 text-slate-600 border border-slate-200'
             }`}
           >
@@ -152,6 +156,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               ? '7-DAY TRIAL'
               : user.subscription_tier === 'pro'
               ? 'RECALL PRO'
+              : user.subscription_tier === 'basic'
+              ? 'RECALL BASIC'
               : 'FREE TIER'}
           </span>
         </div>
@@ -160,7 +166,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500 font-medium">Vault Storage Limit</span>
             <span className="font-bold text-[#172B4D]">
-              {user.subscription_tier === 'pro' ? 'Unlimited' : `${screenshots.length} / 50 used`}
+              {user.subscription_tier === 'pro'
+                ? 'Unlimited'
+                : user.subscription_tier === 'basic'
+                ? `${screenshots.length} / 500 used`
+                : `${screenshots.length} / 50 used`}
             </span>
           </div>
           <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200/60">
@@ -168,33 +178,50 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               className={`h-full rounded-full transition-all duration-500 ${
                 user.subscription_tier === 'pro'
                   ? 'bg-gradient-to-r from-amber-400 to-yellow-300 w-full'
+                  : user.subscription_tier === 'basic'
+                  ? 'bg-gradient-to-r from-blue-400 to-indigo-500'
                   : screenshots.length >= 45
                   ? 'bg-red-500'
                   : 'bg-[#3478F6]'
               }`}
               style={{
-                width: user.subscription_tier === 'pro' ? '100%' : `${Math.min(100, (screenshots.length / 50) * 100)}%`,
+                width:
+                  user.subscription_tier === 'pro'
+                    ? '100%'
+                    : user.subscription_tier === 'basic'
+                    ? `${Math.min(100, (screenshots.length / 500) * 100)}%`
+                    : `${Math.min(100, (screenshots.length / 50) * 100)}%`,
               }}
             />
           </div>
         </div>
 
-        {user.subscription_tier === 'pro' ? (
+        {user.subscription_tier === 'pro' || user.subscription_tier === 'basic' ? (
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-slate-500">
                 {user.subscription_status === 'trialing'
                   ? '7-Day Free Trial active (₹0 today)'
                   : user.subscription_plan === 'pro_annual'
-                  ? 'Annual plan (₹700/yr)'
-                  : 'Monthly plan (₹77/mo)'}
+                  ? 'Pro Annual (₹700/yr)'
+                  : user.subscription_plan === 'pro_monthly'
+                  ? 'Pro Monthly (₹77/mo)'
+                  : user.subscription_plan === 'basic_annual'
+                  ? 'Basic Annual (₹349/yr)'
+                  : 'Basic Monthly (₹39/mo)'}
               </span>
               <button
                 type="button"
                 onClick={onOpenSubscription}
                 className="text-xs font-bold text-[#3478F6] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>{user.subscription_status === 'trialing' ? 'Manage Autopay' : 'Manage Perks'}</span>
+                <span>
+                  {user.subscription_tier === 'basic'
+                    ? 'Upgrade to Pro'
+                    : user.subscription_status === 'trialing'
+                    ? 'Manage Autopay'
+                    : 'Manage Perks'}
+                </span>
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
@@ -222,7 +249,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             }}
           >
             <Crown className="h-3.5 w-3.5 text-amber-300" />
-            <span>Start 7-Day Free Trial (₹0 Today)</span>
+            <span>Upgrade to Basic (₹39) or Pro (₹77)</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         )}

@@ -32,7 +32,9 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const isPro = user?.subscription_tier === 'pro';
-  const isVaultFull = !isPro && currentScreenshotCount >= 50;
+  const isBasic = user?.subscription_tier === 'basic';
+  const vaultLimit = isPro ? null : isBasic ? 500 : 50;
+  const isVaultFull = vaultLimit !== null && currentScreenshotCount >= vaultLimit;
 
   // Prevent background page from scrolling when upload sheet is open
   useEffect(() => {
@@ -124,8 +126,12 @@ export const UploadSheet: React.FC<UploadSheetProps> = ({
                 <Crown className="h-4 w-4" />
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-amber-950 truncate">Free Vault Limit (50/50)</p>
-                <p className="text-[10.5px] text-amber-900/80 leading-tight">Upgrade to Recall Pro for unlimited storage</p>
+                <p className="text-xs font-bold text-amber-950 truncate">
+                  {isBasic ? 'Basic Vault Limit (500/500)' : 'Free Vault Limit (50/50)'}
+                </p>
+                <p className="text-[10.5px] text-amber-900/80 leading-tight">
+                  {isBasic ? 'Upgrade to Recall Pro for unlimited vault storage' : 'Upgrade to Recall Basic or Pro for more storage'}
+                </p>
               </div>
             </div>
             {onOpenSubscription && (

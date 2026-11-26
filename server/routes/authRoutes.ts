@@ -29,7 +29,7 @@ export async function buildUserProfile(userId: string): Promise<any> {
   const now = new Date();
 
   // 1. Enforce real expiration verification on tier
-  if (tier === 'pro') {
+  if (tier === 'pro' || tier === 'basic') {
     const expDate = expiresAt ? new Date(expiresAt) : null;
     const trialDate = userRow.trial_ends_at ? new Date(userRow.trial_ends_at) : null;
 
@@ -47,8 +47,8 @@ export async function buildUserProfile(userId: string): Promise<any> {
     }
   }
 
-  // 2. Auto-heal: If user is marked free or has no active pro, verify whether they have a paid invoice that is still valid
-  if (tier !== 'pro') {
+  // 2. Auto-heal: If user is marked free or has no active tier, verify whether they have a paid invoice that is still valid
+  if (tier === 'free') {
     try {
       const latestPaidInvoice = (await db.prepare(`
         SELECT * FROM subscription_invoices 
@@ -58,20 +58,22 @@ export async function buildUserProfile(userId: string): Promise<any> {
 
       if (latestPaidInvoice) {
         const invoiceDate = new Date(latestPaidInvoice.invoice_date).getTime();
-        const isAnnual = String(latestPaidInvoice.description || '').toLowerCase().includes('annual') || Number(latestPaidInvoice.amount) >= 500;
+        const desc = String(latestPaidInvoice.description || '').toLowerCase();
+        const isBasicPlan = desc.includes('basic') || Number(latestPaidInvoice.amount) === 39 || Number(latestPaidInvoice.amount) === 349;
+        const isAnnual = desc.includes('annual') || Number(latestPaidInvoice.amount) >= 300;
         const validDays = isAnnual ? 365 : 30;
         const expiryTime = invoiceDate + validDays * 24 * 60 * 60 * 1000;
 
         if (expiryTime > Date.now()) {
-          tier = 'pro';
+          tier = isBasicPlan ? 'basic' : 'pro';
           status = 'active';
-          plan = isAnnual ? 'pro_annual' : 'pro_monthly';
+          plan = isBasicPlan ? (isAnnual ? 'basic_annual' : 'basic_monthly') : (isAnnual ? 'pro_annual' : 'pro_monthly');
           expiresAt = new Date(expiryTime).toISOString();
           await db.prepare(`
             UPDATE users 
-            SET subscription_tier = 'pro', subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
+            SET subscription_tier = ?, subscription_status = 'active', subscription_plan = ?, subscription_expires_at = ?
             WHERE id = ?
-          `).run(plan, expiresAt, userRow.id);
+          `).run(tier, plan, expiresAt, userRow.id);
         }
       }
     } catch (reconcileErr) {

@@ -542,9 +542,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         )}
       </div>
 
-      {/* 3. Balanced Full-Width Plump Action Strip (No Empty Left Gap) */}
+      {/* 3. Balanced Full-Width Plump Action Strip (No Empty Left Gap, No Clipping) */}
       {!isSelectionMode && screenshots.length > 0 && (
-        <div className="grid grid-cols-4 gap-2 px-0.5">
+        <div className="grid grid-cols-4 gap-1.5 px-0.5">
           {/* Digest Chip */}
           <div className="relative w-full">
             <button
@@ -556,14 +556,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 }
                 setIsVaultDigestOpen(true);
               }}
-              className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+              className="plump-glass-pill !overflow-visible w-full h-8.5 flex items-center justify-center gap-1 rounded-full px-1 text-[10.5px] xs:text-[11px] sm:text-[11.5px] font-bold text-amber-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
               title="View Proactive Vault Digest (Coupons, Events, Bills)"
             >
               <Layers className="h-3.5 w-3.5 text-amber-500 stroke-[2.2] shrink-0" />
               <span className="font-bold tracking-tight whitespace-nowrap">Digest</span>
             </button>
             {!isPro && (
-              <span className="absolute -top-1.5 -right-1 z-20 pointer-events-none px-1 py-0.2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
+              <span className="absolute -top-1.5 -right-0.5 z-20 pointer-events-none px-1.5 py-0.2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
                 PRO
               </span>
             )}
@@ -580,14 +580,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 }
                 setIsClutterSweeperOpen(true);
               }}
-              className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
+              className="plump-glass-pill !overflow-visible w-full h-8.5 flex items-center justify-center gap-1 rounded-full px-1 text-[10.5px] xs:text-[11px] sm:text-[11.5px] font-bold text-rose-700 active:scale-95 cursor-pointer shadow-xs transition-transform"
               title="Smart Declutter Memory Broom"
             >
               <Trash2 className="h-3.5 w-3.5 text-rose-500 stroke-[2.2] shrink-0" />
               <span className="font-bold tracking-tight whitespace-nowrap">Clean</span>
             </button>
             {!isPro && (
-              <span className="absolute -top-1.5 -right-1 z-20 pointer-events-none px-1 py-0.2 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
+              <span className="absolute -top-1.5 -right-0.5 z-20 pointer-events-none px-1.5 py-0.2 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 text-[8px] font-black uppercase text-white shadow-xs border border-white tracking-wider leading-none">
                 PRO
               </span>
             )}
@@ -597,7 +597,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={handleToggleInsights}
-            className={`plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
+            className={`plump-glass-pill w-full h-8.5 flex items-center justify-center gap-1 rounded-full px-1 text-[10.5px] xs:text-[11px] sm:text-[11.5px] font-bold transition-transform active:scale-95 cursor-pointer shadow-xs ${
               showInsights
                 ? '!bg-[#3478F6] !text-white shadow-xs'
                 : 'text-indigo-700'
@@ -612,7 +612,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             type="button"
             onClick={() => setIsSelectionMode(true)}
-            className="plump-glass-pill w-full flex items-center justify-center gap-1 rounded-full px-1 text-[11px] sm:text-[11.5px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
+            className="plump-glass-pill w-full h-8.5 flex items-center justify-center gap-1 rounded-full px-1 text-[10.5px] xs:text-[11px] sm:text-[11.5px] font-bold text-[#3478F6] active:scale-95 cursor-pointer shadow-xs transition-transform"
             title="Select Multiple Screenshots"
           >
             <CheckSquare className="h-3.5 w-3.5 stroke-[2.4] text-[#3478F6] shrink-0" />

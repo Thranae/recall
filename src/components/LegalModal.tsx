@@ -62,13 +62,13 @@ export const LegalModal: React.FC<LegalModalProps> = ({
           </div>
 
           {/* Responsive Navigation Tabs (Never Clipped on Mobile) */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 px-3 py-2.5 border-b border-slate-200/60 bg-[#F4F8FD]/80">
+          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-200/60 bg-[#F4F8FD]/80 overflow-x-auto no-scrollbar scroll-smooth">
             {[
-              { id: 'pricing', label: 'Pricing & Plans', icon: CheckCircle2 },
-              { id: 'terms', label: 'Terms & Conditions', icon: FileText },
-              { id: 'privacy', label: 'Privacy Policy', icon: Shield },
-              { id: 'refund', label: 'Refund & Cancellation', icon: RefreshCw },
-              { id: 'contact', label: 'Contact Us', icon: Mail },
+              { id: 'pricing', label: 'Pricing', icon: CheckCircle2 },
+              { id: 'terms', label: 'Terms', icon: FileText },
+              { id: 'privacy', label: 'Privacy', icon: Shield },
+              { id: 'refund', label: 'Refunds', icon: RefreshCw },
+              { id: 'contact', label: 'Contact', icon: Mail },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeDoc === tab.id;
@@ -77,7 +77,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveDoc(tab.id as LegalDocType)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 shrink-0 whitespace-nowrap ${
                     isActive
                       ? 'bg-gradient-to-r from-[#5392FF] to-[#3478F6] text-white shadow-xs border border-white/80'
                       : 'bg-white/85 text-slate-600 hover:bg-white border border-slate-200/70 shadow-2xs'
@@ -105,66 +105,86 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   Recall provides transparent, flexible SaaS subscriptions for AI screenshot intelligence and personal visual memory. All paid plans include an instant 7-day risk-free trial.
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   {/* Free Tier */}
-                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-2.5 shadow-2xs">
+                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Free Tier</span>
-                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">Standard</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 text-[9px] font-bold">Standard</span>
                     </div>
-                    <div className="text-2xl font-black text-slate-900">
+                    <div className="text-xl font-black text-slate-900">
                       ₹0 <span className="text-xs font-normal text-slate-500">/ forever</span>
                     </div>
-                    <ul className="space-y-1.5 pt-1 text-[11.5px] text-slate-600">
+                    <ul className="space-y-1 pt-1 text-[11px] text-slate-600">
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span>Up to 50 screenshots in cloud vault</span>
+                        <CheckCircle2 className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span>50 screenshot vault</span>
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span>Standard OCR keyword search</span>
+                        <CheckCircle2 className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span>Standard OCR search</span>
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span>Basic visual album organization</span>
+                        <CheckCircle2 className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span>5 daily AI lookups</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Basic Tier */}
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-3.5 space-y-2 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Recall Basic</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700 text-[9px] font-bold">10x Storage</span>
+                    </div>
+                    <div className="text-xl font-black text-slate-900">
+                      ₹39 <span className="text-xs font-normal text-slate-500">/ mo</span>
+                    </div>
+                    <div className="text-[10.5px] font-semibold text-emerald-600">
+                      Annual: ₹349/yr (~₹29/mo)
+                    </div>
+                    <ul className="space-y-1 pt-1 text-[11px] text-slate-700">
+                      <li className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-blue-500 shrink-0" />
+                        <span>500 screenshot vault</span>
+                      </li>
+                      <li className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-blue-500 shrink-0" />
+                        <span>Fast cloud OCR search</span>
+                      </li>
+                      <li className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-blue-500 shrink-0" />
+                        <span>25 daily AI lookups</span>
                       </li>
                     </ul>
                   </div>
 
                   {/* Pro Tier */}
-                  <div className="rounded-2xl border-2 border-[#3478F6]/40 bg-gradient-to-br from-[#3478F6]/5 via-white to-blue-50/50 p-4 space-y-2.5 shadow-xs relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-[#3478F6] text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-bl-xl tracking-wider">
+                  <div className="rounded-2xl border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 p-3.5 space-y-2 shadow-xs relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[8.5px] font-black uppercase px-2 py-0.5 rounded-bl-lg tracking-wider">
                       Popular
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#3478F6]">Recall Pro</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Recall Pro</span>
                     </div>
-                    <div className="text-2xl font-black text-slate-900">
-                      ₹77 <span className="text-xs font-normal text-slate-500">/ month</span>
+                    <div className="text-xl font-black text-slate-900">
+                      ₹77 <span className="text-xs font-normal text-slate-500">/ mo</span>
                     </div>
-                    <div className="text-[11px] font-semibold text-emerald-600">
-                      Annual: ₹700 / year (~₹58/mo, Save 24%)
+                    <div className="text-[10.5px] font-semibold text-emerald-600">
+                      Annual: ₹700/yr (~₹58/mo)
                     </div>
-                    <ul className="space-y-1.5 pt-1 text-[11.5px] text-slate-700 font-medium">
+                    <ul className="space-y-1 pt-1 text-[11px] text-slate-700 font-medium">
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3478F6] shrink-0" />
-                        <span>7-Day Free Trial (₹0 due today)</span>
+                        <CheckCircle2 className="h-3 w-3 text-amber-600 shrink-0" />
+                        <span>Unlimited vault storage</span>
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3478F6] shrink-0" />
-                        <span>Unlimited screenshot vault storage</span>
+                        <CheckCircle2 className="h-3 w-3 text-amber-600 shrink-0" />
+                        <span>Unlimited AI Vision chat</span>
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3478F6] shrink-0" />
-                        <span>AI Vision & Deep Semantic Search</span>
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3478F6] shrink-0" />
-                        <span>Memory Broom & Proactive Vault Digest</span>
-                      </li>
-                      <li className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#3478F6] shrink-0" />
-                        <span>Razorpay UPI Autopay, Cards, NetBanking</span>
+                        <CheckCircle2 className="h-3 w-3 text-amber-600 shrink-0" />
+                        <span>Thread stitcher & broom</span>
                       </li>
                     </ul>
                   </div>

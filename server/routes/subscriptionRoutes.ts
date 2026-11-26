@@ -19,15 +19,27 @@ const router = Router();
 const FREE_SCREENSHOT_LIMIT = 50;
 const FREE_DAILY_AI_LIMIT = 5;
 
+const BASIC_SCREENSHOT_LIMIT = 500;
+const BASIC_DAILY_AI_LIMIT = 25;
+
 const PRO_PERKS = [
   'Unlimited screenshot vault storage',
   'Unlimited Apple-style Visual Look-Up interactive pins',
   'Unlimited multi-turn Gemini AI screenshot chat',
   'Multi-screenshot conversation thread stitcher',
   'One-tap AI clutter sweeper & duplicate cleanup',
+  'Proactive Vault Digest (Coupons, events, bills)',
   'Turbo edge cloud OCR & neural semantic indexing',
   'Private biometric & PIN-locked secret albums',
   'Full high-res text, Markdown & PDF export',
+];
+
+const BASIC_PERKS = [
+  'Up to 500 screenshots cloud vault storage (10x free tier)',
+  'Full-text high-speed cloud OCR search',
+  '25 AI Visual Look-Up queries & chat per day',
+  'Auto-category detection (Chats, Code, Notes, Products)',
+  'Smart custom albums & high-res image downloads',
 ];
 
 const FREE_PERKS = [
@@ -59,6 +71,38 @@ router.get('/plans', (_req, res: Response) => {
         screenshot_limit: FREE_SCREENSHOT_LIMIT,
         ai_daily_limit: FREE_DAILY_AI_LIMIT,
         perks: FREE_PERKS,
+      },
+      {
+        id: 'basic_monthly',
+        name: 'Recall Basic Monthly',
+        tier: 'basic',
+        price: 39,
+        interval: 'month',
+        price_display: '₹39 / mo',
+        trial_days: 7,
+        trial_text: '7 Days Free Trial • ₹0 today',
+        recurring_text: '₹39/month after trial ends',
+        description: 'Generous 500 screenshot vault storage & 25 daily AI lookups.',
+        screenshot_limit: BASIC_SCREENSHOT_LIMIT,
+        ai_daily_limit: BASIC_DAILY_AI_LIMIT,
+        perks: BASIC_PERKS,
+      },
+      {
+        id: 'basic_annual',
+        name: 'Recall Basic Annual',
+        tier: 'basic',
+        price: 349,
+        interval: 'year',
+        price_display: '₹349 / yr',
+        badge: 'Save 25%',
+        monthly_equivalent: '₹29 / mo',
+        trial_days: 7,
+        trial_text: '7 Days Free Trial • ₹0 today',
+        recurring_text: '₹349/year after trial ends',
+        description: 'Affordable annual visual vault storage for power mobile users.',
+        screenshot_limit: BASIC_SCREENSHOT_LIMIT,
+        ai_daily_limit: BASIC_DAILY_AI_LIMIT,
+        perks: [...BASIC_PERKS, 'Priority cloud OCR indexing queue'],
       },
       {
         id: 'pro_monthly',
@@ -111,7 +155,7 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
       FROM users WHERE id = ?
     `).get(userId)) as any;
 
-    let tier = userRow?.subscription_tier === 'pro' ? 'pro' : 'free';
+    let tier = userRow?.subscription_tier === 'pro' ? 'pro' : userRow?.subscription_tier === 'basic' ? 'basic' : 'free';
     let plan = userRow?.subscription_plan || tier;
     let status = userRow?.subscription_status || 'active';
     let expiresAt = userRow?.subscription_expires_at || null;
@@ -119,18 +163,18 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
     let nextBillingAt = userRow?.next_billing_at || null;
 
     const now = new Date();
-    // Enforce real expiration verification on Pro tier
-    if (tier === 'pro') {
+    // Enforce real expiration verification on Pro & Basic tiers
+    if (tier === 'pro' || tier === 'basic') {
       const expDate = expiresAt ? new Date(expiresAt) : null;
       const trialDate = trialEndsAt ? new Date(trialEndsAt) : null;
       if (status === 'trialing' && trialDate && trialDate < now) {
         tier = 'free';
         status = 'expired';
-        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userId);
       } else if (status === 'active' && expDate && expDate < now) {
         tier = 'free';
         status = 'expired';
-        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired' WHERE id = ?").run(userId);
+        await db.prepare("UPDATE users SET subscription_tier = 'free', subscription_status = 'expired', subscription_plan = 'free' WHERE id = ?").run(userId);
       }
     }
 
@@ -160,6 +204,10 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
     `).all(userId)) as any[];
 
     const isPro = tier === 'pro';
+    const isBasic = tier === 'basic';
+    const screenshotLimit = isPro ? null : isBasic ? BASIC_SCREENSHOT_LIMIT : FREE_SCREENSHOT_LIMIT;
+    const canUpload = isPro || screenshotCount < (isBasic ? BASIC_SCREENSHOT_LIMIT : FREE_SCREENSHOT_LIMIT);
+    const aiQueriesLimit = isPro ? null : isBasic ? BASIC_DAILY_AI_LIMIT : FREE_DAILY_AI_LIMIT;
 
     res.json({
       success: true,
@@ -178,12 +226,13 @@ router.get('/current', authMiddleware, async (req: AuthRequest, res: Response): 
         autopay_method: userRow?.autopay_method || null,
         autopay_vpa: userRow?.autopay_vpa || null,
         screenshot_count: screenshotCount,
-        screenshot_limit: isPro ? null : FREE_SCREENSHOT_LIMIT,
-        can_upload: isPro || screenshotCount < FREE_SCREENSHOT_LIMIT,
+        screenshot_limit: screenshotLimit,
+        can_upload: canUpload,
         ai_queries_today: aiQueriesToday,
-        ai_queries_limit: isPro ? null : FREE_DAILY_AI_LIMIT,
+        ai_queries_limit: aiQueriesLimit,
+        is_basic: isBasic,
         is_pro: isPro,
-        perks: isPro ? PRO_PERKS : FREE_PERKS,
+        perks: isPro ? PRO_PERKS : isBasic ? BASIC_PERKS : FREE_PERKS,
         invoices,
       },
     });
@@ -205,9 +254,9 @@ router.post('/start-trial', authMiddleware, async (req: AuthRequest, res: Respon
       card_last4 = '4242',
     } = req.body;
 
-    const validPlans = ['pro_monthly', 'pro_annual'];
+    const validPlans = ['basic_monthly', 'basic_annual', 'pro_monthly', 'pro_annual'];
     if (!validPlans.includes(plan)) {
-      res.status(400).json({ error: 'Invalid plan. Choose pro_monthly or pro_annual.' });
+      res.status(400).json({ error: 'Invalid plan. Choose basic_monthly, basic_annual, pro_monthly, or pro_annual.' });
       return;
     }
 
@@ -226,22 +275,25 @@ router.post('/start-trial', authMiddleware, async (req: AuthRequest, res: Respon
       effectiveMethod = `Card e-Mandate (${bank_name || 'Bank'} ending in ${card_last4 || '4242'})`;
     }
 
+    const targetTier = plan.startsWith('basic') ? 'basic' : 'pro';
+    const isAnnual = plan.includes('annual');
+    const recurringAmount = plan === 'pro_annual' ? 700 : plan === 'pro_monthly' ? 77 : plan === 'basic_annual' ? 349 : 39;
+
     const now = new Date();
     const trialDays = 7;
     const trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString();
     const nextBillingAt = trialEndsAt;
-    const durationDays = plan === 'pro_annual' ? 365 : 30;
+    const durationDays = isAnnual ? 365 : 30;
     const expiresAt = new Date(new Date(trialEndsAt).getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-    const recurringAmount = plan === 'pro_annual' ? 700 : 77;
 
     const mandateId = `UMRN_REC_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const invoiceId = `inv_trial_${Date.now()}`;
 
-    // 1. Update user record to Pro Trialing with real Autopay mandate
+    // 1. Update user record to Trialing with real Autopay mandate
     await db.prepare(`
       UPDATE users 
-      SET subscription_tier = 'pro',
+      SET subscription_tier = ?,
           subscription_status = 'trialing',
           subscription_plan = ?,
           subscription_expires_at = ?,
@@ -251,15 +303,15 @@ router.post('/start-trial', authMiddleware, async (req: AuthRequest, res: Respon
           autopay_vpa = ?,
           next_billing_at = ?
       WHERE id = ?
-    `).run(plan, expiresAt, trialEndsAt, mandateId, effectiveMethod, cleanVpa, nextBillingAt, userId);
+    `).run(targetTier, plan, expiresAt, trialEndsAt, mandateId, effectiveMethod, cleanVpa, nextBillingAt, userId);
 
     // 2. Record subscription entry
     try {
       await db.prepare(`
         INSERT INTO subscriptions (
           id, user_id, tier, plan, amount, currency, status, payment_method, mandate_id, trial_start, trial_end, created_at
-        ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active_trial', ?, ?, ?, ?, ?)
-      `).run(subId, userId, plan, recurringAmount, effectiveMethod, mandateId, now.toISOString(), trialEndsAt, now.toISOString());
+        ) VALUES (?, ?, ?, ?, ?, 'INR', 'active_trial', ?, ?, ?, ?, ?)
+      `).run(subId, userId, targetTier, plan, recurringAmount, effectiveMethod, mandateId, now.toISOString(), trialEndsAt, now.toISOString());
     } catch (e) {
       console.warn('Logging subscription entry note:', e);
     }
@@ -448,12 +500,15 @@ router.post('/restore', authMiddleware, async (req: AuthRequest, res: Response):
     const userId = req.user!.id;
     const profile = await buildUserProfile(userId);
     const isPro = profile?.subscription_tier === 'pro';
+    const isBasic = profile?.subscription_tier === 'basic';
 
     res.json({
       success: true,
       tier: profile?.subscription_tier || 'free',
       message: isPro
         ? 'Active Pro subscription restored successfully!'
+        : isBasic
+        ? 'Active Basic subscription restored successfully!'
         : 'No active paid subscriptions found for this account.',
       user: profile,
     });
@@ -516,11 +571,12 @@ router.post('/create-order', async (req: AuthRequest, res: Response): Promise<vo
     if (userId) {
       try {
         const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const targetTier = String(plan).startsWith('basic') ? 'basic' : 'pro';
         await db.prepare(`
           INSERT INTO subscriptions (
             id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
-          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
-        `).run(subId, userId, plan, Math.round(numAmount / 100), order.id, new Date().toISOString());
+          ) VALUES (?, ?, ?, ?, ?, 'INR', 'created', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, userId, targetTier, plan, Math.round(numAmount / 100), order.id, new Date().toISOString());
       } catch (trackErr) {
         console.warn('Order subscription tracking note:', trackErr);
       }
@@ -607,19 +663,21 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const now = new Date();
-    const durationDays = plan === 'pro_annual' ? 365 : 30;
+    const targetTier = String(plan).startsWith('basic') ? 'basic' : 'pro';
+    const isAnnual = String(plan).includes('annual');
+    const durationDays = isAnnual ? 365 : 30;
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+    const planAmount = plan === 'pro_annual' ? 700 : plan === 'pro_monthly' ? 77 : plan === 'basic_annual' ? 349 : 39;
 
     // 1. Update user record
     await db.prepare(`
       UPDATE users
-      SET subscription_tier = 'pro',
+      SET subscription_tier = ?,
           subscription_status = 'active',
           subscription_plan = ?,
           subscription_expires_at = ?
       WHERE id = ?
-    `).run(plan, expiresAt, targetUserId);
+    `).run(targetTier, plan, expiresAt, targetUserId);
 
     // 2. Upsert subscriptions table
     try {
@@ -627,16 +685,16 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
       if (existingSub) {
         await db.prepare(`
           UPDATE subscriptions 
-          SET status = 'active', tier = 'pro', plan = ?, amount = ?, created_at = ?
+          SET status = 'active', tier = ?, plan = ?, amount = ?, created_at = ?
           WHERE razorpay_subscription_id = ?
-        `).run(plan, plan === 'pro_annual' ? 700 : 77, now.toISOString(), razorpay_order_id);
+        `).run(targetTier, plan, planAmount, now.toISOString(), razorpay_order_id);
       } else {
         const subId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         await db.prepare(`
           INSERT INTO subscriptions (
             id, user_id, tier, plan, amount, currency, status, payment_method, razorpay_subscription_id, created_at
-          ) VALUES (?, ?, 'pro', ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
-        `).run(subId, targetUserId, plan, plan === 'pro_annual' ? 700 : 77, razorpay_order_id, now.toISOString());
+          ) VALUES (?, ?, ?, ?, ?, 'INR', 'active', 'Razorpay Standard Checkout', ?, ?)
+        `).run(subId, targetUserId, targetTier, plan, planAmount, razorpay_order_id, now.toISOString());
       }
     } catch (subErr) {
       console.warn('Subscription upsert note:', subErr);
@@ -653,8 +711,8 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
         invId,
         targetUserId,
         razorpay_order_id,
-        plan === 'pro_annual' ? 700 : 77,
-        `Recall Pro Subscription (${plan === 'pro_annual' ? 'Annual' : 'Monthly'})`,
+        planAmount,
+        `Recall ${targetTier === 'pro' ? 'Pro' : 'Basic'} Subscription (${isAnnual ? 'Annual' : 'Monthly'})`,
         now.toISOString()
       );
     } catch (invErr) {
@@ -665,7 +723,7 @@ router.post('/verify-payment', async (req: AuthRequest, res: Response): Promise<
 
     res.json({
       success: true,
-      message: 'Payment verified successfully. Pro perks activated.',
+      message: `Payment verified successfully. ${targetTier === 'pro' ? 'Pro' : 'Basic'} perks activated.`,
       order_id: razorpay_order_id,
       payment_id: razorpay_payment_id,
       user: updatedUser,

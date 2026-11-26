@@ -1,5 +1,5 @@
-export type SubscriptionTier = 'free' | 'pro';
-export type SubscriptionPlan = 'free' | 'pro_monthly' | 'pro_annual';
+export type SubscriptionTier = 'free' | 'basic' | 'pro';
+export type SubscriptionPlan = 'free' | 'basic_monthly' | 'basic_annual' | 'pro_monthly' | 'pro_annual';
 
 export interface User {
   id: string;
@@ -50,6 +50,7 @@ export interface SubscriptionInfo {
   can_upload: boolean;
   ai_queries_today: number;
   ai_queries_limit: number | null;
+  is_basic?: boolean;
   is_pro: boolean;
   perks: string[];
   invoices?: SubscriptionInvoice[];

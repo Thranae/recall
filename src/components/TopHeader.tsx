@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Loader2, Search, X, ArrowRight, Crown } from 'lucide-react';
+import { RefreshCw, Loader2, Search, X, ArrowRight, Crown, Zap } from 'lucide-react';
 import { RecallEmblem } from './RecallEmblem';
 
 interface TopHeaderProps {
@@ -13,6 +13,7 @@ interface TopHeaderProps {
   onSearchChange?: (q: string) => void;
   onSearchSubmit?: (q: string) => void;
   visible?: boolean;
+  isBasic?: boolean;
   isPro?: boolean;
   onOpenSubscription?: () => void;
 }
@@ -28,6 +29,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onSearchChange,
   onSearchSubmit,
   visible = true,
+  isBasic = false,
   isPro = false,
   onOpenSubscription,
 }) => {
@@ -223,6 +225,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       <Crown className="h-2.5 w-2.5 text-amber-600 fill-amber-500" />
                       <span>PRO</span>
                     </button>
+                  ) : isBasic ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSubscription?.();
+                      }}
+                      title="Recall Basic Active — Tap to upgrade to Pro"
+                      className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 text-blue-700 px-2 py-0.5 border border-blue-400/30 text-[9.5px] font-black tracking-wider shadow-2xs cursor-pointer active:scale-95 transition-transform"
+                    >
+                      <Zap className="h-2.5 w-2.5 text-blue-600 fill-blue-500" />
+                      <span>BASIC</span>
+                    </button>
                   ) : onOpenSubscription ? (
                     <button
                       type="button"
@@ -230,7 +245,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                         e.stopPropagation();
                         onOpenSubscription();
                       }}
-                      title="Upgrade to Recall Pro"
+                      title="Upgrade to Recall Plans"
                       className="inline-flex items-center gap-1 rounded-full bg-blue-50/90 hover:bg-blue-100/90 px-2.5 py-0.5 border border-blue-200/70 text-[10px] font-bold text-[#3478F6] transition-all cursor-pointer active:scale-95 shadow-2xs backdrop-blur-md"
                     >
                       <Crown className="h-2.5 w-2.5 text-[#3478F6] stroke-[2.4]" />

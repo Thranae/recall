@@ -384,6 +384,7 @@ export const App: React.FC = () => {
         showSearch={currentTab !== 'search'}
         searchQuery={libraryFilterQuery}
         visible={!isAnyModalActive}
+        isBasic={user?.subscription_tier === 'basic'}
         isPro={user?.subscription_tier === 'pro'}
         onOpenSubscription={() => setIsSubscriptionOpen(true)}
         onSearchChange={(q) => {

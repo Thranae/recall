@@ -105,19 +105,21 @@ router.post(
         console.warn('Safety user check in upload:', safetyErr);
       }
 
-      // Enforce Free Tier Screenshot Vault Quota (50 screenshots limit for free tier)
+      // Enforce Tier Screenshot Vault Quota (50 for free, 500 for basic, unlimited for pro)
       const userRow = (await db.prepare('SELECT subscription_tier FROM users WHERE id = ?').get(userId)) as any;
-      const isPro = userRow?.subscription_tier === 'pro';
+      const userTier = userRow?.subscription_tier || 'free';
+      const isPro = userTier === 'pro';
+      const isBasic = userTier === 'basic';
       if (!isPro) {
         const countRow = (await db.prepare('SELECT COUNT(*) as total FROM screenshots WHERE user_id = ?').get(userId)) as any;
         const currentCount = Number(countRow?.total || 0);
-        const FREE_VAULT_LIMIT = 50;
-        if (currentCount + files.length > FREE_VAULT_LIMIT) {
+        const vaultLimit = isBasic ? 500 : 50;
+        if (currentCount + files.length > vaultLimit) {
           res.status(403).json({
-            error: `Free vault storage limit reached (${currentCount}/${FREE_VAULT_LIMIT} screenshots). Upgrade to Recall Pro for unlimited vault storage.`,
+            error: `${isBasic ? 'Basic' : 'Free'} vault storage limit reached (${currentCount}/${vaultLimit} screenshots). Upgrade to Recall ${isBasic ? 'Pro' : 'Basic or Pro'} for more storage.`,
             code: 'UPGRADE_REQUIRED',
             current_count: currentCount,
-            limit: FREE_VAULT_LIMIT,
+            limit: vaultLimit,
           });
           return;
         }
@@ -1017,9 +1019,11 @@ const handleImageChat = async (req: AuthRequest, res: any) => {
       return;
     }
 
-    // Subscription Check: Daily AI Queries for Free Users
+    // Subscription Check: Daily AI Queries (5 for free, 25 for basic, unlimited for pro)
     const userRow = (await db.prepare('SELECT subscription_tier, ai_queries_today, ai_queries_reset_at FROM users WHERE id = ?').get(userId)) as any;
-    const isPro = userRow?.subscription_tier === 'pro';
+    const userTier = userRow?.subscription_tier || 'free';
+    const isPro = userTier === 'pro';
+    const isBasic = userTier === 'basic';
     if (!isPro) {
       const todayStr = new Date().toISOString().slice(0, 10);
       let queriesToday = Number(userRow?.ai_queries_today || 0);
@@ -1027,13 +1031,13 @@ const handleImageChat = async (req: AuthRequest, res: any) => {
         queriesToday = 0;
         await db.prepare('UPDATE users SET ai_queries_today = 0, ai_queries_reset_at = ? WHERE id = ?').run(todayStr, userId);
       }
-      const DAILY_AI_LIMIT = 5;
-      if (queriesToday >= DAILY_AI_LIMIT) {
+      const dailyAiLimit = isBasic ? 25 : 5;
+      if (queriesToday >= dailyAiLimit) {
         res.status(403).json({
-          error: `Daily free AI question limit reached (${DAILY_AI_LIMIT}/${DAILY_AI_LIMIT}). Upgrade to Recall Pro for unlimited conversational AI and precision lookups.`,
+          error: `Daily ${isBasic ? 'Basic' : 'Free'} AI question limit reached (${dailyAiLimit}/${dailyAiLimit}). Upgrade to Recall ${isBasic ? 'Pro for unlimited conversational AI and precision lookups.' : 'Basic (25/day) or Pro (unlimited).'}`,
           code: 'UPGRADE_REQUIRED',
           queries_today: queriesToday,
-          limit: DAILY_AI_LIMIT,
+          limit: dailyAiLimit,
         });
         return;
       }
