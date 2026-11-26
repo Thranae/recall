@@ -138,24 +138,46 @@ public class MainActivity extends BridgeActivity {
                             @Override
                             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                                 Uri uri = request.getUrl();
-                                String host = uri != null ? uri.getHost() : null;
+                                if (uri == null) return false;
+                                String scheme = uri.getScheme();
+                                String url = uri.toString();
+
+                                // 1. UPI Payment Intent Interception (GPay, PhonePe, Paytm, CRED)
+                                if ("upi".equalsIgnoreCase(scheme) || "credpay".equalsIgnoreCase(scheme) || url.startsWith("intent://")) {
+                                    try {
+                                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                                        startActivity(intent);
+                                        return true;
+                                    } catch (Exception e) {
+                                        return true;
+                                    }
+                                }
+
+                                // 2. Allow Google Auth & Razorpay / Banking 3DS ACS pages to complete in-window
+                                String host = uri.getHost();
                                 if (host != null && (
                                     host.contains("google.com") ||
                                     host.contains("accounts.google") ||
                                     host.contains("googleusercontent.com") ||
                                     host.contains("gstatic.com") ||
+                                    host.contains("razorpay.com") ||
+                                    host.contains("billdesk.com") ||
+                                    host.contains("payu.in") ||
+                                    host.contains("cashfree.com") ||
+                                    host.contains("juspay.in") ||
+                                    host.contains("npci.org.in") ||
                                     host.contains("localhost")
                                 )) {
                                     return false;
                                 }
-                                if (uri != null) {
-                                    try {
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                        startActivity(intent);
-                                        closePopupWebView();
-                                        return true;
-                                    } catch (Exception ignored) {}
-                                }
+
+                                // 3. Fallback for external links
+                                try {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                    startActivity(intent);
+                                    closePopupWebView();
+                                    return true;
+                                } catch (Exception ignored) {}
                                 return false;
                             }
                         });
