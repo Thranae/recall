@@ -17,6 +17,7 @@ import {
   Layers,
   Trash2,
   FileSpreadsheet,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackButton } from '../utils/backHandler';
@@ -53,6 +54,82 @@ const ensureRazorpayLoaded = (): Promise<boolean> => {
     document.head.appendChild(script);
   });
 };
+
+interface ComparisonRow {
+  name: string;
+  hint: string;
+  basic: string;
+  basicType: 'value' | 'check' | 'cross';
+  pro: string;
+  proType: 'value' | 'check';
+}
+
+const COMPARISON_ROWS: ComparisonRow[] = [
+  {
+    name: 'Vault Storage',
+    hint: 'Total screenshot capacity',
+    basic: '500',
+    basicType: 'value',
+    pro: 'Unlimited',
+    proType: 'value',
+  },
+  {
+    name: 'AI Visual Search',
+    hint: 'Ask questions across screenshots',
+    basic: '25 / day',
+    basicType: 'value',
+    pro: 'Unlimited',
+    proType: 'value',
+  },
+  {
+    name: 'High-Res OCR Engine',
+    hint: 'Instant text & code extraction',
+    basic: 'Included',
+    basicType: 'check',
+    pro: 'Included',
+    proType: 'check',
+  },
+  {
+    name: 'Conversation Stitcher',
+    hint: 'Stitch multi-screenshot chats',
+    basic: '—',
+    basicType: 'cross',
+    pro: 'Included',
+    proType: 'check',
+  },
+  {
+    name: 'Memory Broom Cleaner',
+    hint: 'Wipe duplicate & blurry captures',
+    basic: '—',
+    basicType: 'cross',
+    pro: 'Included',
+    proType: 'check',
+  },
+  {
+    name: 'Proactive Calendar Sync',
+    hint: 'Surface bills, tickets & events',
+    basic: '—',
+    basicType: 'cross',
+    pro: 'Included',
+    proType: 'check',
+  },
+  {
+    name: 'Biometric Secret Vault',
+    hint: 'PIN & FaceID protected albums',
+    basic: '—',
+    basicType: 'cross',
+    pro: 'Included',
+    proType: 'check',
+  },
+  {
+    name: 'Cloud Backup & Sync',
+    hint: 'Encrypted multi-device sync',
+    basic: 'Included',
+    basicType: 'check',
+    pro: 'Included',
+    proType: 'check',
+  },
+];
 
 export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   isOpen,
@@ -169,9 +246,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         currency: orderData.currency || 'INR',
         name: 'RECALL',
         description: selectedTier === 'pro'
-          ? (isAnnual ? 'Recall Pro (Annual - ₹700/yr)' : 'Recall Pro (Monthly - ₹77/mo)')
-          : (isAnnual ? 'Recall Basic (Annual - ₹349/yr)' : 'Recall Basic (Monthly - ₹39/mo)'),
-        image: window.location.origin + '/favicon.svg',
+          ? (isAnnual ? 'Recall Pro • Annual (₹700/yr)' : 'Recall Pro • Monthly (₹77/mo)')
+          : (isAnnual ? 'Recall Basic • Annual (₹349/yr)' : 'Recall Basic • Monthly (₹39/mo)'),
+        image: window.location.protocol === 'https:' ? `${window.location.origin}/favicon.svg` : undefined,
         order_id: orderData.order_id,
         prefill: {
           name: user?.name || '',
@@ -183,8 +260,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           tier: selectedTier,
         },
         theme: {
-          color: selectedTier === 'pro' ? '#D97706' : '#3478F6',
-          backdrop_color: 'rgba(15, 23, 42, 0.75)',
+          // Premium obsidian slate dark theme for clean, bank-grade checkout
+          color: '#0F172A',
+          backdrop_color: 'rgba(15, 23, 42, 0.85)',
           hide_topbar: false,
         },
         modal: {
@@ -199,6 +277,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             setErrorMessage('Payment cancelled. Your account was not charged.');
           },
         },
+        // Streamlined checkout sequence: suppresses duplicate blocks
         config: {
           display: {
             blocks: {
@@ -208,7 +287,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   {
                     method: 'upi',
                     flows: ['intent', 'qr', 'collect'],
-                    apps: ['google_pay', 'phonepe', 'paytm', 'bhim', 'cred'],
                   },
                 ],
               },
@@ -223,10 +301,12 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             },
             sequence: ['block.upi', 'block.other'],
             preferences: {
-              show_default_blocks: true,
+              show_default_blocks: false,
             },
           },
         },
+        send_sms_hash: true,
+        remember_customer: true,
         retry: {
           enabled: true,
           max_count: 2,
@@ -346,12 +426,12 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         >
           {/* Subtle Ambient Refraction Background */}
           <div
-            className="fixed inset-0 pointer-events-none -z-10 transition-colors duration-300"
+            className="fixed inset-0 pointer-events-none -z-10 transition-colors duration-500"
             style={{
               background:
                 selectedTier === 'pro'
-                  ? 'radial-gradient(circle at 20% 12%, rgba(245, 158, 11, 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(52, 120, 246, 0.12) 0%, transparent 50%)'
-                  : 'radial-gradient(circle at 20% 12%, rgba(52, 120, 246, 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(185, 217, 255, 0.22) 0%, transparent 50%)',
+                  ? 'radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.10) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(52, 120, 246, 0.08) 0%, transparent 50%)'
+                  : 'radial-gradient(circle at 20% 10%, rgba(52, 120, 246, 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 85%, rgba(185, 217, 255, 0.20) 0%, transparent 50%)',
             }}
           />
 
@@ -408,11 +488,11 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
           {/* Main Content Body */}
           <main className="w-full max-w-lg mx-auto px-4 pt-3 pb-16 space-y-4 flex-1">
-            {/* Hero Banner */}
+            {/* Hero Header */}
             <div className="text-center pt-1 pb-0.5">
               <div className="relative inline-flex items-center justify-center mb-2.5">
                 <div
-                  className="relative flex h-14 w-14 items-center justify-center rounded-[22px] text-white border border-white/95 shadow-[0_10px_24px_rgba(52,120,246,0.22)]"
+                  className="relative flex h-13 w-13 items-center justify-center rounded-[20px] text-white border border-white/95 shadow-[0_10px_24px_rgba(52,120,246,0.22)] transition-all duration-300"
                   style={{
                     background:
                       selectedTier === 'pro'
@@ -421,74 +501,86 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   }}
                 >
                   {selectedTier === 'pro' ? (
-                    <Crown className="h-7 w-7 stroke-[2.2] text-white fill-white/20" />
+                    <Crown className="h-6.5 w-6.5 stroke-[2.2] text-white fill-white/20" />
                   ) : (
-                    <Zap className="h-7 w-7 stroke-[2.2] text-white fill-white/20" />
+                    <Zap className="h-6.5 w-6.5 stroke-[2.2] text-white fill-white/20" />
                   )}
                 </div>
               </div>
 
-              <h1 className="font-['Outfit'] text-[23px] font-black tracking-tight text-[#172B4D] leading-tight">
+              <h1 className="font-['Outfit'] text-[22px] font-black tracking-tight text-[#172B4D] leading-tight">
                 {isPro
                   ? 'You are on Recall Pro'
                   : isBasic
                   ? 'You are on Recall Basic'
-                  : 'Choose Your Recall Plan'}
+                  : 'Upgrade Your Visual Memory'}
               </h1>
               <p className="mt-1 text-[12.5px] text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
                 {initialReason ||
                   (isPro
-                    ? 'Your Pro subscription is fully active. Enjoy unlimited screenshot search and AI visual memory.'
+                    ? 'Your Pro membership is active. Enjoy unlimited screenshots & conversational AI.'
                     : isBasic
-                    ? 'Your Basic plan is active with 500 screenshots & 25 daily AI searches.'
-                    : 'Upgrade from Free to unlock expansive storage and powerful screenshot AI.')}
+                    ? 'Your Basic plan is active with 500 vault slots & daily AI visual search.'
+                    : 'Choose the plan that fits your vault. Upgrade or cancel anytime.')}
               </p>
             </div>
 
             {/* 1. TIER SWITCHER (Basic vs Pro) */}
-            <div className="flex justify-center pt-0.5">
-              <div className="grid grid-cols-2 gap-1.5 w-full rounded-2xl bg-slate-200/65 p-1 border border-white/90 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTier('basic')}
-                  className={`flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all duration-150 cursor-pointer ${
-                    selectedTier === 'basic'
-                      ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Zap className={`h-3.5 w-3.5 ${selectedTier === 'basic' ? 'text-blue-600 fill-blue-500' : 'text-slate-400'}`} />
-                    <span className="text-xs font-black tracking-tight">Recall Basic</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-500 mt-0.5 tabular-nums">
-                    ₹39/mo • 500 Vault
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              {/* Basic Option */}
+              <button
+                type="button"
+                onClick={() => setSelectedTier('basic')}
+                className={`relative flex flex-col items-center justify-center py-2.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer text-left border ${
+                  selectedTier === 'basic'
+                    ? 'bg-white text-slate-900 border-[#3478F6] shadow-[0_4px_16px_rgba(52,120,246,0.14)] ring-2 ring-[#3478F6]/20'
+                    : 'bg-white/70 text-slate-500 border-slate-200/80 hover:bg-white hover:text-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 w-full justify-center">
+                  <Zap className={`h-3.5 w-3.5 shrink-0 ${selectedTier === 'basic' ? 'text-[#3478F6] fill-[#3478F6]' : 'text-slate-400'}`} />
+                  <span className="text-xs font-black tracking-tight">Recall Basic</span>
+                </div>
+                <div className="mt-1 text-center">
+                  <span className="text-xs font-extrabold text-slate-800 tabular-nums">
+                    {isAnnual ? '₹29' : '₹39'}
+                    <span className="text-[10px] font-normal text-slate-500">/mo</span>
                   </span>
-                </button>
+                  <span className="block text-[9.5px] font-semibold text-slate-400 mt-0.5">
+                    500 Vault Storage
+                  </span>
+                </div>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedTier('pro')}
-                  className={`relative flex flex-col items-center justify-center py-2 px-2 rounded-xl transition-all duration-150 cursor-pointer ${
-                    selectedTier === 'pro'
-                      ? 'bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md border border-slate-700'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <span className="absolute -top-2 right-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white px-1.5 py-0.2 shadow-2xs">
+              {/* Pro Option */}
+              <button
+                type="button"
+                onClick={() => setSelectedTier('pro')}
+                className={`relative flex flex-col items-center justify-center py-2.5 px-3 rounded-2xl transition-all duration-200 cursor-pointer text-left border ${
+                  selectedTier === 'pro'
+                    ? 'bg-gradient-to-br from-[#0B132B] via-[#1C2541] to-[#0A1128] text-white border-amber-400/50 shadow-[0_6px_20px_rgba(245,158,11,0.20)] ring-2 ring-amber-400/30'
+                    : 'bg-white/70 text-slate-500 border-slate-200/80 hover:bg-white hover:text-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 w-full justify-center">
+                  <Crown className={`h-3.5 w-3.5 shrink-0 ${selectedTier === 'pro' ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
+                  <span className={`text-xs font-black tracking-tight ${selectedTier === 'pro' ? 'text-amber-300' : ''}`}>
+                    Recall Pro
+                  </span>
+                  <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white px-1.5 py-0.2 shrink-0">
                     Popular
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <Crown className={`h-3.5 w-3.5 ${selectedTier === 'pro' ? 'text-amber-400 fill-amber-300' : 'text-slate-400'}`} />
-                    <span className={`text-xs font-black tracking-tight ${selectedTier === 'pro' ? 'text-amber-300' : ''}`}>
-                      Recall Pro
-                    </span>
-                  </div>
-                  <span className={`text-[10px] font-semibold mt-0.5 tabular-nums ${selectedTier === 'pro' ? 'text-slate-300' : 'text-slate-500'}`}>
-                    ₹77/mo • Unlimited
+                </div>
+                <div className="mt-1 text-center">
+                  <span className={`text-xs font-extrabold tabular-nums ${selectedTier === 'pro' ? 'text-white' : 'text-slate-800'}`}>
+                    {isAnnual ? '₹58' : '₹77'}
+                    <span className={`text-[10px] font-normal ${selectedTier === 'pro' ? 'text-slate-300' : 'text-slate-500'}`}>/mo</span>
                   </span>
-                </button>
-              </div>
+                  <span className={`block text-[9.5px] font-semibold mt-0.5 ${selectedTier === 'pro' ? 'text-amber-200/80' : 'text-slate-400'}`}>
+                    Unlimited Vault
+                  </span>
+                </div>
+              </button>
             </div>
 
             {/* 2. BILLING CYCLE SELECTOR (Annual vs Monthly) */}
@@ -504,7 +596,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   }`}
                 >
                   <span>Annual Pass</span>
-                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[9px] font-black text-emerald-700">
+                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">
                     {selectedTier === 'pro' ? 'Save 24%' : 'Save 25%'}
                   </span>
                 </button>
@@ -524,10 +616,10 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
             {/* 3. ACTIVE PLAN CARD */}
             <div
-              className={`relative overflow-hidden rounded-[26px] p-5 shadow-[0_16px_36px_-10px_rgba(15,23,42,0.35)] border ${
+              className={`relative overflow-hidden rounded-[24px] p-5 shadow-[0_16px_36px_-10px_rgba(15,23,42,0.35)] border transition-all duration-300 ${
                 selectedTier === 'pro'
                   ? 'bg-gradient-to-br from-[#0B132B] via-[#1C2541] to-[#0A1128] text-white border-white/15'
-                  : 'bg-gradient-to-br from-[#1E3A8A] via-[#1E40AF] to-[#172554] text-white border-blue-400/30'
+                  : 'bg-gradient-to-br from-[#0E1E38] via-[#1E3A8A] to-[#172554] text-white border-blue-400/30'
               }`}
             >
               <div
@@ -541,7 +633,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
               />
 
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <span
                     className={`text-[10px] font-black uppercase tracking-widest block ${
                       selectedTier === 'pro' ? 'text-amber-400' : 'text-blue-300'
@@ -549,10 +641,10 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   >
                     {isCurrentTierActive
                       ? `Active Membership (${selectedTier.toUpperCase()})`
-                      : `Recall ${selectedTier === 'pro' ? 'Pro Plan' : 'Basic Plan'}`}
+                      : `Recall ${selectedTier === 'pro' ? 'Pro Membership' : 'Basic Membership'}`}
                   </span>
                   <div className="flex items-baseline gap-2">
-                    <span className="font-['Outfit'] text-[36px] font-black tracking-tight text-white leading-none tabular-nums">
+                    <span className="font-['Outfit'] text-[34px] font-black tracking-tight text-white leading-none tabular-nums">
                       ₹{currentPrice.toLocaleString('en-IN')}
                     </span>
                     <span className="text-xs text-slate-300 font-semibold tabular-nums">
@@ -570,9 +662,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   </p>
                 </div>
 
-                <div className="rounded-full bg-white/12 backdrop-blur-md px-3 py-1 border border-white/20 text-[10.5px] font-bold text-white flex items-center gap-1.5 shadow-sm shrink-0">
+                <div className="rounded-full bg-white/12 backdrop-blur-md px-2.5 py-1 border border-white/20 text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm shrink-0">
                   <Lock className="h-3 w-3 text-emerald-400 stroke-[2.4]" />
-                  <span>Encrypted</span>
+                  <span>Secure</span>
                 </div>
               </div>
 
@@ -606,7 +698,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
               )}
             </div>
 
-            {/* 4. PRIMARY ACTION BUTTON: DIRECTLY UNDER THE PLAN CARD */}
+            {/* 4. PRIMARY ACTION BUTTON */}
             <div className="space-y-2 pt-0.5">
               {isSuccess ? (
                 <div className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-600/30">
@@ -653,8 +745,8 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                     )}
                   </button>
 
-                  {/* Accepted Payment Methods & Security Trust Badge */}
-                  <div className="flex flex-col items-center gap-1.5 text-center">
+                  {/* Payment Methods & Guarantee */}
+                  <div className="flex flex-col items-center gap-1 text-center">
                     <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-600 font-semibold">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                       <span>Instant UPI (GPay, PhonePe, Paytm), Cards & NetBanking</span>
@@ -662,7 +754,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                     <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400">
                       <span>• 7-Day Money Back Guarantee</span>
                       <span>• 256-Bit SSL Secured</span>
-                      <span>• 1-Tap Cancellation</span>
+                      <span>• 1-Tap Cancel</span>
                     </div>
                   </div>
                 </div>
@@ -683,148 +775,245 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
               )}
             </div>
 
-            {/* 5. TIER COMPARISON MATRIX */}
-            <div className="space-y-3 pt-2">
+            {/* 5. SIDE-BY-SIDE TIER COMPARISON MATRIX (Apple & Linear Grade) */}
+            <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-xs font-black tracking-wider uppercase text-slate-600">
-                  Plan Comparison: Free vs Basic vs Pro
-                </h3>
-                <span className="text-[10.5px] font-bold text-[#3478F6]">Detailed Breakdown</span>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <h3 className="text-xs font-black tracking-wider uppercase text-slate-700">
+                    Plan Comparison: Basic vs Pro
+                  </h3>
+                </div>
+                <span className="text-[10px] font-semibold text-slate-400">
+                  Tap tier to select
+                </span>
               </div>
 
-              <div className="rounded-[22px] bg-white/90 border border-white shadow-[0_4px_16px_rgba(23,43,77,0.04)] overflow-hidden divide-y divide-slate-100 text-xs">
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">Screenshot Cloud Storage</p>
-                    <p className="text-[10.5px] text-slate-500">Total screenshots in vault</p>
+              <div className="rounded-[22px] bg-white border border-slate-200/80 shadow-[0_4px_16px_rgba(23,43,77,0.04)] overflow-hidden">
+                {/* Clean Column Headers */}
+                <div className="grid grid-cols-12 bg-slate-50/90 px-3.5 py-2.5 border-b border-slate-100 text-[11px] font-bold text-slate-500">
+                  <div className="col-span-6 flex items-center">
+                    <span>Feature</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[11px] font-extrabold text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-400/30">
-                      Pro: Unlimited
+                  <div
+                    onClick={() => setSelectedTier('basic')}
+                    className={`col-span-3 text-center cursor-pointer transition-all py-1 px-1 rounded-xl ${
+                      selectedTier === 'basic'
+                        ? 'bg-blue-100/70 text-blue-800 font-extrabold ring-1 ring-blue-300'
+                        : 'hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="block leading-tight">Basic</span>
+                    <span className="block text-[9px] font-semibold text-slate-400 tabular-nums">
+                      {billingCycle === 'annual' ? '₹29/mo' : '₹39/mo'}
                     </span>
-                    <div className="text-[10px] text-slate-500 mt-0.5">Basic: 500 • Free: 50</div>
                   </div>
-                </div>
-
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">AI Vision & Conversational Chat</p>
-                    <p className="text-[10.5px] text-slate-500">Ask questions across screenshots</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[11px] font-extrabold text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-400/30">
-                      Pro: Unlimited
+                  <div
+                    onClick={() => setSelectedTier('pro')}
+                    className={`col-span-3 text-center cursor-pointer transition-all py-1 px-1 rounded-xl ${
+                      selectedTier === 'pro'
+                        ? 'bg-amber-100/70 text-amber-900 font-extrabold ring-1 ring-amber-300'
+                        : 'hover:text-slate-800'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-0.5 leading-tight">
+                      <Crown className="h-2.5 w-2.5 text-amber-600 fill-amber-500" />
+                      <span>Pro</span>
                     </span>
-                    <div className="text-[10px] text-slate-500 mt-0.5">Basic: 25/day • Free: 5/day</div>
-                  </div>
-                </div>
-
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">Conversation Thread Stitcher</p>
-                    <p className="text-[10.5px] text-slate-500">Auto-stitch multi-screenshot chats</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10.5px] font-black text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                      👑 Pro Exclusive
+                    <span className="block text-[9px] font-semibold text-slate-400 tabular-nums">
+                      {billingCycle === 'annual' ? '₹58/mo' : '₹77/mo'}
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">1-Tap Memory Broom & Clutter Cleaner</p>
-                    <p className="text-[10.5px] text-slate-500">Wipe duplicate & blurry captures</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10.5px] font-black text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                      👑 Pro Exclusive
-                    </span>
-                  </div>
+                {/* Structured Feature Rows */}
+                <div className="divide-y divide-slate-100/90">
+                  {COMPARISON_ROWS.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className={`grid grid-cols-12 px-3.5 py-2.5 items-center transition-colors ${
+                        idx % 2 === 1 ? 'bg-slate-50/30' : 'bg-white'
+                      }`}
+                    >
+                      <div className="col-span-6 min-w-0 pr-2">
+                        <p className="font-bold text-slate-800 text-[11.5px] leading-tight truncate">
+                          {row.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
+                          {row.hint}
+                        </p>
+                      </div>
+
+                      {/* Basic Column */}
+                      <div
+                        className={`col-span-3 text-center flex items-center justify-center ${
+                          selectedTier === 'basic' ? 'bg-blue-50/40 py-1 rounded-lg' : ''
+                        }`}
+                      >
+                        {row.basicType === 'check' ? (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <Check className="h-3 w-3 stroke-[2.8]" />
+                          </div>
+                        ) : row.basicType === 'cross' ? (
+                          <span className="text-slate-300 font-bold text-sm leading-none select-none">—</span>
+                        ) : (
+                          <span className="tabular-nums px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                            {row.basic}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pro Column */}
+                      <div
+                        className={`col-span-3 text-center flex items-center justify-center ${
+                          selectedTier === 'pro' ? 'bg-amber-50/50 py-1 rounded-lg' : ''
+                        }`}
+                      >
+                        {row.proType === 'check' ? (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 border border-amber-400/40">
+                            <Check className="h-3 w-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <span className="tabular-nums px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-400/15 text-amber-800 border border-amber-400/40 font-black text-[10px]">
+                            {row.pro}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">Proactive Vault Digest</p>
-                    <p className="text-[10.5px] text-slate-500">Auto-surface expiring coupons, events & bills</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10.5px] font-black text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                      👑 Pro Exclusive
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-800">Biometric &amp; PIN-Locked Secret Albums</p>
-                    <p className="text-[10.5px] text-slate-500">Hardware-level secure visual storage</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10.5px] font-black text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                      👑 Pro Exclusive
-                    </span>
-                  </div>
+                {/* Subtle Table Footer */}
+                <div className="bg-slate-50/80 px-3.5 py-2 border-t border-slate-100 flex items-center justify-between text-[10.5px] text-slate-400">
+                  <span>Free plan includes 50 vault items &amp; 5 AI searches/day</span>
+                  <span className="font-bold text-[#3478F6]">Zero Risk</span>
                 </div>
               </div>
             </div>
 
-            {/* 6. WHAT PRO UNLOCKS (SUPERPOWERS) */}
-            <div className="space-y-2.5 pt-2">
-              <h3 className="text-xs font-black tracking-wider uppercase text-slate-500 px-1">
-                Recall Pro Exclusive Superpowers
-              </h3>
-
-              <div className="space-y-2.5">
-                {[
-                  {
-                    icon: <Zap className="h-5 w-5 text-amber-500 stroke-[2.2]" />,
-                    podBg: 'bg-amber-50 border-amber-200/60',
-                    title: 'Unlimited Screenshot Vault Storage',
-                    desc: 'Save tens of thousands of screenshots in cloud memory with zero storage caps.',
-                  },
-                  {
-                    icon: <Eye className="h-5 w-5 text-[#3478F6] stroke-[2.2]" />,
-                    podBg: 'bg-blue-50 border-blue-200/60',
-                    title: 'Apple Visual Look-Up & Spec Extraction',
-                    desc: 'Interactive object pins, currency conversions, tracking numbers and spec cards.',
-                  },
-                  {
-                    icon: <Layers className="h-5 w-5 text-indigo-500 stroke-[2.2]" />,
-                    podBg: 'bg-indigo-50 border-indigo-200/60',
-                    title: 'Auto Conversation Thread Stitcher',
-                    desc: 'Chronologically stitches WhatsApp, Instagram and Telegram long chats into readable stories.',
-                  },
-                  {
-                    icon: <Trash2 className="h-5 w-5 text-rose-500 stroke-[2.2]" />,
-                    podBg: 'bg-rose-50 border-rose-200/60',
-                    title: 'Memory Broom & Clutter Sweeper',
-                    desc: 'One-tap AI cleanup for duplicate screenshots, accidental memes, and expired deals.',
-                  },
-                  {
-                    icon: <FileSpreadsheet className="h-5 w-5 text-emerald-600 stroke-[2.2]" />,
-                    podBg: 'bg-emerald-50 border-emerald-200/60',
-                    title: 'Proactive Vault Digest & Calendar Sync',
-                    desc: 'Finds upcoming tickets, bills, and discount codes and syncs them to Google Calendar.',
-                  },
-                ].map((perk, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 rounded-[20px] bg-white/85 p-3 border border-white shadow-[0_4px_14px_rgba(23,43,77,0.03)]"
-                  >
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border ${perk.podBg} shadow-2xs`}>
-                      {perk.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12.5px] font-bold text-[#172B4D] leading-tight truncate">{perk.title}</p>
-                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5 font-normal line-clamp-2">{perk.desc}</p>
-                    </div>
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80">
-                      <Check className="h-2.5 w-2.5 stroke-[3]" />
-                    </div>
-                  </div>
-                ))}
+            {/* 6. DYNAMIC TIER HIGHLIGHTS (Clean & Concise Apple-Style Cards) */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xs font-black tracking-wider uppercase text-slate-600">
+                  {selectedTier === 'pro'
+                    ? 'Included with Recall Pro'
+                    : 'Included with Recall Basic'}
+                </h3>
+                <span className="text-[10px] font-semibold text-slate-400">
+                  {selectedTier === 'pro' ? '5 Superpowers' : 'Core Essentials'}
+                </span>
               </div>
+
+              {selectedTier === 'pro' ? (
+                <div className="space-y-2">
+                  {[
+                    {
+                      icon: <Zap className="h-4 w-4 text-amber-600 stroke-[2.4]" />,
+                      podBg: 'bg-amber-50 border-amber-200/70',
+                      title: 'Unlimited Screenshot Vault Storage',
+                      desc: 'Store tens of thousands of screenshots in cloud memory with zero limits.',
+                    },
+                    {
+                      icon: <Eye className="h-4 w-4 text-[#3478F6] stroke-[2.4]" />,
+                      podBg: 'bg-blue-50 border-blue-200/70',
+                      title: 'Conversational AI Visual Memory',
+                      desc: 'Ask questions, find objects, convert currencies and search specs across all captures.',
+                    },
+                    {
+                      icon: <Layers className="h-4 w-4 text-indigo-600 stroke-[2.4]" />,
+                      podBg: 'bg-indigo-50 border-indigo-200/70',
+                      title: 'Auto Conversation Thread Stitcher',
+                      desc: 'Chronologically stitches WhatsApp, IG & Telegram screenshots into continuous chats.',
+                    },
+                    {
+                      icon: <Trash2 className="h-4 w-4 text-rose-600 stroke-[2.4]" />,
+                      podBg: 'bg-rose-50 border-rose-200/70',
+                      title: 'Memory Broom & Clutter Cleaner',
+                      desc: 'One-tap AI purge for duplicate screenshots, accidental memes, and expired deals.',
+                    },
+                    {
+                      icon: <FileSpreadsheet className="h-4 w-4 text-emerald-600 stroke-[2.4]" />,
+                      podBg: 'bg-emerald-50 border-emerald-200/70',
+                      title: 'Proactive Calendar Sync & Secret Vault',
+                      desc: 'Sync bills & tickets to Google Calendar, plus biometric & PIN-locked albums.',
+                    },
+                  ].map((perk, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-2xl bg-white/90 p-3 border border-white shadow-[0_2px_8px_rgba(23,43,77,0.03)]"
+                    >
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${perk.podBg} shadow-2xs`}>
+                        {perk.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#172B4D] leading-tight truncate">{perk.title}</p>
+                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5 font-normal truncate">{perk.desc}</p>
+                      </div>
+                      <div className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80">
+                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[
+                    {
+                      icon: <Zap className="h-4 w-4 text-[#3478F6] stroke-[2.4]" />,
+                      podBg: 'bg-blue-50 border-blue-200/70',
+                      title: '500 Vault Storage Capacity',
+                      desc: '10x more storage than the free tier for your essential screenshots.',
+                    },
+                    {
+                      icon: <Eye className="h-4 w-4 text-indigo-600 stroke-[2.4]" />,
+                      podBg: 'bg-indigo-50 border-indigo-200/70',
+                      title: '25 Daily AI Visual Searches',
+                      desc: 'Fast AI queries across receipts, handwritten notes, and documents.',
+                    },
+                    {
+                      icon: <FileSpreadsheet className="h-4 w-4 text-emerald-600 stroke-[2.4]" />,
+                      podBg: 'bg-emerald-50 border-emerald-200/70',
+                      title: 'High-Resolution OCR Text Engine',
+                      desc: 'Instant text, number, and tracking code extraction from any capture.',
+                    },
+                    {
+                      icon: <ShieldCheck className="h-4 w-4 text-blue-600 stroke-[2.4]" />,
+                      podBg: 'bg-blue-50 border-blue-200/70',
+                      title: 'Encrypted Multi-Device Cloud Sync',
+                      desc: 'Automatic backup with safe cloud sync across all your phones & devices.',
+                    },
+                  ].map((perk, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-2xl bg-white/90 p-3 border border-white shadow-[0_2px_8px_rgba(23,43,77,0.03)]"
+                    >
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${perk.podBg} shadow-2xs`}>
+                        {perk.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#172B4D] leading-tight truncate">{perk.title}</p>
+                        <p className="text-[11px] text-slate-500 leading-tight mt-0.5 font-normal truncate">{perk.desc}</p>
+                      </div>
+                      <div className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80">
+                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-blue-900 font-medium">
+                      Need unlimited vault &amp; auto conversation stitcher?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTier('pro')}
+                      className="text-xs font-black text-[#3478F6] hover:underline cursor-pointer shrink-0 ml-2"
+                    >
+                      Switch to Pro →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Restore & Guarantee */}
