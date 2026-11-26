@@ -246,9 +246,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
         currency: orderData.currency || 'INR',
         name: 'RECALL',
         description: selectedTier === 'pro'
-          ? (isAnnual ? 'Recall Pro • Annual (₹700/yr)' : 'Recall Pro • Monthly (₹77/mo)')
-          : (isAnnual ? 'Recall Basic • Annual (₹349/yr)' : 'Recall Basic • Monthly (₹39/mo)'),
-        image: window.location.protocol === 'https:' ? `${window.location.origin}/favicon.svg` : undefined,
+          ? (isAnnual ? 'Recall Pro (Annual - ₹700/yr)' : 'Recall Pro (Monthly - ₹77/mo)')
+          : (isAnnual ? 'Recall Basic (Annual - ₹349/yr)' : 'Recall Basic (Monthly - ₹39/mo)'),
+        image: `${window.location.origin}/favicon.svg`,
         order_id: orderData.order_id,
         prefill: {
           name: user?.name || '',
@@ -260,9 +260,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           tier: selectedTier,
         },
         theme: {
-          // Premium obsidian slate dark theme for clean, bank-grade checkout
-          color: '#0F172A',
-          backdrop_color: 'rgba(15, 23, 42, 0.85)',
+          color: '#3478F6',
           hide_topbar: false,
         },
         modal: {
@@ -277,7 +275,6 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             setErrorMessage('Payment cancelled. Your account was not charged.');
           },
         },
-        // Streamlined checkout sequence: suppresses duplicate blocks
         config: {
           display: {
             blocks: {
@@ -287,6 +284,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                   {
                     method: 'upi',
                     flows: ['intent', 'qr', 'collect'],
+                    apps: ['google_pay', 'phonepe', 'paytm', 'bhim', 'cred'],
                   },
                 ],
               },
@@ -301,12 +299,10 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             },
             sequence: ['block.upi', 'block.other'],
             preferences: {
-              show_default_blocks: false,
+              show_default_blocks: true,
             },
           },
         },
-        send_sms_hash: true,
-        remember_customer: true,
         retry: {
           enabled: true,
           max_count: 2,
