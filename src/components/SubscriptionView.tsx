@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackButton } from '../utils/backHandler';
+import { LegalModal } from './LegalModal';
 import type { User, SubscriptionInfo, SubscriptionPlan } from '../types';
 
 interface SubscriptionViewProps {
@@ -147,6 +148,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string | null>(null);
+  const [isLegalOpen, setIsLegalOpen] = useState(false);
   const isOpeningCheckoutRef = useRef(false);
 
   const isPro = user?.subscription_tier === 'pro';
@@ -158,6 +160,10 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
     'app-subscription-view',
     80,
     () => {
+      if (isLegalOpen) {
+        setIsLegalOpen(false);
+        return true;
+      }
       onClose();
       return true;
     },
@@ -413,10 +419,13 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed inset-0 z-50 min-h-[100dvh] w-full bg-[#F3F7FC] text-[#172B4D] flex flex-col overflow-y-auto overflow-x-hidden select-none"
+          className="fixed inset-0 z-50 min-h-[100dvh] w-full bg-[#F3F7FC] text-[#172B4D] flex flex-col overflow-y-auto overflow-x-hidden select-none overscroll-contain"
           style={{
             touchAction: 'pan-y',
+            overscrollBehavior: 'contain',
+            overscrollBehaviorY: 'contain',
             overscrollBehaviorX: 'none',
+            WebkitOverflowScrolling: 'touch',
             paddingBottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))',
           }}
         >
@@ -433,35 +442,35 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
           {/* Sticky iOS Navigation Header */}
           <header
-            className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/85 border-b border-white/90 shadow-[0_4px_20px_-4px_rgba(23,43,77,0.06)]"
+            className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/85 border-b border-white/90 shadow-[0_4px_20px_-4px_rgba(23,43,77,0.06)] touch-none"
             style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)' }}
           >
-            <div className="max-w-lg mx-auto px-4 h-13 flex items-center justify-between">
+            <div className="max-w-lg mx-auto px-3 sm:px-4 h-13 flex items-center justify-between gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="plump-glass-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#172B4D] active:scale-95 transition-all cursor-pointer shadow-xs"
+                className="plump-glass-pill flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold text-[#172B4D] active:scale-95 transition-all cursor-pointer shadow-xs shrink-0"
               >
                 <ChevronLeft className="h-4.5 w-4.5 text-[#3478F6] stroke-[2.4]" />
                 <span>Back</span>
               </button>
 
-              <div className="flex items-center gap-2">
-                <span className="font-['Outfit'] text-[15.5px] font-extrabold tracking-tight text-[#172B4D]">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 justify-center">
+                <span className="font-['Outfit'] text-[13.5px] sm:text-[15.5px] font-extrabold tracking-tight text-[#172B4D] truncate">
                   Subscription Plans
                 </span>
                 {isPro ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-400/20 text-amber-800 px-2 py-0.5 text-[9.5px] font-black border border-amber-400/40">
+                  <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-400/20 text-amber-800 px-1.5 sm:px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-black border border-amber-400/40 shrink-0 whitespace-nowrap">
                     <Crown className="h-2.5 w-2.5 text-amber-600 fill-amber-500" />
                     <span>PRO</span>
                   </span>
                 ) : isBasic ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 text-blue-700 px-2 py-0.5 text-[9.5px] font-black border border-blue-400/30">
+                  <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full bg-blue-500/15 text-blue-700 px-1.5 sm:px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-black border border-blue-400/30 shrink-0 whitespace-nowrap">
                     <Zap className="h-2.5 w-2.5 text-blue-600 fill-blue-500" />
                     <span>BASIC</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200/70 text-slate-600 px-2 py-0.5 text-[9.5px] font-bold">
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200/70 text-slate-600 px-1.5 sm:px-2 py-0.5 text-[8.5px] sm:text-[9.5px] font-bold shrink-0 whitespace-nowrap">
                     FREE TIER
                   </span>
                 )}
@@ -471,7 +480,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                 type="button"
                 onClick={handleRestore}
                 disabled={isRestoring}
-                className="plump-glass-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer shadow-xs"
+                className="plump-glass-pill flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full text-[10.5px] sm:text-[11px] font-bold text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer shadow-xs shrink-0"
               >
                 {isRestoring ? (
                   <RefreshCw className="h-3 w-3 animate-spin text-[#3478F6]" />
@@ -558,13 +567,13 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                     : 'bg-white/70 text-slate-500 border-slate-200/80 hover:bg-white hover:text-slate-800'
                 }`}
               >
+                <div className="absolute top-1.5 right-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[7.5px] font-black uppercase text-white px-1.5 py-0.5 tracking-wider shadow-2xs">
+                  Popular
+                </div>
                 <div className="flex items-center gap-1.5 w-full justify-center">
                   <Crown className={`h-3.5 w-3.5 shrink-0 ${selectedTier === 'pro' ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
                   <span className={`text-xs font-black tracking-tight ${selectedTier === 'pro' ? 'text-amber-300' : ''}`}>
                     Recall Pro
-                  </span>
-                  <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-[8px] font-black uppercase text-white px-1.5 py-0.2 shrink-0">
-                    Popular
                   </span>
                 </div>
                 <div className="mt-1 text-center">
@@ -580,29 +589,29 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             </div>
 
             {/* 2. BILLING CYCLE SELECTOR (Annual vs Monthly) */}
-            <div className="flex justify-center">
-              <div className="relative flex w-full max-w-xs rounded-full bg-slate-200/60 p-1 border border-white/80 shadow-inner">
+            <div className="flex justify-center px-1">
+              <div className="relative grid grid-cols-2 w-full max-w-sm rounded-2xl bg-slate-200/70 p-1 border border-white/90 shadow-inner gap-1">
                 <button
                   type="button"
                   onClick={() => setBillingCycle('annual')}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-extrabold transition-all duration-150 cursor-pointer ${
+                  className={`relative z-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-extrabold transition-all duration-150 cursor-pointer min-w-0 ${
                     billingCycle === 'annual'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <span>Annual Pass</span>
-                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">
+                  <span className="truncate">Annual Pass</span>
+                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 shrink-0">
                     {selectedTier === 'pro' ? 'Save 24%' : 'Save 25%'}
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setBillingCycle('monthly')}
-                  className={`relative z-10 flex-1 flex items-center justify-center py-1.5 rounded-full text-xs font-extrabold transition-all duration-150 cursor-pointer ${
+                  className={`relative z-10 flex items-center justify-center py-2 px-2 rounded-xl text-xs font-extrabold transition-all duration-150 cursor-pointer min-w-0 ${
                     billingCycle === 'monthly'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Monthly
@@ -832,10 +841,10 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                       }`}
                     >
                       <div className="col-span-6 min-w-0 pr-2">
-                        <p className="font-bold text-slate-800 text-[11.5px] leading-tight truncate">
+                        <p className="font-bold text-slate-800 text-[11px] sm:text-[11.5px] leading-snug line-clamp-2">
                           {row.name}
                         </p>
-                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
+                        <p className="text-[9.5px] sm:text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
                           {row.hint}
                         </p>
                       </div>
@@ -853,7 +862,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                         ) : row.basicType === 'cross' ? (
                           <span className="text-slate-300 font-bold text-sm leading-none select-none">—</span>
                         ) : (
-                          <span className="tabular-nums px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                          <span className="tabular-nums px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[9.5px] sm:text-[10px] whitespace-nowrap">
                             {row.basic}
                           </span>
                         )}
@@ -870,7 +879,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                             <Check className="h-3 w-3 stroke-[3]" />
                           </div>
                         ) : (
-                          <span className="tabular-nums px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-400/15 text-amber-800 border border-amber-400/40 font-black text-[10px]">
+                          <span className="tabular-nums px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-400/15 text-amber-800 border border-amber-400/40 font-black text-[9.5px] sm:text-[10px] whitespace-nowrap">
                             {row.pro}
                           </span>
                         )}
@@ -1012,7 +1021,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
               )}
             </div>
 
-            {/* Bottom Restore & Guarantee */}
+            {/* Bottom Restore & Legal Policies */}
             <div className="pt-2 flex items-center justify-between text-xs text-slate-400 px-2 font-medium">
               <button
                 type="button"
@@ -1023,9 +1032,22 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
                 {isRestoring && <RefreshCw className="h-3 w-3 animate-spin" />}
                 <span>Restore Purchases</span>
               </button>
-              <span>Cancel anytime with 1 tap</span>
+              <button
+                type="button"
+                onClick={() => setIsLegalOpen(true)}
+                className="hover:text-[#3478F6] underline cursor-pointer transition-colors"
+              >
+                Legal Policies &amp; Terms
+              </button>
             </div>
           </main>
+
+          {/* Dedicated Legal Policies Modal (Isolated scroll & zero clipping) */}
+          <LegalModal
+            isOpen={isLegalOpen}
+            onClose={() => setIsLegalOpen(false)}
+            initialDoc="pricing"
+          />
         </motion.div>
       )}
     </AnimatePresence>

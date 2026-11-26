@@ -767,7 +767,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         </div>
 
         <div className="mt-2 text-center text-[10px] text-slate-400">
-          © {new Date().getFullYear()} Recall by Thranae. All rights reserved.
+          © {new Date().getFullYear()} Team Recall. All rights reserved.
         </div>
       </div>
 

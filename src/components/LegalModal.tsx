@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, FileText, RefreshCw, Mail, CheckCircle2, MapPin, Clock, Award } from 'lucide-react';
+import { X, Shield, FileText, RefreshCw, Mail, CheckCircle2, Clock, Award } from 'lucide-react';
+import { lockBodyScroll } from '../utils/scrollLock';
 
 export type LegalDocType = 'pricing' | 'terms' | 'privacy' | 'refund' | 'contact';
 
@@ -23,17 +24,23 @@ export const LegalModal: React.FC<LegalModalProps> = ({
     }
   }, [initialDoc]);
 
+  // Lock background and html viewport scroll while modal is visible
+  useEffect(() => {
+    if (!isOpen) return;
+    return lockBodyScroll();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/45 backdrop-blur-xl">
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-5 bg-slate-950/45 backdrop-blur-xl touch-none overscroll-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 16 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-2xl max-h-[88vh] flex flex-col rounded-[32px] border border-white/95 bg-white/95 shadow-[0_24px_64px_rgba(23,43,77,0.22)] backdrop-blur-2xl overflow-hidden text-slate-800"
+          className="relative w-full max-w-2xl max-h-[88vh] flex flex-col rounded-[32px] border border-white/95 bg-white/95 shadow-[0_24px_64px_rgba(23,43,77,0.22)] backdrop-blur-2xl overflow-hidden text-slate-800 touch-auto overscroll-contain"
         >
           {/* Mobile Sheet Drag Handle */}
           <div className="pt-2.5 pb-1 flex justify-center sm:hidden bg-slate-50/80">
@@ -48,7 +55,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Recall • Legal & Policies</h3>
-                <p className="text-[11px] font-semibold text-slate-500">Thranae • IT & Software SaaS</p>
+                <p className="text-[11px] font-semibold text-slate-500">Team Recall • IT & Software SaaS</p>
               </div>
             </div>
             <button
@@ -61,43 +68,51 @@ export const LegalModal: React.FC<LegalModalProps> = ({
             </button>
           </div>
 
-          {/* Responsive Navigation Tabs (Never Clipped on Mobile) */}
-          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-200/60 bg-[#F4F8FD]/80 overflow-x-auto no-scrollbar scroll-smooth">
-            {[
-              { id: 'pricing', label: 'Pricing', icon: CheckCircle2 },
-              { id: 'terms', label: 'Terms', icon: FileText },
-              { id: 'privacy', label: 'Privacy', icon: Shield },
-              { id: 'refund', label: 'Refunds', icon: RefreshCw },
-              { id: 'contact', label: 'Contact', icon: Mail },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeDoc === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveDoc(tab.id as LegalDocType)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 shrink-0 whitespace-nowrap ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#5392FF] to-[#3478F6] text-white shadow-xs border border-white/80'
-                      : 'bg-white/85 text-slate-600 hover:bg-white border border-slate-200/70 shadow-2xs'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 stroke-[2.2]" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          {/* Modern 5-Column Segmented Tab Grid (Zero Clipping on Any Screen) */}
+          <div className="px-3 py-2 border-b border-slate-200/60 bg-[#F4F8FD]/90">
+            <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-slate-200/50 border border-white/80 shadow-2xs">
+              {[
+                { id: 'pricing', label: 'Pricing', icon: CheckCircle2 },
+                { id: 'terms', label: 'Terms', icon: FileText },
+                { id: 'privacy', label: 'Privacy', icon: Shield },
+                { id: 'refund', label: 'Refunds', icon: RefreshCw },
+                { id: 'contact', label: 'Contact', icon: Mail },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeDoc === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveDoc(tab.id as LegalDocType)}
+                    className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-0.5 rounded-xl transition-all cursor-pointer active:scale-95 text-center min-w-0 ${
+                      isActive
+                        ? 'bg-white text-[#3478F6] font-extrabold shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 font-bold hover:bg-white/50'
+                    }`}
+                  >
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-[#3478F6]' : 'text-slate-400'}`} />
+                    <span className="text-[10px] sm:text-[11px] leading-none truncate max-w-full">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Content Body */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 text-xs text-slate-600 space-y-4 leading-relaxed">
+          <div
+            className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 text-xs text-slate-600 space-y-4 leading-relaxed"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain',
+            }}
+          >
             {/* PRICING & PLANS */}
             {activeDoc === 'pricing' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">Recall SaaS Pricing & Subscription Plans</h4>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold border border-emerald-500/20">
+                  <span className="self-start sm:self-auto px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold border border-emerald-500/20 whitespace-nowrap shrink-0">
                     Transparent Pricing
                   </span>
                 </div>
@@ -212,7 +227,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   <div>
                     <h5 className="font-bold text-slate-900">1. Acceptance of Terms</h5>
                     <p>
-                      By creating an account, accessing, or subscribing to Recall (<a href="https://recall-pro.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[#3478F6] underline">recall-pro.vercel.app</a>), you agree to comply with and be bound by these Terms and Conditions provided by <strong>Thranae</strong> (Service Provider). If you do not agree, do not use our services.
+                      By creating an account, accessing, or subscribing to Recall (<a href="https://recall-pro.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[#3478F6] underline">recall-pro.vercel.app</a>), you agree to comply with and be bound by these Terms and Conditions provided by <strong>Team Recall</strong> (Service Provider). If you do not agree, do not use our services.
                     </p>
                   </div>
 
@@ -343,12 +358,12 @@ export const LegalModal: React.FC<LegalModalProps> = ({
             {/* CONTACT US */}
             {activeDoc === 'contact' && (
               <div className="space-y-3.5">
-                <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">Contact Us & Merchant Information</h4>
+                <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">Contact Us & Support</h4>
                 <p>
                   For any support, subscription queries, billing inquiries, or technical feedback, reach out to our dedicated support team directly:
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
                     <div className="flex items-center gap-2 text-slate-900 font-bold">
                       <Mail className="h-4 w-4 text-[#3478F6]" />
@@ -361,18 +376,6 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                       </a>
                     </p>
                     <p className="text-[11px] text-slate-500">Fast assistance for subscriptions & features</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
-                    <div className="flex items-center gap-2 text-slate-900 font-bold">
-                      <MapPin className="h-4 w-4 text-rose-500" />
-                      <span>Operating Address</span>
-                    </div>
-                    <p className="text-[11.5px] text-slate-700 font-medium">
-                      Thranae<br />
-                      Tamil Nadu, India<br />
-                      PIN Code: 600001
-                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 bg-white/70 p-3.5 space-y-2 shadow-2xs">
@@ -391,7 +394,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[11px] text-slate-600 space-y-1">
                   <div className="font-bold text-slate-900">Grievance Redressal Officer</div>
                   <p>
-                    <strong>Name:</strong> Thranae | <strong>Email:</strong> recall.support@gmail.com
+                    <strong>Name:</strong> Team Recall | <strong>Email:</strong> recall.support@gmail.com
                   </p>
                 </div>
               </div>
