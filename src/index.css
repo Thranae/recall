@@ -1361,14 +1361,16 @@ input, textarea {
 }
 
 .razorpay-backdrop {
-  z-index: 2147483645 !important;
-  pointer-events: auto !important;
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 .razorpay-container iframe,
 iframe.razorpay-checkout-frame {
   z-index: 2147483647 !important;
   pointer-events: auto !important;
+  position: relative !important;
 }
 
 .tabular-nums {

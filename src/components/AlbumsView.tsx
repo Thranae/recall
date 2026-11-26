@@ -15,6 +15,8 @@ import {
   RefreshCw,
   CheckCircle2,
   Crown,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import type { Screenshot, Album, ThreadGroup } from '../types';
 import { api } from '../services/api';
@@ -24,6 +26,7 @@ import { ScreenshotCard } from './ScreenshotCard';
 import { AlbumStoryModal } from './AlbumStoryModal';
 import { CreateAlbumModal } from './CreateAlbumModal';
 import { ThreadStitcherModal } from './ThreadStitcherModal';
+import { AlbumPinModal } from './AlbumPinModal';
 
 interface AlbumsViewProps {
   screenshots: Screenshot[];
@@ -118,7 +121,122 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
   const [selectedThread, setSelectedThread] = useState<ThreadGroup | null>(null);
   const [selectedThreadInitialIndex, setSelectedThreadInitialIndex] = useState(0);
 
+  // Pro PIN Unlock & Secret Vault Session State
+  const [unlockedAlbumIds, setUnlockedAlbumIds] = useState<Set<string>>(new Set());
+  const [pinModalConfig, setPinModalConfig] = useState<{
+    isOpen: boolean;
+    mode: 'unlock' | 'set' | 'remove';
+    album: Album | null;
+    pendingAction?: () => void;
+  }>({
+    isOpen: false,
+    mode: 'unlock',
+    album: null,
+  });
+
+  const handleAlbumCardClick = (album: Album) => {
+    if (album.isLocked && !unlockedAlbumIds.has(album.id)) {
+      setPinModalConfig({
+        isOpen: true,
+        mode: 'unlock',
+        album,
+        pendingAction: () => setSelectedAlbumId(album.id),
+      });
+      return;
+    }
+    setSelectedAlbumId(album.id);
+  };
+
+  const handlePlayStoryClick = (e: React.MouseEvent, album: Album) => {
+    e.stopPropagation();
+    if (album.isLocked && !unlockedAlbumIds.has(album.id)) {
+      setPinModalConfig({
+        isOpen: true,
+        mode: 'unlock',
+        album,
+        pendingAction: () => handlePlayAlbumStory(album),
+      });
+      return;
+    }
+    handlePlayAlbumStory(album);
+  };
+
+  const handlePinModalSuccess = (newHash?: string) => {
+    const target = pinModalConfig.album;
+    if (!target) {
+      setPinModalConfig({ isOpen: false, mode: 'unlock', album: null });
+      return;
+    }
+
+    if (pinModalConfig.mode === 'unlock') {
+      setUnlockedAlbumIds((prev) => new Set(prev).add(target.id));
+      setPinModalConfig({ isOpen: false, mode: 'unlock', album: null });
+      pinModalConfig.pendingAction?.();
+    } else if (pinModalConfig.mode === 'set' && newHash) {
+      const updated = customAlbums.map((a) =>
+        a.id === target.id
+          ? { ...a, isLocked: true, pinHash: newHash, badge: 'Private Secret Vault' }
+          : a
+      );
+      saveCustomAlbums(updated);
+      setUnlockedAlbumIds((prev) => new Set(prev).add(target.id));
+      setPinModalConfig({ isOpen: false, mode: 'unlock', album: null });
+    } else if (pinModalConfig.mode === 'remove') {
+      const updated = customAlbums.map((a) =>
+        a.id === target.id
+          ? { ...a, isLocked: false, pinHash: undefined, badge: 'Custom Album' }
+          : a
+      );
+      saveCustomAlbums(updated);
+      setUnlockedAlbumIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+      setPinModalConfig({ isOpen: false, mode: 'unlock', album: null });
+    }
+  };
+
+  const handleRelockCurrentAlbum = (albumId: string) => {
+    setUnlockedAlbumIds((prev) => {
+      const next = new Set(prev);
+      next.delete(albumId);
+      return next;
+    });
+    setSelectedAlbumId(null);
+  };
+
+  const handleLockCustomAlbumPrompt = (album: Album) => {
+    if (!isPro) {
+      onOpenSubscription?.();
+      return;
+    }
+    setPinModalConfig({
+      isOpen: true,
+      mode: 'set',
+      album,
+    });
+  };
+
+  const handleRemoveLockPrompt = (album: Album) => {
+    setPinModalConfig({
+      isOpen: true,
+      mode: 'remove',
+      album,
+    });
+  };
+
   // Back Button Navigation Registration
+  useBackButton(
+    'album-pin-modal-nav',
+    76,
+    () => {
+      setPinModalConfig((prev) => ({ ...prev, isOpen: false }));
+      return true;
+    },
+    pinModalConfig.isOpen
+  );
+
   useBackButton(
     'album-create-modal',
     75,
@@ -216,7 +334,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
 
   // Sync modal state with parent to hide bottom nav / top header during immersive modals
   useEffect(() => {
-    const isModalActive = isStoryOpen || isCreateOpen;
+    const isModalActive = isStoryOpen || isCreateOpen || pinModalConfig.isOpen;
     onModalStateChange?.(isModalActive);
   }, [isStoryOpen, isCreateOpen, onModalStateChange]);
 
@@ -838,6 +956,42 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
+            {/* Pro PIN Lock / Relock Button for Custom Albums */}
+            {!currentAlbum.isSmart && (
+              currentAlbum.isLocked ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleRelockCurrentAlbum(currentAlbum.id)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-300 text-xs font-bold text-amber-900 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    title="Lock album now"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-600 stroke-[2.4]" />
+                    <span>Relock</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLockPrompt(currentAlbum)}
+                    className="p-1.5 rounded-full bg-white/80 border border-slate-200/70 text-slate-500 hover:text-slate-800 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    title="Remove PIN Protection"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleLockCustomAlbumPrompt(currentAlbum)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-white to-amber-500/10 border border-amber-300 text-xs font-bold text-amber-900 active:scale-95 transition-all shadow-xs cursor-pointer"
+                  title="Lock album with 4-digit PIN"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-600 stroke-[2.4]" />
+                  <span>Lock</span>
+                  <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
+                </button>
+              )
+            )}
+
             <button
               type="button"
               onClick={handleExportCollage}
@@ -1178,6 +1332,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {filteredAlbums.map((album) => {
+              const isAlbumLocked = Boolean(album.isLocked && !unlockedAlbumIds.has(album.id));
               const coverUrl = album.coverScreenshotId
                 ? api.getImageUrl(album.coverScreenshotId)
                 : '';
@@ -1186,7 +1341,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                 <div
                   key={album.id}
                   className="relative rounded-[24px] overflow-hidden aspect-[1/1.22] border border-slate-200/90 shadow-sm flex flex-col justify-end bg-slate-900 active:scale-[0.98] transition-transform duration-150 cursor-pointer select-none"
-                  onClick={() => setSelectedAlbumId(album.id)}
+                  onClick={() => handleAlbumCardClick(album)}
                 >
                   {/* Full Cover Image Showcase */}
                   {coverUrl ? (
@@ -1194,7 +1349,12 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                       <img
                         src={coverUrl}
                         alt={album.title}
-                        className="w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover object-top transition-all duration-300"
+                        style={
+                          isAlbumLocked
+                            ? { filter: 'blur(22px) brightness(0.65)', transform: 'scale(1.1)' }
+                            : {}
+                        }
                         loading="lazy"
                       />
                       {/* Subtle Vignette so title and badges stand out without heavy white wash */}
@@ -1206,14 +1366,36 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                     </div>
                   )}
 
+                  {/* Centered Secret Vault Privacy Shield Overlay when Locked */}
+                  {isAlbumLocked && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-3 text-center pointer-events-none">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/25 backdrop-blur-md text-white border border-white/50 shadow-lg mb-1.5 animate-pulse">
+                        <Lock className="h-5 w-5 stroke-[2.4]" />
+                      </div>
+                      <span className="text-[11px] font-black text-white tracking-wider uppercase drop-shadow-md">
+                        Secret Vault
+                      </span>
+                      <span className="text-[9.5px] font-bold text-white/85 drop-shadow-xs">
+                        Tap to Unlock with PIN
+                      </span>
+                    </div>
+                  )}
+
                   {/* Top Bar Floating Badges (Exact Filter Chip Style) */}
                   <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
                     <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !h-6 !w-6 !p-0 shadow-md pointer-events-auto text-xs">
-                      {album.emoji || '📁'}
+                      {album.emoji || (isAlbumLocked ? '🔒' : '📁')}
                     </span>
-                    <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
-                      {album.screenshotIds.length}
-                    </span>
+                    {isAlbumLocked ? (
+                      <span className="liquid-filter-chip liquid-filter-chip-xs !bg-amber-400 !text-amber-950 !border-amber-300 !font-black shadow-md pointer-events-auto flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5 stroke-[3]" />
+                        <span>LOCKED</span>
+                      </span>
+                    ) : (
+                      <span className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold font-mono text-[#3478F6] shadow-md pointer-events-auto">
+                        {album.screenshotIds.length}
+                      </span>
+                    )}
                   </div>
 
                   {/* Sleek, Compact Plumpy Liquid Glass Content Plate (Reduced White Linear Bg) */}
@@ -1259,10 +1441,7 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
                       </span>
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayAlbumStory(album);
-                        }}
+                        onClick={(e) => handlePlayStoryClick(e, album)}
                         className="liquid-filter-chip liquid-filter-chip-xs liquid-filter-chip-active !font-bold text-[#3478F6] active:scale-90 transition-transform shadow-2xs gap-1 cursor-pointer"
                         title="Play Story Reel"
                       >
@@ -1307,7 +1486,21 @@ export const AlbumsView: React.FC<AlbumsViewProps> = ({
         onClose={() => setIsCreateOpen(false)}
         onCreateAlbum={handleCreateAlbum}
         allScreenshots={screenshots}
+        isPro={isPro}
+        onOpenSubscription={onOpenSubscription}
       />
+
+      {/* Pro PIN Unlock & Passcode Modal */}
+      {pinModalConfig.album && (
+        <AlbumPinModal
+          isOpen={pinModalConfig.isOpen}
+          mode={pinModalConfig.mode}
+          albumTitle={pinModalConfig.album.title}
+          expectedPinHash={pinModalConfig.album.pinHash}
+          onSuccess={handlePinModalSuccess}
+          onClose={() => setPinModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        />
+      )}
 
       {/* Thread Stitcher Reel Modal inside Album */}
       {selectedThread && (

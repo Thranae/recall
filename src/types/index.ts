@@ -350,5 +350,7 @@ export interface Album {
   accentColor?: string;
   emoji?: string;
   badge?: string;
+  isLocked?: boolean;
+  pinHash?: string;
 }
 

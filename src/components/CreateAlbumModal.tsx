@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Image as ImageIcon, FolderPlus } from 'lucide-react';
+import { X, Check, Image as ImageIcon, FolderPlus, Lock, Crown, ShieldCheck } from 'lucide-react';
 import type { Screenshot, Album } from '../types';
 import { api } from '../services/api';
+import { AlbumPinModal } from './AlbumPinModal';
 
 interface CreateAlbumModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateAlbum: (album: Omit<Album, 'id' | 'createdAt'>) => void;
   allScreenshots: Screenshot[];
+  isPro?: boolean;
+  onOpenSubscription?: () => void;
 }
 
-const EMOJI_OPTIONS = ['📁', '❤️', '🎮', '💬', '🧾', '✈️', '🛍️', '🎨', '🎵', '💡', '🏆', '🏖️'];
+const EMOJI_OPTIONS = ['📁', '🔒', '❤️', '🎮', '💬', '🧾', '✈️', '🛍️', '🎨', '🎵', '💡', '🏆', '🏖️'];
 const ACCENT_COLORS = [
   { name: 'Blue', hex: '#3478F6' },
   { name: 'Violet', hex: '#8B5CF6' },
@@ -26,12 +29,17 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
   onClose,
   onCreateAlbum,
   allScreenshots,
+  isPro = false,
+  onOpenSubscription,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('📁');
   const [selectedColor, setSelectedColor] = useState(ACCENT_COLORS[0].hex);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isLocked, setIsLocked] = useState(false);
+  const [pinHash, setPinHash] = useState<string | undefined>(undefined);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -52,6 +60,31 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
     }
   };
 
+  const handleToggleLock = () => {
+    if (!isPro) {
+      onOpenSubscription?.();
+      return;
+    }
+
+    if (isLocked) {
+      setIsLocked(false);
+      setPinHash(undefined);
+    } else {
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handlePinSuccess = (newHash?: string) => {
+    if (newHash) {
+      setPinHash(newHash);
+      setIsLocked(true);
+      if (selectedEmoji === '📁') {
+        setSelectedEmoji('🔒');
+      }
+    }
+    setIsPinModalOpen(false);
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanTitle = title.trim();
@@ -66,14 +99,18 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
       screenshotIds,
       emoji: selectedEmoji,
       accentColor: selectedColor,
-      badge: 'Custom Album',
+      badge: isLocked ? 'Private Secret Vault' : 'Custom Album',
       isSmart: false,
+      isLocked,
+      pinHash,
     });
 
     // Reset and close
     setTitle('');
     setDescription('');
     setSelectedIds(new Set());
+    setIsLocked(false);
+    setPinHash(undefined);
     onClose();
   };
 
@@ -188,6 +225,61 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
             />
           </div>
 
+          {/* Pro PIN Lock & Vault Protection Card */}
+          <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 p-3.5 shadow-xs transition-all">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 shadow-xs">
+                  <Lock className="h-4.5 w-4.5 stroke-[2.4]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-extrabold text-slate-900">4-Digit PIN Lock</span>
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-900 text-[10px] font-black border border-amber-500/25">
+                      <Crown className="h-3 w-3 text-amber-600 fill-amber-500" />
+                      Pro
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {isLocked ? 'Passcode enabled • Secret vault protected' : 'Require 4-digit PIN & biometrics to view'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle switch */}
+              <button
+                type="button"
+                onClick={handleToggleLock}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                  isLocked ? 'bg-[#3478F6]' : 'bg-slate-300'
+                }`}
+                aria-label="Toggle PIN Lock"
+              >
+                <span
+                  className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-md transition-transform ${
+                    isLocked ? 'translate-x-5.5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {isLocked && (
+              <div className="mt-2.5 pt-2 border-t border-amber-200/50 flex items-center justify-between text-[11px]">
+                <span className="text-emerald-700 font-bold flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Passcode Configured
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsPinModalOpen(true)}
+                  className="text-[#3478F6] font-bold hover:underline cursor-pointer"
+                >
+                  Change PIN
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Screenshot Selector */}
           <div className="space-y-2 pt-2">
             <div className="flex items-center justify-between">
@@ -267,6 +359,15 @@ export const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* PIN Setup Modal */}
+      <AlbumPinModal
+        isOpen={isPinModalOpen}
+        mode="set"
+        albumTitle={title.trim() || 'New Album'}
+        onSuccess={handlePinSuccess}
+        onClose={() => setIsPinModalOpen(false)}
+      />
     </div>,
     document.body
   );

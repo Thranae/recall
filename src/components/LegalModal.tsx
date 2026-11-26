@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, FileText, RefreshCw, Mail, CheckCircle2, Clock, Award } from 'lucide-react';
 import { lockBodyScroll } from '../utils/scrollLock';
@@ -17,12 +17,20 @@ export const LegalModal: React.FC<LegalModalProps> = ({
   onClose,
 }) => {
   const [activeDoc, setActiveDoc] = useState<LegalDocType>(initialDoc);
+  const contentBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialDoc) {
       setActiveDoc(initialDoc);
     }
   }, [initialDoc]);
+
+  // Reset scroll to top whenever switching legal tabs or opening modal
+  useEffect(() => {
+    if (contentBodyRef.current) {
+      contentBodyRef.current.scrollTop = 0;
+    }
+  }, [activeDoc, isOpen]);
 
   // Lock background and html viewport scroll while modal is visible
   useEffect(() => {
@@ -101,6 +109,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
 
           {/* Content Body */}
           <div
+            ref={contentBodyRef}
             className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 text-xs text-slate-600 space-y-4 leading-relaxed"
             style={{
               WebkitOverflowScrolling: 'touch',
