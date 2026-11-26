@@ -346,7 +346,7 @@ export const App: React.FC = () => {
           variant={splashVariant}
           userName={user?.name}
           onComplete={handleSplashComplete}
-          durationMs={splashVariant === 'launch' ? 1400 : 1200}
+          durationMs={splashVariant === 'launch' ? 5600 : 2400}
         />
       )}
 

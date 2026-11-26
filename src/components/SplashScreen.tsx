@@ -14,7 +14,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   variant = 'launch',
   userName,
 }) => {
-  const effectiveDuration = durationMs ?? (variant === 'launch' ? 7000 : 3600);
+  const effectiveDuration = durationMs ?? (variant === 'launch' ? 5600 : 2600);
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [isExiting, setIsExiting] = useState(false);
   const [exitDurationMs, setExitDurationMs] = useState(variant === 'launch' ? 550 : 450);
@@ -27,25 +27,40 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  useEffect(() => {
-    const clearAllTimers = () => {
-      timersRef.current.forEach((id) => window.clearTimeout(id));
-      timersRef.current = [];
-    };
+  const clearAllTimers = () => {
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
+  };
 
-    const finishOnce = () => {
-      if (completedRef.current) return;
-      completedRef.current = true;
-      onCompleteRef.current();
-    };
+  const finishOnce = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    clearAllTimers();
+    onCompleteRef.current();
+  };
+
+  const handleSkip = () => {
+    if (isExiting || completedRef.current) return;
+    clearAllTimers();
+    setExitDurationMs(220);
+    setIsExiting(true);
+    const tDone = window.setTimeout(finishOnce, 240);
+    timersRef.current.push(tDone);
+  };
+
+  useEffect(() => {
+    clearAllTimers();
 
     if (variant === 'launch') {
       const exitDuration = 550;
-      const exitLead = Math.max(0, effectiveDuration - exitDuration);
-      const t2 = window.setTimeout(() => setPhase(2), 2200);
-      const t3 = window.setTimeout(() => setPhase(3), 4400);
+      setExitDurationMs(exitDuration);
+      const exitLead = Math.max(1600, effectiveDuration - exitDuration);
+      const phase2Time = Math.round(exitLead * 0.33);
+      const phase3Time = Math.round(exitLead * 0.66);
+
+      const t2 = window.setTimeout(() => setPhase(2), phase2Time);
+      const t3 = window.setTimeout(() => setPhase(3), phase3Time);
       const tExit = window.setTimeout(() => {
-        setExitDurationMs(exitDuration);
         setIsExiting(true);
         const tDone = window.setTimeout(finishOnce, exitDuration + 20);
         timersRef.current.push(tDone);
@@ -53,11 +68,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       timersRef.current.push(t2, t3, tExit);
     } else {
       const exitDuration = 450;
+      setExitDurationMs(exitDuration);
       const exitLead = Math.max(800, effectiveDuration - exitDuration);
       const midBeatTime = Math.round(exitLead * 0.48);
       const tBeat2 = window.setTimeout(() => setPhase(2), midBeatTime);
       const tExit = window.setTimeout(() => {
-        setExitDurationMs(exitDuration);
         setIsExiting(true);
         const tDone = window.setTimeout(finishOnce, exitDuration + 20);
         timersRef.current.push(tDone);
@@ -128,7 +143,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         willChange: 'transform, opacity',
         backfaceVisibility: 'hidden',
       }}
-      className="fixed inset-0 z-[9999] flex flex-col justify-between items-center bg-[#F4F7FB] text-[#0F172A] overflow-hidden select-none px-6 py-8"
+      className="fixed inset-0 z-[9999] flex flex-col justify-between items-center bg-[#F4F7FB] text-[#0F172A] overflow-hidden select-none px-6 py-8 cursor-pointer"
+      onClick={handleSkip}
+      role="button"
+      tabIndex={0}
+      title="Tap anywhere to skip"
     >
       {/* Ambient Ethereal Breathing Aura */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
@@ -265,15 +284,20 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       )}
 
       {/* Bottom Indicator */}
-      <div className="h-8 relative z-10 flex items-center justify-center w-full">
+      <div className="h-10 relative z-10 flex flex-col items-center justify-center w-full gap-2">
         {variant === 'launch' ? (
-          <div
-            className="h-1.5 w-1.5 rounded-full bg-blue-500/45"
-            style={{
-              animation: 'splashDotBreath 2.2s ease-in-out infinite',
-              willChange: 'transform, opacity',
-            }}
-          />
+          <>
+            <div
+              className="h-1.5 w-1.5 rounded-full bg-blue-500/50"
+              style={{
+                animation: 'splashDotBreath 2.2s ease-in-out infinite',
+                willChange: 'transform, opacity',
+              }}
+            />
+            <span className="text-[11px] font-medium tracking-wider text-slate-400/80 uppercase select-none transition-opacity">
+              Tap anywhere to skip
+            </span>
+          </>
         ) : (
           <div className="w-24 h-[2px] rounded-full bg-slate-200/80 overflow-hidden">
             <div
